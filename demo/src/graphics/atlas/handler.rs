@@ -69,7 +69,7 @@ impl Atlas {
             };
 
             let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                contents: &bytemuck::cast_slice(texture.bytes()),
+                contents: bytemuck::cast_slice(texture.bytes()),
                 usage: wgpu::BufferUsages::COPY_SRC,
                 label: Some("vertex Buffer"),
             });
@@ -89,7 +89,7 @@ impl Atlas {
 
         /* Try allocating from an existing layer. */
         for (i, layer) in self.layers.iter_mut().enumerate() {
-            if let Some(mut allocation) = layer.allocator.allocate(width, height) {
+            if let Some(allocation) = layer.allocator.allocate(width, height) {
                 return Some(Allocation {
                     allocation,
                     layer: i,
@@ -100,7 +100,7 @@ impl Atlas {
         /* Add a new layer, as we found no layer to allocate from. */
         let mut layer = Layer::new(self.extent.width);
 
-        if let Some(mut allocation) = layer.allocator.allocate(width, height) {
+        if let Some(allocation) = layer.allocator.allocate(width, height) {
             self.layers.push(layer);
 
             return Some(Allocation {
@@ -150,15 +150,11 @@ impl Atlas {
     }
 
     pub fn get(&mut self, name: String) -> Option<Allocation> {
-        if let Some(allocation) = self.names.get(&name) {
-            Some(allocation.clone())
-        } else {
-            None
-        }
+        self.names.get(&name).cloned()
     }
 
     pub fn clear(&mut self) {
-        for layer in self.layers {
+        for layer in self.layers.iter_mut() {
             layer.allocator.clear();
         }
 
@@ -213,7 +209,9 @@ impl Atlas {
         }
 
         self.texture = texture;
-        self.texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        self.texture_view = self
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
         self.dirty = true;
     }
 }

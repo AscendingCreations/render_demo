@@ -94,7 +94,7 @@ impl Renderer {
                 Err(wgpu::SurfaceError::Lost) => {
                     self.resize(self.size)?;
                 }
-                Err(e) => Err(e)?,
+                Err(e) => return Err(RendererError::from(e)),
             },
             Event::MainEventsCleared => {
                 self.window.request_redraw();

@@ -5,12 +5,11 @@ pub struct TextureGroup {
 }
 
 impl TextureGroup {
-    fn from_atlas(
+    pub fn from_atlas(
         device: &wgpu::Device,
-        queue: &wgpu::Queue,
         layout_storage: &mut LayoutStorage,
         atlas: &Atlas,
-    ) -> Result<Self, RendererError> {
+    ) -> Self {
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
@@ -39,6 +38,6 @@ impl TextureGroup {
             label: None,
         });
 
-        Ok(Self { bind_group })
+        Self { bind_group }
     }
 }

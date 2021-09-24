@@ -1,14 +1,14 @@
-use crate::graphics::{allocation::Allocation, Rgba, Vertex};
+use crate::graphics::{allocation::Allocation, Rgba, SpriteVertex};
 
 pub struct Sprite {
-    pos: [u32; 3],
-    hw: [u32; 2],
-    uv: [u32; 4],
-    layer: u32,
-    color: Rgba,
+    pub pos: [u32; 3],
+    pub hw: [u32; 2],
+    pub uv: [u32; 4],
+    pub layer: u32,
+    pub color: Rgba,
     //Texture area location in Atlas.
-    texture: Option<Allocation>,
-    buffer: Vec<Vertex>,
+    pub texture: Option<Allocation>,
+    pub buffer: Vec<SpriteVertex>,
     //if anything got updated we need to update the buffers too.
     pub changed: bool,
 }
@@ -29,7 +29,7 @@ impl Default for Sprite {
 }
 
 impl Sprite {
-    fn new(texture: Allocation) -> Self {
+    pub fn new(texture: Allocation) -> Self {
         Self {
             pos: [0; 3],
             hw: [0; 2],
@@ -48,7 +48,7 @@ impl Sprite {
         let max_x = (self.pos[0] + self.hw[0]) as f32 * 0.5;
         let max_y = (self.pos[1] + self.hw[1]) as f32 * 0.5;
 
-        let (width, height) = if let Some(allocation) = self.texture {
+        let (width, height) = if let Some(allocation) = &self.texture {
             let (h, w) = allocation.size();
             (h as f32, w as f32)
         } else {
@@ -61,29 +61,30 @@ impl Sprite {
         let uv_w = (self.uv[1] + self.uv[3]) as f32 / height;
 
         self.buffer = vec![
-            Vertex {
-                position: [min_x, min_y, self.pos[3] as f32],
+            SpriteVertex {
+                position: [min_x, min_y, self.pos[2] as f32],
                 tex_coord: [uv_x, uv_y, self.layer as f32],
                 color: self.color.as_slice(),
             },
-            Vertex {
-                position: [max_x, min_y, self.pos[3] as f32],
+            SpriteVertex {
+                position: [max_x, min_y, self.pos[2] as f32],
                 tex_coord: [uv_w, uv_y, self.layer as f32],
                 color: self.color.as_slice(),
             },
-            Vertex {
-                position: [max_x, max_y, self.pos[3] as f32],
+            SpriteVertex {
+                position: [max_x, max_y, self.pos[2] as f32],
                 tex_coord: [uv_w, uv_h, self.layer as f32],
                 color: self.color.as_slice(),
             },
-            Vertex {
-                position: [min_x, max_y, self.pos[3] as f32],
+            SpriteVertex {
+                position: [min_x, max_y, self.pos[2] as f32],
                 tex_coord: [uv_x, uv_h, self.layer as f32],
                 color: self.color.as_slice(),
             },
         ];
     }
 
+    //used to check and update the vertex array.
     pub fn update(&mut self) {
         //if pos or tex_pos or color changed.
         if self.changed {

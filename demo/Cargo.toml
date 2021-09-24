@@ -22,3 +22,6 @@ image = "0.23"
 tokio = { version = "1.8", features = ["full"] }
 bitflags = "1.2.1"
 guillotiere = "0.6.2"
+serde = "1.0"
+camera = { path = "../camera" }
+input = { path = "../input" }

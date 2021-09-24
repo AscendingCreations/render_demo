@@ -1,13 +1,13 @@
 use crate::graphics::VertexBufferExt;
 
 #[derive(Clone, Debug)]
-pub struct Vertex {
+pub struct SpriteVertex {
     pub position: [f32; 3],
     pub tex_coord: [f32; 3],
     pub color: [f32; 4],
 }
 
-impl Default for Vertex {
+impl Default for SpriteVertex {
     fn default() -> Self {
         Self {
             position: [0.0; 3],
@@ -17,8 +17,8 @@ impl Default for Vertex {
     }
 }
 
-impl VertexBufferExt for Vertex {
-    fn to_bytes(self, bytes: &mut Vec<u8>) {
+impl VertexBufferExt for SpriteVertex {
+    fn to_bytes(&self, bytes: &mut Vec<u8>) {
         let slice: [f32; 3] = self.position;
         bytes.extend_from_slice(bytemuck::cast_slice(&slice));
 
@@ -30,9 +30,9 @@ impl VertexBufferExt for Vertex {
     }
 }
 
-impl Vertex {
+impl SpriteVertex {
     /// Calculate the stride between two vertices in bytes, i.e. how large each vertex is in bytes.
-    pub fn stride(&self) -> usize {
+    pub fn stride() -> usize {
         let mut stride = std::mem::size_of::<[f32; 3]>();
         stride += std::mem::size_of::<[f32; 3]>();
         stride += std::mem::size_of::<[f32; 4]>();
@@ -41,7 +41,7 @@ impl Vertex {
     }
 
     /// Calculates the offset of each vertex attribute.
-    pub fn offsets(&self) -> Vec<usize> {
+    pub fn offsets() -> Vec<usize> {
         let mut offsets = vec![];
         let mut offset = 0;
 
@@ -55,7 +55,7 @@ impl Vertex {
         offsets
     }
 
-    fn attributes(&self) -> Vec<wgpu::VertexAttribute> {
+    pub fn attributes() -> Vec<wgpu::VertexAttribute> {
         let mut attributes = vec![];
         let mut offset = 0;
 

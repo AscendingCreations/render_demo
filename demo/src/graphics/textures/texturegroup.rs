@@ -1,4 +1,4 @@
-use crate::graphics::{Atlas, LayoutStorage, RendererError, TextureLayout};
+use crate::graphics::{Atlas, LayoutStorage, TextureLayout};
 
 pub struct TextureGroup {
     pub bind_group: wgpu::BindGroup,
@@ -35,7 +35,7 @@ impl TextureGroup {
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &layout,
             entries: &entries,
-            label: None,
+            label: Some("Texture Bind Group"),
         });
 
         Self { bind_group }

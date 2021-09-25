@@ -1,9 +1,18 @@
 #![allow(dead_code)]
+use backtrace::Backtrace;
 use camera::controls::{OrbitControls, OrbitSettings};
 use camera::Projection;
 use input::{Bindings, FrameTime, InputHandler};
+use lazy_static::lazy_static;
+use naga::{front::wgsl, valid::Validator};
 use serde::{Deserialize, Serialize};
+use slog::{error, info};
+use sloggers::file::FileLoggerBuilder;
+use sloggers::types::Severity;
+use sloggers::Build;
 use std::collections::HashMap;
+use std::panic;
+use std::{fs, path::PathBuf};
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
@@ -29,8 +38,25 @@ enum Axis {
     Pitch,
 }
 
+lazy_static! {
+    static ref LOGGER: slog::Logger = {
+        let mut builder = FileLoggerBuilder::new("paniclog.txt");
+        builder.level(Severity::Debug);
+        builder.build().unwrap()
+    };
+}
+
 #[tokio::main]
 async fn main() -> Result<(), RendererError> {
+    info!(LOGGER, "starting up");
+
+    panic::set_hook(Box::new(|panic_info| {
+        let bt = Backtrace::new();
+
+        error!(LOGGER, "PANIC: {}, BACKTRACE: {:?}", panic_info, bt);
+    }));
+
+    parse_example_wgsl();
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .with_title("Demo")
@@ -247,4 +273,53 @@ async fn main() -> Result<(), RendererError> {
         input_handler.end_frame();
         frame_time.update();
     });
+}
+
+pub fn parse_example_wgsl() {
+    let read_dir = match PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("src")
+        .read_dir()
+    {
+        Ok(iter) => iter,
+        Err(e) => {
+            println!("Unable to open the examples folder: {:?}", e);
+            return;
+        }
+    };
+    for example_entry in read_dir {
+        let read_files = match example_entry {
+            Ok(dir_entry) => match dir_entry.path().read_dir() {
+                Ok(iter) => iter,
+                Err(_) => continue,
+            },
+            Err(e) => {
+                println!("Skipping example: {:?}", e);
+                continue;
+            }
+        };
+        for file_entry in read_files {
+            let shader = match file_entry {
+                Ok(entry) => match entry.path().extension() {
+                    Some(ostr) if &*ostr == "wgsl" => {
+                        println!("Validating {:?}", entry.path());
+                        fs::read_to_string(entry.path()).unwrap_or_default()
+                    }
+                    _ => continue,
+                },
+                Err(e) => {
+                    println!("Skipping file: {:?}", e);
+                    continue;
+                }
+            };
+
+            let module = wgsl::parse_str(&shader).unwrap();
+            //TODO: re-use the validator
+            Validator::new(
+                naga::valid::ValidationFlags::all(),
+                naga::valid::Capabilities::all(),
+            )
+            .validate(&module)
+            .unwrap();
+        }
+    }
 }

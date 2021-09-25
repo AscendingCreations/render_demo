@@ -25,3 +25,7 @@ guillotiere = "0.6.2"
 serde = "1.0"
 camera = { path = "../camera" }
 input = { path = "../input" }
+slog = "2.7.0"
+sloggers = "2.0.0"
+backtrace = "0.3"
+lazy_static = "1.4.0"

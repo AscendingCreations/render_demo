@@ -24,11 +24,13 @@ where
     ) {
         self.set_pipeline(pipeline.render_pipeline());
         self.set_bind_group(1, &texture_group.bind_group, &[]);
-        self.set_vertex_buffer(0, buffer.vertex_buffer.slice(..buffer.vertex_size));
+        self.set_vertex_buffer(0, buffer.vertex_buffer.slice(..buffer.vertex_count));
         self.set_index_buffer(
-            buffer.indice_buffer.slice(..buffer.indice_size),
+            buffer
+                .indice_buffer
+                .slice(..(buffer.indice_count * 4) as u64),
             wgpu::IndexFormat::Uint32,
         );
-        self.draw_indexed(0..buffer.num_indices as u32, 0, 0..1);
+        self.draw_indexed(0..buffer.indice_count as u32, 0, 0..1);
     }
 }

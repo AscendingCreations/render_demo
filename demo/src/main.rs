@@ -104,6 +104,8 @@ async fn main() -> Result<(), RendererError> {
     sprite.pos[0] = 64;
     sprite.pos[1] = 64;
     sprite.pos[2] = 1;
+    sprite.hw[0] = 80;
+    sprite.hw[1] = 80;
     sprite.uv = [0, 0, 80, 80];
     sprite.changed = true;
 
@@ -125,9 +127,11 @@ async fn main() -> Result<(), RendererError> {
     let camera = Camera::new(
         &renderer,
         &mut layout_storage,
-        Projection::Perspective {
-            fov: (90.0_f32).to_radians(),
-            aspect_ratio: 1920.0 / 1080.0,
+        Projection::Orthographic {
+            left: 0.0,
+            right: 1920.0,
+            bottom: 0.0,
+            top: 1080.0,
             near: 0.1,
             far: 100.0,
         },
@@ -193,9 +197,11 @@ async fn main() -> Result<(), RendererError> {
         if size != renderer.size() {
             size = renderer.size();
 
-            state.camera.set_projection(Projection::Perspective {
-                fov: (90.0_f32).to_radians(),
-                aspect_ratio: (size.width as f32) / (size.height as f32),
+            state.camera.set_projection(Projection::Orthographic {
+                left: 0.0,
+                right: size.width as f32,
+                bottom: 0.0,
+                top: size.height as f32,
                 near: 0.1,
                 far: 100.0,
             });
@@ -238,10 +244,15 @@ async fn main() -> Result<(), RendererError> {
         views.insert("framebuffer".to_string(), view);
 
         state.sprite.update();
-        let indices = vec![0, 1, 2, 1, 2, 3];
-        let build = VertexBufferBuilder::new(state.sprite.buffer.clone()).with_indices(indices);
-        let vertex = build.build(renderer.device());
 
+        let mut bytes = vec![];
+        let mut count = 0;
+
+        bytes.append(&mut state.sprite.bytes.clone());
+        count += 6;
+
+        state.sprite_buffer.set_buffer(renderer.queue(), &bytes);
+        state.sprite_buffer.set_indice_count(count as u64);
         // Start encoding commands.
         let mut encoder =
             renderer
@@ -249,19 +260,6 @@ async fn main() -> Result<(), RendererError> {
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("command encoder"),
                 });
-
-        //gotta update our buffers before we render.
-        state.sprite_buffer.copy_to_vertex(
-            &mut encoder,
-            vertex.vertex_buffer(),
-            vertex.vertices().len(),
-        );
-
-        state.sprite_buffer.copy_to_indice(
-            &mut encoder,
-            vertex.indice_buffer(),
-            vertex.indices().len(),
-        );
 
         // Run the render pass.
         state.render(&mut encoder, &views);

@@ -7,7 +7,6 @@ mod pass;
 mod renderer;
 mod sprites;
 mod textures;
-mod vertexbuffer;
 
 pub use self::camera::*;
 pub use atlas::*;
@@ -18,4 +17,3 @@ pub use pass::*;
 pub use renderer::*;
 pub use sprites::*;
 pub use textures::*;
-pub use vertexbuffer::*;

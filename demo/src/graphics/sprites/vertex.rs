@@ -1,5 +1,3 @@
-use crate::graphics::VertexBufferExt;
-
 #[derive(Clone, Debug)]
 pub struct SpriteVertex {
     pub position: [f32; 3],
@@ -17,8 +15,8 @@ impl Default for SpriteVertex {
     }
 }
 
-impl VertexBufferExt for SpriteVertex {
-    fn to_bytes(&self, bytes: &mut Vec<u8>) {
+impl SpriteVertex {
+    pub fn to_bytes(&self, bytes: &mut Vec<u8>) {
         let slice: [f32; 3] = self.position;
         bytes.extend_from_slice(bytemuck::cast_slice(&slice));
 
@@ -28,9 +26,7 @@ impl VertexBufferExt for SpriteVertex {
         let slice: [f32; 4] = self.color;
         bytes.extend_from_slice(bytemuck::cast_slice(&slice));
     }
-}
 
-impl SpriteVertex {
     /// Calculate the stride between two vertices in bytes, i.e. how large each vertex is in bytes.
     pub fn stride() -> usize {
         let mut stride = std::mem::size_of::<[f32; 3]>();

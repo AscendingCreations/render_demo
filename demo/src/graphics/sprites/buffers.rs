@@ -38,14 +38,17 @@ impl SpriteBuffer {
             contents: buffer.bytes(),
             usage: wgpu::BufferUsages::VERTEX
                 | wgpu::BufferUsages::STORAGE
-                | wgpu::BufferUsages::COPY_SRC,
+                | wgpu::BufferUsages::COPY_SRC
+                | wgpu::BufferUsages::COPY_DST,
             label: Some("vertex Buffer"),
         });
 
         let num_indices = buffer.indices().len();
         let indice_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             contents: bytemuck::cast_slice(buffer.indices()),
-            usage: wgpu::BufferUsages::INDEX,
+            usage: wgpu::BufferUsages::INDEX
+                | wgpu::BufferUsages::COPY_SRC
+                | wgpu::BufferUsages::COPY_DST,
             label: Some("indices Buffer"),
         });
 
@@ -65,20 +68,20 @@ impl SpriteBuffer {
     pub fn copy_to_vertex(
         &mut self,
         encoder: &mut wgpu::CommandEncoder,
-        other: &wgpu::Buffer,
+        other: (&wgpu::Buffer, wgpu::BufferAddress),
         count: usize,
     ) {
         self.vertex_count = count;
-        encoder.copy_buffer_to_buffer(&self.vertex_buffer, 0, other, 0, self.vertex_size)
+        encoder.copy_buffer_to_buffer(&self.vertex_buffer, 0, other.0, 0, other.1)
     }
 
     pub fn copy_to_indice(
         &mut self,
         encoder: &mut wgpu::CommandEncoder,
-        other: &wgpu::Buffer,
+        other: (&wgpu::Buffer, wgpu::BufferAddress),
         count: usize,
     ) {
         self.num_indices = count;
-        encoder.copy_buffer_to_buffer(&self.indice_buffer, 0, other, 0, self.indice_size)
+        encoder.copy_buffer_to_buffer(&self.indice_buffer, 0, other.0, 0, other.1)
     }
 }

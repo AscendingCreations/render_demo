@@ -32,7 +32,7 @@ fn main(
 }
 
 [[group(1), binding(0)]]
-var texture: texture_2d_array<f32>;
+var tex: texture_2d_array<f32>;
 [[group(1), binding(1)]]
 var sample: sampler;
 
@@ -40,7 +40,7 @@ var sample: sampler;
 [[stage(fragment)]]
 fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
     let layer: i32 = i32(in.tex_coords.z);
-    let object_color = textureSample(texture, sample, in.tex_coords.xy, layer);
+    let object_color = textureSample(tex, sample, in.tex_coords.xy, layer);
     let result = in.color.rgb * object_color.rgb;
     return vec4<f32>(result, in.color.a);
 }

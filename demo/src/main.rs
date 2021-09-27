@@ -49,12 +49,13 @@ lazy_static! {
 #[tokio::main]
 async fn main() -> Result<(), RendererError> {
     info!(LOGGER, "starting up");
+    env_logger::init();
 
-    panic::set_hook(Box::new(|panic_info| {
+    /*panic::set_hook(Box::new(|panic_info| {
         let bt = Backtrace::new();
 
         error!(LOGGER, "PANIC: {}, BACKTRACE: {:?}", panic_info, bt);
-    }));
+    }));*/
 
     parse_example_wgsl();
     let event_loop = EventLoop::new();

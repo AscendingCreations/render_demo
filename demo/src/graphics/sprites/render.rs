@@ -26,9 +26,9 @@ where
         self.set_bind_group(1, &texture_group.bind_group, &[]);
         self.set_vertex_buffer(0, buffer.vertex_buffer.slice(..buffer.vertex_size));
         self.set_index_buffer(
-            buffer.indice_buffer.slice(..buffer.num_indices as u64),
+            buffer.indice_buffer.slice(..buffer.indice_size),
             wgpu::IndexFormat::Uint32,
         );
-        self.draw_indexed(0..(buffer.num_indices as u32), 0, 0..1);
+        self.draw_indexed(0..buffer.num_indices as u32, 0, 0..1);
     }
 }

@@ -37,7 +37,16 @@ impl Atlas {
                 | wgpu::TextureUsages::COPY_SRC,
         });
 
-        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor {
+            label: Some("Texture Atlas"),
+            format: None,
+            dimension: Some(wgpu::TextureViewDimension::D2Array),
+            aspect: wgpu::TextureAspect::All,
+            base_mip_level: 0,
+            mip_level_count: None,
+            base_array_layer: 0,
+            array_layer_count: NonZeroU32::new(1),
+        });
 
         Self {
             texture,
@@ -209,9 +218,16 @@ impl Atlas {
         }
 
         self.texture = texture;
-        self.texture_view = self
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
+        self.texture_view = self.texture.create_view(&wgpu::TextureViewDescriptor {
+            label: Some("Texture Atlas"),
+            format: None,
+            dimension: Some(wgpu::TextureViewDimension::D2Array),
+            aspect: wgpu::TextureAspect::All,
+            base_mip_level: 0,
+            mip_level_count: None,
+            base_array_layer: 0,
+            array_layer_count: NonZeroU32::new(self.layers.len() as u32),
+        });
         self.dirty = true;
     }
 }

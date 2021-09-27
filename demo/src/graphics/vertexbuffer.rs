@@ -44,19 +44,24 @@ impl<V: VertexBufferExt> VertexBufferBuilder<V> {
 
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             contents: &bytes,
-            usage: wgpu::BufferUsages::COPY_SRC,
+            usage: wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST,
             label: Some("vertex Build Buffer"),
         });
 
         let indice_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             contents: bytemuck::cast_slice(&self.indices),
-            usage: wgpu::BufferUsages::COPY_SRC,
+            usage: wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST,
             label: Some("indices Build Buffer"),
         });
+
+        let vertex_size = super::sprites::size_of_slice(&bytes) as wgpu::BufferAddress;
+        let indice_size = super::sprites::size_of_slice(&self.indices) as wgpu::BufferAddress;
 
         VertexBuffer {
             vertex_buffer,
             indice_buffer,
+            vertex_size,
+            indice_size,
             vertices: self.vertices,
             indices: self.indices,
             bytes,
@@ -68,6 +73,8 @@ impl<V: VertexBufferExt> VertexBufferBuilder<V> {
 pub struct VertexBuffer<V> {
     vertex_buffer: wgpu::Buffer,
     indice_buffer: wgpu::Buffer,
+    vertex_size: wgpu::BufferAddress,
+    indice_size: wgpu::BufferAddress,
     vertices: Vec<V>,
     indices: Vec<usize>,
     bytes: Vec<u8>,
@@ -86,11 +93,11 @@ impl<V> VertexBuffer<V> {
         &self.bytes
     }
 
-    pub fn vertex_buffer(&self) -> &wgpu::Buffer {
-        &self.vertex_buffer
+    pub fn vertex_buffer(&self) -> (&wgpu::Buffer, wgpu::BufferAddress) {
+        (&self.vertex_buffer, self.vertex_size)
     }
 
-    pub fn indice_buffer(&self) -> &wgpu::Buffer {
-        &self.indice_buffer
+    pub fn indice_buffer(&self) -> (&wgpu::Buffer, wgpu::BufferAddress) {
+        (&self.indice_buffer, self.indice_size)
     }
 }

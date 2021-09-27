@@ -19,7 +19,7 @@ impl Default for Sprite {
             pos: [0; 3],
             hw: [0; 2],
             uv: [0; 4],
-            layer: 1,
+            layer: 0,
             color: Rgba::new(1.0, 1.0, 1.0, 1.0),
             texture: None,
             buffer: Vec::new(),

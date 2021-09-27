@@ -1,5 +1,6 @@
 use crate::graphics::Layout;
 use bytemuck::{Pod, Zeroable};
+use std::num::NonZeroU32;
 
 #[repr(C)]
 #[derive(Clone, Copy, Hash, Pod, Zeroable)]
@@ -13,7 +14,7 @@ impl Layout for TextureLayout {
                 visibility: wgpu::ShaderStages::FRAGMENT,
                 ty: wgpu::BindingType::Texture {
                     multisampled: false,
-                    view_dimension: wgpu::TextureViewDimension::D2,
+                    view_dimension: wgpu::TextureViewDimension::D2Array,
                     sample_type: wgpu::TextureSampleType::Float { filterable: true },
                 },
                 count: None,

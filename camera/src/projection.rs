@@ -28,29 +28,13 @@ impl Into<Mat4> for Projection {
                 top,
                 near,
                 far,
-            } => {
-                ultraviolet::projection::orthographic_wgpu_dx(
-                    left,
-                    right,
-                    bottom,
-                    top,
-                    near,
-                    far,
-                )
-            }
+            } => ultraviolet::projection::orthographic_wgpu_dx(left, right, bottom, top, near, far),
             Projection::Perspective {
                 fov,
                 aspect_ratio,
                 near,
                 far,
-            } => {
-                ultraviolet::projection::perspective_wgpu_dx(
-                    fov,
-                    aspect_ratio,
-                    near,
-                    far,
-                )
-            }
+            } => ultraviolet::projection::perspective_wgpu_dx(fov, aspect_ratio, near, far),
         }
     }
 }

@@ -1,4 +1,5 @@
 use crate::graphics::{allocation::Allocation, Rgba, SpriteVertex};
+use std::cmp;
 
 pub struct Sprite {
     pub pos: [u32; 3],
@@ -62,44 +63,34 @@ impl Sprite {
             (0, 0)
         };
 
-        let width = if width > self.uv[2] {
-            self.uv[2]
-        } else {
-            width
-        };
+        let width = cmp::min(self.uv[2], width);
+        let height = cmp::min(self.uv[3], height);
 
-        let height = if height > self.uv[3] {
-            self.uv[3]
-        } else {
-            height
-        };
-
-        let uv_x = self.uv[0].saturating_add(x) as f32 / 2048.0;
-        let uv_y = self.uv[1].saturating_add(y) as f32 / 2048.0;
-        let uv_h = self.uv[0].saturating_add(x).saturating_add(width) as f32 / 2048.0;
-        let uv_w = self.uv[1].saturating_add(y).saturating_add(height) as f32 / 2048.0;
-
-        let z = self.pos[2] as f32 / 100.0;
+        let u1 = self.uv[0].saturating_add(x) as f32 / 2048.0;
+        let v1 = self.uv[1].saturating_add(y) as f32 / 2048.0;
+        let u2 = self.uv[0].saturating_add(x).saturating_add(width) as f32 / 2048.0;
+        let v2 = self.uv[1].saturating_add(y).saturating_add(height) as f32 / 2048.0;
 
         let buffer = vec![
             SpriteVertex {
-                position: [-0.5, -0.5, z],
-                tex_coord: [uv_w, uv_h, self.layer as f32],
+                position: [min_x, min_y, self.pos[2] as f32],
+                tex_coord: [u1, v2, self.layer as f32],
                 color: self.color.as_slice(),
             },
             SpriteVertex {
-                position: [0.5, -0.5, z],
-                tex_coord: [uv_x, uv_h, self.layer as f32],
+                position: [max_x, min_y, self.pos[2] as f32],
+                tex_coord: [u2, v2, self.layer as f32],
                 color: self.color.as_slice(),
             },
             SpriteVertex {
-                position: [0.5, 0.5, z],
-                tex_coord: [uv_x, uv_y, self.layer as f32],
+                position: [max_x, max_y, self.pos[2] as f32],
+                tex_coord: [u2, v1, self.layer as f32],
                 color: self.color.as_slice(),
             },
             SpriteVertex {
-                position: [-0.5, 0.5, z],
-                tex_coord: [uv_w, uv_y, self.layer as f32],
+                position: [min_x, max_y, self.pos[2] as f32],
+                tex_coord: [u1, v1, self.layer as f32],
+
                 color: self.color.as_slice(),
             },
         ];

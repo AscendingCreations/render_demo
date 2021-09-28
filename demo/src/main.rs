@@ -52,13 +52,12 @@ async fn main() -> Result<(), RendererError> {
     info!(LOGGER, "starting up");
     env_logger::init();
 
-    panic::set_hook(Box::new(|panic_info| {
+    /*panic::set_hook(Box::new(|panic_info| {
         let bt = Backtrace::new();
 
         error!(LOGGER, "PANIC: {}, BACKTRACE: {:?}", panic_info, bt);
-    }));
+    }));*/
 
-    println!("{}", std::mem::size_of::<SpriteVertex>());
     parse_example_wgsl();
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
@@ -98,10 +97,10 @@ async fn main() -> Result<(), RendererError> {
 
     sprite.pos[0] = 0;
     sprite.pos[1] = 0;
-    sprite.pos[2] = 10;
-    sprite.hw[0] = 80;
-    sprite.hw[1] = 80;
-    sprite.uv = [0, 0, 160, 80];
+    sprite.pos[2] = 1;
+    sprite.hw[0] = 64;
+    sprite.hw[1] = 64;
+    sprite.uv = [0, 0, 80, 64];
     sprite.changed = true;
 
     let sprite_texture =
@@ -121,11 +120,11 @@ async fn main() -> Result<(), RendererError> {
         &mut layout_storage,
         Projection::Orthographic {
             left: 0.0,
-            right: 1920.0,
+            right: 800.0,
             bottom: 0.0,
-            top: 1080.0,
-            near: 0.1,
-            far: 100.0,
+            top: 600.0,
+            near: 1.0,
+            far: -100.0,
         },
         controls,
     );
@@ -140,6 +139,8 @@ async fn main() -> Result<(), RendererError> {
         camera,
         sprite_buffer,
     };
+
+    println!("{:?}", state.camera.projection());
 
     let mut views = HashMap::new();
 
@@ -194,8 +195,8 @@ async fn main() -> Result<(), RendererError> {
                 right: size.width as f32,
                 bottom: 0.0,
                 top: size.height as f32,
-                near: 0.1,
-                far: 100.0,
+                near: 1.0,
+                far: -100.0,
             });
 
             let size = wgpu::Extent3d {

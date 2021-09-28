@@ -61,10 +61,10 @@ impl Controls for FlatControls {
     }
 
     fn update(&mut self, delta: f32) -> bool {
-        let mut changed = self.changed;
+        let changed = self.changed;
 
         if changed {
-            self.view = Mat4::identity();
+            self.view = Mat4::identity() * Mat4::from_scale(1.5);
         }
 
         self.changed = false;

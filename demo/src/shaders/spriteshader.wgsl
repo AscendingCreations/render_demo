@@ -25,7 +25,8 @@ fn main(
     [[builtin(vertex_index)]] my_index: u32,
 ) -> VertexOutput {
     var out: VertexOutput;
-    out.clip_position =  vec4<f32>(vertex.position.xyz, 1.0);
+
+    out.clip_position =  camera.view_proj * vec4<f32>(vertex.position.xyz, 1.0);
     out.tex_coords = vertex.tex_coords;
     out.color = vertex.color;
     return out;
@@ -42,5 +43,5 @@ fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
     let layer: i32 = i32(in.tex_coords.z);
     let object_color = textureSample(tex, sample, in.tex_coords.xy, layer);
     let alpha = mix(1.0, object_color.a, in.color.a );
-    return vec4<f32>(object_color.rgba);
+    return vec4<f32>(object_color.rgb, alpha);
 }

@@ -12,12 +12,12 @@ pub struct FlatInputs {
 
 #[derive(Clone, Debug)]
 pub struct FlatSettings {
-    pub scrollspeed: f32,
+    pub zoom: f32,
 }
 
 impl Default for FlatSettings {
     fn default() -> Self {
-        Self { scrollspeed: 1.0 }
+        Self { zoom: 1.5 }
     }
 }
 
@@ -60,11 +60,11 @@ impl Controls for FlatControls {
         self.eye.into()
     }
 
-    fn update(&mut self, delta: f32) -> bool {
+    fn update(&mut self, _delta: f32) -> bool {
         let changed = self.changed;
 
         if changed {
-            self.view = Mat4::identity() * Mat4::from_scale(1.5);
+            self.view = Mat4::identity() * Mat4::from_scale(self.settings.zoom);
         }
 
         self.changed = false;

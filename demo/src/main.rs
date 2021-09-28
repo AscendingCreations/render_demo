@@ -112,7 +112,7 @@ async fn main() -> Result<(), RendererError> {
         &mut layout_storage,
     )?;
 
-    let settings = FlatSettings { scrollspeed: 1.0 };
+    let settings = FlatSettings { zoom: 1.5 };
 
     let controls = FlatControls::new(settings);
     let camera = Camera::new(

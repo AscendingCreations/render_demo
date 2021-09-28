@@ -62,7 +62,7 @@ impl Atlas {
         &mut self,
         texture: &Texture,
         device: &wgpu::Device,
-        encoder: &mut wgpu::CommandEncoder,
+        queue: &wgpu::Queue,
     ) -> Option<Allocation> {
         if let Some(allocation) = self.names.get(texture.name()) {
             Some(allocation.clone())
@@ -72,18 +72,12 @@ impl Atlas {
             let allocation = {
                 let nlayers = self.layers.len();
                 let allocation = self.allocate(width, height)?;
-                self.grow(self.layers.len() - nlayers, device, encoder);
+                self.grow(self.layers.len() - nlayers, device, queue);
 
                 allocation
             };
 
-            let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                contents: texture.bytes(),
-                usage: wgpu::BufferUsages::COPY_SRC,
-                label: Some("vertex Buffer"),
-            });
-
-            self.upload_allocation(&buffer, width, height, 0, &allocation, encoder);
+            self.upload_allocation(texture.bytes(), width, height, 0, &allocation, queue);
             self.names
                 .insert(texture.name().to_string(), allocation.clone());
             Some(allocation)
@@ -124,31 +118,29 @@ impl Atlas {
 
     fn upload_allocation(
         &mut self,
-        buffer: &wgpu::Buffer,
+        buffer: &[u8],
         image_width: u32,
         image_height: u32,
         offset: usize,
         allocation: &Allocation,
-        encoder: &mut wgpu::CommandEncoder,
+        queue: &wgpu::Queue,
     ) {
         let (x, y) = allocation.position();
         let (width, height) = allocation.size();
         let layer = allocation.layer;
 
-        encoder.copy_buffer_to_texture(
-            wgpu::ImageCopyBufferBase {
-                buffer,
-                layout: wgpu::ImageDataLayout {
-                    offset: offset as u64,
-                    bytes_per_row: NonZeroU32::new(4 * image_width),
-                    rows_per_image: NonZeroU32::new(image_height),
-                },
-            },
-            wgpu::ImageCopyTextureBase {
+        queue.write_texture(
+            wgpu::ImageCopyTexture {
                 texture: &self.texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d { x, y, z: 0 },
                 aspect: wgpu::TextureAspect::All,
+            },
+            &buffer,
+            wgpu::ImageDataLayout {
+                offset: 0,
+                bytes_per_row: std::num::NonZeroU32::new(4 * width),
+                rows_per_image: std::num::NonZeroU32::new(height),
             },
             wgpu::Extent3d {
                 width,
@@ -170,7 +162,7 @@ impl Atlas {
         self.names.clear();
     }
 
-    fn grow(&mut self, amount: usize, device: &wgpu::Device, encoder: &mut wgpu::CommandEncoder) {
+    fn grow(&mut self, amount: usize, device: &wgpu::Device, queue: &wgpu::Queue) {
         if amount == 0 {
             return;
         }
@@ -195,7 +187,14 @@ impl Atlas {
 
         let amount_to_copy = self.layers.len() - amount;
 
+        let mut encoder = device
+        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("command encoder"),
+        });
+
         for (i, _) in self.layers.iter_mut().take(amount_to_copy).enumerate() {
+           
+
             encoder.copy_texture_to_texture(
                 wgpu::ImageCopyTextureBase {
                     texture: &self.texture,
@@ -228,6 +227,7 @@ impl Atlas {
             base_array_layer: 0,
             array_layer_count: NonZeroU32::new(self.layers.len() as u32),
         });
+        queue.submit(std::iter::once(encoder.finish()));
         self.dirty = true;
     }
 }

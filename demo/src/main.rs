@@ -91,17 +91,10 @@ async fn main() -> Result<(), RendererError> {
     let mut sprite_atlas = Atlas::new(renderer.device(), 2048);
     let texture = Texture::from_file("images/Tree.png")?;
 
-    let mut encoder = renderer
-        .device()
-        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("command encoder"),
-        });
-
     let allocation = sprite_atlas
-        .upload(&texture, renderer.device(), &mut encoder)
+        .upload(&texture, renderer.device(), renderer.queue())
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
     let mut sprite = Sprite::new(allocation);
-    renderer.queue().submit(std::iter::once(encoder.finish()));
 
     sprite.pos[0] = 0;
     sprite.pos[1] = 0;

@@ -1,6 +1,7 @@
-#![allow(dead_code)]
+#![allow(dead_code, clippy::collapsible_match)]
+
 use backtrace::Backtrace;
-use camera::controls::{OrbitControls, OrbitSettings};
+use camera::controls::{FlatControls, FlatSettings};
 use camera::Projection;
 use input::{Bindings, FrameTime, InputHandler};
 use lazy_static::lazy_static;
@@ -20,10 +21,10 @@ use winit::{
 };
 
 mod graphics;
-mod state;
+mod gamestate;
 
 use graphics::*;
-use state::*;
+use gamestate::*;
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
 enum Action {
@@ -51,12 +52,13 @@ async fn main() -> Result<(), RendererError> {
     info!(LOGGER, "starting up");
     env_logger::init();
 
-    /*panic::set_hook(Box::new(|panic_info| {
+    panic::set_hook(Box::new(|panic_info| {
         let bt = Backtrace::new();
 
         error!(LOGGER, "PANIC: {}, BACKTRACE: {:?}", panic_info, bt);
-    }));*/
+    }));
 
+    println!("{}", std::mem::size_of::<SpriteVertex>());
     parse_example_wgsl();
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
@@ -101,11 +103,11 @@ async fn main() -> Result<(), RendererError> {
     let mut sprite = Sprite::new(allocation);
     renderer.queue().submit(std::iter::once(encoder.finish()));
 
-    sprite.pos[0] = 64;
-    sprite.pos[1] = 64;
+    sprite.pos[0] = 0;
+    sprite.pos[1] = 0;
     sprite.pos[2] = 1;
-    sprite.hw[0] = 80;
-    sprite.hw[1] = 80;
+    sprite.hw[0] = 1;
+    sprite.hw[1] = 1;
     sprite.uv = [0, 0, 80, 80];
     sprite.changed = true;
 
@@ -118,12 +120,11 @@ async fn main() -> Result<(), RendererError> {
         &mut layout_storage,
     )?;
 
-    let settings = OrbitSettings {
-        zoom_speed: 0.1,
-        ..Default::default()
+    let settings = FlatSettings {
+        scrollspeed: 1.0,
     };
 
-    let controls = OrbitControls::new(settings, [0.0; 3], 3.0);
+    let controls = FlatControls::new(settings);
     let camera = Camera::new(
         &renderer,
         &mut layout_storage,
@@ -246,10 +247,9 @@ async fn main() -> Result<(), RendererError> {
         state.sprite.update();
 
         let mut bytes = vec![];
-        let mut count = 0;
+        let  count = 6;
 
         bytes.append(&mut state.sprite.bytes.clone());
-        count += 6;
 
         state.sprite_buffer.set_buffer(renderer.queue(), &bytes);
         state.sprite_buffer.set_indice_count(count as u64);

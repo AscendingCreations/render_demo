@@ -25,7 +25,7 @@ impl Texture {
 
     pub fn from_image(name: String, image: DynamicImage) -> Self {
         let size = image.dimensions();
-        let bytes = image.into_rgba8().into_raw();
+        let bytes = image.to_bgra8().into_raw();
 
         Self { name, bytes, size }
     }

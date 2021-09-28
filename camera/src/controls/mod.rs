@@ -1,6 +1,7 @@
 mod first_person;
 mod flying;
 mod orbit;
+mod flat;
 
 pub trait Controls {
     /// Retrieves the view matrix.
@@ -17,3 +18,4 @@ pub trait Controls {
 pub use first_person::{FirstPersonControls, FirstPersonInputs, FirstPersonSettings};
 pub use flying::{FlyingControls, FlyingInputs, FlyingSettings};
 pub use orbit::{OrbitControls, OrbitInputs, OrbitSettings};
+pub use flat::{FlatControls, FlatSettings, FlatInputs};

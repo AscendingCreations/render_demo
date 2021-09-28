@@ -1,6 +1,5 @@
 use crate::graphics::Layout;
 use bytemuck::{Pod, Zeroable};
-use std::num::NonZeroU32;
 
 #[repr(C)]
 #[derive(Clone, Copy, Hash, Pod, Zeroable)]

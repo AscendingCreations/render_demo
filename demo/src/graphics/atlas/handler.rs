@@ -31,7 +31,7 @@ impl Atlas {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            format: wgpu::TextureFormat::Bgra8UnormSrgb,
             usage: wgpu::TextureUsages::TEXTURE_BINDING
                 | wgpu::TextureUsages::COPY_DST
                 | wgpu::TextureUsages::COPY_SRC,
@@ -39,13 +39,13 @@ impl Atlas {
 
         let texture_view = texture.create_view(&wgpu::TextureViewDescriptor {
             label: Some("Texture Atlas"),
-            format: None,
+            format: Some(wgpu::TextureFormat::Bgra8UnormSrgb),
             dimension: Some(wgpu::TextureViewDimension::D2Array),
             aspect: wgpu::TextureAspect::All,
             base_mip_level: 0,
-            mip_level_count: None,
+            mip_level_count: std::num::NonZeroU32::new(1),
             base_array_layer: 0,
-            array_layer_count: NonZeroU32::new(1),
+            array_layer_count: std::num::NonZeroU32::new(1),
         });
 
         Self {
@@ -78,7 +78,7 @@ impl Atlas {
             };
 
             let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                contents: bytemuck::cast_slice(texture.bytes()),
+                contents: texture.bytes(),
                 usage: wgpu::BufferUsages::COPY_SRC,
                 label: Some("vertex Buffer"),
             });
@@ -187,7 +187,7 @@ impl Atlas {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            format: wgpu::TextureFormat::Bgra8UnormSrgb,
             usage: wgpu::TextureUsages::TEXTURE_BINDING
                 | wgpu::TextureUsages::COPY_DST
                 | wgpu::TextureUsages::COPY_SRC,
@@ -220,7 +220,7 @@ impl Atlas {
         self.texture = texture;
         self.texture_view = self.texture.create_view(&wgpu::TextureViewDescriptor {
             label: Some("Texture Atlas"),
-            format: None,
+            format: Some(wgpu::TextureFormat::Bgra8UnormSrgb),
             dimension: Some(wgpu::TextureViewDimension::D2Array),
             aspect: wgpu::TextureAspect::All,
             base_mip_level: 0,

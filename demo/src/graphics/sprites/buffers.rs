@@ -17,8 +17,6 @@ pub fn size_of_slice<T: Sized>(slice: &[T]) -> u64 {
 
 impl SpriteBuffer {
     pub fn new(device: &wgpu::Device) -> Self {
-        let mut bytes = vec![];
-
         let vertex_arr: Vec<SpriteVertex> = iter::repeat(SpriteVertex {
             position: [0.0, 0.0, 0.0],
             tex_coord: [0.0, 0.0, 1.0],
@@ -28,14 +26,11 @@ impl SpriteBuffer {
         .collect();
 
         let indices = (0..10_000)
-            .map(|x| vec![x, x + 1, x + 2, x + 1, x + 2, x + 3])
+            .map(|x| vec![x, x + 1, x + 2, x, x + 2, x + 3])
             .flatten()
             .collect::<Vec<u32>>();
 
-        for vertex in vertex_arr.iter() {
-            vertex.to_bytes(&mut bytes);
-        }
-
+        let bytes = bytemuck::cast_slice(&vertex_arr).to_vec();
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             contents: &bytes,
             usage: wgpu::BufferUsages::VERTEX

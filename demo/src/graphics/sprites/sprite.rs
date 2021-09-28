@@ -43,52 +43,63 @@ impl Sprite {
     }
 
     pub fn create_quad(&mut self) {
-        let mut bytes = vec![];
-        let min_x = self.pos[0].saturating_sub(self.hw[0]) as f32;
-        let min_y = self.pos[1].saturating_sub(self.hw[1]) as f32;
+        //let mut bytes = vec![];
+        let min_x = self.pos[0] as f32;
+        let min_y = self.pos[1] as f32;
         let max_x = self.pos[0].saturating_add(self.hw[0]) as f32;
         let max_y = self.pos[1].saturating_add(self.hw[1]) as f32;
 
         let (width, height) = if let Some(allocation) = &self.texture {
             let (h, w) = allocation.size();
-            (h as f32, w as f32)
+            (h, w)
         } else {
-            (1.0, 1.0)
+            (1, 1)
         };
 
-        let uv_x = self.uv[0] as f32 / width;
-        let uv_y = self.uv[1] as f32 / height;
-        let uv_h = self.uv[0].saturating_add(self.uv[2]) as f32 / width;
-        let uv_w = self.uv[1].saturating_add(self.uv[3]) as f32 / height;
+        let (x, y) = if let Some(allocation) = &self.texture {
+            let (x, y) = allocation.position();
+            (x, y)
+        } else {
+            (0, 0)
+        };
 
+        /*let uv_x = self.uv[0].saturating_add(x) as f32 /  2048.0;
+        let uv_y = self.uv[1].saturating_add(y) as f32 / 2048.0;
+        let uv_h = self.uv[0].saturating_add(x).saturating_add(self.uv[2]).saturating_add(width) as f32 / 2048.0;
+        let uv_w = self.uv[1].saturating_add(y).saturating_add(self.uv[3]).saturating_add(height) as f32 / 2048.0;*/
+
+        let uv_x = x as f32 /  2048.0;
+        let uv_y = y as f32 / 2048.0;
+        let uv_h = x.saturating_add(width) as f32 / 2048.0;
+        let uv_w = y.saturating_add(height) as f32 / 2048.0;
+
+        let z = self.pos[2] as f32 / 100.0;
+    
         let buffer = vec![
             SpriteVertex {
-                position: [min_x, min_y, self.pos[2] as f32],
-                tex_coord: [uv_x, uv_y, self.layer as f32],
+                position: [-0.5, -0.5, z],
+                tex_coord: [uv_x, uv_y, 1.0],
                 color: self.color.as_slice(),
             },
             SpriteVertex {
-                position: [max_x, min_y, self.pos[2] as f32],
-                tex_coord: [uv_w, uv_y, self.layer as f32],
+                position: [0.5, -0.5, z],
+                tex_coord: [uv_w, uv_y, 1.0],
                 color: self.color.as_slice(),
             },
             SpriteVertex {
-                position: [max_x, max_y, self.pos[2] as f32],
-                tex_coord: [uv_w, uv_h, self.layer as f32],
+                position: [0.5, 0.5, z],
+                tex_coord: [uv_w, uv_h, 1.0],
                 color: self.color.as_slice(),
             },
             SpriteVertex {
-                position: [min_x, max_y, self.pos[2] as f32],
-                tex_coord: [uv_x, uv_h, self.layer as f32],
+                position: [-0.5, 0.5, z],
+                tex_coord: [uv_x, uv_h, 1.0],
                 color: self.color.as_slice(),
             },
         ];
 
-        for vertex in buffer.iter() {
-            vertex.to_bytes(&mut bytes);
-        }
 
-        self.bytes = bytes;
+        self.bytes = bytemuck::cast_slice(&buffer).to_vec();
         self.changed = false;
     }
 

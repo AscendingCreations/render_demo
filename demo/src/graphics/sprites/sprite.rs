@@ -78,22 +78,22 @@ impl Sprite {
         let buffer = vec![
             SpriteVertex {
                 position: [-0.5, -0.5, z],
-                tex_coord: [uv_x, uv_y, 1.0],
+                tex_coord: [uv_x, uv_y, 0.0],
                 color: self.color.as_slice(),
             },
             SpriteVertex {
                 position: [0.5, -0.5, z],
-                tex_coord: [uv_w, uv_y, 1.0],
+                tex_coord: [uv_w, uv_y, 0.0],
                 color: self.color.as_slice(),
             },
             SpriteVertex {
                 position: [0.5, 0.5, z],
-                tex_coord: [uv_w, uv_h, 1.0],
+                tex_coord: [uv_w, uv_h, 0.0],
                 color: self.color.as_slice(),
             },
             SpriteVertex {
                 position: [-0.5, 0.5, z],
-                tex_coord: [uv_x, uv_h, 1.0],
+                tex_coord: [uv_x, uv_h, 0.0],
                 color: self.color.as_slice(),
             },
         ];

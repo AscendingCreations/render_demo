@@ -32,7 +32,7 @@ impl Atlas {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::Bgra8UnormSrgb,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING
+            usage: wgpu::TextureUsages::TEXTURE_BINDING 
                 | wgpu::TextureUsages::COPY_DST
                 | wgpu::TextureUsages::COPY_SRC,
         });
@@ -77,7 +77,7 @@ impl Atlas {
                 allocation
             };
 
-            self.upload_allocation(texture.bytes(), width, height, 0, &allocation, queue);
+            self.upload_allocation(texture.bytes(), &allocation, queue);
             self.names
                 .insert(texture.name().to_string(), allocation.clone());
             Some(allocation)
@@ -119,9 +119,6 @@ impl Atlas {
     fn upload_allocation(
         &mut self,
         buffer: &[u8],
-        image_width: u32,
-        image_height: u32,
-        offset: usize,
         allocation: &Allocation,
         queue: &wgpu::Queue,
     ) {
@@ -136,7 +133,7 @@ impl Atlas {
                 origin: wgpu::Origin3d { x, y, z: 0 },
                 aspect: wgpu::TextureAspect::All,
             },
-            &buffer,
+            buffer,
             wgpu::ImageDataLayout {
                 offset: 0,
                 bytes_per_row: std::num::NonZeroU32::new(4 * width),

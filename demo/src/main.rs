@@ -140,8 +140,6 @@ async fn main() -> Result<(), RendererError> {
         sprite_buffer,
     };
 
-    println!("{:?}", state.camera.projection());
-
     let mut views = HashMap::new();
 
     let size = wgpu::Extent3d {

@@ -20,11 +20,11 @@ use winit::{
     window::WindowBuilder,
 };
 
-mod graphics;
 mod gamestate;
+mod graphics;
 
-use graphics::*;
 use gamestate::*;
+use graphics::*;
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
 enum Action {
@@ -98,10 +98,10 @@ async fn main() -> Result<(), RendererError> {
 
     sprite.pos[0] = 0;
     sprite.pos[1] = 0;
-    sprite.pos[2] = 1;
-    sprite.hw[0] = 1;
-    sprite.hw[1] = 1;
-    sprite.uv = [0, 0, 80, 80];
+    sprite.pos[2] = 10;
+    sprite.hw[0] = 80;
+    sprite.hw[1] = 80;
+    sprite.uv = [0, 0, 160, 80];
     sprite.changed = true;
 
     let sprite_texture =
@@ -113,9 +113,7 @@ async fn main() -> Result<(), RendererError> {
         &mut layout_storage,
     )?;
 
-    let settings = FlatSettings {
-        scrollspeed: 1.0,
-    };
+    let settings = FlatSettings { scrollspeed: 1.0 };
 
     let controls = FlatControls::new(settings);
     let camera = Camera::new(
@@ -232,6 +230,10 @@ async fn main() -> Result<(), RendererError> {
             *control_flow = ControlFlow::Exit;
         }
 
+        let camera = &mut state.camera;
+        let delta = frame_time.delta_seconds();
+        camera.update(&renderer, delta);
+
         let view = frame
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
@@ -240,7 +242,7 @@ async fn main() -> Result<(), RendererError> {
         state.sprite.update();
 
         let mut bytes = vec![];
-        let  count = 6;
+        let count = 6;
 
         bytes.append(&mut state.sprite.bytes.clone());
 

@@ -31,15 +31,15 @@ impl Atlas {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Bgra8UnormSrgb,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING 
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING
                 | wgpu::TextureUsages::COPY_DST
                 | wgpu::TextureUsages::COPY_SRC,
         });
 
         let texture_view = texture.create_view(&wgpu::TextureViewDescriptor {
             label: Some("Texture Atlas"),
-            format: Some(wgpu::TextureFormat::Bgra8UnormSrgb),
+            format: Some(wgpu::TextureFormat::Rgba8UnormSrgb),
             dimension: Some(wgpu::TextureViewDimension::D2Array),
             aspect: wgpu::TextureAspect::All,
             base_mip_level: 0,
@@ -116,12 +116,7 @@ impl Atlas {
         None
     }
 
-    fn upload_allocation(
-        &mut self,
-        buffer: &[u8],
-        allocation: &Allocation,
-        queue: &wgpu::Queue,
-    ) {
+    fn upload_allocation(&mut self, buffer: &[u8], allocation: &Allocation, queue: &wgpu::Queue) {
         let (x, y) = allocation.position();
         let (width, height) = allocation.size();
         let layer = allocation.layer;
@@ -142,7 +137,7 @@ impl Atlas {
             wgpu::Extent3d {
                 width,
                 height,
-                depth_or_array_layers: layer as u32,
+                depth_or_array_layers: layer as u32 + 1,
             },
         );
     }
@@ -173,10 +168,10 @@ impl Atlas {
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("test"),
             size: extent,
-            mip_level_count: 1,
+            mip_level_count: 0,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Bgra8UnormSrgb,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
             usage: wgpu::TextureUsages::TEXTURE_BINDING
                 | wgpu::TextureUsages::COPY_DST
                 | wgpu::TextureUsages::COPY_SRC,
@@ -184,14 +179,11 @@ impl Atlas {
 
         let amount_to_copy = self.layers.len() - amount;
 
-        let mut encoder = device
-        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("command encoder"),
         });
 
         for (i, _) in self.layers.iter_mut().take(amount_to_copy).enumerate() {
-           
-
             encoder.copy_texture_to_texture(
                 wgpu::ImageCopyTextureBase {
                     texture: &self.texture,
@@ -208,7 +200,7 @@ impl Atlas {
                 wgpu::Extent3d {
                     width: self.extent.width,
                     height: self.extent.height,
-                    depth_or_array_layers: i as u32,
+                    depth_or_array_layers: i as u32 + 1,
                 },
             );
         }
@@ -216,11 +208,11 @@ impl Atlas {
         self.texture = texture;
         self.texture_view = self.texture.create_view(&wgpu::TextureViewDescriptor {
             label: Some("Texture Atlas"),
-            format: Some(wgpu::TextureFormat::Bgra8UnormSrgb),
+            format: Some(wgpu::TextureFormat::Rgba8UnormSrgb),
             dimension: Some(wgpu::TextureViewDimension::D2Array),
             aspect: wgpu::TextureAspect::All,
             base_mip_level: 0,
-            mip_level_count: None,
+            mip_level_count: std::num::NonZeroU32::new(1),
             base_array_layer: 0,
             array_layer_count: NonZeroU32::new(self.layers.len() as u32),
         });

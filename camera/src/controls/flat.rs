@@ -17,9 +17,7 @@ pub struct FlatSettings {
 
 impl Default for FlatSettings {
     fn default() -> Self {
-        Self {
-            scrollspeed: 1.0,
-        }
+        Self { scrollspeed: 1.0 }
     }
 }
 
@@ -33,9 +31,7 @@ pub struct FlatControls {
 }
 
 impl FlatControls {
-    pub fn new(
-        settings: FlatSettings,
-    ) -> Self {
+    pub fn new(settings: FlatSettings) -> Self {
         Self {
             inputs: FlatInputs::default(),
             settings,
@@ -53,7 +49,6 @@ impl FlatControls {
         self.inputs = inputs;
         self.changed = true;
     }
-
 }
 
 impl Controls for FlatControls {

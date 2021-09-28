@@ -41,6 +41,6 @@ var sample: sampler;
 fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
     let layer: i32 = i32(in.tex_coords.z);
     let object_color = textureSample(tex, sample, in.tex_coords.xy, layer);
-    let result = in.color.rgb * object_color.rgb;
-    return vec4<f32>(result, in.color.a);
+    let alpha = mix(1.0, object_color.a, in.color.a );
+    return vec4<f32>(object_color.rgba);
 }

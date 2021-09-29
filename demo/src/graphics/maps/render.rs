@@ -22,15 +22,20 @@ where
         texture_group: &'b TextureGroup,
         pipeline: &'b SpriteRenderPipeline,
     ) {
-        self.set_bind_group(1, &texture_group.bind_group, &[]);
-        self.set_vertex_buffer(0, buffer.vertex_buffer.slice(..buffer.vertex_count));
-        self.set_index_buffer(
-            buffer
+        pass.set_bind_group(1, &self.sprite_texture.bind_group, &[]);
+        pass.set_vertex_buffer(
+            0,
+            self.sprite_buffer
+                .vertex_buffer
+                .slice(..self.sprite_buffer.vertex_count),
+        );
+        pass.set_index_buffer(
+            self.sprite_buffer
                 .indice_buffer
-                .slice(..(buffer.indice_count * 4) as u64),
+                .slice(..(self.sprite_buffer.indice_count * 4) as u64),
             wgpu::IndexFormat::Uint32,
         );
-        self.set_pipeline(pipeline.render_pipeline());
-        self.draw_indexed(0..buffer.indice_count as u32, 0, 0..1);
+        pass.set_pipeline(self.sprite_pipeline.render_pipeline());
+        pass.draw_indexed(0..self.sprite_buffer.indice_count as u32, 0, 0..1);
     }
 }

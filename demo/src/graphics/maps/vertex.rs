@@ -1,27 +1,23 @@
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct SpriteVertex {
+//4 of these per each layer.
+pub struct MapVertex {
     pub position: [f32; 3],
-    pub tex_coord: [f32; 3],
-    pub color: [f32; 4],
+    pub tex_pos: [f32; 2],
 }
 
-impl Default for SpriteVertex {
+impl Default for MapVertex {
     fn default() -> Self {
-        Self {
-            position: [0.0; 3],
-            tex_coord: [0.0; 3],
-            color: [1.0; 4],
-        }
+        Self { position: [0.0; 3]
+            position: [0.0; 3]}
     }
 }
 
-impl SpriteVertex {
+impl MapVertex {
     /// Calculate the stride between two vertices in bytes, i.e. how large each vertex is in bytes.
     pub fn stride() -> usize {
         let mut stride = std::mem::size_of::<[f32; 3]>();
-        stride += std::mem::size_of::<[f32; 3]>();
-        stride += std::mem::size_of::<[f32; 4]>();
+        stride += std::mem::size_of::<[f32; 2]>();
 
         stride
     }
@@ -33,9 +29,7 @@ impl SpriteVertex {
 
         offset += std::mem::size_of::<[f32; 3]>();
         offsets.push(offset);
-        offset += std::mem::size_of::<[f32; 3]>();
-        offsets.push(offset);
-        offset += std::mem::size_of::<[f32; 4]>();
+        offset += std::mem::size_of::<[f32; 2]>();
         offsets.push(offset);
 
         offsets
@@ -51,12 +45,7 @@ impl SpriteVertex {
             wgpu::VertexAttribute {
                 offset: std::mem::size_of::<[f32; 3]>() as u64,
                 shader_location: 1,
-                format: wgpu::VertexFormat::Float32x3,
-            },
-            wgpu::VertexAttribute {
-                offset: std::mem::size_of::<[f32; 3]>() as u64,
-                shader_location: 2,
-                format: wgpu::VertexFormat::Float32x4,
+                format: wgpu::VertexFormat::Float32x2,
             },
         ];
 

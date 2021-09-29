@@ -1,25 +1,45 @@
-use crate::graphics::SpriteVertex;
+use crate::graphics::MapVertex;
 use std::iter;
 use wgpu::util::DeviceExt;
 
-pub struct SpriteBuffer {
+pub struct MapBuffer {
+    //everything is setup for a 9x9 map layout
     pub vertex_buffer: wgpu::Buffer,
     pub indice_buffer: wgpu::Buffer,
     pub vertex_count: u64, //Count of indices per Vertex layout within Buffer. used for rendering
     pub indice_count: u64,
 }
 
-impl SpriteBuffer {
+impl MapBuffer {
     pub fn new(device: &wgpu::Device) -> Self {
-        let vertex_arr: Vec<SpriteVertex> = iter::repeat(SpriteVertex {
-            position: [0.0, 0.0, 0.0],
-            tex_coord: [0.0, 0.0, 1.0],
-            color: [0.0, 0.0, 0.0, 0.0],
-        })
-        .take(40_000)
+        let vertex_arr: Vec::with_capacity(32);
+
+        for i in 0..8 {
+            let z = MapLayers::indexed_layerz(i)
+            let vertexs = [
+                MapVertex {
+                    position: [0.0, 0.0, 0.0],
+                    tex_coord: [0.0, 1536.0],
+                },
+                MapVertex {
+                    position: [1536.0, 0.0, 0.0],
+                    tex_coord: [1536.0, 1536.0],
+                },
+                MapVertex {
+                    position: [1536.0, 1536.0, 0.0],
+                    tex_coord: [1536.0, 0.0],
+                },
+                MapVertex {
+                    position: [0.0, 1536.0, 0.0],
+                    tex_coord: [0.0, 0.0],
+                },
+            ]
+        }
+        1536
+        .take(32)
         .collect();
 
-        let indices = (0..10_000)
+        let indices = (0..8)
             .map(|x| vec![x, x + 1, x + 2, x, x + 2, x + 3])
             .flatten()
             .collect::<Vec<u32>>();
@@ -29,16 +49,16 @@ impl SpriteBuffer {
             usage: wgpu::BufferUsages::VERTEX
                 | wgpu::BufferUsages::STORAGE
                 | wgpu::BufferUsages::COPY_DST,
-            label: Some("vertex Buffer"),
+            label: Some("Map Vertex Buffer"),
         });
 
         let indice_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             contents: bytemuck::cast_slice(&indices),
             usage: wgpu::BufferUsages::INDEX,
-            label: Some("indices Buffer"),
+            label: Some("Map Indices Buffer"),
         });
 
-        SpriteBuffer {
+        MapBuffer {
             vertex_buffer,
             indice_buffer,
             indice_count: indices.len() as u64,
@@ -47,17 +67,11 @@ impl SpriteBuffer {
     }
 
     pub fn set_buffer(&mut self, queue: &wgpu::Queue, bytes: &[u8]) {
-        if bytes.len() >= 40_000 {
+        if bytes.len() >= 32 {
             return; //so I dont accidently go over Will change this later to be adaptable for now static
         }
 
         self.vertex_count = bytes.len() as u64;
         queue.write_buffer(&self.vertex_buffer, 0, bytes);
-    }
-
-    pub fn set_indice_count(&mut self, count: u64) {
-        self.indice_count = count;
-        //we will just set the Count since vertex is static we only
-        //need to handle how many indices to allow for the vertices.
     }
 }

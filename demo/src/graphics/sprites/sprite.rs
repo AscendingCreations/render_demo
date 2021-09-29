@@ -1,8 +1,10 @@
 use crate::graphics::{allocation::Allocation, Rgba, SpriteVertex};
 use std::cmp;
 
+//rendering data for all sprites.
+//not to be confused with Actual NPC or Player data.
 pub struct Sprite {
-    pub pos: [u32; 3],
+    pub pos: [i32; 3],
     pub hw: [u32; 2],
     pub uv: [u32; 4],
     pub layer: u32,
@@ -44,53 +46,47 @@ impl Sprite {
     }
 
     pub fn create_quad(&mut self) {
-        let min_x = self.pos[0] as f32;
-        let min_y = self.pos[1] as f32;
-        let max_x = self.pos[0].saturating_add(self.hw[0]) as f32;
-        let max_y = self.pos[1].saturating_add(self.hw[1]) as f32;
+        let (x, y, w, h) = (
+            self.pos[0] as f32,
+            self.pos[1] as f32,
+            self.pos[0].saturating_add(self.hw[0] as i32) as f32,
+            self.pos[1].saturating_add(self.hw[1] as i32) as f32,
+        );
 
-        let (width, height) = if let Some(allocation) = &self.texture {
-            let (h, w) = allocation.size();
-            (h, w)
-        } else {
-            (1, 1)
+        let allocation = match &self.texture {
+            Some(allocation) => allocation,
+            None => return,
         };
 
-        let (x, y) = if let Some(allocation) = &self.texture {
-            let (x, y) = allocation.position();
-            (x, y)
-        } else {
-            (0, 0)
-        };
+        let (u, v, width, height) = allocation.rect();
+        let (width, height) = (cmp::min(self.uv[2], width), cmp::min(self.uv[3], height));
 
-        let width = cmp::min(self.uv[2], width);
-        let height = cmp::min(self.uv[3], height);
-
-        let u1 = self.uv[0].saturating_add(x) as f32 / 2048.0;
-        let v1 = self.uv[1].saturating_add(y) as f32 / 2048.0;
-        let u2 = self.uv[0].saturating_add(x).saturating_add(width) as f32 / 2048.0;
-        let v2 = self.uv[1].saturating_add(y).saturating_add(height) as f32 / 2048.0;
+        let (u1, v1, u2, v2) = (
+            self.uv[0].saturating_add(u) as f32 / 2048.0,
+            self.uv[1].saturating_add(v) as f32 / 2048.0,
+            self.uv[0].saturating_add(u).saturating_add(width) as f32 / 2048.0,
+            self.uv[1].saturating_add(v).saturating_add(height) as f32 / 2048.0,
+        );
 
         let buffer = vec![
             SpriteVertex {
-                position: [min_x, min_y, self.pos[2] as f32],
+                position: [x, y, self.pos[2] as f32],
                 tex_coord: [u1, v2, self.layer as f32],
                 color: self.color.as_slice(),
             },
             SpriteVertex {
-                position: [max_x, min_y, self.pos[2] as f32],
+                position: [w, y, self.pos[2] as f32],
                 tex_coord: [u2, v2, self.layer as f32],
                 color: self.color.as_slice(),
             },
             SpriteVertex {
-                position: [max_x, max_y, self.pos[2] as f32],
+                position: [w, h, self.pos[2] as f32],
                 tex_coord: [u2, v1, self.layer as f32],
                 color: self.color.as_slice(),
             },
             SpriteVertex {
-                position: [min_x, max_y, self.pos[2] as f32],
+                position: [x, h, self.pos[2] as f32],
                 tex_coord: [u1, v1, self.layer as f32],
-
                 color: self.color.as_slice(),
             },
         ];

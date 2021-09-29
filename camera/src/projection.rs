@@ -18,9 +18,9 @@ pub enum Projection {
     },
 }
 
-impl Into<Mat4> for Projection {
-    fn into(self) -> Mat4 {
-        match self {
+impl From<Projection> for Mat4 {
+    fn from(proj: Projection) -> Mat4 {
+        match proj {
             Projection::Orthographic {
                 left,
                 right,
@@ -39,9 +39,9 @@ impl Into<Mat4> for Projection {
     }
 }
 
-impl Into<mint::ColumnMatrix4<f32>> for Projection {
-    fn into(self) -> mint::ColumnMatrix4<f32> {
-        let matrix: Mat4 = self.into();
+impl From<Projection> for mint::ColumnMatrix4<f32> {
+    fn from(proj: Projection) -> mint::ColumnMatrix4<f32> {
+        let matrix: Mat4 = proj.into();
 
         matrix.into()
     }

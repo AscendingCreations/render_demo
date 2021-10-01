@@ -114,15 +114,16 @@ async fn main() -> Result<(), RendererError> {
 
     let settings = FlatSettings { zoom: 1.5 };
 
+    let size = renderer.size();
     let controls = FlatControls::new(settings);
     let camera = Camera::new(
         &renderer,
         &mut layout_storage,
         Projection::Orthographic {
             left: 0.0,
-            right: 800.0,
+            right: size.width as f32,
             bottom: 0.0,
-            top: 600.0,
+            top: size.height as f32,
             near: 1.0,
             far: -100.0,
         },

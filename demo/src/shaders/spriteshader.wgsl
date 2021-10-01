@@ -40,5 +40,5 @@ fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
     let coords = vec3<i32>(i32(in.tex_coords.x), i32(in.tex_coords.y), i32(in.tex_coords.z));
     let object_color = textureLoad(tex, coords.xy, coords.z, 0);
     let alpha = object_color.a * in.color.a;
-    return vec4<f32>(object_color.rgba);
+    return vec4<f32>(object_color.rgb, alpha);
 }

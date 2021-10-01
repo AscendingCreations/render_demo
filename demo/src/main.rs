@@ -95,8 +95,8 @@ async fn main() -> Result<(), RendererError> {
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
     let mut sprite = Sprite::new(allocation);
 
-    sprite.pos[0] = 0;
-    sprite.pos[1] = 0;
+    sprite.pos[0] = 400;
+    sprite.pos[1] = 400;
     sprite.pos[2] = 1;
     sprite.hw[0] = 64;
     sprite.hw[1] = 64;

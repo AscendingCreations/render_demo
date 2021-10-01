@@ -43,11 +43,11 @@ var maptex: texture_2d<u32>;
 [[stage(fragment)]]
 fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
     let yoffset = abs((i32(in.z) - 8) * 32);
-    let tex_pos = vec2<i32> (i32(in.tex_coords.x) % 32, i32(in.tex_coords.y) % 32 + yoffset);
-    let tile: vec4<u32> = textureLoad(maptex, tex_pos.xy, 0);
+    let tile_pos = vec2<i32> (i32(in.tex_coords.x) / 16, i32(in.tex_coords.y) / 16 + yoffset);
+    let tile: vec4<u32> = textureLoad(maptex, tile_pos.xy, 0);
 
-    let pos = vec2<f32>(f32((i32(tile.r) % 128) * 16 + (i32(in.tex_coords.x) % 16)), f32((i32(tile.r) / 128) * 16 + (i32(in.tex_coords.y) % 16)));
+    let pos = vec2<f32>(f32((i32(tile.r) % 128) * 16 + (i32(in.tex_coords.x) % 16)) / 2048.0, f32((i32(tile.r) / 128) * 16 + (i32(in.tex_coords.y) % 16)) / 2048.0);
     let object_color = textureSample(tex, sample, pos, i32(tile.g));
     let alpha = mix(1.0, object_color.a, f32(tile.a) / 100.0);
-    return vec4<f32>(object_color.rgb, alpha);
+    return vec4<f32>(object_color.rgb, object_color.a);
 }

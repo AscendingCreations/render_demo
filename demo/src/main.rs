@@ -112,7 +112,7 @@ async fn main() -> Result<(), RendererError> {
         &mut layout_storage,
     )?;
 
-    let settings = FlatSettings { zoom: 1.5 };
+    let settings = FlatSettings { zoom: 1.0 };
 
     let size = renderer.size();
     let controls = FlatControls::new(settings);

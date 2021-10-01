@@ -125,19 +125,19 @@ impl Map {
             let z = MapLayers::indexed_layerz(i);
             let mut vertices = vec![
                 MapVertex {
-                    position: [x, y, z],
+                    position: [x, y, z], //2,3
                     tex_coord: [0.0, 512.0, self.array_id as f32],
                 },
                 MapVertex {
-                    position: [w, y, z],
+                    position: [w, y, z], //1
                     tex_coord: [512.0, 512.0, self.array_id as f32],
                 },
                 MapVertex {
-                    position: [w, h, z],
+                    position: [w, h, z], //0,6
                     tex_coord: [512.0, 0.0, self.array_id as f32],
                 },
                 MapVertex {
-                    position: [x, h, z],
+                    position: [x, h, z], //5
                     tex_coord: [0.0, 0.0, self.array_id as f32],
                 },
             ];

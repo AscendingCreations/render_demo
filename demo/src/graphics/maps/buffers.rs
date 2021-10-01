@@ -14,7 +14,7 @@ impl MapBuffer {
     pub fn new(device: &wgpu::Device) -> Self {
         let vertex_arr: Vec<MapVertex> = iter::repeat(MapVertex {
             position: [0.0, 0.0, 0.0],
-            tex_coord: [0.0, 0.0, 1.0],
+            tex_coord: [0.0, 0.0, 0.0],
         })
         .take(1_568)
         .collect();

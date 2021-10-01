@@ -15,7 +15,7 @@ struct VertexInput {
 struct VertexOutput {
     [[builtin(position)]] clip_position: vec4<f32>;
     [[location(0)]] tex_coords: vec3<f32>;
-    [[location(1)]] z: f32;
+    [[location(1)]] zpos: f32;
 };
 
 [[stage(vertex)]]
@@ -25,9 +25,9 @@ fn main(
 ) -> VertexOutput {
     var out: VertexOutput;
 
+    out.zpos = vertex.position.z;
     out.clip_position =  camera.view_proj * vec4<f32>(vertex.position.xyz, 1.0);
-    out.tex_coords = vertex.tex_coords;
-    out.z = vertex.position.z;
+    out.tex_coords = vertex.tex_coords.xyz;
     return out;
 }
 
@@ -42,12 +42,19 @@ var maptex: texture_2d<u32>;
 // Fragment shader
 [[stage(fragment)]]
 fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
-    let yoffset = abs((i32(in.z) - 8) * 32);
+    let yoffset = abs((i32(in.zpos) - 8) * 32);
     let tile_pos = vec2<i32> (i32(floor(in.tex_coords.x / 16.0)), i32(floor(in.tex_coords.y / 16.0)) + yoffset);
     let tile: vec4<u32> = textureLoad(maptex, tile_pos.xy, 0);
 
-    let pos = vec2<f32>(f32((i32(tile.r) % 128) * 16 + (i32(in.tex_coords.x) % 16)) / 2047.0, f32(i32(floor((f32(tile.r) / 128.0))) * 16 + (i32(in.tex_coords.y) % 16)) / 2047.0);
-    let object_color = textureSample(tex, sample, pos, i32(tile.g));
+    let pos = vec2<i32>((i32(tile.r) % 128) * 16 + (i32(in.tex_coords.x) % 16), i32(floor((f32(tile.r) / 128.0))) * 16 + (i32(in.tex_coords.y) % 16));
+    let layer = i32(tile.g);
+
+    if (layer > 0) {
+        let layer = layer - i32(1);
+    }
+
+    let object_color: vec4<f32>  = textureLoad(tex, pos.xy, layer, 0);
     let alpha = object_color.a * (f32(tile.a) / 100.0);
+
     return vec4<f32>(object_color.rgb, alpha);
 }

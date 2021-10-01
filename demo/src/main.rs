@@ -112,7 +112,7 @@ async fn main() -> Result<(), RendererError> {
         &mut layout_storage,
     )?;
 
-    let settings = FlatSettings { zoom: 1.0 };
+    let settings = FlatSettings { zoom: 1.5 };
 
     let size = renderer.size();
     let controls = FlatControls::new(settings);
@@ -141,7 +141,7 @@ async fn main() -> Result<(), RendererError> {
     }
 
     map.set_tile(1, 34, 2, 1, 0, 100);
-
+    map.pos = [32, 32];
     let map_pipeline = MapRenderPipeline::new(
         renderer.device(),
         renderer.surface_format(),
@@ -290,7 +290,7 @@ async fn main() -> Result<(), RendererError> {
         state.map.update(renderer.queue());
 
         let mut bytes = vec![];
-        let count = 48;
+        let count = 49;
 
         bytes.append(&mut state.map.bytes.clone());
 

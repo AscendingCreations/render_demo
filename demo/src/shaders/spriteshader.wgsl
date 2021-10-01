@@ -22,7 +22,6 @@ struct VertexOutput {
 [[stage(vertex)]]
 fn main(
     vertex: VertexInput,
-    [[builtin(vertex_index)]] my_index: u32,
 ) -> VertexOutput {
     var out: VertexOutput;
 
@@ -34,14 +33,12 @@ fn main(
 
 [[group(1), binding(0)]]
 var tex: texture_2d_array<f32>;
-[[group(1), binding(1)]]
-var sample: sampler;
 
 // Fragment shader
 [[stage(fragment)]]
 fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
-    let layer: i32 = i32(in.tex_coords.z);
-    let object_color = textureSample(tex, sample, in.tex_coords.xy, layer);
-    let alpha = mix(1.0, object_color.a, in.color.a );
-    return vec4<f32>(object_color.rgb, alpha);
+    let coords = vec3<i32>(i32(in.tex_coords.x), i32(in.tex_coords.y), i32(in.tex_coords.z));
+    let object_color = textureLoad(tex, coords.xy, coords.z, 0);
+    let alpha = object_color.a * in.color.a;
+    return vec4<f32>(object_color.rgba);
 }

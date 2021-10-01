@@ -95,8 +95,8 @@ async fn main() -> Result<(), RendererError> {
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
     let mut sprite = Sprite::new(allocation);
 
-    sprite.pos[0] = 400;
-    sprite.pos[1] = 400;
+    sprite.pos[0] = 32;
+    sprite.pos[1] = 32;
     sprite.pos[2] = 1;
     sprite.hw[0] = 64;
     sprite.hw[1] = 64;
@@ -112,7 +112,7 @@ async fn main() -> Result<(), RendererError> {
         &mut layout_storage,
     )?;
 
-    let settings = FlatSettings { zoom: 1.5 };
+    let settings = FlatSettings { zoom: 2.0 };
 
     let size = renderer.size();
     let controls = FlatControls::new(settings);
@@ -136,11 +136,11 @@ async fn main() -> Result<(), RendererError> {
 
     for x in 0..32 {
         for y in 0..32 {
-            map.set_tile(x, y, 1, 1, 0, 100);
+            map.set_tile(x, y, 1, 0, 0, 100);
         }
     }
 
-    map.set_tile(1, 34, 2, 1, 0, 100);
+    map.set_tile(1, 34, 2, 0, 0, 100);
     map.pos = [32, 32];
     let map_pipeline = MapRenderPipeline::new(
         renderer.device(),

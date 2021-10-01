@@ -62,10 +62,10 @@ impl Sprite {
         let (width, height) = (cmp::min(self.uv[2], width), cmp::min(self.uv[3], height));
 
         let (u1, v1, u2, v2) = (
-            self.uv[0].saturating_add(u) as f32 / 2048.0,
-            self.uv[1].saturating_add(v) as f32 / 2048.0,
-            self.uv[0].saturating_add(u).saturating_add(width) as f32 / 2048.0,
-            self.uv[1].saturating_add(v).saturating_add(height) as f32 / 2048.0,
+            self.uv[0].saturating_add(u) as f32,
+            self.uv[1].saturating_add(v) as f32,
+            self.uv[0].saturating_add(u).saturating_add(width) as f32,
+            self.uv[1].saturating_add(v).saturating_add(height) as f32,
         );
 
         let buffer = vec![

@@ -13,7 +13,7 @@ impl SpriteBuffer {
     pub fn new(device: &wgpu::Device) -> Self {
         let vertex_arr: Vec<SpriteVertex> = iter::repeat(SpriteVertex {
             position: [0.0, 0.0, 0.0],
-            tex_coord: [0.0, 0.0, 1.0],
+            tex_coord: [0.0, 0.0, 0.0],
             color: [0.0, 0.0, 0.0, 0.0],
         })
         .take(40_000)

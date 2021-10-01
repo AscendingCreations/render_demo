@@ -148,12 +148,12 @@ impl Map {
         self.bytes = bytemuck::cast_slice(&buffer).to_vec();
     }
 
-    pub fn set_tile(&mut self, x: u32, y: u32, id: u32, layer: u32, hue: u32, alpha: u32) {
-        if x >= 32 || y >= 256 {
+    pub fn set_tile(&mut self, pos: (u32, u32, u32), id: u32, layer: u32, hue: u32, alpha: u32) {
+        if pos.0 >= 32 || pos.1 >= 32 || pos.2 >= 8 {
             return;
         }
 
-        let pixel = self.image.get_pixel_mut(x, y);
+        let pixel = self.image.get_pixel_mut(pos.0, pos.1 + (pos.2 * 32));
         *pixel = image::Rgba([id, layer, hue, alpha]);
         self.img_changed = true;
     }

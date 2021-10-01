@@ -136,11 +136,12 @@ async fn main() -> Result<(), RendererError> {
 
     for x in 0..32 {
         for y in 0..32 {
-            map.set_tile(x, y, 1, 0, 0, 100);
+            map.set_tile((x, y, 0), 1, 0, 0, 100);
         }
     }
 
-    map.set_tile(1, 34, 2, 0, 0, 100);
+    map.set_tile((1, 32, 1), 2, 0, 0, 100);
+    map.set_tile((1, 1, 1), 2, 0, 0, 100);
     map.pos = [32, 32];
     let map_pipeline = MapRenderPipeline::new(
         renderer.device(),

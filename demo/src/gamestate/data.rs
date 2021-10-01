@@ -1,6 +1,6 @@
 use crate::graphics::{
-    Atlas, Camera, LayoutStorage, Pass, RenderSprite, Sprite, SpriteBuffer, SpriteRenderPipeline,
-    TextureGroup,
+    Atlas, Camera, LayoutStorage, Map, MapBuffer, MapGroup, MapRenderPipeline, Pass, RenderMap,
+    RenderSprite, Sprite, SpriteBuffer, SpriteRenderPipeline, TextureGroup,
 };
 use std::collections::HashMap;
 
@@ -12,6 +12,12 @@ where
     pub sprite_pipeline: SpriteRenderPipeline,
     pub sprite_buffer: SpriteBuffer,
     pub sprite_atlas: Atlas,
+    pub map: Map,
+    pub map_pipeline: MapRenderPipeline,
+    pub map_buffer: MapBuffer,
+    pub map_texture: TextureGroup,
+    pub map_group: MapGroup,
+    pub map_atlas: Atlas,
     pub layout_storage: LayoutStorage,
     pub sprite_texture: TextureGroup,
     pub camera: Camera<Controls>,
@@ -56,6 +62,12 @@ where
             &self.sprite_buffer,
             &self.sprite_texture,
             &self.sprite_pipeline,
+        );
+        pass.render_maps(
+            &self.map_buffer,
+            &self.map_texture,
+            &self.map_group,
+            &self.map_pipeline,
         );
     }
 }

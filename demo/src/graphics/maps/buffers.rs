@@ -12,34 +12,14 @@ pub struct MapBuffer {
 
 impl MapBuffer {
     pub fn new(device: &wgpu::Device) -> Self {
-        let vertex_arr: Vec::with_capacity(32);
-
-        for i in 0..8 {
-            let z = MapLayers::indexed_layerz(i)
-            let vertexs = [
-                MapVertex {
-                    position: [0.0, 0.0, 0.0],
-                    tex_coord: [0.0, 1536.0],
-                },
-                MapVertex {
-                    position: [1536.0, 0.0, 0.0],
-                    tex_coord: [1536.0, 1536.0],
-                },
-                MapVertex {
-                    position: [1536.0, 1536.0, 0.0],
-                    tex_coord: [1536.0, 0.0],
-                },
-                MapVertex {
-                    position: [0.0, 1536.0, 0.0],
-                    tex_coord: [0.0, 0.0],
-                },
-            ]
-        }
-        1536
-        .take(32)
+        let vertex_arr: Vec<MapVertex> = iter::repeat(MapVertex {
+            position: [0.0, 0.0, 0.0],
+            tex_coord: [0.0, 0.0, 1.0],
+        })
+        .take(1_568)
         .collect();
 
-        let indices = (0..8)
+        let indices = (0..392)
             .map(|x| vec![x, x + 1, x + 2, x, x + 2, x + 3])
             .flatten()
             .collect::<Vec<u32>>();
@@ -67,11 +47,15 @@ impl MapBuffer {
     }
 
     pub fn set_buffer(&mut self, queue: &wgpu::Queue, bytes: &[u8]) {
-        if bytes.len() >= 32 {
+        if ((bytes.len() / 6) / 4) as u64 >= 1_568 {
             return; //so I dont accidently go over Will change this later to be adaptable for now static
         }
 
-        self.vertex_count = bytes.len() as u64;
+        self.vertex_count = ((bytes.len() / 6) / 4) as u64;
         queue.write_buffer(&self.vertex_buffer, 0, bytes);
+    }
+
+    pub fn set_indice_count(&mut self, count: u64) {
+        self.indice_count = count;
     }
 }

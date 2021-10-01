@@ -19,9 +19,11 @@ impl Rgba8 {
         let bytes = bytes.as_ref();
         let (head, body, tail) = unsafe { bytes.align_to::<Rgba8>() };
 
-        if !(head.is_empty() && tail.is_empty()) {
-            panic!("Rgba8::align: input is not a valid Rgba8 buffer");
-        }
+        assert!(
+            (head.is_empty() && tail.is_empty()),
+            "Rgba8::align: input is not a valid Rgba8 buffer"
+        );
+
         body
     }
 }
@@ -68,9 +70,10 @@ impl Bgra8 {
         let bytes = bytes.as_ref();
         let (head, body, tail) = unsafe { bytes.align_to::<Self>() };
 
-        if !(head.is_empty() && tail.is_empty()) {
-            panic!("Bgra8::align: input is not a valid Rgba8 buffer");
-        }
+        assert!(
+            (head.is_empty() && tail.is_empty()),
+            "Rgba8::align: input is not a valid Rgba8 buffer"
+        );
         body
     }
 }

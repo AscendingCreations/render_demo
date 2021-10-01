@@ -47,7 +47,7 @@ impl SpriteBuffer {
     }
 
     pub fn set_buffer(&mut self, queue: &wgpu::Queue, bytes: &[u8]) {
-        if bytes.len() >= 40_000 {
+        if ((bytes.len() / 6) / 4) as u64 >= 40_000 {
             return; //so I dont accidently go over Will change this later to be adaptable for now static
         }
 

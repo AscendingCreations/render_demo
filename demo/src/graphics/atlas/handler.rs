@@ -4,7 +4,6 @@ use crate::graphics::{
 };
 use std::collections::HashMap;
 use std::num::NonZeroU32;
-use wgpu::util::DeviceExt;
 
 pub struct Atlas {
     pub texture: wgpu::Texture,

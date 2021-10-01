@@ -1,10 +1,12 @@
-use crate::graphics::{CameraLayout, LayoutStorage, RendererError, SpriteVertex, TextureLayout};
+use crate::graphics::{
+    CameraLayout, LayoutStorage, MapLayout, MapVertex, RendererError, TextureLayout,
+};
 
-pub struct SpriteRenderPipeline {
+pub struct MapRenderPipeline {
     render_pipeline: wgpu::RenderPipeline,
 }
 
-impl SpriteRenderPipeline {
+impl MapRenderPipeline {
     pub fn new(
         device: &wgpu::Device,
         surface_format: wgpu::TextureFormat,
@@ -12,33 +14,32 @@ impl SpriteRenderPipeline {
     ) -> Result<Self, RendererError> {
         let shader = device.create_shader_module(&wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
-            source: wgpu::ShaderSource::Wgsl(
-                include_str!("../../shaders/spriteshader.wgsl").into(),
-            ),
+            source: wgpu::ShaderSource::Wgsl(include_str!("../../shaders/mapshader.wgsl").into()),
         });
 
         let camera_layout = layout_storage.create_layout(device, CameraLayout);
         let texture_layout = layout_storage.create_layout(device, TextureLayout);
+        let map_layout = layout_storage.create_layout(device, MapLayout);
 
         // Set up the pipeline layout.
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("render_pipeline_layout"),
-                bind_group_layouts: &[&camera_layout, &texture_layout],
+                label: Some("Map_render_pipeline_layout"),
+                bind_group_layouts: &[&camera_layout, &texture_layout, &map_layout],
                 push_constant_ranges: &[],
             });
 
         // Create the render pipeline.
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Sprite render pipeline"),
+            label: Some("Map render pipeline"),
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "main",
                 buffers: &[wgpu::VertexBufferLayout {
-                    array_stride: SpriteVertex::stride() as u64, //SpriteVertex::stride() as wgpu::BufferAddress,
+                    array_stride: MapVertex::stride() as u64,
                     step_mode: wgpu::VertexStepMode::Vertex,
-                    attributes: &SpriteVertex::attributes(),
+                    attributes: &MapVertex::attributes(),
                 }],
             },
             fragment: Some(wgpu::FragmentState {

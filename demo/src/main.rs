@@ -130,6 +130,38 @@ async fn main() -> Result<(), RendererError> {
     );
 
     let sprite_buffer = SpriteBuffer::new(renderer.device());
+
+    let mut map = Map::new(renderer.device());
+
+    for x in 0..32 {
+        for y in 0..32 {
+            map.set_tile(x, y, 1, 1, 0, 100);
+        }
+    }
+
+    map.set_tile(1, 34, 2, 1, 0, 100);
+
+    let map_pipeline = MapRenderPipeline::new(
+        renderer.device(),
+        renderer.surface_format(),
+        &mut layout_storage,
+    )?;
+
+    let mut map_atlas = Atlas::new(renderer.device(), 2048);
+
+    for i in 0..3 {
+        let texture = Texture::from_file(format!("images/tiles/{}.png", i))?;
+        let _ = map_atlas
+            .upload(&texture, renderer.device(), renderer.queue())
+            .ok_or_else(|| OtherError::new("failed to upload image"))?;
+    }
+
+    let mut maps = vec![map];
+    let map_group = MapGroup::from_maps(renderer.device(), &mut layout_storage, &mut maps);
+    let map_texture = TextureGroup::from_atlas(renderer.device(), &mut layout_storage, &map_atlas);
+    let map_buffer = MapBuffer::new(renderer.device());
+
+    let map = maps.remove(0);
     let mut state = State {
         sprite,
         sprite_pipeline,
@@ -138,6 +170,12 @@ async fn main() -> Result<(), RendererError> {
         sprite_texture,
         camera,
         sprite_buffer,
+        map,
+        map_pipeline,
+        map_atlas,
+        map_group,
+        map_buffer,
+        map_texture,
     };
 
     let mut views = HashMap::new();
@@ -247,6 +285,17 @@ async fn main() -> Result<(), RendererError> {
 
         state.sprite_buffer.set_buffer(renderer.queue(), &bytes);
         state.sprite_buffer.set_indice_count(count as u64);
+
+        state.map.update(renderer.queue());
+
+        let mut bytes = vec![];
+        let count = 48;
+
+        bytes.append(&mut state.map.bytes.clone());
+
+        state.map_buffer.set_buffer(renderer.queue(), &bytes);
+        state.map_buffer.set_indice_count(count as u64);
+
         // Start encoding commands.
         let mut encoder =
             renderer

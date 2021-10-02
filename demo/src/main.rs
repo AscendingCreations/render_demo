@@ -101,6 +101,7 @@ async fn main() -> Result<(), RendererError> {
     sprite.hw[0] = 64;
     sprite.hw[1] = 64;
     sprite.uv = [0, 0, 80, 64];
+    sprite.color = [0, 0, 100, 100];
     sprite.changed = true;
 
     let sprite_texture =
@@ -136,7 +137,7 @@ async fn main() -> Result<(), RendererError> {
 
     for x in 0..32 {
         for y in 0..32 {
-            map.set_tile((x, y, 0), 1, 0, 0, 100);
+            map.set_tile((x, y, 0), 1, 0, y * 10 + 60, 100);
         }
     }
 

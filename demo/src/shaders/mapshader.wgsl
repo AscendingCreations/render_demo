@@ -36,6 +36,15 @@ var tex: texture_2d_array<f32>;
 [[group(2), binding(0)]]
 var maptex: texture_2d<u32>;
 
+fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32>
+{
+    var pi = 3.14159;
+    let rad = hue * (pi/180.0);
+    let k = vec3<f32>(0.57735, 0.57735, 0.57735);
+    let cosAngle = cos(rad);
+    return vec3<f32>(color * cosAngle + cross(k, color) * sin(rad) + k * dot(k, color) * (1.0 - cosAngle));
+}
+
 // Fragment shader
 [[stage(fragment)]]
 fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
@@ -46,6 +55,7 @@ fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
     let pos = vec2<i32>(i32(tile.r % 128u) * 16 + (coords.x % 16), i32(tile.r / 128u) * 16 + (coords.y % 16));
     let object_color = textureLoad(tex, pos.xy, i32(tile.g), 0);
     let alpha = object_color.a * (f32(tile.a) / 100.0);
-
-    return vec4<f32>(object_color.rgb, alpha);
+    let color = hueShift(object_color.rgb, f32(tile.b) % 361.0);
+    return vec4<f32>(color, alpha);
 }
+

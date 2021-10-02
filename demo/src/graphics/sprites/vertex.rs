@@ -3,7 +3,7 @@
 pub struct SpriteVertex {
     pub position: [f32; 3],
     pub tex_coord: [f32; 3],
-    pub color: [f32; 4],
+    pub color: [u32; 4],
 }
 
 impl Default for SpriteVertex {
@@ -11,7 +11,7 @@ impl Default for SpriteVertex {
         Self {
             position: [0.0; 3],
             tex_coord: [0.0; 3],
-            color: [1.0; 4],
+            color: [0; 4],
         }
     }
 }
@@ -21,7 +21,7 @@ impl SpriteVertex {
     pub fn stride() -> usize {
         let mut stride = std::mem::size_of::<[f32; 3]>();
         stride += std::mem::size_of::<[f32; 3]>();
-        stride += std::mem::size_of::<[f32; 4]>();
+        stride += std::mem::size_of::<[u32; 4]>();
 
         stride
     }
@@ -35,7 +35,7 @@ impl SpriteVertex {
         offsets.push(offset);
         offset += std::mem::size_of::<[f32; 3]>();
         offsets.push(offset);
-        offset += std::mem::size_of::<[f32; 4]>();
+        offset += std::mem::size_of::<[u32; 4]>();
         offsets.push(offset);
 
         offsets
@@ -54,9 +54,9 @@ impl SpriteVertex {
                 format: wgpu::VertexFormat::Float32x3,
             },
             wgpu::VertexAttribute {
-                offset: std::mem::size_of::<[f32; 3]>() as u64,
+                offset: std::mem::size_of::<[f32; 6]>() as u64,
                 shader_location: 2,
-                format: wgpu::VertexFormat::Float32x4,
+                format: wgpu::VertexFormat::Uint32x4,
             },
         ];
 

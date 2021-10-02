@@ -14,7 +14,7 @@ impl SpriteBuffer {
         let vertex_arr: Vec<SpriteVertex> = iter::repeat(SpriteVertex {
             position: [0.0, 0.0, 0.0],
             tex_coord: [0.0, 0.0, 0.0],
-            color: [0.0, 0.0, 0.0, 0.0],
+            color: [0, 0, 0, 0],
         })
         .take(40_000)
         .collect();
@@ -47,11 +47,11 @@ impl SpriteBuffer {
     }
 
     pub fn set_buffer(&mut self, queue: &wgpu::Queue, bytes: &[u8]) {
-        if ((bytes.len() / 6) / 4) as u64 >= 40_000 {
+        if (bytes.len() / 40) as u64 >= 40_000 {
             return; //so I dont accidently go over Will change this later to be adaptable for now static
         }
 
-        self.vertex_count = bytes.len() as u64;
+        self.vertex_count = (bytes.len() / 40) as u64;
         queue.write_buffer(&self.vertex_buffer, 0, bytes);
     }
 

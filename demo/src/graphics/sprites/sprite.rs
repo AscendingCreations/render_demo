@@ -8,7 +8,7 @@ pub struct Sprite {
     pub hw: [u32; 2],
     pub uv: [u32; 4],
     pub layer: u32,
-    pub color: Rgba,
+    pub color: [u32; 4],
     //Texture area location in Atlas.
     pub texture: Option<Allocation>,
     pub bytes: Vec<u8>,
@@ -23,7 +23,7 @@ impl Default for Sprite {
             hw: [0; 2],
             uv: [0; 4],
             layer: 0,
-            color: Rgba::new(1.0, 1.0, 1.0, 1.0),
+            color: [0, 0, 100, 100],
             texture: None,
             bytes: Vec::new(),
             changed: true,
@@ -38,7 +38,7 @@ impl Sprite {
             hw: [0; 2],
             uv: [0; 4],
             layer: texture.layer as u32,
-            color: Rgba::new(1.0, 1.0, 1.0, 1.0),
+            color: [0, 0, 100, 100],
             texture: Some(texture),
             bytes: Vec::new(),
             changed: true,
@@ -72,22 +72,22 @@ impl Sprite {
             SpriteVertex {
                 position: [x, y, self.pos[2] as f32],
                 tex_coord: [u1, v2, self.layer as f32],
-                color: self.color.as_slice(),
+                color: self.color,
             },
             SpriteVertex {
                 position: [w, y, self.pos[2] as f32],
                 tex_coord: [u2, v2, self.layer as f32],
-                color: self.color.as_slice(),
+                color: self.color,
             },
             SpriteVertex {
                 position: [w, h, self.pos[2] as f32],
                 tex_coord: [u2, v1, self.layer as f32],
-                color: self.color.as_slice(),
+                color: self.color,
             },
             SpriteVertex {
                 position: [x, h, self.pos[2] as f32],
                 tex_coord: [u1, v1, self.layer as f32],
-                color: self.color.as_slice(),
+                color: self.color,
             },
         ];
 

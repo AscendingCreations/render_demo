@@ -74,6 +74,7 @@ async fn main() -> Result<(), RendererError> {
             &wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::default(),
                 compatible_surface: None,
+                force_fallback_adapter: false,
             },
             &wgpu::DeviceDescriptor {
                 features: wgpu::Features::TEXTURE_BINDING_ARRAY,
@@ -113,7 +114,7 @@ async fn main() -> Result<(), RendererError> {
         &mut layout_storage,
     )?;
 
-    let settings = FlatSettings { zoom: 2.0 };
+    let settings = FlatSettings { zoom: 1.5 };
 
     let size = renderer.size();
     let controls = FlatControls::new(settings);
@@ -137,7 +138,7 @@ async fn main() -> Result<(), RendererError> {
 
     for x in 0..32 {
         for y in 0..32 {
-            map.set_tile((x, y, 0), 1, 0, y * 10 + 60, 100);
+            map.set_tile((x, y, 0), 1, 0, 0, 100);
         }
     }
 
@@ -318,6 +319,8 @@ async fn main() -> Result<(), RendererError> {
         input_handler.end_frame();
         frame_time.update();
     });
+
+    Ok(())
 }
 
 pub fn parse_example_wgsl() {

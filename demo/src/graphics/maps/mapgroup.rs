@@ -10,13 +10,6 @@ impl MapGroup {
         layout_storage: &mut LayoutStorage,
         maps: &mut [Map],
     ) -> Self {
-        /*let mut map_arr = Vec::new();
-
-        for (i, map) in maps.iter_mut().enumerate() {
-            map_arr.push(&map.texture_view);
-            map.array_id = i as u32;
-        }*/
-
         let entries = vec![wgpu::BindGroupEntry {
             binding: 0,
             resource: wgpu::BindingResource::TextureView(&maps[0].texture_view),

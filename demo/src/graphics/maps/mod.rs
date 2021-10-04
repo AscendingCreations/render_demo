@@ -5,7 +5,9 @@ mod maplayout;
 mod pipeline;
 mod render;
 mod vertex;
+mod texture;
 
+pub use texture::*;
 pub use buffers::*;
 pub use map::*;
 pub use mapgroup::*;

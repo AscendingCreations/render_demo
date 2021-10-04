@@ -13,10 +13,10 @@ bytemuck = { version = "1.7", features = ["derive"] }
 crevice = "0.7"
 crevice-derive = "0.7"
 mint = "0.5"
-naga = { version = "0.6", features = ["glsl-in", "wgsl-out"] }
+naga = { git = "https://github.com/gfx-rs/naga", rev = "52d74e9", features = ["glsl-in", "wgsl-out"] }
 thiserror = "1.0"
 ultraviolet = { version = "0.8", features = ["mint"] }
-wgpu = "0.10"
+wgpu = { git = "https://github.com/gfx-rs/wgpu", rev = "c3d9068" }
 winit = { version = "0.25", features = ["serde"] }
 image = "0.23"
 tokio = { version = "1.8", features = ["full"] }

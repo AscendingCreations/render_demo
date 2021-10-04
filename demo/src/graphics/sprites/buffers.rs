@@ -14,7 +14,7 @@ impl SpriteBuffer {
         let vertex_arr: Vec<SpriteVertex> = iter::repeat(SpriteVertex {
             position: [0.0, 0.0, 0.0],
             tex_coord: [0.0, 0.0, 0.0],
-            color: [0, 0, 0, 0],
+            color: [0, 0, 0, 100],
         })
         .take(40_000)
         .collect();

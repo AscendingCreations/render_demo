@@ -134,7 +134,7 @@ async fn main() -> Result<(), RendererError> {
 
     let sprite_buffer = SpriteBuffer::new(renderer.device());
 
-    let mut map = Map::new(renderer.device());
+    let mut map = Map::new();
 
     for x in 0..32 {
         for y in 0..32 {

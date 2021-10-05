@@ -64,7 +64,7 @@ pub struct Map {
 }
 
 impl Map {
-    pub fn new(device: &wgpu::Device) -> Self {
+    pub fn new() -> Self {
         let image = ImageBuffer::new(32, 256);
 
         Self {

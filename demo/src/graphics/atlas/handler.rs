@@ -124,7 +124,11 @@ impl Atlas {
             wgpu::ImageCopyTexture {
                 texture: &self.texture,
                 mip_level: 0,
-                origin: wgpu::Origin3d { x, y, z: 0 },
+                origin: wgpu::Origin3d {
+                    x,
+                    y,
+                    z: layer as u32,
+                },
                 aspect: wgpu::TextureAspect::All,
             },
             buffer,
@@ -136,7 +140,7 @@ impl Atlas {
             wgpu::Extent3d {
                 width,
                 height,
-                depth_or_array_layers: layer as u32 + 1,
+                depth_or_array_layers: 1,
             },
         );
     }
@@ -187,19 +191,27 @@ impl Atlas {
                 wgpu::ImageCopyTextureBase {
                     texture: &self.texture,
                     mip_level: 0,
-                    origin: wgpu::Origin3d { x: 0, y: 0, z: 0 },
+                    origin: wgpu::Origin3d {
+                        x: 0,
+                        y: 0,
+                        z: i as u32,
+                    },
                     aspect: wgpu::TextureAspect::All,
                 },
                 wgpu::ImageCopyTextureBase {
                     texture: &texture,
                     mip_level: 0,
-                    origin: wgpu::Origin3d { x: 0, y: 0, z: 0 },
+                    origin: wgpu::Origin3d {
+                        x: 0,
+                        y: 0,
+                        z: i as u32,
+                    },
                     aspect: wgpu::TextureAspect::All,
                 },
                 wgpu::Extent3d {
                     width: self.extent.width,
                     height: self.extent.height,
-                    depth_or_array_layers: i as u32 + 1,
+                    depth_or_array_layers: 1,
                 },
             );
         }

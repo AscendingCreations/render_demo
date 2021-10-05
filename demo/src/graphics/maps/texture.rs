@@ -44,27 +44,27 @@ impl MapTextures {
         }
     }
 
-    pub get_unused_id(&mut self) -> Option(u32) {
+    pub fn get_unused_id(&mut self) -> Option<u32> {
         self.unused_ids.pop()
     }
 
-    pub mark_id_unused(&mut self, id: u32) {
+    pub fn mark_id_unused(&mut self, id: u32) {
         self.unused_ids.push(id);
     }
 
-    pub view(&self) -> &wgpu::TextureView {
+    pub fn view(&self) -> &wgpu::TextureView {
         &self.texture_view
     }
 
-    pub fn update(&mut self, queue: &wgpu::Queue, id: u32, data: Vec<u32>) {
+    pub fn update(&mut self, queue: &wgpu::Queue, id: u32, data: &[u32]) {
         queue.write_texture(
             wgpu::ImageCopyTexture {
                 texture: &self.texture,
                 mip_level: 0,
-                origin: wgpu::Origin3d { x: 0, y: 0, z: 0 },
+                origin: wgpu::Origin3d { x: 0, y: 0, z: id },
                 aspect: wgpu::TextureAspect::All,
             },
-            &bytemuck::cast_slice(image).to_vec(),
+            &bytemuck::cast_slice(data).to_vec(),
             wgpu::ImageDataLayout {
                 offset: 0,
                 bytes_per_row: std::num::NonZeroU32::new(512),
@@ -73,7 +73,7 @@ impl MapTextures {
             wgpu::Extent3d {
                 width: 32,
                 height: 256,
-                depth_or_array_layers: id,
+                depth_or_array_layers: 1,
             },
         );
     }

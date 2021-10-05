@@ -1,4 +1,4 @@
-use crate::graphics::{LayoutStorage, Map, MapLayout};
+use crate::graphics::{LayoutStorage, MapLayout, MapTextures};
 
 pub struct MapGroup {
     pub bind_group: wgpu::BindGroup,
@@ -8,11 +8,11 @@ impl MapGroup {
     pub fn from_maps(
         device: &wgpu::Device,
         layout_storage: &mut LayoutStorage,
-        maps: &mut [Map],
+        texture: &MapTextures,
     ) -> Self {
         let entries = vec![wgpu::BindGroupEntry {
             binding: 0,
-            resource: wgpu::BindingResource::TextureView(&maps[0].texture_view),
+            resource: wgpu::BindingResource::TextureView(texture.view()),
         }];
 
         let layout = layout_storage.create_layout(device, MapLayout);

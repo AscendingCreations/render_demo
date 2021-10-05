@@ -1,6 +1,6 @@
 use crate::graphics::{
-    Atlas, Camera, LayoutStorage, Map, MapBuffer, MapGroup, MapRenderPipeline, Pass, RenderMap,
-    RenderSprite, Sprite, SpriteBuffer, SpriteRenderPipeline, TextureGroup,
+    Atlas, Camera, LayoutStorage, Map, MapBuffer, MapGroup, MapRenderPipeline, MapTextures, Pass,
+    RenderMap, RenderSprite, Sprite, SpriteBuffer, SpriteRenderPipeline, TextureGroup,
 };
 use std::collections::HashMap;
 
@@ -8,19 +8,34 @@ pub struct State<Controls>
 where
     Controls: camera::controls::Controls,
 {
-    pub sprite: Sprite,
-    pub sprite_pipeline: SpriteRenderPipeline,
-    pub sprite_buffer: SpriteBuffer,
-    pub sprite_atlas: Atlas,
-    pub map: Map,
-    pub map_pipeline: MapRenderPipeline,
-    pub map_buffer: MapBuffer,
-    pub map_texture: TextureGroup,
-    pub map_group: MapGroup,
-    pub map_atlas: Atlas,
+    // Storage container for layouts for faster initlization
     pub layout_storage: LayoutStorage,
-    pub sprite_texture: TextureGroup,
+    //World Camera Controls. Deturmines how the world is looked at.
     pub camera: Camera<Controls>,
+    //Sprite data TODO: Make an array,
+    pub sprite: Sprite,
+    //Render pipe line for Sprites
+    pub sprite_pipeline: SpriteRenderPipeline,
+    //Vertex buffer group for Sprites
+    pub sprite_buffer: SpriteBuffer,
+    //Atlas to hold Sprite Images
+    pub sprite_atlas: Atlas,
+    //Texture Bind group for Sprite Atlas
+    pub sprite_texture: TextureGroup,
+    //maps TODO: make this an array.
+    pub map: Map,
+    //Render Pipeline for maps
+    pub map_pipeline: MapRenderPipeline,
+    //vertex buffer group for maps
+    pub map_buffer: MapBuffer,
+    //Texture bind group for Map Atlas
+    pub map_texture: TextureGroup,
+    //Texture Bind group for Maptextures
+    pub map_group: MapGroup,
+    //contains the Tile images.
+    pub map_atlas: Atlas,
+    //contains the Map layer grids in pixel form.
+    pub map_textures: MapTextures,
 }
 
 impl<Controls> Pass for State<Controls>

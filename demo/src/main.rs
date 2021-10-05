@@ -160,12 +160,15 @@ async fn main() -> Result<(), RendererError> {
             .ok_or_else(|| OtherError::new("failed to upload image"))?;
     }
 
-    let mut maps = vec![map];
-    let map_group = MapGroup::from_maps(renderer.device(), &mut layout_storage, &mut maps);
+    let mut map_textures = MapTextures::new(renderer.device(), 81);
+    let map_group = MapGroup::from_maps(renderer.device(), &mut layout_storage, &map_textures);
     let map_texture = TextureGroup::from_atlas(renderer.device(), &mut layout_storage, &map_atlas);
     let map_buffer = MapBuffer::new(renderer.device());
 
-    let map = maps.remove(0);
+    map.layer = map_textures
+        .get_unused_id()
+        .ok_or_else(|| OtherError::new("failed to upload image"))?;
+
     let mut state = State {
         sprite,
         sprite_pipeline,
@@ -180,6 +183,7 @@ async fn main() -> Result<(), RendererError> {
         map_group,
         map_buffer,
         map_texture,
+        map_textures,
     };
 
     let mut views = HashMap::new();
@@ -290,7 +294,7 @@ async fn main() -> Result<(), RendererError> {
         state.sprite_buffer.set_buffer(renderer.queue(), &bytes);
         state.sprite_buffer.set_indice_count(count as u64);
 
-        state.map.update(renderer.queue());
+        state.map.update(renderer.queue(), &mut state.map_textures);
 
         let mut bytes = vec![];
         let count = 49;

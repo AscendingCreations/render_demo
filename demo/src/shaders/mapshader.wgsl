@@ -34,7 +34,7 @@ fn main(
 var tex: texture_2d_array<f32>;
 
 [[group(2), binding(0)]]
-var maptex: texture_2d<u32>;
+var maptex: texture_2d_array<u32>;
 
 fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32>
 {
@@ -51,7 +51,7 @@ fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
     let yoffset = abs((i32(in.zpos) - 8) * 32);
     let coords = vec3<i32> (i32(in.tex_coords.x), i32(in.tex_coords.y), i32(in.tex_coords.z));
     let tile_pos = vec2<i32>(coords.x / 16, (coords.y / 16) + yoffset);
-    let tile = textureLoad(maptex, tile_pos.xy, 0);
+    let tile = textureLoad(maptex, tile_pos.xy, coords.z, 0);
     let pos = vec2<i32>(i32(tile.r % 128u) * 16 + (coords.x % 16), i32(tile.r / 128u) * 16 + (coords.y % 16));
     let object_color = textureLoad(tex, pos.xy, i32(tile.g), 0);
     let alpha = object_color.a * (f32(tile.a) / 100.0);

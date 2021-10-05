@@ -12,7 +12,7 @@ impl Layout for MapLayout {
             visibility: wgpu::ShaderStages::FRAGMENT,
             ty: wgpu::BindingType::Texture {
                 multisampled: false,
-                view_dimension: wgpu::TextureViewDimension::D2,
+                view_dimension: wgpu::TextureViewDimension::D2Array,
                 sample_type: wgpu::TextureSampleType::Uint,
             },
             count: None,

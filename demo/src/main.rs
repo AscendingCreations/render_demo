@@ -1,5 +1,5 @@
 #![allow(dead_code, clippy::collapsible_match)]
-
+#[allow(unused_imports)]
 use backtrace::Backtrace;
 use camera::controls::{FlatControls, FlatSettings};
 use camera::Projection;
@@ -7,11 +7,13 @@ use input::{Bindings, FrameTime, InputHandler};
 use lazy_static::lazy_static;
 use naga::{front::wgsl, valid::Validator};
 use serde::{Deserialize, Serialize};
+#[allow(unused_imports)]
 use slog::{error, info};
 use sloggers::file::FileLoggerBuilder;
 use sloggers::types::Severity;
 use sloggers::Build;
 use std::collections::HashMap;
+#[allow(unused_imports)]
 use std::panic;
 use std::{fs, path::PathBuf};
 use winit::{
@@ -77,7 +79,7 @@ async fn main() -> Result<(), RendererError> {
                 force_fallback_adapter: false,
             },
             &wgpu::DeviceDescriptor {
-                features: wgpu::Features::TEXTURE_BINDING_ARRAY,
+                features: wgpu::Features::empty(),
                 limits: wgpu::Limits::default(),
                 label: None,
             },
@@ -322,9 +324,7 @@ async fn main() -> Result<(), RendererError> {
 
         input_handler.end_frame();
         frame_time.update();
-    });
-
-    Ok(())
+    })
 }
 
 pub fn parse_example_wgsl() {

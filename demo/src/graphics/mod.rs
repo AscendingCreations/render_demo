@@ -1,6 +1,5 @@
 mod atlas;
 mod camera;
-mod color;
 mod error;
 mod layout;
 mod maps;
@@ -11,7 +10,6 @@ mod textures;
 
 pub use self::camera::*;
 pub use atlas::*;
-pub use color::*;
 pub use error::*;
 pub use layout::*;
 pub use maps::*;

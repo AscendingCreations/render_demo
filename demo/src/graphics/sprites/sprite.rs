@@ -1,4 +1,4 @@
-use crate::graphics::{allocation::Allocation, Rgba, SpriteVertex};
+use crate::graphics::{allocation::Allocation, SpriteVertex};
 use std::cmp;
 
 //rendering data for all sprites.

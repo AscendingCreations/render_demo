@@ -1,7 +1,4 @@
-use crate::graphics::{
-    Atlas, Camera, LayoutStorage, Map, MapBuffer, MapGroup, MapRenderPipeline, MapTextures, Pass,
-    RenderMap, RenderSprite, Sprite, SpriteBuffer, SpriteRenderPipeline, TextureGroup,
-};
+use crate::graphics::*;
 use std::collections::HashMap;
 
 pub struct State<Controls>
@@ -12,6 +9,8 @@ where
     pub layout_storage: LayoutStorage,
     //World Camera Controls. Deturmines how the world is looked at.
     pub camera: Camera<Controls>,
+    //time for all animation on shader side.
+    pub time_group: TimeGroup,
     //Sprite data TODO: Make an array,
     pub sprite: Sprite,
     //Render pipe line for Sprites
@@ -36,6 +35,13 @@ where
     pub map_atlas: Atlas,
     //contains the Map layer grids in pixel form.
     pub map_textures: MapTextures,
+
+    //animation test stuff.
+    pub animation: Animation,
+    pub animation_buffer: AnimationBuffer,
+    pub animation_pipeline: AnimationRenderPipeline,
+    pub animation_atlas: Atlas,
+    pub animation_texture: TextureGroup,
 }
 
 impl<Controls> Pass for State<Controls>
@@ -73,6 +79,8 @@ where
         });
 
         pass.set_bind_group(0, self.camera.bind_group(), &[]);
+        pass.set_bind_group(1, self.time_group.bind_group(), &[]);
+
         pass.render_sprite(
             &self.sprite_buffer,
             &self.sprite_texture,
@@ -83,6 +91,11 @@ where
             &self.map_texture,
             &self.map_group,
             &self.map_pipeline,
+        );
+        pass.render_animations(
+            &self.animation_buffer,
+            &self.animation_texture,
+            &self.animation_pipeline,
         );
     }
 }

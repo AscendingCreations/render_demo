@@ -55,6 +55,10 @@ impl Renderer {
     pub fn resize(&mut self, size: PhysicalSize<u32>) -> Result<(), RendererError> {
         let surface_format = self.surface.get_preferred_format(&self.adapter).unwrap();
 
+        if size.width == 0 || size.height == 0 {
+            return Ok(());
+        }
+
         self.surface.configure(
             &self.device,
             &wgpu::SurfaceConfiguration {
@@ -93,6 +97,9 @@ impl Renderer {
                 Ok(frame) => return Ok(Some(frame.output)),
                 Err(wgpu::SurfaceError::Lost) => {
                     self.resize(self.size)?;
+                }
+                Err(wgpu::SurfaceError::Outdated) => {
+                    return Ok(None);
                 }
                 Err(e) => return Err(RendererError::from(e)),
             },

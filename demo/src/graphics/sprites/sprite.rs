@@ -7,7 +7,6 @@ pub struct Sprite {
     pub pos: [i32; 3],
     pub hw: [u32; 2],
     pub uv: [u32; 4],
-    pub layer: u32,
     pub color: [u32; 4],
     //Texture area location in Atlas.
     pub texture: Option<Allocation>,
@@ -22,7 +21,6 @@ impl Default for Sprite {
             pos: [0; 3],
             hw: [0; 2],
             uv: [0; 4],
-            layer: 0,
             color: [0, 0, 100, 100],
             texture: None,
             bytes: Vec::new(),
@@ -37,7 +35,6 @@ impl Sprite {
             pos: [0; 3],
             hw: [0; 2],
             uv: [0; 4],
-            layer: texture.layer as u32,
             color: [0, 0, 100, 100],
             texture: Some(texture),
             bytes: Vec::new(),
@@ -71,22 +68,22 @@ impl Sprite {
         let buffer = vec![
             SpriteVertex {
                 position: [x, y, self.pos[2] as f32],
-                tex_coord: [u1, v2, self.layer as f32],
+                tex_coord: [u1, v2, allocation.layer as f32],
                 color: self.color,
             },
             SpriteVertex {
                 position: [w, y, self.pos[2] as f32],
-                tex_coord: [u2, v2, self.layer as f32],
+                tex_coord: [u2, v2, allocation.layer as f32],
                 color: self.color,
             },
             SpriteVertex {
                 position: [w, h, self.pos[2] as f32],
-                tex_coord: [u2, v1, self.layer as f32],
+                tex_coord: [u2, v1, allocation.layer as f32],
                 color: self.color,
             },
             SpriteVertex {
                 position: [x, h, self.pos[2] as f32],
-                tex_coord: [u1, v1, self.layer as f32],
+                tex_coord: [u1, v1, allocation.layer as f32],
                 color: self.color,
             },
         ];

@@ -31,7 +31,7 @@ fn main(
     return out;
 }
 
-[[group(1), binding(0)]]
+[[group(2), binding(0)]]
 var tex: texture_2d_array<f32>;
 
 fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32>

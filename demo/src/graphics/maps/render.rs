@@ -24,8 +24,8 @@ where
         map_group: &'b MapGroup,
         pipeline: &'b MapRenderPipeline,
     ) {
-        self.set_bind_group(1, &texture_group.bind_group, &[]);
-        self.set_bind_group(2, &map_group.bind_group, &[]);
+        self.set_bind_group(2, &texture_group.bind_group, &[]);
+        self.set_bind_group(3, &map_group.bind_group, &[]);
         self.set_vertex_buffer(0, buffer.vertex_buffer.slice(..buffer.vertex_count));
         self.set_index_buffer(
             buffer

@@ -98,8 +98,8 @@ async fn main() -> Result<(), RendererError> {
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
     let mut sprite = Sprite::new(allocation);
 
-    sprite.pos[0] = 32;
-    sprite.pos[1] = 32;
+    sprite.pos[0] = 320;
+    sprite.pos[1] = 320;
     sprite.pos[2] = 1;
     sprite.hw[0] = 64;
     sprite.hw[1] = 64;
@@ -171,6 +171,30 @@ async fn main() -> Result<(), RendererError> {
         .get_unused_id()
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
 
+    let mut animation_atlas = Atlas::new(renderer.device(), 2048);
+    let texture = Texture::from_file("images/anim/0.png")?;
+    let allocation = animation_atlas
+        .upload(&texture, renderer.device(), renderer.queue())
+        .ok_or_else(|| OtherError::new("failed to upload image"))?;
+
+    let animation_pipeline = AnimationRenderPipeline::new(
+        renderer.device(),
+        renderer.surface_format(),
+        &mut layout_storage,
+    )?;
+    let animation_buffer = AnimationBuffer::new(renderer.device());
+    let animation_texture =
+        TextureGroup::from_atlas(renderer.device(), &mut layout_storage, &animation_atlas);
+
+    let mut animation = Animation::new(allocation);
+    animation.pos = [0.0, 0.0, 1.0];
+    animation.hw = [64; 2];
+    animation.anim_hw = [64; 2];
+    animation.frames = 4;
+    animation.switch_time = 250;
+
+    let time_group = TimeGroup::new(&renderer, &mut layout_storage);
+
     let mut state = State {
         sprite,
         sprite_pipeline,
@@ -186,6 +210,12 @@ async fn main() -> Result<(), RendererError> {
         map_buffer,
         map_texture,
         map_textures,
+        animation_atlas,
+        animation_pipeline,
+        animation_buffer,
+        animation_texture,
+        animation,
+        time_group,
     };
 
     let mut views = HashMap::new();
@@ -233,8 +263,15 @@ async fn main() -> Result<(), RendererError> {
             _ => {}
         }
 
-        if size != renderer.size() {
-            size = renderer.size();
+        let test_size = renderer.size();
+
+        if test_size.width == 0 || test_size.height == 0 {
+            size = test_size;
+            return;
+        }
+
+        if size != test_size {
+            size = test_size;
 
             state.camera.set_projection(Projection::Orthographic {
                 left: 0.0,
@@ -281,6 +318,7 @@ async fn main() -> Result<(), RendererError> {
         let delta = frame_time.delta_seconds();
         camera.update(&renderer, delta);
 
+        state.time_group.update(&renderer, frame_time.seconds());
         let view = frame
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
@@ -305,6 +343,16 @@ async fn main() -> Result<(), RendererError> {
 
         state.map_buffer.set_buffer(renderer.queue(), &bytes);
         state.map_buffer.set_indice_count(count as u64);
+
+        state.animation.update();
+
+        let mut bytes = vec![];
+        let count = 6;
+
+        bytes.append(&mut state.animation.bytes.clone());
+
+        state.animation_buffer.set_buffer(renderer.queue(), &bytes);
+        state.animation_buffer.set_indice_count(count as u64);
 
         // Start encoding commands.
         let mut encoder =

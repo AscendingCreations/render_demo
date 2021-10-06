@@ -1,4 +1,6 @@
-use crate::graphics::{CameraLayout, LayoutStorage, RendererError, SpriteVertex, TextureLayout};
+use crate::graphics::{
+    CameraLayout, LayoutStorage, RendererError, SpriteVertex, TextureLayout, TimeLayout,
+};
 
 pub struct SpriteRenderPipeline {
     render_pipeline: wgpu::RenderPipeline,
@@ -19,12 +21,13 @@ impl SpriteRenderPipeline {
 
         let camera_layout = layout_storage.create_layout(device, CameraLayout);
         let texture_layout = layout_storage.create_layout(device, TextureLayout);
+        let time_layout = layout_storage.create_layout(device, TimeLayout);
 
         // Set up the pipeline layout.
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("render_pipeline_layout"),
-                bind_group_layouts: &[&camera_layout, &texture_layout],
+                bind_group_layouts: &[&camera_layout, &time_layout, &texture_layout],
                 push_constant_ranges: &[],
             });
 

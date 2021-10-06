@@ -16,10 +16,10 @@ impl MapBuffer {
             position: [0.0, 0.0, 0.0],
             tex_coord: [0.0, 0.0, 0.0],
         })
-        .take(1_568)
+        .take(360)
         .collect();
 
-        let indices = (0..392)
+        let indices = (0..90)
             .map(|x| vec![x, x + 1, x + 2, x, x + 2, x + 3])
             .flatten()
             .collect::<Vec<u32>>();
@@ -47,11 +47,11 @@ impl MapBuffer {
     }
 
     pub fn set_buffer(&mut self, queue: &wgpu::Queue, bytes: &[u8]) {
-        if ((bytes.len() / 6) / 4) as u64 >= 1_568 {
+        if (bytes.len() / 24) as u64 >= 360 {
             return; //so I dont accidently go over Will change this later to be adaptable for now static
         }
 
-        self.vertex_count = ((bytes.len() / 6) / 4) as u64;
+        self.vertex_count = (bytes.len() / 24) as u64;
         queue.write_buffer(&self.vertex_buffer, 0, bytes);
     }
 

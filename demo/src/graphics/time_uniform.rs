@@ -1,7 +1,5 @@
 use bytemuck::{Pod, Zeroable};
-use camera::Projection;
 use crevice::std140::{AsStd140, Std140};
-use ultraviolet::Mat4;
 use wgpu::util::DeviceExt;
 
 use super::{Layout, LayoutStorage, Renderer};
@@ -34,12 +32,12 @@ pub struct TimeUniform {
     seconds: f32,
 }
 
-pub struct TimerGroup {
+pub struct TimeGroup {
     buffer: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
 }
 
-impl TimerGroup {
+impl TimeGroup {
     pub fn new(renderer: &Renderer, layout_storage: &mut LayoutStorage) -> Self {
         let time_info = TimeUniform { seconds: 0.0 };
 

@@ -1,3 +1,4 @@
+mod animations;
 mod atlas;
 mod camera;
 mod error;
@@ -7,8 +8,10 @@ mod pass;
 mod renderer;
 mod sprites;
 mod textures;
+mod time_uniform;
 
 pub use self::camera::*;
+pub use animations::*;
 pub use atlas::*;
 pub use error::*;
 pub use layout::*;
@@ -17,3 +20,4 @@ pub use pass::*;
 pub use renderer::*;
 pub use sprites::*;
 pub use textures::*;
+pub use time_uniform::*;

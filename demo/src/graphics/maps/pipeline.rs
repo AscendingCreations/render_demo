@@ -1,5 +1,5 @@
 use crate::graphics::{
-    CameraLayout, LayoutStorage, MapLayout, MapVertex, RendererError, TextureLayout,
+    CameraLayout, LayoutStorage, MapLayout, MapVertex, RendererError, TextureLayout, TimeLayout,
 };
 
 pub struct MapRenderPipeline {
@@ -20,12 +20,13 @@ impl MapRenderPipeline {
         let camera_layout = layout_storage.create_layout(device, CameraLayout);
         let texture_layout = layout_storage.create_layout(device, TextureLayout);
         let map_layout = layout_storage.create_layout(device, MapLayout);
+        let time_layout = layout_storage.create_layout(device, TimeLayout);
 
         // Set up the pipeline layout.
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Map_render_pipeline_layout"),
-                bind_group_layouts: &[&camera_layout, &texture_layout, &map_layout],
+                bind_group_layouts: &[&camera_layout, &time_layout, &texture_layout, &map_layout],
                 push_constant_ranges: &[],
             });
 

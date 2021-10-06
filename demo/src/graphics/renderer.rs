@@ -64,8 +64,8 @@ impl Renderer {
             &wgpu::SurfaceConfiguration {
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
                 format: surface_format,
-                width: size.width,
-                height: size.height,
+                width: std::cmp::max(1, size.width),
+                height: std::cmp::max(1, size.height),
                 present_mode: self.present_mode,
             },
         );

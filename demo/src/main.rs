@@ -283,8 +283,8 @@ async fn main() -> Result<(), RendererError> {
             });
 
             let size = wgpu::Extent3d {
-                width: renderer.size().width,
-                height: renderer.size().height,
+                width: size.width,
+                height: size.height,
                 depth_or_array_layers: 1,
             };
 

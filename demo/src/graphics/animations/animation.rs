@@ -8,6 +8,7 @@ pub struct Animation {
     pub anim_hw: [u32; 2], //image HW per frame
     pub hue_alpha: [u32; 2],
     pub frames: u32,
+    pub frames_per_row: u32,
     //in millsecs 1000 = 1sec
     pub switch_time: u32,
     //Texture area location in Atlas.
@@ -25,6 +26,7 @@ impl Default for Animation {
             anim_hw: [0; 2],
             hue_alpha: [0, 100],
             frames: 0,
+            frames_per_row: 0,
             switch_time: 0,
             texture: None,
             bytes: Vec::new(),
@@ -40,6 +42,7 @@ impl Animation {
             hw: [0; 2],
             hue_alpha: [0, 100],
             frames: 0,
+            frames_per_row: 0,
             switch_time: 0,
             anim_hw: [0; 2],
             texture: Some(texture),
@@ -71,7 +74,7 @@ impl Animation {
                 tex_data: [u, v, self.anim_hw[0], self.anim_hw[1]],
                 hue_alpha: self.hue_alpha,
                 position: [x, y, self.pos[2] as f32],
-                frames: [self.frames, self.switch_time],
+                frames: [self.frames, self.frames_per_row, self.switch_time],
                 layer: allocation.layer as i32,
             },
             AnimationVertex {
@@ -79,7 +82,7 @@ impl Animation {
                 tex_data: [u, v, self.anim_hw[0], self.anim_hw[1]],
                 hue_alpha: self.hue_alpha,
                 position: [w, y, self.pos[2] as f32],
-                frames: [self.frames, self.switch_time],
+                frames: [self.frames, self.frames_per_row, self.switch_time],
                 layer: allocation.layer as i32,
             },
             AnimationVertex {
@@ -87,7 +90,7 @@ impl Animation {
                 tex_data: [u, v, self.anim_hw[0], self.anim_hw[1]],
                 hue_alpha: self.hue_alpha,
                 position: [w, h, self.pos[2] as f32],
-                frames: [self.frames, self.switch_time],
+                frames: [self.frames, self.frames_per_row, self.switch_time],
                 layer: allocation.layer as i32,
             },
             AnimationVertex {
@@ -95,7 +98,7 @@ impl Animation {
                 tex_data: [u, v, self.anim_hw[0], self.anim_hw[1]],
                 hue_alpha: self.hue_alpha,
                 position: [x, h, self.pos[2] as f32],
-                frames: [self.frames, self.switch_time],
+                frames: [self.frames, self.frames_per_row, self.switch_time],
                 layer: allocation.layer as i32,
             },
         ];

@@ -5,7 +5,7 @@ pub struct AnimationVertex {
     pub tex_data: [u32; 4],
     pub position: [f32; 3],
     pub hue_alpha: [u32; 2],
-    pub frames: [u32; 2],
+    pub frames: [u32; 3],
     pub layer: i32,
 }
 
@@ -17,7 +17,7 @@ impl Default for AnimationVertex {
             tex_data: [0; 4],
             layer: 0,
             hue_alpha: [0; 2],
-            frames: [0; 2],
+            frames: [0; 3],
         }
     }
 }
@@ -25,11 +25,11 @@ impl Default for AnimationVertex {
 impl AnimationVertex {
     /// Calculate the stride between two vertices in bytes, i.e. how large each vertex is in bytes.
     pub fn stride() -> usize {
-        let mut stride = std::mem::size_of::<[f32; 4]>();
+        let mut stride = std::mem::size_of::<[f32; 2]>();
+        stride += std::mem::size_of::<[f32; 4]>();
         stride += std::mem::size_of::<[f32; 3]>();
         stride += std::mem::size_of::<[u32; 2]>();
-        stride += std::mem::size_of::<[u32; 2]>();
-        stride += std::mem::size_of::<[u32; 2]>();
+        stride += std::mem::size_of::<[u32; 3]>();
         stride += std::mem::size_of::<i32>();
 
         stride
@@ -48,7 +48,7 @@ impl AnimationVertex {
         offsets.push(offset);
         offset += std::mem::size_of::<[u32; 2]>();
         offsets.push(offset);
-        offset += std::mem::size_of::<[u32; 2]>();
+        offset += std::mem::size_of::<[u32; 3]>();
         offsets.push(offset);
         offset += std::mem::size_of::<i32>();
         offsets.push(offset);
@@ -81,10 +81,10 @@ impl AnimationVertex {
             wgpu::VertexAttribute {
                 offset: std::mem::size_of::<[f32; 11]>() as u64,
                 shader_location: 4,
-                format: wgpu::VertexFormat::Uint32x2,
+                format: wgpu::VertexFormat::Uint32x3,
             },
             wgpu::VertexAttribute {
-                offset: std::mem::size_of::<[f32; 13]>() as u64,
+                offset: std::mem::size_of::<[f32; 14]>() as u64,
                 shader_location: 5,
                 format: wgpu::VertexFormat::Sint32,
             },

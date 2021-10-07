@@ -89,6 +89,7 @@ async fn main() -> Result<(), RendererError> {
         .await
         .unwrap();
 
+    println!("{:?}", renderer.adapter().get_info());
     let mut layout_storage = LayoutStorage::new();
     let mut sprite_atlas = Atlas::new(renderer.device(), 2048);
     let texture = Texture::from_file("images/Tree.png")?;

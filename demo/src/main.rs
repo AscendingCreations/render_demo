@@ -74,7 +74,7 @@ async fn main() -> Result<(), RendererError> {
         .create_renderer(
             window,
             &wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::default(),
+                power_preference: wgpu::PowerPreference::HighPerformance,
                 compatible_surface: None,
                 force_fallback_adapter: false,
             },

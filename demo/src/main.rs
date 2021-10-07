@@ -191,7 +191,8 @@ async fn main() -> Result<(), RendererError> {
     animation.pos = [0.0, 0.0, 1.0];
     animation.hw = [64; 2];
     animation.anim_hw = [64; 2];
-    animation.frames = 4;
+    animation.frames = 8;
+    animation.frames_per_row = 4;
     animation.switch_time = 250;
 
     let time_group = TimeGroup::new(&renderer, &mut layout_storage);

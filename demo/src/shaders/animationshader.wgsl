@@ -66,10 +66,10 @@ fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32>
 fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
     let id = time.seconds / (f32(in.frames[2]) / 1000.0);
     let frame = u32(floor(id % f32(in.frames[0])));
-    let yframes = in.frames[0];
+    var yframes = in.frames[0];
 
     if (in.frames[1] > 0u) {
-        let yframes = in.frames[1];
+        yframes = in.frames[1];
     }
 
     let pos = vec2<i32>(i32((frame * in.tex_data[2]) + in.tex_data[0] + u32(in.tex_coords.x)), i32(in.tex_data[1] + u32(in.tex_coords.y)));

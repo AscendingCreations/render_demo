@@ -48,17 +48,17 @@ fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32>
 fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
     let coords = vec3<i32>(i32(in.tex_coords.x), i32(in.tex_coords.y), i32(in.tex_coords.z));
     let object_color = textureLoad(tex, coords.xy, coords.z, 0);
-    let color =  hueShift(object_color.rgb, f32(in.col.r));
+    var color =  hueShift(object_color.rgb, f32(in.col.r));
     let ldchange = in.col.g / 1000000000u;
     let ldoffset = f32((in.col.g % 900000000u) / 1000000u) / 100.0;
 
     if (ldchange > 0u) {
-        let color = color + vec3<f32>(ldoffset, ldoffset, ldoffset);
+        color = color + vec3<f32>(ldoffset, ldoffset, ldoffset);
     } else {
-        let color = color - vec3<f32>(ldoffset, ldoffset, ldoffset);
+        color = color - vec3<f32>(ldoffset, ldoffset, ldoffset);
     }
 
-    let color = color * (f32(in.col.b) / 100.0);
+    color = color * (f32(in.col.b) / 100.0);
     let alpha = object_color.a * (f32(in.col.a)/ 100.0);
     return vec4<f32>(object_color.rgb, alpha);
 }

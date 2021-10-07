@@ -93,8 +93,8 @@ impl Renderer {
                 }
                 _ => (),
             },
-            Event::RedrawRequested(_) => match self.surface.get_current_frame() {
-                Ok(frame) => return Ok(Some(frame.output)),
+            Event::RedrawRequested(_) => match self.surface.get_current_texture() {
+                Ok(frame) => return Ok(Some(frame)),
                 Err(wgpu::SurfaceError::Lost) => {
                     self.resize(self.size)?;
                 }

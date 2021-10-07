@@ -372,6 +372,7 @@ async fn main() -> Result<(), RendererError> {
 
         input_handler.end_frame();
         frame_time.update();
+        frame.present();
     })
 }
 

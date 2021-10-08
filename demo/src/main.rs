@@ -16,6 +16,7 @@ use std::collections::HashMap;
 #[allow(unused_imports)]
 use std::panic;
 use std::{fs, path::PathBuf};
+use wgpu_glyph::{ab_glyph, GlyphBrushBuilder, Region, Section, Text};
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
@@ -251,6 +252,14 @@ async fn main() -> Result<(), RendererError> {
 
     let mut frame_time = FrameTime::new();
 
+    let mut staging_belt = wgpu::util::StagingBelt::new(1024);
+
+    let inconsolata =
+        ab_glyph::FontArc::try_from_slice(include_bytes!("../../fonts/Inconsolata-Regular.ttf"))?;
+
+    let mut glyph_brush = GlyphBrushBuilder::using_font(inconsolata)
+        .build(renderer.device(), wgpu::TextureFormat::Bgra8UnormSrgb);
+
     event_loop.run(move |event, _, control_flow| {
         match event {
             Event::WindowEvent {
@@ -366,8 +375,27 @@ async fn main() -> Result<(), RendererError> {
 
         // Run the render pass.
         state.render(&mut encoder, &views);
+        glyph_brush.queue(Section {
+            screen_position: (30.0, 30.0),
+            bounds: (size.width as f32, size.height as f32),
+            text: vec![Text::new("Hello wgpu_glyph!")
+                .with_color([0.0, 0.0, 0.0, 1.0])
+                .with_scale(40.0)],
+            ..Section::default()
+        });
+        glyph_brush
+            .draw_queued(
+                renderer.device(),
+                &mut staging_belt,
+                &mut encoder,
+                views.get("framebuffer").as_ref().expect("no frame view?"),
+                size.width,
+                size.height,
+            )
+            .expect("Draw queued");
 
         // Submit our command queue.
+        staging_belt.finish();
         renderer.queue().submit(std::iter::once(encoder.finish()));
 
         views.remove("framebuffer");
@@ -375,6 +403,11 @@ async fn main() -> Result<(), RendererError> {
         input_handler.end_frame();
         frame_time.update();
         frame.present();
+
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(staging_belt.recall());
     })
 }
 

@@ -5,38 +5,38 @@ pub struct State<Controls>
 where
     Controls: camera::controls::Controls,
 {
-    // Storage container for layouts for faster initlization
+    /// Storage container for layouts for faster initlization
     pub layout_storage: LayoutStorage,
-    //World Camera Controls. Deturmines how the world is looked at.
+    /// World Camera Controls. Deturmines how the world is looked at.
     pub camera: Camera<Controls>,
-    //time for all animation on shader side.
+    /// time for all animation on shader side.
     pub time_group: TimeGroup,
-    //Sprite data TODO: Make an array,
+    /// Sprite data TODO: Make an array,
     pub sprite: Sprite,
-    //Render pipe line for Sprites
+    /// Render pipe line for Sprites
     pub sprite_pipeline: SpriteRenderPipeline,
-    //Vertex buffer group for Sprites
+    /// Vertex buffer group for Sprites
     pub sprite_buffer: SpriteBuffer,
-    //Atlas to hold Sprite Images
+    /// Atlas to hold Sprite Images
     pub sprite_atlas: Atlas,
-    //Texture Bind group for Sprite Atlas
+    /// Texture Bind group for Sprite Atlas
     pub sprite_texture: TextureGroup,
-    //maps TODO: make this an array.
+    /// maps TODO: make this an array.
     pub map: Map,
-    //Render Pipeline for maps
+    /// Render Pipeline for maps
     pub map_pipeline: MapRenderPipeline,
-    //vertex buffer group for maps
+    /// vertex buffer group for maps
     pub map_buffer: MapBuffer,
-    //Texture bind group for Map Atlas
+    /// Texture bind group for Map Atlas
     pub map_texture: TextureGroup,
-    //Texture Bind group for Maptextures
+    /// Texture Bind group for Maptextures
     pub map_group: MapGroup,
-    //contains the Tile images.
+    /// contains the Tile images.
     pub map_atlas: Atlas,
-    //contains the Map layer grids in pixel form.
+    /// contains the Map layer grids in pixel form.
     pub map_textures: MapTextures,
 
-    //animation test stuff.
+    /// animation test stuff.
     pub animation: Animation,
     pub animation_buffer: AnimationBuffer,
     pub animation_pipeline: AnimationRenderPipeline,
@@ -44,10 +44,7 @@ where
     pub animation_texture: TextureGroup,
 }
 
-impl<Controls> Pass for State<Controls>
-where
-    Controls: camera::controls::Controls,
-{
+impl<Controls: camera::controls::Controls> Pass for State<Controls> {
     fn render(
         &mut self,
         encoder: &mut wgpu::CommandEncoder,

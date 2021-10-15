@@ -6,12 +6,12 @@ use image::{self, ImageBuffer};
 pub enum MapLayers {
     Ground,
     Mask,
-    //Mask 2 is the Z layer spacer for bridges.
+    /// Mask 2 is the Z layer spacer for bridges.
     Mask2,
     Anim1,
     Anim2,
     Anim3,
-    //always above player. \/
+    /// always above player. \/
     Fringe,
     Fringe2,
     Count,
@@ -32,7 +32,7 @@ impl MapLayers {
     }
 
     pub fn layerz(layer: MapLayers) -> f32 {
-        //for use with Player Z map done shader side.
+        // for use with Player Z map done shader side.
         match layer {
             MapLayers::Ground => 8.0,
             MapLayers::Mask => 7.0,
@@ -47,19 +47,19 @@ impl MapLayers {
 }
 
 pub struct Map {
-    //X, Y, GroupID for loaded map.
+    /// X, Y, GroupID for loaded map.
     pub world_pos: [i32; 3],
-    //its render position. within the screen.
+    /// its render position. within the screen.
     pub pos: [i32; 2],
-    //image is for modifying the Buffer R = Texture location, G = Texture layer, B = Hue, A = Alpha
+    /// image is for modifying the Buffer R = Texture location, G = Texture layer, B = Hue, A = Alpha
     pub image: ImageBuffer<image::Rgba<u32>, Vec<u32>>,
-    //set to know the image array ID within the shader.
+    /// set to know the image array ID within the shader.
     pub layer: u32,
-    //vertex array in bytes. Does not need to get changed exept on map switch and location change.
+    /// vertex array in bytes. Does not need to get changed exept on map switch and location change.
     pub bytes: Vec<u8>,
-    //if the image changed we need to reupload it to the texture.
+    /// if the image changed we need to reupload it to the texture.
     pub img_changed: bool,
-    //if the location or map array id changed. to rebuild the vertex buffer.
+    /// if the location or map array id changed. to rebuild the vertex buffer.
     pub changed: bool,
 }
 
@@ -134,9 +134,9 @@ impl Map {
         (data[0], data[1], data[2], data[3])
     }
 
-    //used to check and update the vertex array or Texture witht he image buffer.
+    /// used to check and update the vertex array or Texture witht he image buffer.
     pub fn update(&mut self, queue: &wgpu::Queue, map_textures: &mut MapTextures) {
-        //if pos or tex_pos or color changed.
+        // if pos or tex_pos or color changed.
         if self.img_changed {
             map_textures.update(queue, self.layer, self.image.as_raw());
             self.img_changed = false;

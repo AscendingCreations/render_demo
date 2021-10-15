@@ -69,11 +69,7 @@ impl SpriteRenderPipeline {
                 stencil: wgpu::StencilState::default(),
                 bias: wgpu::DepthBiasState::default(),
             }),
-            multisample: wgpu::MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: true,
-            },
+            multisample: wgpu::MultisampleState::default(),
         });
 
         Ok(Self { render_pipeline })

@@ -5,7 +5,8 @@ use wgpu::util::DeviceExt;
 pub struct AnimationBuffer {
     pub vertex_buffer: wgpu::Buffer,
     pub indice_buffer: wgpu::Buffer,
-    pub vertex_count: u64, //Count of indices per Vertex layout within Buffer. used for rendering
+    pub vertex_count: u64,
+    /// Count of indices per Vertex layout within Buffer. used for rendering
     pub indice_count: u64,
 }
 
@@ -45,13 +46,13 @@ impl AnimationBuffer {
             vertex_buffer,
             indice_buffer,
             indice_count: indices.len() as u64,
-            vertex_count: 0, //set to 0 as we set this as we add sprites.
+            vertex_count: 0, // set to 0 as we set this as we add sprites.
         }
     }
 
     pub fn set_buffer(&mut self, queue: &wgpu::Queue, bytes: &[u8]) {
         if (bytes.len() / 60) as u64 >= 40_000 {
-            return; //so I dont accidently go over Will change this later to be adaptable for now static
+            return; // so I dont accidently go over Will change this later to be adaptable for now static
         }
 
         self.vertex_count = (bytes.len() / 60) as u64;
@@ -60,7 +61,7 @@ impl AnimationBuffer {
 
     pub fn set_indice_count(&mut self, count: u64) {
         self.indice_count = count;
-        //we will just set the Count since vertex is static we only
-        //need to handle how many indices to allow for the vertices.
+        // we will just set the Count since vertex is static we only
+        // need to handle how many indices to allow for the vertices.
     }
 }

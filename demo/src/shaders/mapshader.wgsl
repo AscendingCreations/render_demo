@@ -55,6 +55,11 @@ fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
     let pos = vec2<i32>(i32(tile.r % 128u) * 16 + (coords.x % 16), i32(tile.r / 128u) * 16 + (coords.y % 16));
     let object_color = textureLoad(tex, pos.xy, i32(tile.g), 0);
     let alpha = object_color.a * (f32(tile.a) / 100.0);
+
+    if (alpha <= 0.0) {
+        discard;
+    }
+
     let color = hueShift(object_color.rgb, f32(tile.b) % 361.0);
     return vec4<f32>(color, alpha);
 }

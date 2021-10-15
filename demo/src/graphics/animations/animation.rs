@@ -1,20 +1,22 @@
 use crate::graphics::{allocation::Allocation, AnimationVertex};
 
-//rendering data for all sprites.
-//not to be confused with Actual NPC or Player data.
+/// rendering data for all sprites.
+/// not to be confused with Actual NPC or Player data.
 pub struct Animation {
     pub pos: [f32; 3],
-    pub hw: [u32; 2],      //render HW
-    pub anim_hw: [u32; 2], //image HW per frame
+    pub hw: [u32; 2],
+    /// render HW
+    pub anim_hw: [u32; 2],
+    /// image HW per frame
     pub hue_alpha: [u32; 2],
     pub frames: u32,
     pub frames_per_row: u32,
-    //in millsecs 1000 = 1sec
+    /// in millsecs 1000 = 1sec
     pub switch_time: u32,
-    //Texture area location in Atlas.
+    /// Texture area location in Atlas.
     pub texture: Option<Allocation>,
     pub bytes: Vec<u8>,
-    //if anything got updated we need to update the buffers too.
+    /// if anything got updated we need to update the buffers too.
     pub changed: bool,
 }
 
@@ -107,9 +109,9 @@ impl Animation {
         self.changed = false;
     }
 
-    //used to check and update the vertex array.
+    /// used to check and update the vertex array.
     pub fn update(&mut self) {
-        //if pos or tex_pos or color changed.
+        // if pos or tex_pos or color changed.
         if self.changed {
             self.create_quad();
         }

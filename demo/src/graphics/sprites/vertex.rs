@@ -19,47 +19,10 @@ impl Default for SpriteVertex {
 impl SpriteVertex {
     /// Calculate the stride between two vertices in bytes, i.e. how large each vertex is in bytes.
     pub fn stride() -> usize {
-        let mut stride = std::mem::size_of::<[f32; 3]>();
-        stride += std::mem::size_of::<[f32; 3]>();
-        stride += std::mem::size_of::<[u32; 4]>();
-
-        stride
-    }
-
-    /// Calculates the offset of each vertex attribute.
-    pub fn offsets() -> Vec<usize> {
-        let mut offsets = vec![];
-        let mut offset = 0;
-
-        offset += std::mem::size_of::<[f32; 3]>();
-        offsets.push(offset);
-        offset += std::mem::size_of::<[f32; 3]>();
-        offsets.push(offset);
-        offset += std::mem::size_of::<[u32; 4]>();
-        offsets.push(offset);
-
-        offsets
+        std::mem::size_of::<[f32; 10]>()
     }
 
     pub fn attributes() -> Vec<wgpu::VertexAttribute> {
-        let attributes = vec![
-            wgpu::VertexAttribute {
-                offset: 0,
-                shader_location: 0,
-                format: wgpu::VertexFormat::Float32x3,
-            },
-            wgpu::VertexAttribute {
-                offset: std::mem::size_of::<[f32; 3]>() as u64,
-                shader_location: 1,
-                format: wgpu::VertexFormat::Float32x3,
-            },
-            wgpu::VertexAttribute {
-                offset: std::mem::size_of::<[f32; 6]>() as u64,
-                shader_location: 2,
-                format: wgpu::VertexFormat::Uint32x4,
-            },
-        ];
-
-        attributes
+        wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3, 2 => Uint32x4].to_vec()
     }
 }

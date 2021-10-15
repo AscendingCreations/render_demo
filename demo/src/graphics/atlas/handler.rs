@@ -2,18 +2,19 @@ use crate::graphics::{
     atlas::{Allocation, Layer},
     textures::Texture,
 };
-use std::collections::HashMap;
-use std::num::NonZeroU32;
+use std::{collections::HashMap, num::NonZeroU32};
 
 pub struct Atlas {
+    /// Texture in GRAM
     pub texture: wgpu::Texture,
+    /// Texture View for WGPU
     pub texture_view: wgpu::TextureView,
+    /// Layers of texture.
     pub layers: Vec<Layer>,
+    /// Holds the Original Texture Size and layer information.
     pub extent: wgpu::Extent3d,
+    /// File Paths or names to prevent duplicates.
     pub names: HashMap<String, Allocation>,
-    //Used to deturmine if we need to redo the Bindgroup
-    //associated with this texture array
-    pub dirty: bool,
 }
 
 impl Atlas {
@@ -53,7 +54,6 @@ impl Atlas {
             layers: vec![Layer::new(size)],
             extent,
             names: HashMap::new(),
-            dirty: true,
         }
     }
 
@@ -228,6 +228,5 @@ impl Atlas {
             array_layer_count: NonZeroU32::new(self.layers.len() as u32),
         });
         queue.submit(std::iter::once(encoder.finish()));
-        self.dirty = true;
     }
 }

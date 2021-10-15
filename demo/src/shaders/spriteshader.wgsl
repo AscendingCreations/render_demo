@@ -60,5 +60,10 @@ fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
 
     color = color * (f32(in.col.b) / 100.0);
     let alpha = object_color.a * (f32(in.col.a)/ 100.0);
+
+    if (alpha <= 0.0) {
+        discard;
+    }
+
     return vec4<f32>(object_color.rgb, alpha);
 }

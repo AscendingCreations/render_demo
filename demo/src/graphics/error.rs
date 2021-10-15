@@ -35,6 +35,4 @@ pub enum RendererError {
     ImageError(#[from] image::ImageError),
     #[error(transparent)]
     Other(#[from] OtherError),
-    #[error(transparent)]
-    FontError(#[from] wgpu_glyph::ab_glyph::InvalidFont),
 }

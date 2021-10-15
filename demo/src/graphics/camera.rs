@@ -34,19 +34,13 @@ pub struct CameraUniform {
     eye: mint::Vector3<f32>,
 }
 
-pub struct Camera<Controls>
-where
-    Controls: camera::controls::Controls,
-{
+pub struct Camera<Controls: camera::controls::Controls> {
     camera: camera::Camera<Controls>,
     buffer: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
 }
 
-impl<Controls> Camera<Controls>
-where
-    Controls: camera::controls::Controls,
-{
+impl<Controls: camera::controls::Controls> Camera<Controls> {
     pub fn new(
         renderer: &Renderer,
         layout_storage: &mut LayoutStorage,

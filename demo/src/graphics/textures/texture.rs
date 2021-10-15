@@ -1,7 +1,9 @@
 use crate::graphics::RendererError;
 use image::{DynamicImage, GenericImageView, ImageFormat};
-use std::io::{Error, ErrorKind};
-use std::path::Path;
+use std::{
+    io::{Error, ErrorKind},
+    path::Path,
+};
 
 #[derive(Clone, Debug)]
 pub struct Texture {
@@ -31,9 +33,7 @@ impl Texture {
     }
 
     pub fn from_memory(name: String, data: &[u8]) -> Result<Self, RendererError> {
-        let image = image::load_from_memory(data)?;
-
-        Ok(Self::from_image(name, image))
+        Ok(Self::from_image(name, image::load_from_memory(data)?))
     }
 
     pub fn from_memory_with_format(
@@ -41,9 +41,10 @@ impl Texture {
         data: &[u8],
         format: ImageFormat,
     ) -> Result<Self, RendererError> {
-        let image = image::load_from_memory_with_format(data, format)?;
-
-        Ok(Self::from_image(name, image))
+        Ok(Self::from_image(
+            name,
+            image::load_from_memory_with_format(data, format)?,
+        ))
     }
 
     pub fn from_file(path: impl AsRef<Path>) -> Result<Self, RendererError> {
@@ -54,8 +55,7 @@ impl Texture {
             .to_os_string()
             .into_string()
             .map_err(|_| Error::new(ErrorKind::Other, "could not convert name to String"))?;
-        let image = image::open(path)?;
 
-        Ok(Self::from_image(name, image))
+        Ok(Self::from_image(name, image::open(path)?))
     }
 }

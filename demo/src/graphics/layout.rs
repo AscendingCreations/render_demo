@@ -25,14 +25,11 @@ impl LayoutStorage {
         }
     }
 
-    pub fn create_layout<K>(
+    pub fn create_layout<K: Layout>(
         &mut self,
         device: &wgpu::Device,
         layout: K,
-    ) -> Rc<wgpu::BindGroupLayout>
-    where
-        K: Layout,
-    {
+    ) -> Rc<wgpu::BindGroupLayout> {
         let key = layout.layout_key();
 
         let layout = self

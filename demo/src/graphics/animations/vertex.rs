@@ -25,71 +25,11 @@ impl Default for AnimationVertex {
 impl AnimationVertex {
     /// Calculate the stride between two vertices in bytes, i.e. how large each vertex is in bytes.
     pub fn stride() -> usize {
-        let mut stride = std::mem::size_of::<[f32; 2]>();
-        stride += std::mem::size_of::<[f32; 4]>();
-        stride += std::mem::size_of::<[f32; 3]>();
-        stride += std::mem::size_of::<[u32; 2]>();
-        stride += std::mem::size_of::<[u32; 3]>();
-        stride += std::mem::size_of::<i32>();
-
-        stride
-    }
-
-    /// Calculates the offset of each vertex attribute.
-    pub fn offsets() -> Vec<usize> {
-        let mut offsets = vec![];
-        let mut offset = 0;
-
-        offset += std::mem::size_of::<[f32; 2]>();
-        offsets.push(offset);
-        offset += std::mem::size_of::<[u32; 4]>();
-        offsets.push(offset);
-        offset += std::mem::size_of::<[f32; 3]>();
-        offsets.push(offset);
-        offset += std::mem::size_of::<[u32; 2]>();
-        offsets.push(offset);
-        offset += std::mem::size_of::<[u32; 3]>();
-        offsets.push(offset);
-        offset += std::mem::size_of::<i32>();
-        offsets.push(offset);
-
-        offsets
+        std::mem::size_of::<[f32; 15]>()
     }
 
     pub fn attributes() -> Vec<wgpu::VertexAttribute> {
-        let attributes = vec![
-            wgpu::VertexAttribute {
-                offset: 0,
-                shader_location: 0,
-                format: wgpu::VertexFormat::Float32x2,
-            },
-            wgpu::VertexAttribute {
-                offset: std::mem::size_of::<[f32; 2]>() as u64,
-                shader_location: 1,
-                format: wgpu::VertexFormat::Uint32x4,
-            },
-            wgpu::VertexAttribute {
-                offset: std::mem::size_of::<[f32; 6]>() as u64,
-                shader_location: 2,
-                format: wgpu::VertexFormat::Float32x3,
-            },
-            wgpu::VertexAttribute {
-                offset: std::mem::size_of::<[f32; 9]>() as u64,
-                shader_location: 3,
-                format: wgpu::VertexFormat::Uint32x2,
-            },
-            wgpu::VertexAttribute {
-                offset: std::mem::size_of::<[f32; 11]>() as u64,
-                shader_location: 4,
-                format: wgpu::VertexFormat::Uint32x3,
-            },
-            wgpu::VertexAttribute {
-                offset: std::mem::size_of::<[f32; 14]>() as u64,
-                shader_location: 5,
-                format: wgpu::VertexFormat::Sint32,
-            },
-        ];
-
-        attributes
+        // Use their macro to reduce the code we need to write.
+        wgpu::vertex_attr_array![0 => Float32x2, 1 => Uint32x4, 2 => Float32x3, 3 => Uint32x2, 4 => Uint32x3, 5 => Sint32].to_vec()
     }
 }

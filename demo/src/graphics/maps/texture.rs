@@ -6,15 +6,13 @@ pub struct MapTextures {
 
 impl MapTextures {
     pub fn new(device: &wgpu::Device, count: u32) -> Self {
-        let extent = wgpu::Extent3d {
-            width: 32,
-            height: 256,
-            depth_or_array_layers: count,
-        };
-
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Map array Texture"),
-            size: extent,
+            size: wgpu::Extent3d {
+                width: 32,
+                height: 256,
+                depth_or_array_layers: count,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -35,12 +33,10 @@ impl MapTextures {
             array_layer_count: std::num::NonZeroU32::new(count),
         });
 
-        let unused_ids = (0..count).collect();
-
         Self {
             texture,
             texture_view,
-            unused_ids,
+            unused_ids: (0..count).collect(),
         }
     }
 

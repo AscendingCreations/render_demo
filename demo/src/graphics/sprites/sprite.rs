@@ -1,17 +1,17 @@
 use crate::graphics::{allocation::Allocation, SpriteVertex};
 use std::cmp;
 
-//rendering data for all sprites.
-//not to be confused with Actual NPC or Player data.
+/// rendering data for all sprites.
+/// not to be confused with Actual NPC or Player data.
 pub struct Sprite {
     pub pos: [i32; 3],
     pub hw: [u32; 2],
     pub uv: [u32; 4],
     pub color: [u32; 4],
-    //Texture area location in Atlas.
+    /// Texture area location in Atlas.
     pub texture: Option<Allocation>,
     pub bytes: Vec<u8>,
-    //if anything got updated we need to update the buffers too.
+    /// if anything got updated we need to update the buffers too.
     pub changed: bool,
 }
 
@@ -92,9 +92,9 @@ impl Sprite {
         self.changed = false;
     }
 
-    //used to check and update the vertex array.
+    /// used to check and update the vertex array.
     pub fn update(&mut self) {
-        //if pos or tex_pos or color changed.
+        // if pos or tex_pos or color changed.
         if self.changed {
             self.create_quad();
         }

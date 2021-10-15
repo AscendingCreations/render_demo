@@ -1,9 +1,6 @@
 use crate::graphics::{SpriteBuffer, SpriteRenderPipeline, TextureGroup};
 
-pub trait RenderSprite<'a, 'b>
-where
-    'b: 'a,
-{
+pub trait RenderSprite<'a, 'b: 'a> {
     fn render_sprite(
         &mut self,
         buffer: &'b SpriteBuffer,
@@ -12,10 +9,7 @@ where
     );
 }
 
-impl<'a, 'b> RenderSprite<'a, 'b> for wgpu::RenderPass<'a>
-where
-    'b: 'a,
-{
+impl<'a, 'b: 'a> RenderSprite<'a, 'b> for wgpu::RenderPass<'a> {
     fn render_sprite(
         &mut self,
         buffer: &'b SpriteBuffer,

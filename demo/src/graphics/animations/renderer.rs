@@ -1,6 +1,9 @@
 use crate::graphics::{AnimationBuffer, AnimationRenderPipeline, TextureGroup};
 
-pub trait RenderAnimations<'a, 'b: 'a> {
+pub trait RenderAnimations<'a, 'b>
+where
+    'b: 'a,
+{
     fn render_animations(
         &mut self,
         buffer: &'b AnimationBuffer,
@@ -9,7 +12,10 @@ pub trait RenderAnimations<'a, 'b: 'a> {
     );
 }
 
-impl<'a, 'b: 'a> RenderAnimations<'a, 'b> for wgpu::RenderPass<'a> {
+impl<'a, 'b> RenderAnimations<'a, 'b> for wgpu::RenderPass<'a>
+where
+    'b: 'a,
+{
     fn render_animations(
         &mut self,
         buffer: &'b AnimationBuffer,

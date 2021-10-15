@@ -44,7 +44,10 @@ where
     pub animation_texture: TextureGroup,
 }
 
-impl<Controls: camera::controls::Controls> Pass for State<Controls> {
+impl<Controls> Pass for State<Controls>
+where
+    Controls: camera::controls::Controls,
+{
     fn render(
         &mut self,
         encoder: &mut wgpu::CommandEncoder,

@@ -1,6 +1,9 @@
 use crate::graphics::{MapBuffer, MapGroup, MapRenderPipeline, TextureGroup};
 
-pub trait RenderMap<'a, 'b: 'a> {
+pub trait RenderMap<'a, 'b>
+where
+    'b: 'a,
+{
     fn render_maps(
         &mut self,
         buffer: &'b MapBuffer,
@@ -10,7 +13,10 @@ pub trait RenderMap<'a, 'b: 'a> {
     );
 }
 
-impl<'a, 'b: 'a> RenderMap<'a, 'b> for wgpu::RenderPass<'a> {
+impl<'a, 'b> RenderMap<'a, 'b> for wgpu::RenderPass<'a>
+where
+    'b: 'a,
+{
     fn render_maps(
         &mut self,
         buffer: &'b MapBuffer,

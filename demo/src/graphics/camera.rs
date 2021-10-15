@@ -40,7 +40,10 @@ pub struct Camera<Controls: camera::controls::Controls> {
     bind_group: wgpu::BindGroup,
 }
 
-impl<Controls: camera::controls::Controls> Camera<Controls> {
+impl<Controls> Camera<Controls>
+where
+    Controls: camera::controls::Controls,
+{
     pub fn new(
         renderer: &Renderer,
         layout_storage: &mut LayoutStorage,

@@ -103,8 +103,12 @@ async fn main() -> Result<(), RendererError> {
     sprite.color = [0, 0, 100, 100];
     sprite.changed = true;
 
-    let sprite_texture =
-        TextureGroup::from_atlas(renderer.device(), &mut layout_storage, &sprite_atlas);
+    let sprite_texture = TextureGroup::from_view(
+        renderer.device(),
+        &mut layout_storage,
+        &sprite_atlas.texture_view,
+        TextureLayout,
+    );
 
     let sprite_pipeline = SpriteRenderPipeline::new(
         renderer.device(),
@@ -159,8 +163,18 @@ async fn main() -> Result<(), RendererError> {
     }
 
     let mut map_textures = MapTextures::new(renderer.device(), 81);
-    let map_group = MapGroup::from_maps(renderer.device(), &mut layout_storage, &map_textures);
-    let map_texture = TextureGroup::from_atlas(renderer.device(), &mut layout_storage, &map_atlas);
+    let map_group = TextureGroup::from_view(
+        renderer.device(),
+        &mut layout_storage,
+        &map_textures.texture_view,
+        MapLayout,
+    );
+    let map_texture = TextureGroup::from_view(
+        renderer.device(),
+        &mut layout_storage,
+        &map_atlas.texture_view,
+        TextureLayout,
+    );
     let map_buffer = MapBuffer::new(renderer.device());
 
     map.layer = map_textures
@@ -179,8 +193,12 @@ async fn main() -> Result<(), RendererError> {
         &mut layout_storage,
     )?;
     let animation_buffer = AnimationBuffer::new(renderer.device());
-    let animation_texture =
-        TextureGroup::from_atlas(renderer.device(), &mut layout_storage, &animation_atlas);
+    let animation_texture = TextureGroup::from_view(
+        renderer.device(),
+        &mut layout_storage,
+        &animation_atlas.texture_view,
+        TextureLayout,
+    );
 
     let mut animation = Animation::new(allocation);
     animation.pos = [0.0, 0.0, 1.0];

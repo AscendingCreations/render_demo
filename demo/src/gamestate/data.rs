@@ -30,7 +30,7 @@ where
     /// Texture bind group for Map Atlas
     pub map_texture: TextureGroup,
     /// Texture Bind group for Maptextures
-    pub map_group: MapGroup,
+    pub map_group: TextureGroup,
     /// contains the Tile images.
     pub map_atlas: Atlas,
     /// contains the Map layer grids in pixel form.

@@ -1,4 +1,4 @@
-use crate::graphics::{MapBuffer, MapGroup, MapRenderPipeline, TextureGroup};
+use crate::graphics::{MapBuffer, MapRenderPipeline, TextureGroup};
 
 pub trait RenderMap<'a, 'b>
 where
@@ -8,7 +8,7 @@ where
         &mut self,
         buffer: &'b MapBuffer,
         texture_group: &'b TextureGroup,
-        map_group: &'b MapGroup,
+        map_group: &'b TextureGroup,
         pipeline: &'b MapRenderPipeline,
     );
 }
@@ -21,7 +21,7 @@ where
         &mut self,
         buffer: &'b MapBuffer,
         texture_group: &'b TextureGroup,
-        map_group: &'b MapGroup,
+        map_group: &'b TextureGroup,
         pipeline: &'b MapRenderPipeline,
     ) {
         self.set_bind_group(2, &texture_group.bind_group, &[]);

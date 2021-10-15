@@ -9,6 +9,7 @@ mod renderer;
 mod sprites;
 mod textures;
 mod time_uniform;
+mod vertex_buffer;
 
 pub use self::camera::*;
 pub use animations::*;
@@ -21,3 +22,4 @@ pub use renderer::*;
 pub use sprites::*;
 pub use textures::*;
 pub use time_uniform::*;
+pub use vertex_buffer::*;

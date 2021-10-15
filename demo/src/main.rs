@@ -134,7 +134,7 @@ async fn main() -> Result<(), RendererError> {
         controls,
     );
 
-    let sprite_buffer = SpriteBuffer::new(renderer.device());
+    let sprite_buffer = VertexBuffer::new(renderer.device());
 
     let mut map = Map::new();
 
@@ -175,7 +175,7 @@ async fn main() -> Result<(), RendererError> {
         &map_atlas.texture_view,
         TextureLayout,
     );
-    let map_buffer = MapBuffer::new(renderer.device());
+    let map_buffer = VertexBuffer::new(renderer.device());
 
     map.layer = map_textures
         .get_unused_id()
@@ -192,7 +192,7 @@ async fn main() -> Result<(), RendererError> {
         renderer.surface_format(),
         &mut layout_storage,
     )?;
-    let animation_buffer = AnimationBuffer::new(renderer.device());
+    let animation_buffer = VertexBuffer::new(renderer.device());
     let animation_texture = TextureGroup::from_view(
         renderer.device(),
         &mut layout_storage,

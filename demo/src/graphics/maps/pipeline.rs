@@ -1,5 +1,6 @@
 use crate::graphics::{
-    CameraLayout, LayoutStorage, MapLayout, MapVertex, RendererError, TextureLayout, TimeLayout,
+    BufferLayout, CameraLayout, LayoutStorage, MapLayout, MapVertex, RendererError, TextureLayout,
+    TimeLayout,
 };
 
 pub struct MapRenderPipeline {
@@ -38,7 +39,7 @@ impl MapRenderPipeline {
                 module: &shader,
                 entry_point: "main",
                 buffers: &[wgpu::VertexBufferLayout {
-                    array_stride: MapVertex::stride() as u64,
+                    array_stride: MapVertex::stride(),
                     step_mode: wgpu::VertexStepMode::Vertex,
                     attributes: &MapVertex::attributes(),
                 }],

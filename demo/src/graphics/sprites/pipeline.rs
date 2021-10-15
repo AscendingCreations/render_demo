@@ -1,5 +1,6 @@
 use crate::graphics::{
-    CameraLayout, LayoutStorage, RendererError, SpriteVertex, TextureLayout, TimeLayout,
+    BufferLayout, CameraLayout, LayoutStorage, RendererError, SpriteVertex, TextureLayout,
+    TimeLayout,
 };
 
 pub struct SpriteRenderPipeline {
@@ -39,7 +40,7 @@ impl SpriteRenderPipeline {
                 module: &shader,
                 entry_point: "main",
                 buffers: &[wgpu::VertexBufferLayout {
-                    array_stride: SpriteVertex::stride() as u64,
+                    array_stride: SpriteVertex::stride(),
                     step_mode: wgpu::VertexStepMode::Vertex,
                     attributes: &SpriteVertex::attributes(),
                 }],

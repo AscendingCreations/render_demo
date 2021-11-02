@@ -87,7 +87,7 @@ async fn main() -> Result<(), RendererError> {
     println!("{:?}", renderer.adapter().get_info());
     let mut layout_storage = LayoutStorage::new();
     let mut sprite_atlas = Atlas::new(renderer.device(), 2048);
-    let texture = Texture::from_file("images/Tree.png")?;
+    let texture = Texture::from_file("images/fox.png")?;
 
     let allocation = sprite_atlas
         .upload(&texture, renderer.device(), renderer.queue())
@@ -97,9 +97,12 @@ async fn main() -> Result<(), RendererError> {
     sprite.pos[0] = 320;
     sprite.pos[1] = 320;
     sprite.pos[2] = 1;
-    sprite.hw[0] = 64;
-    sprite.hw[1] = 64;
-    sprite.uv = [0, 0, 80, 64];
+    sprite.hw[0] = 48;
+    sprite.hw[1] = 48;
+    sprite.frames = 2;
+    sprite.switch_time = 750;
+    sprite.animate = true;
+    sprite.uv = [48, 48, 48, 48];
     sprite.color = [0, 0, 100, 100];
     sprite.changed = true;
 

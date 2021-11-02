@@ -7,6 +7,8 @@ pub struct SpriteVertex {
     pub position: [f32; 3],
     pub tex_coord: [f32; 3],
     pub color: [u32; 4],
+    pub frames: [u32; 3],
+    pub tex_hw: [u32; 2],
 }
 
 impl Default for SpriteVertex {
@@ -15,24 +17,29 @@ impl Default for SpriteVertex {
             position: [0.0; 3],
             tex_coord: [0.0; 3],
             color: [0; 4],
+            frames: [0; 3],
+            tex_hw: [0; 2],
         }
     }
 }
 
 impl BufferLayout for SpriteVertex {
     fn stride() -> u64 {
-        std::mem::size_of::<[f32; 10]>() as u64
+        std::mem::size_of::<[f32; 15]>() as u64
     }
 
     fn attributes() -> Vec<wgpu::VertexAttribute> {
-        wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3, 2 => Uint32x4].to_vec()
+        wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3, 2 => Uint32x4, 3 => Uint32x3, 4 => Uint32x2]
+            .to_vec()
     }
 
     fn initial_buffer() -> BufferPass {
         let vertex_arr: Vec<SpriteVertex> = iter::repeat(SpriteVertex {
-            position: [0.0, 0.0, 0.0],
-            tex_coord: [0.0, 0.0, 0.0],
-            color: [0, 0, 0, 0],
+            position: [0.0; 3],
+            tex_coord: [0.0; 3],
+            color: [0; 4],
+            frames: [0; 3],
+            tex_hw: [0; 2],
         })
         .take(40_000)
         .collect();

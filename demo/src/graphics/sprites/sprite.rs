@@ -8,6 +8,10 @@ pub struct Sprite {
     pub hw: [u32; 2],
     pub uv: [u32; 4],
     pub color: [u32; 4],
+    pub frames: u32,
+    /// in millsecs 1000 = 1sec
+    pub switch_time: u32,
+    pub animate: bool,
     /// Texture area location in Atlas.
     pub texture: Option<Allocation>,
     pub bytes: Vec<u8>,
@@ -21,6 +25,9 @@ impl Default for Sprite {
             pos: [0; 3],
             hw: [0; 2],
             uv: [0; 4],
+            frames: 0,
+            switch_time: 0,
+            animate: false,
             color: [0, 0, 100, 100],
             texture: None,
             bytes: Vec::new(),
@@ -35,6 +42,9 @@ impl Sprite {
             pos: [0; 3],
             hw: [0; 2],
             uv: [0; 4],
+            frames: 0,
+            switch_time: 0,
+            animate: false,
             color: [0, 0, 100, 100],
             texture: Some(texture),
             bytes: Vec::new(),
@@ -65,26 +75,36 @@ impl Sprite {
             self.uv[1].saturating_add(v).saturating_add(height) as f32,
         );
 
+        let animate = if self.animate { 1 } else { 0 };
+
         let buffer = vec![
             SpriteVertex {
                 position: [x, y, self.pos[2] as f32],
                 tex_coord: [u1, v2, allocation.layer as f32],
                 color: self.color,
+                frames: [self.frames, self.switch_time, animate],
+                tex_hw: [width, height],
             },
             SpriteVertex {
                 position: [w, y, self.pos[2] as f32],
                 tex_coord: [u2, v2, allocation.layer as f32],
                 color: self.color,
+                frames: [self.frames, self.switch_time, animate],
+                tex_hw: [width, height],
             },
             SpriteVertex {
                 position: [w, h, self.pos[2] as f32],
                 tex_coord: [u2, v1, allocation.layer as f32],
                 color: self.color,
+                frames: [self.frames, self.switch_time, animate],
+                tex_hw: [width, height],
             },
             SpriteVertex {
                 position: [x, h, self.pos[2] as f32],
                 tex_coord: [u1, v1, allocation.layer as f32],
                 color: self.color,
+                frames: [self.frames, self.switch_time, animate],
+                tex_hw: [width, height],
             },
         ];
 

@@ -4,19 +4,31 @@ struct Camera {
     eye: vec3<f32>;
 };
 
+[[block]]
+struct Time {
+    seconds: f32;
+};
+
 [[group(0), binding(0)]]
 var<uniform> camera: Camera;
+
+[[group(1), binding(0)]]
+var<uniform> time: Time;
 
 struct VertexInput {
     [[location(0)]] position: vec3<f32>;
     [[location(1)]] tex_coords: vec3<f32>;
     [[location(2)]] color: vec4<u32>;
+    [[location(3)]] frames: vec3<u32>;
+    [[location(4)]] tex_hw: vec2<u32>;
 };
 
 struct VertexOutput {
     [[builtin(position)]] clip_position: vec4<f32>;
     [[location(0)]] tex_coords: vec3<f32>;
     [[location(1)]] col: vec4<u32>;
+    [[location(2)]] frames: vec3<u32>;
+    [[location(3)]] tex_hw: vec2<u32>;
 };
 
 [[stage(vertex)]]
@@ -28,6 +40,9 @@ fn main(
     out.clip_position =  camera.view_proj * vec4<f32>(vertex.position.xyz, 1.0);
     out.tex_coords = vertex.tex_coords;
     out.col = vertex.color;
+    out.frames = vertex.frames;
+    out.tex_hw = vertex.tex_hw;
+
     return out;
 }
 
@@ -46,8 +61,17 @@ fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32>
 // Fragment shader
 [[stage(fragment)]]
 fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
-    let coords = vec3<i32>(i32(in.tex_coords.x), i32(in.tex_coords.y), i32(in.tex_coords.z));
-    let object_color = textureLoad(tex, coords.xy, coords.z, 0);
+    var coords = vec2<i32>(0, 0);
+
+    if (in.frames[2] > 0u) {
+        let id = time.seconds / (f32(in.frames[1]) / 1000.0);
+        let frame = u32(floor(id % f32(in.frames[0])));
+        coords = vec2<i32>(i32((frame * in.tex_hw[0]) + u32(in.tex_coords.x)), i32(in.tex_coords.y));
+    } else {
+        coords = vec2<i32>(i32(in.tex_coords.x), i32(in.tex_coords.y));
+    }
+
+    let object_color = textureLoad(tex, coords.xy, i32(in.tex_coords.z), 0);
     var color =  hueShift(object_color.rgb, f32(in.col.r));
     let ldchange = in.col.g / 1000000000u;
     let ldoffset = f32((in.col.g % 900000000u) / 1000000u) / 100.0;

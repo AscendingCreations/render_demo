@@ -46,10 +46,12 @@ impl BufferLayout for AnimationVertex {
         .take(40_000)
         .collect();
 
-        let indices = (0..10_000)
-            .map(|x| vec![x, x + 1, x + 2, x, x + 2, x + 3])
-            .flatten()
-            .collect::<Vec<u32>>();
+        let mut indices: Vec<u32> = Vec::with_capacity(60_000);
+
+        for i in 0..10_000 {
+            let x = i * 4;
+            indices.append(&mut vec![x, x + 1, x + 2, x, x + 2, x + 3]);
+        }
 
         BufferPass {
             vertices: bytemuck::cast_slice(&vertex_arr).to_vec(),

@@ -32,13 +32,15 @@ impl BufferLayout for MapVertex {
             position: [0.0, 0.0, 0.0],
             tex_coord: [0.0, 0.0, 0.0],
         })
-        .take(360)
+        .take(2_880)
         .collect();
 
-        let indices = (0..90)
-            .map(|x| vec![x, x + 1, x + 2, x, x + 2, x + 3])
-            .flatten()
-            .collect::<Vec<u32>>();
+        let mut indices: Vec<u32> = Vec::with_capacity(4_320);
+
+        for i in 0..720 {
+            let x = i * 4;
+            indices.append(&mut vec![x, x + 1, x + 2, x, x + 2, x + 3]);
+        }
 
         BufferPass {
             vertices: bytemuck::cast_slice(&vertex_arr).to_vec(),

@@ -355,7 +355,7 @@ async fn main() -> Result<(), RendererError> {
         state.map.update(renderer.queue(), &mut state.map_textures);
 
         let mut bytes = vec![];
-        let count = 49;
+        let count = 48;
 
         bytes.append(&mut state.map.bytes.clone());
 

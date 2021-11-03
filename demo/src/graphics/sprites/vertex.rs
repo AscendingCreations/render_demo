@@ -48,7 +48,7 @@ impl BufferLayout for SpriteVertex {
 
         for i in 0..10_000 {
             let x = i * 4;
-            indices.append(&mut vec![x, x + 1, x + 2, x, x + 2, x + 3]);
+            indices.extend_from_slice(&[x, x + 1, x + 2, x, x + 2, x + 3]);
         }
 
         BufferPass {

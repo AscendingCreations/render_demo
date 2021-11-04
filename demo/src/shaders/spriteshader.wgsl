@@ -29,25 +29,30 @@ struct VertexOutput {
     [[location(1)]] col: vec4<u32>;
     [[location(2)]] frames: vec3<u32>;
     [[location(3)]] tex_hw: vec2<u32>;
+    [[location(4)]] size: vec2<f32>;
 };
+
+[[group(2), binding(0)]]
+var tex: texture_2d_array<f32>;
+[[group(2), binding(1)]]
+var sample: sampler;
 
 [[stage(vertex)]]
 fn main(
     vertex: VertexInput,
 ) -> VertexOutput {
     var out: VertexOutput;
+    let size = textureDimensions(tex);
+    let fsize = vec2<f32> (f32(size.x), f32(size.y));
 
     out.clip_position =  camera.view_proj * vec4<f32>(vertex.position.xyz, 1.0);
-    out.tex_coords = vertex.tex_coords;
+    out.tex_coords = vec3<f32>(vertex.tex_coords.x / fsize.x, vertex.tex_coords.y / fsize.y, vertex.tex_coords.z);
     out.col = vertex.color;
     out.frames = vertex.frames;
     out.tex_hw = vertex.tex_hw;
-
+    out.size = fsize;
     return out;
 }
-
-[[group(2), binding(0)]]
-var tex: texture_2d_array<f32>;
 
 fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32>
 {
@@ -61,17 +66,17 @@ fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32>
 // Fragment shader
 [[stage(fragment)]]
 fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
-    var coords = vec2<i32>(0, 0);
+    var coords = vec2<f32>(0.0, 0.0);
 
     if (in.frames[2] > 0u) {
         let id = time.seconds / (f32(in.frames[1]) / 1000.0);
         let frame = u32(floor(id % f32(in.frames[0])));
-        coords = vec2<i32>(i32((frame * in.tex_hw[0]) + u32(in.tex_coords.x)), i32(in.tex_coords.y));
+        coords = vec2<f32>((f32(frame * in.tex_hw[0]) / in.size.x) + in.tex_coords.x, in.tex_coords.y);
     } else {
-        coords = vec2<i32>(i32(in.tex_coords.x), i32(in.tex_coords.y));
+        coords = vec2<f32>(in.tex_coords.x, in.tex_coords.y);
     }
 
-    let object_color = textureLoad(tex, coords.xy, i32(in.tex_coords.z), 0);
+    let object_color = textureSample(tex, sample, coords, i32(in.tex_coords.z));
     var color =  hueShift(object_color.rgb, f32(in.col.r));
     let ldchange = in.col.g / 1000000000u;
     let ldoffset = f32((in.col.g % 900000000u) / 1000000u) / 100.0;
@@ -83,6 +88,11 @@ fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
     }
 
     color = color * (f32(in.col.b) / 100.0);
+
+    if (object_color.a <= 0.3) {
+        discard;
+    }
+
     let alpha = object_color.a * (f32(in.col.a)/ 100.0);
 
     if (alpha <= 0.0) {

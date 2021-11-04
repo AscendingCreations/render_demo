@@ -18,6 +18,11 @@ struct VertexOutput {
     [[location(1)]] zpos: f32;
 };
 
+[[group(2), binding(0)]]
+var tex: texture_2d_array<f32>;
+[[group(2), binding(1)]]
+var sample: sampler;
+
 [[stage(vertex)]]
 fn main(
     vertex: VertexInput,
@@ -29,9 +34,6 @@ fn main(
     out.tex_coords = vertex.tex_coords.xyz;
     return out;
 }
-
-[[group(2), binding(0)]]
-var tex: texture_2d_array<f32>;
 
 [[group(3), binding(0)]]
 var maptex: texture_2d_array<u32>;

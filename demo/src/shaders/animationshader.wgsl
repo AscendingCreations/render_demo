@@ -31,26 +31,32 @@ struct VertexOutput {
     [[location(2)]] hue_alpha: vec2<u32>;
     [[location(3)]] frames: vec3<u32>;
     [[location(5)]] layer: i32;
+    [[location(6)]] size: vec2<f32>;
 };
+
+[[group(2), binding(0)]]
+var tex: texture_2d_array<f32>;
+[[group(2), binding(1)]]
+var sample: sampler;
 
 [[stage(vertex)]]
 fn main(
     vertex: VertexInput,
 ) -> VertexOutput {
     var out: VertexOutput;
+    let size = textureDimensions(tex);
+    let fsize = vec2<f32> (f32(size.x), f32(size.y));
 
     out.clip_position =  camera.view_proj * vec4<f32>(vertex.position.xyz, 1.0);
-    out.tex_coords = vertex.tex_coords;
+    out.tex_coords = vec2<f32>(vertex.tex_coords.x / fsize.x, vertex.tex_coords.y / fsize.y);
     out.tex_data = vertex.tex_data;
     out.hue_alpha = vertex.hue_alpha;
     out.frames = vertex.frames;
     out.layer = vertex.layer;
+    out.size = fsize;
 
     return out;
 }
-
-[[group(2), binding(0)]]
-var tex: texture_2d_array<f32>;
 
 fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32>
 {
@@ -72,8 +78,17 @@ fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
         yframes = in.frames[1];
     }
 
-    let pos = vec2<i32>(i32(((frame % yframes) * in.tex_data[2]) + in.tex_data[0] + u32(in.tex_coords.x)), i32(((frame / yframes) * in.tex_data[3]) + in.tex_data[1] + u32(in.tex_coords.y)));
-    let object_color = textureLoad(tex, pos.xy, in.layer, 0);
+    let pos = vec2<f32>(
+        ((f32(((frame % yframes) * in.tex_data[2]) + in.tex_data[0]) / in.size.x) + in.tex_coords.x),
+        ((f32(((frame / yframes) * in.tex_data[3]) + in.tex_data[1]) / in.size.y) + in.tex_coords.y)
+    );
+
+    let object_color = textureSample(tex, sample, pos, in.layer);
+
+    if (object_color.a <= 0.3) {
+        discard;
+    }
+
     let alpha = object_color.a * (f32(in.hue_alpha[1]) / 100.0);
 
     if (alpha <= 0.0) {

@@ -74,23 +74,26 @@ where
                     load: wgpu::LoadOp::Clear(1.0),
                     store: true,
                 }),
-                stencil_ops: None,
+                stencil_ops: Some(wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(0),
+                    store: true,
+                }),
             }),
         });
 
         pass.set_bind_group(0, self.camera.bind_group(), &[]);
         pass.set_bind_group(1, self.time_group.bind_group(), &[]);
 
-        pass.render_sprite(
-            &self.sprite_buffer,
-            &self.sprite_texture,
-            &self.sprite_pipeline,
-        );
         pass.render_maps(
             &self.map_buffer,
             &self.map_texture,
             &self.map_group,
             &self.map_pipeline,
+        );
+        pass.render_sprite(
+            &self.sprite_buffer,
+            &self.sprite_texture,
+            &self.sprite_pipeline,
         );
         pass.render_animations(
             &self.animation_buffer,

@@ -18,7 +18,12 @@ impl TextureGroup {
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Nearest,
             mipmap_filter: wgpu::FilterMode::Nearest,
-            ..Default::default()
+            lod_min_clamp: -100.0,
+            lod_max_clamp: 100.0,
+            compare: None,
+            anisotropy_clamp: None,
+            label: None,
+            border_color: None,
         });
 
         let entries = vec![

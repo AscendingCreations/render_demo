@@ -94,15 +94,15 @@ async fn main() -> Result<(), RendererError> {
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
     let mut sprite = Sprite::new(allocation);
 
-    sprite.pos[0] = 320;
-    sprite.pos[1] = 320;
-    sprite.pos[2] = 1;
+    sprite.pos[0] = 32;
+    sprite.pos[1] = 32;
+    sprite.pos[2] = 6;
     sprite.hw[0] = 48;
     sprite.hw[1] = 48;
     sprite.frames = 2;
     sprite.switch_time = 750;
-    sprite.animate = true;
-    sprite.uv = [96, 48, 48, 48];
+    sprite.animate = false;
+    sprite.uv = [48, 96, 48, 48];
     sprite.color = [0, 0, 100, 100];
     sprite.changed = true;
 
@@ -148,6 +148,7 @@ async fn main() -> Result<(), RendererError> {
     }
 
     map.set_tile((1, 31, 1), 2, 0, 0, 100);
+    map.set_tile((1, 28, 6), 2, 0, 0, 100);
     map.set_tile((0, 0, 1), 2, 0, 0, 100);
     map.pos = [32, 32];
     let map_pipeline = MapRenderPipeline::new(

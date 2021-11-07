@@ -56,8 +56,8 @@ impl Sprite {
         let (x, y, w, h) = (
             self.pos[0] as f32,
             self.pos[1] as f32,
-            self.pos[0].saturating_add(self.hw[0] as i32) as f32,
-            self.pos[1].saturating_add(self.hw[1] as i32) as f32,
+            self.pos[0].saturating_add((self.hw[0] - 1) as i32) as f32,
+            self.pos[1].saturating_add((self.hw[1] - 1) as i32) as f32,
         );
 
         let allocation = match &self.texture {

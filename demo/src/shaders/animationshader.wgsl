@@ -79,15 +79,11 @@ fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
     }
 
     let pos = vec2<f32>(
-        ((f32(((frame % yframes) * in.tex_data[2]) + in.tex_data[0]) / in.size.x) + in.tex_coords.x),
-        ((f32(((frame / yframes) * in.tex_data[3]) + in.tex_data[1]) / in.size.y) + in.tex_coords.y)
+        ((f32(((frame % yframes) * in.tex_data[2]) + in.tex_data[0]) / in.size.x) + in.tex_coords.x  + (.5 / f32(in.size.x))),
+        ((f32(((frame / yframes) * in.tex_data[3]) + in.tex_data[1]) / in.size.y) + in.tex_coords.y  + (.5 / f32(in.size.x)))
     );
 
     let object_color = textureSample(tex, sample, pos, in.layer);
-
-    if (object_color.a <= 0.3) {
-        discard;
-    }
 
     let alpha = object_color.a * (f32(in.hue_alpha[1]) / 100.0);
 

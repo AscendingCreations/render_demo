@@ -92,19 +92,19 @@ async fn main() -> Result<(), RendererError> {
     let allocation = sprite_atlas
         .upload(&texture, renderer.device(), renderer.queue())
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
-    let mut sprite = Sprite::new(allocation);
+    let mut sprite = [Sprite::new(allocation.clone()), Sprite::new(allocation)];
 
-    sprite.pos[0] = 32;
-    sprite.pos[1] = 32;
-    sprite.pos[2] = 6;
-    sprite.hw[0] = 48;
-    sprite.hw[1] = 48;
-    sprite.frames = 2;
-    sprite.switch_time = 750;
-    sprite.animate = false;
-    sprite.uv = [48, 96, 48, 48];
-    sprite.color = [0, 0, 100, 100];
-    sprite.changed = true;
+    sprite[0].pos = [32, 32, 5];
+    sprite[0].hw = [48, 48];
+    sprite[0].uv = [48, 96, 48, 48];
+    sprite[0].color = [0, 0, 100, 50];
+    sprite[0].changed = true;
+
+    sprite[1].pos = [40, 32, 6];
+    sprite[1].hw = [48, 48];
+    sprite[1].uv = [48, 96, 48, 48];
+    sprite[1].color = [0, 0, 100, 100];
+    sprite[1].changed = true;
 
     let sprite_texture = TextureGroup::from_view(
         renderer.device(),
@@ -148,7 +148,7 @@ async fn main() -> Result<(), RendererError> {
     }
 
     map.set_tile((1, 31, 1), 2, 0, 0, 100);
-    map.set_tile((1, 28, 6), 2, 0, 0, 100);
+    map.set_tile((1, 30, 6), 2, 0, 0, 50);
     map.set_tile((0, 0, 1), 2, 0, 0, 100);
     map.pos = [32, 32];
     let map_pipeline = MapRenderPipeline::new(
@@ -343,12 +343,14 @@ async fn main() -> Result<(), RendererError> {
             .create_view(&wgpu::TextureViewDescriptor::default());
         views.insert("framebuffer".to_string(), view);
 
-        state.sprite.update();
+        state.sprite[0].update();
+        state.sprite[1].update();
 
         let mut bytes = vec![];
-        let count = 6;
+        let count = 12;
 
-        bytes.append(&mut state.sprite.bytes.clone());
+        bytes.append(&mut state.sprite[0].bytes.clone());
+        bytes.append(&mut state.sprite[1].bytes.clone());
 
         state.sprite_buffer.set_buffer(renderer.queue(), &bytes);
         state.sprite_buffer.set_indice_count(count as u64);

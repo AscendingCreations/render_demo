@@ -12,7 +12,7 @@ where
     /// time for all animation on shader side.
     pub time_group: TimeGroup,
     /// Sprite data TODO: Make an array,
-    pub sprite: Sprite,
+    pub sprite: [Sprite; 2],
     /// Render pipe line for Sprites
     pub sprite_pipeline: SpriteRenderPipeline,
     /// Vertex buffer group for Sprites

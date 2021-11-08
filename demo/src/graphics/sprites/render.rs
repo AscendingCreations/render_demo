@@ -1,4 +1,4 @@
-use crate::graphics::{SpriteRenderPipeline, SpriteVertex, TextureGroup, VertexBuffer};
+pub(crate) use crate::graphics::{SpriteRenderPipeline, SpriteVertex, TextureGroup, VertexBuffer};
 
 pub trait RenderSprite<'a, 'b>
 where

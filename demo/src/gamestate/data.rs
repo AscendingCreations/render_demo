@@ -1,4 +1,4 @@
-use crate::graphics::*;
+pub(crate) use crate::graphics::*;
 use std::collections::HashMap;
 
 pub struct State<Controls>

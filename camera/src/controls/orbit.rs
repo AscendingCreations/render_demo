@@ -55,15 +55,20 @@ pub struct OrbitControls {
 }
 
 impl OrbitControls {
-    pub fn new(
-        settings: OrbitSettings,
-        center: [f32; 3],
-        radius: f32,
-    ) -> Self {
-        let radius = radius.clamp(
-            settings.min_radius,
-            settings.max_radius,
-        );
+    pub fn azimuth(&self) -> f32 {
+        self.azimuth
+    }
+
+    pub fn center(&self) -> [f32; 3] {
+        self.center.into()
+    }
+
+    pub fn inputs(&self) -> &OrbitInputs {
+        &self.inputs
+    }
+
+    pub fn new(settings: OrbitSettings, center: [f32; 3], radius: f32) -> Self {
+        let radius = radius.clamp(settings.min_radius, settings.max_radius);
 
         Self {
             inputs: OrbitInputs::default(),
@@ -78,26 +83,12 @@ impl OrbitControls {
         }
     }
 
-    pub fn inputs(&self) -> &OrbitInputs {
-        &self.inputs
+    pub fn polar(&self) -> f32 {
+        self.polar
     }
 
-    pub fn set_inputs(&mut self, inputs: OrbitInputs) {
-        self.inputs = inputs;
-        self.changed = true;
-    }
-
-    pub fn center(&self) -> [f32; 3] {
-        self.center.into()
-    }
-
-    pub fn set_center(&mut self, center: [f32; 3]) {
-        self.center = center.into();
-        self.changed = true;
-    }
-
-    pub fn azimuth(&self) -> f32 {
-        self.azimuth
+    pub fn radius(&self) -> f32 {
+        self.radius
     }
 
     pub fn set_aizmuth(&mut self, azimuth: f32) {
@@ -105,36 +96,28 @@ impl OrbitControls {
         self.changed = true;
     }
 
-    pub fn polar(&self) -> f32 {
-        self.polar
-    }
-
-    pub fn set_polar(&mut self, polar: f32) {
-        self.polar = polar.clamp(
-            self.settings.min_polar,
-            self.settings.max_polar,
-        );
+    pub fn set_center(&mut self, center: [f32; 3]) {
+        self.center = center.into();
         self.changed = true;
     }
 
-    pub fn radius(&self) -> f32 {
-        self.radius
+    pub fn set_inputs(&mut self, inputs: OrbitInputs) {
+        self.inputs = inputs;
+        self.changed = true;
+    }
+
+    pub fn set_polar(&mut self, polar: f32) {
+        self.polar = polar.clamp(self.settings.min_polar, self.settings.max_polar);
+        self.changed = true;
     }
 
     pub fn set_radius(&mut self, radius: f32) {
-        self.radius = radius.clamp(
-            self.settings.min_radius,
-            self.settings.max_radius,
-        );
+        self.radius = radius.clamp(self.settings.min_radius, self.settings.max_radius);
         self.changed = true;
     }
 }
 
 impl Controls for OrbitControls {
-    fn view(&self) -> mint::ColumnMatrix4<f32> {
-        self.view.into()
-    }
-
     fn eye(&self) -> [f32; 3] {
         self.eye.into()
     }
@@ -145,13 +128,12 @@ impl Controls for OrbitControls {
         if self.inputs.rotate_x != 0.0 || self.inputs.rotate_y != 0.0 {
             // Update the azimuth and polar angle.
             self.azimuth -= self.settings.sensitivity * delta * self.inputs.rotate_x;
-            self.polar   += self.settings.sensitivity * delta * self.inputs.rotate_y;
+            self.polar += self.settings.sensitivity * delta * self.inputs.rotate_y;
 
             // Limit the polar angle.
-            self.polar = self.polar.clamp(
-                self.settings.min_polar,
-                self.settings.max_polar,
-            );
+            self.polar = self
+                .polar
+                .clamp(self.settings.min_polar, self.settings.max_polar);
 
             // Keep the azimuth within [0, 2 * PI[.
             self.azimuth = self.azimuth.rem_euclid(2.0 * std::f32::consts::PI);
@@ -167,10 +149,9 @@ impl Controls for OrbitControls {
             self.radius -= self.settings.zoom_speed * self.inputs.zoom;
 
             // Limit the radius.
-            self.radius = self.radius.clamp(
-                self.settings.min_radius,
-                self.settings.max_radius,
-            );
+            self.radius = self
+                .radius
+                .clamp(self.settings.min_radius, self.settings.max_radius);
 
             // Reset the input.
             self.inputs.zoom = 0.0;
@@ -198,5 +179,9 @@ impl Controls for OrbitControls {
 
         self.changed = false;
         changed
+    }
+
+    fn view(&self) -> mint::ColumnMatrix4<f32> {
+        self.view.into()
     }
 }

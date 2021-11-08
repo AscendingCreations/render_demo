@@ -30,8 +30,8 @@ impl Layout for MapLayout {
         ];
 
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &entries,
             label: Some("Map_texture_bind_group_layout"),
+            entries: &entries,
         })
     }
 }

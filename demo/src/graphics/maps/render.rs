@@ -1,4 +1,4 @@
-use crate::graphics::{MapRenderPipeline, MapVertex, TextureGroup, VertexBuffer};
+pub(crate) use crate::graphics::{MapRenderPipeline, MapVertex, TextureGroup, VertexBuffer};
 
 pub trait RenderMap<'a, 'b>
 where

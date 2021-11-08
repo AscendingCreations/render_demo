@@ -1,4 +1,4 @@
-use crate::graphics::{
+pub(crate) use crate::graphics::{
     BufferLayout, CameraLayout, LayoutStorage, MapLayout, MapVertex, RendererError, TextureLayout,
     TimeLayout,
 };
@@ -44,22 +44,13 @@ impl MapRenderPipeline {
                     attributes: &MapVertex::attributes(),
                 }],
             },
-            fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: "main",
-                targets: &[wgpu::ColorTargetState {
-                    format: surface_format,
-                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
-                    write_mask: wgpu::ColorWrites::ALL,
-                }],
-            }),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw,
                 cull_mode: None,
-                polygon_mode: wgpu::PolygonMode::Fill,
                 clamp_depth: false,
+                polygon_mode: wgpu::PolygonMode::Fill,
                 conservative: false,
             },
             depth_stencil: Some(wgpu::DepthStencilState {
@@ -70,6 +61,15 @@ impl MapRenderPipeline {
                 bias: wgpu::DepthBiasState::default(),
             }),
             multisample: wgpu::MultisampleState::default(),
+            fragment: Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: "main",
+                targets: &[wgpu::ColorTargetState {
+                    format: surface_format,
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    write_mask: wgpu::ColorWrites::ALL,
+                }],
+            }),
         });
 
         Ok(Self { render_pipeline })

@@ -1,4 +1,4 @@
-use crate::graphics::SpriteVertex;
+pub(crate) use crate::graphics::SpriteVertex;
 use std::marker::PhantomData;
 use wgpu::util::DeviceExt;
 
@@ -8,9 +8,9 @@ pub struct BufferPass {
 }
 
 pub trait BufferLayout {
-    fn stride() -> u64;
-    fn initial_buffer() -> BufferPass;
     fn attributes() -> Vec<wgpu::VertexAttribute>;
+    fn initial_buffer() -> BufferPass;
+    fn stride() -> u64;
 }
 
 pub struct VertexBuffer<K: BufferLayout> {
@@ -24,34 +24,43 @@ pub struct VertexBuffer<K: BufferLayout> {
 }
 
 impl<K: BufferLayout> VertexBuffer<K> {
+    /// Gets Vertex buffers max size in bytes.
+    pub fn buffer_max(&self) -> u64 {
+        self.buffer_max
+    }
+
+    /// Gets Vertex buffers struct stride.
+    pub fn buffer_stride(&self) -> u64 {
+        self.buffer_stride
+    }
+
+    /// Gets the indice count.
+    pub fn indice_count(&self) -> u64 {
+        self.indice_count
+    }
+
     /// creates a new pre initlized VertexBuffer with a Static size.
     /// static size is based on the initial BufferPass::vertices length.
     pub fn new(device: &wgpu::Device) -> Self {
         let buffers = K::initial_buffer();
-        let buffer_stride = K::stride();
-        let buffer_max = buffers.vertices.len() as u64;
-
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            contents: &buffers.vertices,
-            usage: wgpu::BufferUsages::VERTEX
-                | wgpu::BufferUsages::STORAGE
-                | wgpu::BufferUsages::COPY_DST,
-            label: Some("Vertex Buffer"),
-        });
-
-        let indice_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            contents: &buffers.indices,
-            usage: wgpu::BufferUsages::INDEX,
-            label: Some("Indices Buffer"),
-        });
 
         VertexBuffer {
-            vertex_buffer,
-            indice_buffer,
-            indice_count: (buffers.indices.len() / 4) as u64,
-            vertex_count: 0, // set to 0 as we set this as we add sprites.
-            buffer_max,
-            buffer_stride,
+            vertex_buffer: device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Vertex Buffer"),
+                contents: &buffers.vertices,
+                usage: wgpu::BufferUsages::VERTEX
+                    | wgpu::BufferUsages::STORAGE
+                    | wgpu::BufferUsages::COPY_DST,
+            }),
+            indice_buffer: device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Indices Buffer"),
+                contents: &buffers.indices,
+                usage: wgpu::BufferUsages::INDEX,
+            }),
+            vertex_count: 0,
+            indice_count: (buffers.indices.len() / 4) as u64, // set to 0 as we set this as we add sprites.
+            buffer_max: buffers.vertices.len() as u64,
+            buffer_stride: K::stride(),
             phantom_data: PhantomData,
         }
     }
@@ -77,20 +86,5 @@ impl<K: BufferLayout> VertexBuffer<K> {
     /// Gets the Vertex elements count.
     pub fn vertex_count(&self) -> u64 {
         self.vertex_count
-    }
-
-    /// Gets the indice count.
-    pub fn indice_count(&self) -> u64 {
-        self.indice_count
-    }
-
-    /// Gets Vertex buffers max size in bytes.
-    pub fn buffer_max(&self) -> u64 {
-        self.buffer_max
-    }
-
-    /// Gets Vertex buffers struct stride.
-    pub fn buffer_stride(&self) -> u64 {
-        self.buffer_stride
     }
 }

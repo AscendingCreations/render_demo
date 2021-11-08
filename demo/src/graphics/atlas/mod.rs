@@ -1,7 +1,7 @@
-pub mod allocation;
-pub mod allocator;
-pub mod handler;
-pub mod layer;
+pub(crate) mod allocation;
+pub(crate) mod allocator;
+pub(crate) mod handler;
+pub(crate) mod layer;
 
 pub use allocation::Allocation;
 pub use allocator::Allocator;

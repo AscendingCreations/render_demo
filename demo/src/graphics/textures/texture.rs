@@ -1,4 +1,4 @@
-use crate::graphics::RendererError;
+pub(crate) use crate::graphics::RendererError;
 use image::{DynamicImage, GenericImageView, ImageFormat};
 use std::{
     io::{Error, ErrorKind},
@@ -17,12 +17,16 @@ impl Texture {
         &self.bytes
     }
 
-    pub fn size(&self) -> (u32, u32) {
-        self.size
-    }
+    pub fn from_file(path: impl AsRef<Path>) -> Result<Self, RendererError> {
+        let name = path
+            .as_ref()
+            .file_name()
+            .ok_or_else(|| Error::new(ErrorKind::Other, "could not get filename"))?
+            .to_os_string()
+            .into_string()
+            .map_err(|_| Error::new(ErrorKind::Other, "could not convert name to String"))?;
 
-    pub fn name(&self) -> &str {
-        self.name.as_str()
+        Ok(Self::from_image(name, image::open(path)?))
     }
 
     pub fn from_image(name: String, image: DynamicImage) -> Self {
@@ -47,15 +51,11 @@ impl Texture {
         ))
     }
 
-    pub fn from_file(path: impl AsRef<Path>) -> Result<Self, RendererError> {
-        let name = path
-            .as_ref()
-            .file_name()
-            .ok_or_else(|| Error::new(ErrorKind::Other, "could not get filename"))?
-            .to_os_string()
-            .into_string()
-            .map_err(|_| Error::new(ErrorKind::Other, "could not convert name to String"))?;
+    pub fn name(&self) -> &str {
+        self.name.as_str()
+    }
 
-        Ok(Self::from_image(name, image::open(path)?))
+    pub fn size(&self) -> (u32, u32) {
+        self.size
     }
 }

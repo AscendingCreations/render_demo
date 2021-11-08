@@ -1,4 +1,4 @@
-use crate::graphics::{allocation::Allocation, BufferLayout, BufferPass, SpriteVertex};
+pub(crate) use crate::graphics::{allocation::Allocation, BufferLayout, BufferPass, SpriteVertex};
 use std::cmp;
 
 /// rendering data for all sprites.
@@ -37,21 +37,6 @@ impl Default for Sprite {
 }
 
 impl Sprite {
-    pub fn new(texture: Allocation) -> Self {
-        Self {
-            pos: [0; 3],
-            hw: [0; 2],
-            uv: [0; 4],
-            frames: 0,
-            switch_time: 0,
-            animate: false,
-            color: [0, 0, 100, 100],
-            texture: Some(texture),
-            bytes: Vec::new(),
-            changed: true,
-        }
-    }
-
     pub fn create_quad(&mut self) {
         let (x, y, w, h) = (
             self.pos[0] as f32,
@@ -110,6 +95,21 @@ impl Sprite {
 
         self.bytes = bytemuck::cast_slice(&buffer).to_vec();
         self.changed = false;
+    }
+
+    pub fn new(texture: Allocation) -> Self {
+        Self {
+            pos: [0; 3],
+            hw: [0; 2],
+            uv: [0; 4],
+            frames: 0,
+            switch_time: 0,
+            animate: false,
+            color: [0, 0, 100, 100],
+            texture: Some(texture),
+            bytes: Vec::new(),
+            changed: true,
+        }
     }
 
     /// used to check and update the vertex array.

@@ -9,6 +9,10 @@ pub struct FrameTime {
 }
 
 impl FrameTime {
+    pub fn delta_seconds(&self) -> f32 {
+        self.delta_seconds
+    }
+
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         let instant = Instant::now();
@@ -19,10 +23,6 @@ impl FrameTime {
             frame_time: instant,
             start_time: instant,
         }
-    }
-
-    pub fn delta_seconds(&self) -> f32 {
-        self.delta_seconds
     }
 
     pub fn seconds(&self) -> f32 {

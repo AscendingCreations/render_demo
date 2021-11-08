@@ -31,6 +31,10 @@ pub struct FlatControls {
 }
 
 impl FlatControls {
+    pub fn inputs(&self) -> &FlatInputs {
+        &self.inputs
+    }
+
     pub fn new(settings: FlatSettings) -> Self {
         Self {
             inputs: FlatInputs::default(),
@@ -41,10 +45,6 @@ impl FlatControls {
         }
     }
 
-    pub fn inputs(&self) -> &FlatInputs {
-        &self.inputs
-    }
-
     pub fn set_inputs(&mut self, inputs: FlatInputs) {
         self.inputs = inputs;
         self.changed = true;
@@ -52,10 +52,6 @@ impl FlatControls {
 }
 
 impl Controls for FlatControls {
-    fn view(&self) -> mint::ColumnMatrix4<f32> {
-        self.view.into()
-    }
-
     fn eye(&self) -> [f32; 3] {
         self.eye.into()
     }
@@ -69,5 +65,9 @@ impl Controls for FlatControls {
 
         self.changed = false;
         changed
+    }
+
+    fn view(&self) -> mint::ColumnMatrix4<f32> {
+        self.view.into()
     }
 }

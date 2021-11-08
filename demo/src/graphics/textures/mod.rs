@@ -1,6 +1,6 @@
-mod texture;
-mod texturegroup;
-mod texturelayout;
+pub(crate) mod texture;
+pub(crate) mod texturegroup;
+pub(crate) mod texturelayout;
 
 pub use texture::Texture;
 pub use texturegroup::TextureGroup;

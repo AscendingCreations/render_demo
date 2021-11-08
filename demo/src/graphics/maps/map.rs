@@ -1,4 +1,4 @@
-use crate::graphics::{MapTextures, MapVertex};
+pub(crate) use crate::graphics::{MapTextures, MapVertex};
 use image::{self, ImageBuffer};
 
 #[allow(dead_code)]
@@ -64,20 +64,6 @@ pub struct Map {
 }
 
 impl Map {
-    pub fn new() -> Self {
-        let image = ImageBuffer::new(32, 256);
-
-        Self {
-            world_pos: [0; 3],
-            pos: [0; 2],
-            layer: 0,
-            bytes: Vec::new(),
-            image,
-            img_changed: true,
-            changed: true,
-        }
-    }
-
     pub fn create_quad(&mut self) {
         let (x, y, w, h) = (
             self.pos[0] as f32,
@@ -115,6 +101,29 @@ impl Map {
         self.bytes = bytemuck::cast_slice(&buffer).to_vec();
     }
 
+    pub fn get_tile(&mut self, x: u32, y: u32) -> (u32, u32, u32, u32) {
+        if x >= 32 || y >= 256 {
+            return (0, 0, 0, 0);
+        }
+        let pixel = self.image.get_pixel(x, y);
+        let image::Rgba(data) = *pixel;
+        (data[0], data[1], data[2], data[3])
+    }
+
+    pub fn new() -> Self {
+        let image = ImageBuffer::new(32, 256);
+
+        Self {
+            world_pos: [0; 3],
+            pos: [0; 2],
+            layer: 0,
+            bytes: Vec::new(),
+            image,
+            img_changed: true,
+            changed: true,
+        }
+    }
+
     pub fn set_tile(&mut self, pos: (u32, u32, u32), id: u32, layer: u32, hue: u32, alpha: u32) {
         if pos.0 >= 32 || pos.1 >= 32 || pos.2 >= 8 {
             return;
@@ -123,15 +132,6 @@ impl Map {
         let pixel = self.image.get_pixel_mut(pos.0, pos.1 + (pos.2 * 32));
         *pixel = image::Rgba([id, layer, hue, alpha]);
         self.img_changed = true;
-    }
-
-    pub fn get_tile(&mut self, x: u32, y: u32) -> (u32, u32, u32, u32) {
-        if x >= 32 || y >= 256 {
-            return (0, 0, 0, 0);
-        }
-        let pixel = self.image.get_pixel(x, y);
-        let image::Rgba(data) = *pixel;
-        (data[0], data[1], data[2], data[3])
     }
 
     /// used to check and update the vertex array or Texture witht he image buffer.

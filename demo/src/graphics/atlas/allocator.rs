@@ -4,16 +4,6 @@ pub struct Allocator {
 }
 
 impl Allocator {
-    pub fn new(size: u32) -> Self {
-        let allocator =
-            guillotiere::AtlasAllocator::new(guillotiere::Size::new(size as i32, size as i32));
-
-        Self {
-            allocator,
-            allocations: 0,
-        }
-    }
-
     pub fn allocate(&mut self, width: u32, height: u32) -> Option<guillotiere::Allocation> {
         let allocation = self
             .allocator
@@ -22,6 +12,10 @@ impl Allocator {
         self.allocations += 1;
 
         Some(allocation)
+    }
+
+    pub fn clear(&mut self) {
+        self.allocator.clear();
     }
 
     pub fn deallocate(&mut self, allocation: guillotiere::Allocation) {
@@ -34,7 +28,13 @@ impl Allocator {
         self.allocations == 0
     }
 
-    pub fn clear(&mut self) {
-        self.allocator.clear();
+    pub fn new(size: u32) -> Self {
+        let allocator =
+            guillotiere::AtlasAllocator::new(guillotiere::Size::new(size as i32, size as i32));
+
+        Self {
+            allocator,
+            allocations: 0,
+        }
     }
 }

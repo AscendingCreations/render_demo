@@ -2,7 +2,7 @@ use bytemuck::{Pod, Zeroable};
 use crevice::std140::{AsStd140, Std140};
 use wgpu::util::DeviceExt;
 
-use super::{Layout, LayoutStorage, Renderer};
+pub(crate) use super::{Layout, LayoutStorage, Renderer};
 
 #[repr(C)]
 #[derive(Clone, Copy, Hash, Pod, Zeroable)]
@@ -11,6 +11,7 @@ pub struct TimeLayout;
 impl Layout for TimeLayout {
     fn create_layout(&self, device: &wgpu::Device) -> wgpu::BindGroupLayout {
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("time_bind_group_layout"),
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
                 visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
@@ -21,7 +22,6 @@ impl Layout for TimeLayout {
                 },
                 count: None,
             }],
-            label: Some("time_bind_group_layout"),
         })
     }
 }
@@ -38,6 +38,10 @@ pub struct TimeGroup {
 }
 
 impl TimeGroup {
+    pub fn bind_group(&self) -> &wgpu::BindGroup {
+        &self.bind_group
+    }
+
     pub fn new(renderer: &Renderer, layout_storage: &mut LayoutStorage) -> Self {
         let time_info = TimeUniform { seconds: 0.0 };
 
@@ -57,19 +61,15 @@ impl TimeGroup {
         let bind_group = renderer
             .device()
             .create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("time_bind_group"),
                 layout: &layout,
                 entries: &[wgpu::BindGroupEntry {
                     binding: 0,
                     resource: buffer.as_entire_binding(),
                 }],
-                label: Some("time_bind_group"),
             });
 
         Self { buffer, bind_group }
-    }
-
-    pub fn bind_group(&self) -> &wgpu::BindGroup {
-        &self.bind_group
     }
 
     pub fn update(&mut self, renderer: &Renderer, seconds: f32) {

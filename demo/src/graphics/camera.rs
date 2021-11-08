@@ -4,7 +4,7 @@ use crevice::std140::{AsStd140, Std140};
 use ultraviolet::Mat4;
 use wgpu::util::DeviceExt;
 
-use super::{Layout, LayoutStorage, Renderer};
+pub(crate) use super::{Layout, LayoutStorage, Renderer};
 
 #[repr(C)]
 #[derive(Clone, Copy, Hash, Pod, Zeroable)]
@@ -13,6 +13,7 @@ pub struct CameraLayout;
 impl Layout for CameraLayout {
     fn create_layout(&self, device: &wgpu::Device) -> wgpu::BindGroupLayout {
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("camera_bind_group_layout"),
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
                 visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
@@ -23,7 +24,6 @@ impl Layout for CameraLayout {
                 },
                 count: None,
             }],
-            label: Some("camera_bind_group_layout"),
         })
     }
 }
@@ -44,6 +44,22 @@ impl<Controls> Camera<Controls>
 where
     Controls: camera::controls::Controls,
 {
+    pub fn bind_group(&self) -> &wgpu::BindGroup {
+        &self.bind_group
+    }
+
+    pub fn controls(&self) -> &Controls {
+        self.camera.controls()
+    }
+
+    pub fn controls_mut(&mut self) -> &mut Controls {
+        self.camera.controls_mut()
+    }
+
+    pub fn eye(&self) -> [f32; 3] {
+        self.camera.eye()
+    }
+
     pub fn new(
         renderer: &Renderer,
         layout_storage: &mut LayoutStorage,
@@ -99,32 +115,12 @@ where
         self.camera.projection()
     }
 
-    pub fn set_projection(&mut self, projection: Projection) {
-        self.camera.set_projection(projection);
-    }
-
-    pub fn controls(&self) -> &Controls {
-        self.camera.controls()
-    }
-
-    pub fn controls_mut(&mut self) -> &mut Controls {
-        self.camera.controls_mut()
-    }
-
     pub fn set_controls(&mut self, controls: Controls) -> Controls {
         self.camera.set_controls(controls)
     }
 
-    pub fn view(&self) -> mint::ColumnMatrix4<f32> {
-        self.camera.view()
-    }
-
-    pub fn eye(&self) -> [f32; 3] {
-        self.camera.eye()
-    }
-
-    pub fn bind_group(&self) -> &wgpu::BindGroup {
-        &self.bind_group
+    pub fn set_projection(&mut self, projection: Projection) {
+        self.camera.set_projection(projection);
     }
 
     pub fn update(&mut self, renderer: &Renderer, delta: f32) {
@@ -143,5 +139,9 @@ where
         renderer
             .queue()
             .write_buffer(&self.buffer, 0, camera_info.as_std140().as_bytes());
+    }
+
+    pub fn view(&self) -> mint::ColumnMatrix4<f32> {
+        self.camera.view()
     }
 }

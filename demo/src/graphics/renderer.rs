@@ -6,7 +6,7 @@ use winit::{
     window::Window,
 };
 
-use super::RendererError;
+pub(crate) use super::RendererError;
 
 pub struct Renderer {
     adapter: wgpu::Adapter,
@@ -28,28 +28,12 @@ impl Renderer {
         &self.device
     }
 
-    pub fn queue(&self) -> &wgpu::Queue {
-        &self.queue
-    }
-
-    pub fn surface(&self) -> &wgpu::Surface {
-        &self.surface
-    }
-
-    pub fn window(&self) -> &Window {
-        &self.window
-    }
-
-    pub fn surface_format(&self) -> wgpu::TextureFormat {
-        self.surface_format
-    }
-
-    pub fn size(&self) -> PhysicalSize<u32> {
-        self.size
-    }
-
     pub fn present_mode(&self) -> wgpu::PresentMode {
         self.present_mode
+    }
+
+    pub fn queue(&self) -> &wgpu::Queue {
+        &self.queue
     }
 
     pub fn resize(&mut self, size: PhysicalSize<u32>) -> Result<(), RendererError> {
@@ -74,6 +58,18 @@ impl Renderer {
         self.size = size;
 
         Ok(())
+    }
+
+    pub fn size(&self) -> PhysicalSize<u32> {
+        self.size
+    }
+
+    pub fn surface(&self) -> &wgpu::Surface {
+        &self.surface
+    }
+
+    pub fn surface_format(&self) -> wgpu::TextureFormat {
+        self.surface_format
     }
 
     pub fn update(
@@ -110,6 +106,10 @@ impl Renderer {
         }
 
         Ok(None)
+    }
+
+    pub fn window(&self) -> &Window {
+        &self.window
     }
 }
 

@@ -38,21 +38,6 @@ impl Default for Animation {
 }
 
 impl Animation {
-    pub fn new(texture: Allocation) -> Self {
-        Self {
-            pos: [0.0, 0.0, 1.0],
-            hw: [0; 2],
-            hue_alpha: [0, 100],
-            frames: 0,
-            frames_per_row: 0,
-            switch_time: 0,
-            anim_hw: [0; 2],
-            texture: Some(texture),
-            bytes: Vec::new(),
-            changed: true,
-        }
-    }
-
     pub fn create_quad(&mut self) {
         let (x, y, w, h) = (
             self.pos[0],
@@ -107,6 +92,21 @@ impl Animation {
 
         self.bytes = bytemuck::cast_slice(&buffer).to_vec();
         self.changed = false;
+    }
+
+    pub fn new(texture: Allocation) -> Self {
+        Self {
+            pos: [0.0, 0.0, 1.0],
+            hw: [0; 2],
+            hue_alpha: [0, 100],
+            frames: 0,
+            frames_per_row: 0,
+            switch_time: 0,
+            anim_hw: [0; 2],
+            texture: Some(texture),
+            bytes: Vec::new(),
+            changed: true,
+        }
     }
 
     /// used to check and update the vertex array.

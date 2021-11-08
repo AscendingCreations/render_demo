@@ -1,9 +1,9 @@
 #![allow(dead_code, clippy::collapsible_match, unused_imports)]
-use backtrace::Backtrace;
-use camera::{
+use ::camera::{
     controls::{FlatControls, FlatSettings},
     Projection,
 };
+use backtrace::Backtrace;
 use input::{Bindings, FrameTime, InputHandler};
 use lazy_static::lazy_static;
 use naga::{front::wgsl, valid::Validator};
@@ -141,11 +141,11 @@ async fn main() -> Result<(), RendererError> {
 
     let mut map = Map::new();
 
-    for x in 0..32 {
-        for y in 0..32 {
+    (0..32).for_each(|x| {
+        (0..32).for_each(|y| {
             map.set_tile((x, y, 0), 1, 0, 0, 100);
-        }
-    }
+        });
+    });
 
     map.set_tile((1, 31, 1), 2, 0, 0, 100);
     map.set_tile((1, 30, 6), 2, 0, 0, 50);
@@ -215,26 +215,26 @@ async fn main() -> Result<(), RendererError> {
     let time_group = TimeGroup::new(&renderer, &mut layout_storage);
 
     let mut state = State {
+        layout_storage,
+        camera,
+        time_group,
         sprite,
         sprite_pipeline,
-        sprite_atlas,
-        layout_storage,
-        sprite_texture,
-        camera,
         sprite_buffer,
+        sprite_atlas,
+        sprite_texture,
         map,
         map_pipeline,
-        map_atlas,
-        map_group,
         map_buffer,
         map_texture,
+        map_group,
+        map_atlas,
         map_textures,
-        animation_atlas,
-        animation_pipeline,
-        animation_buffer,
-        animation_texture,
         animation,
-        time_group,
+        animation_buffer,
+        animation_pipeline,
+        animation_atlas,
+        animation_texture,
     };
 
     let mut views = HashMap::new();

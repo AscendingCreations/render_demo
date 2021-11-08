@@ -1,4 +1,4 @@
-use crate::graphics::{Atlas, Layout, LayoutStorage, TextureLayout};
+pub(crate) use crate::graphics::{Atlas, Layout, LayoutStorage, TextureLayout};
 
 pub struct TextureGroup {
     pub bind_group: wgpu::BindGroup,
@@ -12,6 +12,7 @@ impl TextureGroup {
         layout: K,
     ) -> Self {
         let diffuse_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            label: None,
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             address_mode_w: wgpu::AddressMode::ClampToEdge,
@@ -22,7 +23,6 @@ impl TextureGroup {
             lod_max_clamp: 100.0,
             compare: None,
             anisotropy_clamp: None,
-            label: None,
             border_color: None,
         });
 
@@ -39,9 +39,9 @@ impl TextureGroup {
 
         let layout = layout_storage.create_layout(device, layout);
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Texture Bind Group"),
             layout: &layout,
             entries: &entries,
-            label: Some("Texture Bind Group"),
         });
 
         Self { bind_group }

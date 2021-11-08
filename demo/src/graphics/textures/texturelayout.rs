@@ -1,4 +1,4 @@
-use crate::graphics::Layout;
+pub(crate) use crate::graphics::Layout;
 use bytemuck::{Pod, Zeroable};
 
 #[repr(C)]
@@ -30,8 +30,8 @@ impl Layout for TextureLayout {
         ];
 
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &entries,
             label: Some("texture_bind_group_layout"),
+            entries: &entries,
         })
     }
 }

@@ -5,6 +5,14 @@ pub struct MapTextures {
 }
 
 impl MapTextures {
+    pub fn get_unused_id(&mut self) -> Option<u32> {
+        self.unused_ids.pop()
+    }
+
+    pub fn mark_id_unused(&mut self, id: u32) {
+        self.unused_ids.push(id);
+    }
+
     pub fn new(device: &wgpu::Device, count: u32) -> Self {
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Map array Texture"),
@@ -40,18 +48,6 @@ impl MapTextures {
         }
     }
 
-    pub fn get_unused_id(&mut self) -> Option<u32> {
-        self.unused_ids.pop()
-    }
-
-    pub fn mark_id_unused(&mut self, id: u32) {
-        self.unused_ids.push(id);
-    }
-
-    pub fn view(&self) -> &wgpu::TextureView {
-        &self.texture_view
-    }
-
     pub fn update(&mut self, queue: &wgpu::Queue, id: u32, data: &[u32]) {
         queue.write_texture(
             wgpu::ImageCopyTexture {
@@ -72,5 +68,9 @@ impl MapTextures {
                 depth_or_array_layers: 1,
             },
         );
+    }
+
+    pub fn view(&self) -> &wgpu::TextureView {
+        &self.texture_view
     }
 }

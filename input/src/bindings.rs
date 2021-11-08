@@ -23,18 +23,7 @@ where
     ActionId: Clone + Eq + Hash + Serialize + Deserialize<'de> + Send + Sync,
     AxisId: Clone + Eq + Hash + Serialize + Deserialize<'de> + Send + Sync,
 {
-    pub fn new() -> Self {
-        Self {
-            actions: HashMap::new(),
-            axes: HashMap::new(),
-        }
-    }
-
-    pub fn insert_action<B: IntoIterator<Item = Button>>(
-        &mut self,
-        id: ActionId,
-        buttons: B,
-    ) {
+    pub fn insert_action<B: IntoIterator<Item = Button>>(&mut self, id: ActionId, buttons: B) {
         // Collect the button combination.
         let action = buttons.into_iter().collect::<Vec<Button>>();
 
@@ -49,11 +38,7 @@ where
         self.actions.insert(id, bindings);
     }
 
-    pub fn insert_axis(
-        &mut self,
-        id: AxisId,
-        axis: Axis,
-    ) {
+    pub fn insert_axis(&mut self, id: AxisId, axis: Axis) {
         // Add the axis to the bindings for the given axis ID.
         if let Some(bindings) = self.axes.get_mut(&id) {
             bindings.push(axis);
@@ -63,5 +48,12 @@ where
         // Create the bindings for the axis ID.
         let bindings = vec![axis];
         self.axes.insert(id, bindings);
+    }
+
+    pub fn new() -> Self {
+        Self {
+            actions: HashMap::new(),
+            axes: HashMap::new(),
+        }
     }
 }

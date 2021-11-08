@@ -18,71 +18,6 @@ pub struct Atlas {
 }
 
 impl Atlas {
-    pub fn new(device: &wgpu::Device, size: u32) -> Self {
-        let extent = wgpu::Extent3d {
-            width: size,
-            height: size,
-            depth_or_array_layers: 1,
-        };
-
-        let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("test"),
-            size: extent,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING
-                | wgpu::TextureUsages::COPY_DST
-                | wgpu::TextureUsages::COPY_SRC,
-        });
-
-        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor {
-            label: Some("Texture Atlas"),
-            format: Some(wgpu::TextureFormat::Rgba8UnormSrgb),
-            dimension: Some(wgpu::TextureViewDimension::D2Array),
-            aspect: wgpu::TextureAspect::All,
-            base_mip_level: 0,
-            mip_level_count: std::num::NonZeroU32::new(1),
-            base_array_layer: 0,
-            array_layer_count: std::num::NonZeroU32::new(1),
-        });
-
-        Self {
-            texture,
-            texture_view,
-            layers: vec![Layer::new(size)],
-            extent,
-            names: HashMap::new(),
-        }
-    }
-
-    pub fn upload(
-        &mut self,
-        texture: &Texture,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-    ) -> Option<Allocation> {
-        if let Some(allocation) = self.names.get(texture.name()) {
-            Some(allocation.clone())
-        } else {
-            let (width, height) = texture.size();
-
-            let allocation = {
-                let nlayers = self.layers.len();
-                let allocation = self.allocate(width, height)?;
-                self.grow(self.layers.len() - nlayers, device, queue);
-
-                allocation
-            };
-
-            self.upload_allocation(texture.bytes(), &allocation, queue);
-            self.names
-                .insert(texture.name().to_string(), allocation.clone());
-            Some(allocation)
-        }
-    }
-
     fn allocate(&mut self, width: u32, height: u32) -> Option<Allocation> {
         /* Check if the allocation would fit. */
         if width > self.extent.width || height > self.extent.height {
@@ -115,46 +50,16 @@ impl Atlas {
         None
     }
 
-    fn upload_allocation(&mut self, buffer: &[u8], allocation: &Allocation, queue: &wgpu::Queue) {
-        let (x, y) = allocation.position();
-        let (width, height) = allocation.size();
-        let layer = allocation.layer;
-
-        queue.write_texture(
-            wgpu::ImageCopyTexture {
-                texture: &self.texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d {
-                    x,
-                    y,
-                    z: layer as u32,
-                },
-                aspect: wgpu::TextureAspect::All,
-            },
-            buffer,
-            wgpu::ImageDataLayout {
-                offset: 0,
-                bytes_per_row: std::num::NonZeroU32::new(4 * width),
-                rows_per_image: std::num::NonZeroU32::new(height),
-            },
-            wgpu::Extent3d {
-                width,
-                height,
-                depth_or_array_layers: 1,
-            },
-        );
-    }
-
-    pub fn get(&mut self, name: String) -> Option<Allocation> {
-        self.names.get(&name).cloned()
-    }
-
     pub fn clear(&mut self) {
         for layer in self.layers.iter_mut() {
             layer.allocator.clear();
         }
 
         self.names.clear();
+    }
+
+    pub fn get(&mut self, name: String) -> Option<Allocation> {
+        self.names.get(&name).cloned()
     }
 
     fn grow(&mut self, amount: usize, device: &wgpu::Device, queue: &wgpu::Queue) {
@@ -228,5 +133,100 @@ impl Atlas {
             array_layer_count: NonZeroU32::new(self.layers.len() as u32),
         });
         queue.submit(std::iter::once(encoder.finish()));
+    }
+
+    pub fn new(device: &wgpu::Device, size: u32) -> Self {
+        let extent = wgpu::Extent3d {
+            width: size,
+            height: size,
+            depth_or_array_layers: 1,
+        };
+
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("test"),
+            size: extent,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING
+                | wgpu::TextureUsages::COPY_DST
+                | wgpu::TextureUsages::COPY_SRC,
+        });
+
+        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor {
+            label: Some("Texture Atlas"),
+            format: Some(wgpu::TextureFormat::Rgba8UnormSrgb),
+            dimension: Some(wgpu::TextureViewDimension::D2Array),
+            aspect: wgpu::TextureAspect::All,
+            base_mip_level: 0,
+            mip_level_count: std::num::NonZeroU32::new(1),
+            base_array_layer: 0,
+            array_layer_count: std::num::NonZeroU32::new(1),
+        });
+
+        Self {
+            texture,
+            texture_view,
+            layers: vec![Layer::new(size)],
+            extent,
+            names: HashMap::new(),
+        }
+    }
+
+    pub fn upload(
+        &mut self,
+        texture: &Texture,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+    ) -> Option<Allocation> {
+        if let Some(allocation) = self.names.get(texture.name()) {
+            Some(allocation.clone())
+        } else {
+            let (width, height) = texture.size();
+
+            let allocation = {
+                let nlayers = self.layers.len();
+                let allocation = self.allocate(width, height)?;
+                self.grow(self.layers.len() - nlayers, device, queue);
+
+                allocation
+            };
+
+            self.upload_allocation(texture.bytes(), &allocation, queue);
+            self.names
+                .insert(texture.name().to_string(), allocation.clone());
+            Some(allocation)
+        }
+    }
+
+    fn upload_allocation(&mut self, buffer: &[u8], allocation: &Allocation, queue: &wgpu::Queue) {
+        let (x, y) = allocation.position();
+        let (width, height) = allocation.size();
+        let layer = allocation.layer;
+
+        queue.write_texture(
+            wgpu::ImageCopyTexture {
+                texture: &self.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d {
+                    x,
+                    y,
+                    z: layer as u32,
+                },
+                aspect: wgpu::TextureAspect::All,
+            },
+            buffer,
+            wgpu::ImageDataLayout {
+                offset: 0,
+                bytes_per_row: std::num::NonZeroU32::new(4 * width),
+                rows_per_image: std::num::NonZeroU32::new(height),
+            },
+            wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+        );
     }
 }

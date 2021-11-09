@@ -97,7 +97,7 @@ async fn main() -> Result<(), RendererError> {
     sprite[0].pos = [32, 32, 5];
     sprite[0].hw = [48, 48];
     sprite[0].uv = [48, 96, 48, 48];
-    sprite[0].color = [0, 0, 100, 50];
+    sprite[0].color = [100, 0, 100, 100];
     sprite[0].changed = true;
 
     sprite[1].pos = [64, 32, 6];

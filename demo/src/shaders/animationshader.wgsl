@@ -83,7 +83,7 @@ fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
         ((f32(((frame / yframes) * in.tex_data[3]) + in.tex_data[1]) / in.size.y) + in.tex_coords.y  + (.5 / f32(in.size.x)))
     );
 
-    var step = vec2<f32>(0.66, 0.66);
+    var step = vec2<f32>(1.0/1.5, 1.0/1.5);
     var tex_pixel = in.size * coords - step.xy / 2.0;
 
     let corner = floor(tex_pixel) + 1.0;

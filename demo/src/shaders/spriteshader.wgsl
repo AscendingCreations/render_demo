@@ -71,7 +71,7 @@ fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
     if (in.frames[2] > 0u) {
         let id = time.seconds / (f32(in.frames[1]) / 1000.0);
         let frame = u32(floor(id % f32(in.frames[0])));
-        coords = vec2<f32>((f32(frame * in.tex_hw[0]) / in.size.x) + in.tex_coords.x + (.5 / f32(in.size.x)), in.tex_coords.y + (.5 / f32(in.size.x)));
+        coords = vec2<f32>((f32(frame * in.tex_hw[0]) / in.size.x) + in.tex_coords.x, in.tex_coords.y);
     } else {
         coords = vec2<f32>(in.tex_coords.x, in.tex_coords.y);
     }

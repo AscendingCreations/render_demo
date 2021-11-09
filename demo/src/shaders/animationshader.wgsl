@@ -83,11 +83,11 @@ fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
         ((f32(((frame / yframes) * in.tex_data[3]) + in.tex_data[1]) / in.size.y) + in.tex_coords.y  + (.5 / f32(in.size.x)))
     );
 
-    var step = vec2<f32>(1.0/1.5, 1.0/1.5);
+    var step = vec2<f32>(0.5, 0.5);
     var tex_pixel = in.size * coords - step.xy / 2.0;
 
     let corner = floor(tex_pixel) + 1.0;
-    let frac = min((corner - tex_pixel) * vec2<f32>(1.5, 1.5), vec2<f32>(1.0, 1.0));
+    let frac = min((corner - tex_pixel) * vec2<f32>(2.0, 2.0), vec2<f32>(1.0, 1.0));
 
     var c1 = textureSample(tex, sample, (floor(tex_pixel + vec2<f32>(0.0, 0.0)) + 0.5) / in.size, in.layer);
     var c2 = textureSample(tex, sample, (floor(tex_pixel + vec2<f32>(step.x, 0.0)) + 0.5) / in.size, in.layer);

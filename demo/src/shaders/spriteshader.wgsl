@@ -87,9 +87,9 @@ fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
     var c3 = textureSample(tex, sample, (floor(tex_pixel + vec2<f32>(0.0, step.y)) + 0.5) / in.size, i32(in.tex_coords.z));
     var c4 = textureSample(tex, sample, (floor(tex_pixel + step.xy) + 0.5) / in.size, i32(in.tex_coords.z));
 
-    c1 = c1 * (      frac.x  *        frac.y);
-    c2 = c2 *((1.0 - frac.x) *        frac.y);
-    c3 = c3 * (      frac.x  * (1.0 - frac.y));
+    c1 = c1 * (frac.x * frac.y);
+    c2 = c2 *((1.0 - frac.x) * frac.y);
+    c3 = c3 * (frac.x * (1.0 - frac.y));
     c4 = c4 *((1.0 - frac.x) * (1.0 - frac.y));
 
     let object_color = (c1 + c2 + c3 + c4);

@@ -73,10 +73,26 @@ fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
         let frame = u32(floor(id % f32(in.frames[0])));
         coords = vec2<f32>((f32(frame * in.tex_hw[0]) / in.size.x) + in.tex_coords.x + (.5 / f32(in.size.x)), in.tex_coords.y + (.5 / f32(in.size.x)));
     } else {
-        coords = vec2<f32>(in.tex_coords.x + (.5 / f32(in.size.x)), in.tex_coords.y + (.5 / f32(in.size.x)));
+        coords = vec2<f32>(in.tex_coords.x, in.tex_coords.y);
     }
 
-    let object_color = textureSample(tex, sample, coords, i32(in.tex_coords.z));
+    var step = vec2<f32>(0.66, 0.66);
+    var tex_pixel = in.size * coords - step.xy / 2.0;
+
+    let corner = floor(tex_pixel) + 1.0;
+    let frac = min((corner - tex_pixel) * vec2<f32>(1.5, 1.5), vec2<f32>(1.0, 1.0));
+
+    var c1 = textureSample(tex, sample, (floor(tex_pixel + vec2<f32>(0.0, 0.0)) + 0.5) / in.size, i32(in.tex_coords.z));
+    var c2 = textureSample(tex, sample, (floor(tex_pixel + vec2<f32>(step.x, 0.0)) + 0.5) / in.size, i32(in.tex_coords.z));
+    var c3 = textureSample(tex, sample, (floor(tex_pixel + vec2<f32>(0.0, step.y)) + 0.5) / in.size, i32(in.tex_coords.z));
+    var c4 = textureSample(tex, sample, (floor(tex_pixel + step.xy) + 0.5) / in.size, i32(in.tex_coords.z));
+
+    c1 = c1 * (      frac.x  *        frac.y);
+    c2 = c2 *((1.0 - frac.x) *        frac.y);
+    c3 = c3 * (      frac.x  * (1.0 - frac.y));
+    c4 = c4 *((1.0 - frac.x) * (1.0 - frac.y));
+
+    let object_color = (c1 + c2 + c3 + c4);
     var color =  hueShift(object_color.rgb, f32(in.col.r));
     let ldchange = in.col.g / 1000000000u;
     let ldoffset = f32((in.col.g % 900000000u) / 1000000u) / 100.0;

@@ -100,7 +100,7 @@ async fn main() -> Result<(), RendererError> {
     sprite[0].color = [0, 0, 100, 50];
     sprite[0].changed = true;
 
-    sprite[1].pos = [40, 32, 6];
+    sprite[1].pos = [64, 32, 6];
     sprite[1].hw = [48, 48];
     sprite[1].uv = [48, 96, 48, 48];
     sprite[1].color = [0, 0, 100, 100];
@@ -434,13 +434,21 @@ pub fn parse_example_wgsl() {
                 }
             };
 
-            let module = wgsl::parse_str(&shader).unwrap();
+            let result = wgsl::parse_str(&shader);
+
+            let module = match result {
+                Ok(v) => (v, Some(shader)),
+                Err(ref e) => {
+                    e.emit_to_stderr(&shader);
+                    return;
+                }
+            };
             // TODO: re-use the validator
             Validator::new(
                 naga::valid::ValidationFlags::all(),
                 naga::valid::Capabilities::all(),
             )
-            .validate(&module)
+            .validate(&module.0)
             .unwrap();
         }
     }

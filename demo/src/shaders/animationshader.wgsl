@@ -40,7 +40,7 @@ var tex: texture_2d_array<f32>;
 var sample: sampler;
 
 [[stage(vertex)]]
-fn main(
+fn vertex(
     vertex: VertexInput,
 ) -> VertexOutput {
     var out: VertexOutput;
@@ -69,7 +69,7 @@ fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32>
 
 // Fragment shader
 [[stage(fragment)]]
-fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
+fn fragment(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
     let id = time.seconds / (f32(in.frames[2]) / 1000.0);
     let frame = u32(floor(id % f32(in.frames[0])));
     var yframes = in.frames[0];

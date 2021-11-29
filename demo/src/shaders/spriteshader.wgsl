@@ -38,7 +38,7 @@ var tex: texture_2d_array<f32>;
 var sample: sampler;
 
 [[stage(vertex)]]
-fn main(
+fn vertex(
     vertex: VertexInput,
 ) -> VertexOutput {
     var out: VertexOutput;
@@ -65,7 +65,7 @@ fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32>
 
 // Fragment shader
 [[stage(fragment)]]
-fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
+fn fragment(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
     var coords = vec2<f32>(0.0, 0.0);
 
     if (in.frames[2] > 0u) {

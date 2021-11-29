@@ -24,7 +24,7 @@ var tex: texture_2d_array<f32>;
 var sample: sampler;
 
 [[stage(vertex)]]
-fn main(
+fn vertex(
     vertex: VertexInput,
 ) -> VertexOutput {
     var out: VertexOutput;
@@ -49,7 +49,7 @@ fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32>
 
 // Fragment shader
 [[stage(fragment)]]
-fn main(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
+fn fragment(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
     let yoffset = abs((i32(in.zpos) - 8) * 32);
     let coords = vec3<i32> (i32(in.tex_coords.x + .5), i32(in.tex_coords.y + .5), i32(in.tex_coords.z));
     let tile_pos = vec2<i32>(coords.x / 16, (coords.y / 16) + yoffset);

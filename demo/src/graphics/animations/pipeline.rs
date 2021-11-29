@@ -24,21 +24,19 @@ impl AnimationRenderPipeline {
         let texture_layout = layout_storage.create_layout(device, TextureLayout);
         let time_layout = layout_storage.create_layout(device, TimeLayout);
 
-        // Set up the pipeline layout.
-        let render_pipeline_layout =
-            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("render_pipeline_layout"),
-                bind_group_layouts: &[&camera_layout, &time_layout, &texture_layout],
-                push_constant_ranges: &[],
-            });
-
         // Create the render pipeline.
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Animation render pipeline"),
-            layout: Some(&render_pipeline_layout),
+            layout: Some(
+                &device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                    label: Some("render_pipeline_layout"),
+                    bind_group_layouts: &[&camera_layout, &time_layout, &texture_layout],
+                    push_constant_ranges: &[],
+                }),
+            ),
             vertex: wgpu::VertexState {
                 module: &shader,
-                entry_point: "main",
+                entry_point: "vertex",
                 buffers: &[wgpu::VertexBufferLayout {
                     array_stride: AnimationVertex::stride(),
                     step_mode: wgpu::VertexStepMode::Vertex,
@@ -64,13 +62,14 @@ impl AnimationRenderPipeline {
             multisample: wgpu::MultisampleState::default(),
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
-                entry_point: "main",
+                entry_point: "fragment",
                 targets: &[wgpu::ColorTargetState {
                     format: surface_format,
                     blend: Some(wgpu::BlendState::ALPHA_BLENDING),
                     write_mask: wgpu::ColorWrites::ALL,
                 }],
             }),
+            multiview: None,
         });
 
         Ok(Self { render_pipeline })

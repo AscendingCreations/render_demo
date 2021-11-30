@@ -30,7 +30,11 @@ impl BufferLayout for AnimationVertex {
         wgpu::vertex_attr_array![0 => Float32x2, 1 => Uint32x4, 2 => Float32x3, 3 => Uint32x2, 4 => Uint32x3, 5 => Sint32].to_vec()
     }
 
-    fn initial_buffer() -> BufferPass {
+    fn default_buffer() -> BufferPass {
+        Self::with_capacity(10_000)
+    }
+
+    fn with_capacity(capacity: usize) -> BufferPass {
         let vertex_arr: Vec<AnimationVertex> = iter::repeat(AnimationVertex {
             tex_coord: [0.0; 2],
             tex_data: [0; 4],
@@ -39,12 +43,12 @@ impl BufferLayout for AnimationVertex {
             frames: [0; 3],
             layer: 0,
         })
-        .take(40_000)
+        .take(capacity * 4)
         .collect();
 
-        let mut indices: Vec<u32> = Vec::with_capacity(60_000);
+        let mut indices: Vec<u32> = Vec::with_capacity(capacity * 6);
 
-        (0..10_000).for_each(|i| {
+        (0..capacity as u32).for_each(|i| {
             let x = i * 4;
             indices.extend_from_slice(&[x, x + 1, x + 2, x, x + 2, x + 3]);
         });

@@ -23,17 +23,21 @@ impl BufferLayout for MapVertex {
         wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3].to_vec()
     }
 
-    fn initial_buffer() -> BufferPass {
+    ///default set as large enough to contain 90 maps with all layers
+    fn default_buffer() -> BufferPass {
+        Self::with_capacity(720)
+    }
+    fn with_capacity(capacity: usize) -> BufferPass {
         let vertex_arr: Vec<MapVertex> = iter::repeat(MapVertex {
             position: [0.0, 0.0, 0.0],
             tex_coord: [0.0, 0.0, 0.0],
         })
-        .take(2_880)
+        .take(capacity * 4)
         .collect();
 
-        let mut indices: Vec<u32> = Vec::with_capacity(4_320);
+        let mut indices: Vec<u32> = Vec::with_capacity(capacity * 6);
 
-        (0..720).for_each(|i| {
+        (0..capacity as u32).for_each(|i| {
             let x = i * 4;
             indices.extend_from_slice(&[x, x + 1, x + 2, x, x + 2, x + 3]);
         });

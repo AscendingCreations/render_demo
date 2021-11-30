@@ -26,7 +26,8 @@ where
     /// Render Pipeline for maps
     pub map_pipeline: MapRenderPipeline,
     /// vertex buffer group for maps
-    pub map_buffer: VertexBuffer<MapVertex>,
+    pub maplower_buffer: VertexBuffer<MapVertex>,
+    pub mapupper_buffer: VertexBuffer<MapVertex>,
     /// Texture bind group for Map Atlas
     pub map_texture: TextureGroup,
     /// Texture Bind group for Maptextures
@@ -85,7 +86,7 @@ where
         pass.set_bind_group(1, self.time_group.bind_group(), &[]);
 
         pass.render_maps(
-            &self.map_buffer,
+            &self.maplower_buffer,
             &self.map_texture,
             &self.map_group,
             &self.map_pipeline,
@@ -99,6 +100,12 @@ where
             &self.animation_buffer,
             &self.animation_texture,
             &self.animation_pipeline,
+        );
+        pass.render_maps(
+            &self.mapupper_buffer,
+            &self.map_texture,
+            &self.map_group,
+            &self.map_pipeline,
         );
     }
 }

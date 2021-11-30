@@ -56,7 +56,9 @@ pub struct Map {
     /// set to know the image array ID within the shader.
     pub layer: u32,
     /// vertex array in bytes. Does not need to get changed exept on map switch and location change.
-    pub bytes: Vec<u8>,
+    pub lowerbytes: Vec<u8>,
+    /// vertex array in bytes for fringe layers.
+    pub upperbytes: Vec<u8>,
     /// if the image changed we need to reupload it to the texture.
     pub img_changed: bool,
     /// if the location or map array id changed. to rebuild the vertex buffer.
@@ -72,7 +74,8 @@ impl Map {
             self.pos[1].saturating_add(512) as f32,
         );
 
-        let mut buffer = Vec::new();
+        let mut lowerbuffer = Vec::new();
+        let mut upperbuffer = Vec::new();
 
         for i in 0..8 {
             let z = MapLayers::indexed_layerz(i);
@@ -95,10 +98,15 @@ impl Map {
                 },
             ];
 
-            buffer.append(&mut vertices);
+            if i >= 6 {
+                upperbuffer.append(&mut vertices);
+            } else {
+                lowerbuffer.append(&mut vertices);
+            }
         }
 
-        self.bytes = bytemuck::cast_slice(&buffer).to_vec();
+        self.lowerbytes = bytemuck::cast_slice(&lowerbuffer).to_vec();
+        self.upperbytes = bytemuck::cast_slice(&upperbuffer).to_vec();
     }
 
     pub fn get_tile(&mut self, x: u32, y: u32) -> (u32, u32, u32, u32) {
@@ -117,7 +125,8 @@ impl Map {
             world_pos: [0; 3],
             pos: [0; 2],
             layer: 0,
-            bytes: Vec::new(),
+            lowerbytes: Vec::new(),
+            upperbytes: Vec::new(),
             image,
             img_changed: true,
             changed: true,

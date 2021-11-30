@@ -148,7 +148,7 @@ async fn main() -> Result<(), RendererError> {
     });
 
     map.set_tile((1, 31, 1), 2, 0, 0, 100);
-    map.set_tile((1, 30, 6), 2, 0, 0, 50);
+    map.set_tile((1, 30, 6), 2, 0, 0, 80);
     map.set_tile((0, 0, 1), 2, 0, 0, 100);
     map.pos = [32, 32];
     let map_pipeline = MapRenderPipeline::new(
@@ -179,7 +179,9 @@ async fn main() -> Result<(), RendererError> {
         &map_atlas.texture_view,
         TextureLayout,
     );
-    let map_buffer = VertexBuffer::new(renderer.device());
+
+    let maplower_buffer = VertexBuffer::with_capacity(renderer.device(), 540);
+    let mapupper_buffer = VertexBuffer::with_capacity(renderer.device(), 180);
 
     map.layer = map_textures
         .get_unused_id()
@@ -225,7 +227,8 @@ async fn main() -> Result<(), RendererError> {
         sprite_texture,
         map,
         map_pipeline,
-        map_buffer,
+        maplower_buffer,
+        mapupper_buffer,
         map_texture,
         map_group,
         map_atlas,
@@ -360,10 +363,18 @@ async fn main() -> Result<(), RendererError> {
         let mut bytes = vec![];
         let count = 48;
 
-        bytes.append(&mut state.map.bytes.clone());
+        bytes.append(&mut state.map.lowerbytes.clone());
 
-        state.map_buffer.set_buffer(renderer.queue(), &bytes);
-        state.map_buffer.set_indice_count(count as u64);
+        state.maplower_buffer.set_buffer(renderer.queue(), &bytes);
+        state.maplower_buffer.set_indice_count(count as u64);
+
+        let mut bytes = vec![];
+        let count = 48;
+
+        bytes.append(&mut state.map.upperbytes.clone());
+
+        state.mapupper_buffer.set_buffer(renderer.queue(), &bytes);
+        state.mapupper_buffer.set_indice_count(count as u64);
 
         state.animation.update();
 

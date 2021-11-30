@@ -29,7 +29,11 @@ impl BufferLayout for SpriteVertex {
             .to_vec()
     }
 
-    fn initial_buffer() -> BufferPass {
+    fn default_buffer() -> BufferPass {
+        Self::with_capacity(10_000)
+    }
+
+    fn with_capacity(capacity: usize) -> BufferPass {
         let vertex_arr: Vec<SpriteVertex> = iter::repeat(SpriteVertex {
             position: [0.0; 3],
             tex_coord: [0.0; 3],
@@ -37,12 +41,12 @@ impl BufferLayout for SpriteVertex {
             frames: [0; 3],
             tex_hw: [0; 2],
         })
-        .take(40_000)
+        .take(capacity * 4)
         .collect();
 
-        let mut indices: Vec<u32> = Vec::with_capacity(60_000);
+        let mut indices: Vec<u32> = Vec::with_capacity(capacity * 6);
 
-        (0..10_000).for_each(|i| {
+        (0..capacity as u32).for_each(|i| {
             let x = i * 4;
             indices.extend_from_slice(&[x, x + 1, x + 2, x, x + 2, x + 3]);
         });

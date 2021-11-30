@@ -9,7 +9,8 @@ pub struct BufferPass {
 
 pub trait BufferLayout {
     fn attributes() -> Vec<wgpu::VertexAttribute>;
-    fn initial_buffer() -> BufferPass;
+    fn default_buffer() -> BufferPass;
+    fn with_capacity(capacity: usize) -> BufferPass;
     fn stride() -> u64;
 }
 
@@ -34,16 +35,7 @@ impl<K: BufferLayout> VertexBuffer<K> {
         self.buffer_stride
     }
 
-    /// Gets the indice count.
-    pub fn indice_count(&self) -> u64 {
-        self.indice_count
-    }
-
-    /// creates a new pre initlized VertexBuffer with a Static size.
-    /// static size is based on the initial BufferPass::vertices length.
-    pub fn new(device: &wgpu::Device) -> Self {
-        let buffers = K::initial_buffer();
-
+    fn create_buffer(device: &wgpu::Device, buffers: BufferPass) -> Self {
         VertexBuffer {
             vertex_buffer: device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("Vertex Buffer"),
@@ -63,6 +55,16 @@ impl<K: BufferLayout> VertexBuffer<K> {
             buffer_stride: K::stride(),
             phantom_data: PhantomData,
         }
+    }
+
+    /// Gets the indice count.
+    pub fn indice_count(&self) -> u64 {
+        self.indice_count
+    }
+    /// creates a new pre initlized VertexBuffer with a default size.
+    /// default size is based on the initial BufferPass::vertices length.
+    pub fn new(device: &wgpu::Device) -> Self {
+        Self::create_buffer(device, K::default_buffer())
     }
 
     /// Set the New buffer array to the VertexBuffer.
@@ -86,5 +88,11 @@ impl<K: BufferLayout> VertexBuffer<K> {
     /// Gets the Vertex elements count.
     pub fn vertex_count(&self) -> u64 {
         self.vertex_count
+    }
+
+    /// creates a new pre initlized VertexBuffer with a entity count.
+    /// size created BufferPass::vertices length.
+    pub fn with_capacity(device: &wgpu::Device, capacity: usize) -> Self {
+        Self::create_buffer(device, K::with_capacity(capacity))
     }
 }

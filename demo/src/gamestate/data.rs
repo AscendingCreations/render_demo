@@ -16,7 +16,7 @@ where
     /// Render pipe line for Sprites
     pub sprite_pipeline: SpriteRenderPipeline,
     /// Vertex buffer group for Sprites
-    pub sprite_buffer: VertexBuffer<SpriteVertex>,
+    pub sprite_buffer: GpuBuffer<SpriteVertex>,
     /// Atlas to hold Sprite Images
     pub sprite_atlas: Atlas,
     /// Texture Bind group for Sprite Atlas
@@ -26,8 +26,8 @@ where
     /// Render Pipeline for maps
     pub map_pipeline: MapRenderPipeline,
     /// vertex buffer group for maps
-    pub maplower_buffer: VertexBuffer<MapVertex>,
-    pub mapupper_buffer: VertexBuffer<MapVertex>,
+    pub maplower_buffer: GpuBuffer<MapVertex>,
+    pub mapupper_buffer: GpuBuffer<MapVertex>,
     /// Texture bind group for Map Atlas
     pub map_texture: TextureGroup,
     /// Texture Bind group for Maptextures
@@ -39,7 +39,7 @@ where
 
     /// animation test stuff.
     pub animation: Animation,
-    pub animation_buffer: VertexBuffer<AnimationVertex>,
+    pub animation_buffer: GpuBuffer<AnimationVertex>,
     pub animation_pipeline: AnimationRenderPipeline,
     pub animation_atlas: Atlas,
     pub animation_texture: TextureGroup,

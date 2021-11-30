@@ -38,7 +38,7 @@ impl SpriteRenderPipeline {
                 module: &shader,
                 entry_point: "vertex",
                 buffers: &[wgpu::VertexBufferLayout {
-                    array_stride: SpriteVertex::stride(),
+                    array_stride: SpriteVertex::vertex_stride() as u64,
                     step_mode: wgpu::VertexStepMode::Vertex,
                     attributes: &SpriteVertex::attributes(),
                 }],

@@ -48,7 +48,11 @@ impl BufferLayout for MapVertex {
         }
     }
 
-    fn stride() -> u64 {
-        std::mem::size_of::<[f32; 6]>() as u64
+    fn vertex_stride() -> usize {
+        std::mem::size_of::<[f32; 6]>()
+    }
+
+    fn index_stride() -> usize {
+        4
     }
 }

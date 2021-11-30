@@ -35,7 +35,7 @@ impl BufferLayout for AnimationVertex {
     }
 
     fn with_capacity(capacity: usize) -> BufferPass {
-        let vertex_arr: Vec<AnimationVertex> = iter::repeat(AnimationVertex {
+        let vertices: Vec<AnimationVertex> = iter::repeat(AnimationVertex {
             tex_coord: [0.0; 2],
             tex_data: [0; 4],
             position: [0.0; 3],
@@ -54,12 +54,16 @@ impl BufferLayout for AnimationVertex {
         });
 
         BufferPass {
-            vertices: bytemuck::cast_slice(&vertex_arr).to_vec(),
+            vertices: bytemuck::cast_slice(&vertices).to_vec(),
             indices: bytemuck::cast_slice(&indices).to_vec(),
         }
     }
 
-    fn stride() -> u64 {
-        std::mem::size_of::<[f32; 15]>() as u64
+    fn vertex_stride() -> usize {
+        std::mem::size_of::<[f32; 15]>()
+    }
+
+    fn index_stride() -> usize {
+        4
     }
 }

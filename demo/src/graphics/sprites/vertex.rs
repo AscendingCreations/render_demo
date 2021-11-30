@@ -57,7 +57,11 @@ impl BufferLayout for SpriteVertex {
         }
     }
 
-    fn stride() -> u64 {
-        std::mem::size_of::<[f32; 15]>() as u64
+    fn vertex_stride() -> usize {
+        std::mem::size_of::<[f32; 15]>()
+    }
+
+    fn index_stride() -> usize {
+        4
     }
 }

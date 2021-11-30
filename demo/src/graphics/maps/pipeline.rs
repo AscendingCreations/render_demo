@@ -42,7 +42,7 @@ impl MapRenderPipeline {
                 module: &shader,
                 entry_point: "vertex",
                 buffers: &[wgpu::VertexBufferLayout {
-                    array_stride: MapVertex::stride(),
+                    array_stride: MapVertex::vertex_stride() as u64,
                     step_mode: wgpu::VertexStepMode::Vertex,
                     attributes: &MapVertex::attributes(),
                 }],

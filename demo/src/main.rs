@@ -349,10 +349,8 @@ async fn main() -> Result<(), RendererError> {
         state.sprite[0].update();
         state.sprite[1].update();
 
-        let mut bytes = vec![];
-
-        bytes.append(&mut state.sprite[0].bytes.clone());
-        bytes.append(&mut state.sprite[1].bytes.clone());
+        let mut bytes = state.sprite[0].bytes.clone();
+        bytes.extend_from_slice(&state.sprite[1].bytes);
 
         state
             .sprite_buffer
@@ -360,37 +358,19 @@ async fn main() -> Result<(), RendererError> {
 
         state.map.update(renderer.queue(), &mut state.map_textures);
 
-        let mut bytes = vec![];
-        let count = 48;
-
-        bytes.append(&mut state.map.lowerbytes.clone());
-
         state
             .maplower_buffer
-            .set_vertices_from(renderer.queue(), &bytes);
-        state.maplower_buffer.set_index_count(count);
-
-        let mut bytes = vec![];
-        let count = 48;
-
-        bytes.append(&mut state.map.upperbytes.clone());
+            .set_vertices_from(renderer.queue(), &state.map.lowerbytes);
 
         state
             .mapupper_buffer
-            .set_vertices_from(renderer.queue(), &bytes);
-        state.mapupper_buffer.set_index_count(count);
+            .set_vertices_from(renderer.queue(), &state.map.upperbytes);
 
         state.animation.update();
 
-        let mut bytes = vec![];
-        let count = 6;
-
-        bytes.append(&mut state.animation.bytes.clone());
-
         state
             .animation_buffer
-            .set_vertices_from(renderer.queue(), &bytes);
-        state.animation_buffer.set_index_count(count);
+            .set_vertices_from(renderer.queue(), &state.animation.bytes);
 
         // Start encoding commands.
         let mut encoder =

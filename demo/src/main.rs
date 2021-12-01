@@ -350,7 +350,6 @@ async fn main() -> Result<(), RendererError> {
         state.sprite[1].update();
 
         let mut bytes = vec![];
-        let count = 12;
 
         bytes.append(&mut state.sprite[0].bytes.clone());
         bytes.append(&mut state.sprite[1].bytes.clone());
@@ -358,7 +357,6 @@ async fn main() -> Result<(), RendererError> {
         state
             .sprite_buffer
             .set_vertices_from(renderer.queue(), &bytes);
-        state.sprite_buffer.set_index_count(count);
 
         state.map.update(renderer.queue(), &mut state.map_textures);
 

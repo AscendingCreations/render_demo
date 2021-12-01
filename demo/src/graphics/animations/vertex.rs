@@ -66,4 +66,8 @@ impl BufferLayout for AnimationVertex {
     fn index_stride() -> usize {
         4
     }
+
+    fn index_offset() -> usize {
+        6
+    }
 }

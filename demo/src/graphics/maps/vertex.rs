@@ -55,4 +55,8 @@ impl BufferLayout for MapVertex {
     fn index_stride() -> usize {
         4
     }
+
+    fn index_offset() -> usize {
+        6
+    }
 }

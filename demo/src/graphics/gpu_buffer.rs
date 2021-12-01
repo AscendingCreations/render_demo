@@ -73,6 +73,26 @@ impl<K: BufferLayout> GpuBuffer<K> {
         }
     }
 
+    fn resize(&mut self, device: &wgpu::Device, capacity: usize) {
+        let buffers = K::with_capacity(capacity);
+
+        self.vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Vertex Buffer"),
+            contents: &buffers.vertices,
+            usage: wgpu::BufferUsages::VERTEX
+                | wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_DST,
+        });
+        self.vertex_max = buffers.vertices.len();
+        self.index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Index Buffer"),
+            contents: &buffers.indices,
+            usage: wgpu::BufferUsages::INDEX,
+        });
+        self.index_count = (buffers.indices.len() / K::index_stride());
+        self.index_max = buffers.indices.len();
+    }
+
     /// Returns the index_count.
     pub fn index_count(&self) -> usize {
         self.index_count
@@ -128,11 +148,12 @@ impl<K: BufferLayout> GpuBuffer<K> {
     /// Sets the vertex_buffer from byte array of vertices.
     /// Sets the vertex_count to array length / vertex_stride.
     /// Sets the index_count to vertex_count / index_offset.
-    pub fn set_vertices_from(&mut self, queue: &wgpu::Queue, bytes: &[u8]) {
+    /// Will resize both vertex_buffer and index_buffer if bytes length is larger than vertex_max.
+    pub fn set_vertices_from(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, bytes: &[u8]) {
         let size = bytes.len();
 
-        if size >= self.vertex_max {
-            return;
+        if size > self.vertex_max {
+            self.resize(device, size / K::vertex_stride());
         }
 
         self.vertex_count = size / K::vertex_stride();

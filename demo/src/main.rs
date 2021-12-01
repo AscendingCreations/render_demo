@@ -137,7 +137,7 @@ async fn main() -> Result<(), RendererError> {
         controls,
     );
 
-    let sprite_buffer = GpuBuffer::new(renderer.device());
+    let sprite_buffer = GpuBuffer::with_capacity(renderer.device(), 1);
 
     let mut map = Map::new();
 
@@ -354,23 +354,29 @@ async fn main() -> Result<(), RendererError> {
 
         state
             .sprite_buffer
-            .set_vertices_from(renderer.queue(), &bytes);
+            .set_vertices_from(renderer.device(), renderer.queue(), &bytes);
 
         state.map.update(renderer.queue(), &mut state.map_textures);
 
-        state
-            .maplower_buffer
-            .set_vertices_from(renderer.queue(), &state.map.lowerbytes);
+        state.maplower_buffer.set_vertices_from(
+            renderer.device(),
+            renderer.queue(),
+            &state.map.lowerbytes,
+        );
 
-        state
-            .mapupper_buffer
-            .set_vertices_from(renderer.queue(), &state.map.upperbytes);
+        state.mapupper_buffer.set_vertices_from(
+            renderer.device(),
+            renderer.queue(),
+            &state.map.upperbytes,
+        );
 
         state.animation.update();
 
-        state
-            .animation_buffer
-            .set_vertices_from(renderer.queue(), &state.animation.bytes);
+        state.animation_buffer.set_vertices_from(
+            renderer.device(),
+            renderer.queue(),
+            &state.animation.bytes,
+        );
 
         // Start encoding commands.
         let mut encoder =

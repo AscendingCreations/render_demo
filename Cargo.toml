@@ -1,7 +1,3 @@
 [workspace]
 resolver = "2"
-members = [
-    "demo",
-    "input",
-    "camera",
-]
+members = ["demo", "input", "camera"]

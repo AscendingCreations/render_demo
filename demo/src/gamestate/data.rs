@@ -43,6 +43,11 @@ where
     pub animation_pipeline: AnimationRenderPipeline,
     pub animation_atlas: Atlas,
     pub animation_texture: TextureGroup,
+
+    /// Basic shape rendering.
+    pub shapes: Shape,
+    pub shapes_buffer: GpuBuffer<ShapeVertex>,
+    pub shapes_pipeline: ShapeRenderPipeline,
 }
 
 impl<Controls> Pass for State<Controls>
@@ -107,5 +112,7 @@ where
             &self.map_group,
             &self.map_pipeline,
         );
+
+        pass.render_shape(&self.shapes_buffer, &self.shapes_pipeline);
     }
 }

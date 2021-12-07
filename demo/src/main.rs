@@ -216,6 +216,22 @@ async fn main() -> Result<(), RendererError> {
 
     let time_group = TimeGroup::new(&renderer, &mut layout_storage);
 
+    let shapes_pipeline = ShapeRenderPipeline::new(
+        renderer.device(),
+        renderer.surface_format(),
+        &mut layout_storage,
+    )?;
+
+    let shapes_buffer = GpuBuffer::new(renderer.device());
+
+    let mut shapes = Shape::new();
+    shapes.push_point(200.0, 200.0, 1.0);
+    shapes.push_point(216.0, 200.0, 1.0);
+    shapes.push_point(216.0, 216.0, 1.0);
+    shapes.push_point(200.0, 216.0, 1.0);
+    shapes.closed = true;
+    shapes.set_fill(true);
+
     let mut state = State {
         layout_storage,
         camera,
@@ -238,6 +254,9 @@ async fn main() -> Result<(), RendererError> {
         animation_pipeline,
         animation_atlas,
         animation_texture,
+        shapes,
+        shapes_buffer,
+        shapes_pipeline,
     };
 
     let mut views = HashMap::new();
@@ -377,6 +396,18 @@ async fn main() -> Result<(), RendererError> {
             renderer.queue(),
             &state.animation.bytes,
         );
+
+        state.shapes.update();
+
+        state.shapes_buffer.set_vertices_from(
+            renderer.device(),
+            renderer.queue(),
+            &state.shapes.buffers.vertices,
+        );
+
+        state
+            .shapes_buffer
+            .set_indices_from(renderer.queue(), &state.shapes.buffers.indices);
 
         // Start encoding commands.
         let mut encoder =

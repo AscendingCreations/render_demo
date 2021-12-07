@@ -65,7 +65,7 @@ impl<K: BufferLayout> GpuBuffer<K> {
             index_buffer: device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("Index Buffer"),
                 contents: &buffers.indices,
-                usage: wgpu::BufferUsages::INDEX,
+                usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
             }), // set to 0 as we set this as we add sprites.
             index_count: (buffers.indices.len() / K::index_stride()),
             index_max: buffers.indices.len(),
@@ -89,7 +89,7 @@ impl<K: BufferLayout> GpuBuffer<K> {
             contents: &buffers.indices,
             usage: wgpu::BufferUsages::INDEX,
         });
-        self.index_count = (buffers.indices.len() / K::index_stride());
+        self.index_count = buffers.indices.len() / K::index_stride();
         self.index_max = buffers.indices.len();
     }
 
@@ -159,6 +159,29 @@ impl<K: BufferLayout> GpuBuffer<K> {
         self.vertex_count = size / K::vertex_stride();
         self.index_count = self.vertex_count * K::index_offset();
         queue.write_buffer(&self.vertex_buffer, 0, bytes);
+    }
+
+    pub fn set_buffers_from(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        buffers: &BufferPass,
+    ) {
+        let vertex_size = buffers.vertices.len();
+        let index_size = buffers.indices.len();
+
+        if vertex_size > self.vertex_max {
+            self.resize(device, vertex_size / K::vertex_stride());
+        }
+
+        if index_size > self.index_max {
+            return;
+        }
+
+        self.vertex_count = vertex_size / K::vertex_stride();
+        self.index_count = self.vertex_count * K::index_offset();
+        queue.write_buffer(&self.vertex_buffer, 0, &buffers.vertices);
+        queue.write_buffer(&self.index_buffer, 0, &buffers.indices);
     }
 
     /// Returns the Vertex elements count.

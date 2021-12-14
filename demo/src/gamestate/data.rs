@@ -1,5 +1,6 @@
 pub(crate) use crate::graphics::*;
 use std::collections::HashMap;
+use wgpu_glyph::{ab_glyph, GlyphBrush, Section, Text};
 
 pub struct State<Controls>
 where
@@ -48,6 +49,9 @@ where
     pub shapes: Shape,
     pub shapes_buffer: GpuBuffer<ShapeVertex>,
     pub shapes_pipeline: ShapeRenderPipeline,
+
+    pub brush: GlyphBrush<()>,
+    pub stagingbelt: wgpu::util::StagingBelt,
 }
 
 impl<Controls> Pass for State<Controls>

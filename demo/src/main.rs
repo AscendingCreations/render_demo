@@ -4,6 +4,7 @@ use ::camera::{
     Projection,
 };
 use backtrace::Backtrace;
+use futures::task::SpawnExt;
 use input::{Bindings, FrameTime, InputHandler};
 use lazy_static::lazy_static;
 use naga::{front::wgsl, valid::Validator};
@@ -11,6 +12,7 @@ use serde::{Deserialize, Serialize};
 use slog::{error, info};
 use sloggers::{file::FileLoggerBuilder, types::Severity, Build};
 use std::{collections::HashMap, fs, panic, path::PathBuf};
+use wgpu_glyph::{ab_glyph, GlyphBrushBuilder, Section, Text};
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
@@ -232,6 +234,14 @@ async fn main() -> Result<(), RendererError> {
     shapes.closed = true;
     shapes.set_fill(true);
 
+    let stagingbelt = wgpu::util::StagingBelt::new(1024);
+    let font = ab_glyph::FontArc::try_from_slice(include_bytes!(
+        "../../fonts/Inconsolata-Regular.ttf"
+    ))
+    .unwrap();
+    let brush = GlyphBrushBuilder::using_font(font)
+        .build(&renderer.device(), renderer.surface_format());
+
     let mut state = State {
         layout_storage,
         camera,
@@ -257,6 +267,8 @@ async fn main() -> Result<(), RendererError> {
         shapes,
         shapes_buffer,
         shapes_pipeline,
+        stagingbelt,
+        brush,
     };
 
     let mut views = HashMap::new();
@@ -290,6 +302,9 @@ async fn main() -> Result<(), RendererError> {
     let mut input_handler = InputHandler::new(bindings);
 
     let mut frame_time = FrameTime::new();
+
+    let mut local_pool = futures::executor::LocalPool::new();
+    let local_spawner = local_pool.spawner();
 
     event_loop.run(move |event, _, control_flow| {
         match event {
@@ -339,7 +354,8 @@ async fn main() -> Result<(), RendererError> {
                     dimension: wgpu::TextureDimension::D2,
                     format: wgpu::TextureFormat::Depth32Float,
                     usage: wgpu::TextureUsages::TEXTURE_BINDING
-                        | wgpu::TextureUsages::RENDER_ATTACHMENT,
+                        | wgpu::TextureUsages::RENDER_ATTACHMENT
+                        | wgpu::TextureUsages::COPY_DST,
                 });
             let view =
                 texture.create_view(&wgpu::TextureViewDescriptor::default());
@@ -424,6 +440,28 @@ async fn main() -> Result<(), RendererError> {
         // Run the render pass.
         state.render(&mut encoder, &views);
 
+        state.brush.queue(Section {
+            screen_position: (30.0, 30.0),
+            bounds: (400.0, 400.0),
+            text: vec![Text::new("Hello wgpu_glyph!")
+                .with_color([0.0, 0.0, 0.0, 1.0])
+                .with_scale(40.0)],
+            ..Section::default()
+        });
+
+        state
+            .brush
+            .draw_queued(
+                &renderer.device(),
+                &mut state.stagingbelt,
+                &mut encoder,
+                views.get("framebuffer").as_ref().expect("no frame view?"),
+                size.width,
+                size.height,
+            )
+            .expect("Draw queued");
+
+        state.stagingbelt.finish();
         // Submit our command queue.
         renderer.queue().submit(std::iter::once(encoder.finish()));
 
@@ -432,6 +470,10 @@ async fn main() -> Result<(), RendererError> {
         input_handler.end_frame();
         frame_time.update();
         frame.present();
+
+        let _ = local_spawner.spawn(state.stagingbelt.recall());
+
+        local_pool.run_until_stalled();
     })
 }
 

@@ -54,7 +54,8 @@ impl FlyingControls {
         let (yaw_sin, yaw_cos) = yaw.sin_cos();
         let (pitch_sin, pitch_cos) = pitch.sin_cos();
 
-        let direction = Vec3::new(yaw_cos * pitch_cos, pitch_sin, yaw_sin * pitch_cos);
+        let direction =
+            Vec3::new(yaw_cos * pitch_cos, pitch_sin, yaw_sin * pitch_cos);
 
         Self {
             inputs: FlyingInputs::default(),
@@ -96,7 +97,8 @@ impl FlyingControls {
         let (yaw_sin, yaw_cos) = self.yaw.sin_cos();
         let (pitch_sin, pitch_cos) = self.pitch.sin_cos();
 
-        self.direction = Vec3::new(yaw_cos * pitch_cos, pitch_sin, yaw_sin * pitch_cos);
+        self.direction =
+            Vec3::new(yaw_cos * pitch_cos, pitch_sin, yaw_sin * pitch_cos);
         self.changed = true;
     }
 
@@ -115,8 +117,10 @@ impl Controls for FlyingControls {
 
         if self.inputs.rotate_x != 0.0 || self.inputs.rotate_y != 0.0 {
             // Update the yaw and pitch.
-            self.yaw -= self.settings.sensitivity * delta * self.inputs.rotate_x;
-            self.pitch += self.settings.sensitivity * delta * self.inputs.rotate_y;
+            self.yaw -=
+                self.settings.sensitivity * delta * self.inputs.rotate_x;
+            self.pitch +=
+                self.settings.sensitivity * delta * self.inputs.rotate_y;
 
             // Limit the pitch.
             self.pitch = self
@@ -142,7 +146,8 @@ impl Controls for FlyingControls {
 
         if self.inputs.forward != 0.0 {
             let forward = self.direction;
-            self.position += self.settings.speed * delta * self.inputs.forward * forward;
+            self.position +=
+                self.settings.speed * delta * self.inputs.forward * forward;
 
             // Reset the input.
             self.inputs.forward = 0.0;
@@ -151,7 +156,8 @@ impl Controls for FlyingControls {
 
         if self.inputs.sideward != 0.0 {
             let sideward = self.direction.cross(self.up).normalized();
-            self.position += self.settings.speed * delta * self.inputs.sideward * sideward;
+            self.position +=
+                self.settings.speed * delta * self.inputs.sideward * sideward;
 
             // Reset the input.
             self.inputs.sideward = 0.0;
@@ -163,7 +169,8 @@ impl Controls for FlyingControls {
             let upward = sideward.cross(self.direction).normalized();
 
             // Move upward or downward.
-            self.position += self.settings.speed * delta * self.inputs.upward * upward;
+            self.position +=
+                self.settings.speed * delta * self.inputs.upward * upward;
 
             // Reset the input.
             self.inputs.upward = 0.0;
@@ -172,7 +179,11 @@ impl Controls for FlyingControls {
 
         if changed {
             // Calculate the view matrix.
-            self.view = Mat4::look_at(self.position, self.position + self.direction, self.up);
+            self.view = Mat4::look_at(
+                self.position,
+                self.position + self.direction,
+                self.up,
+            );
         }
 
         self.changed = false;

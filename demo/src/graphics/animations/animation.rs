@@ -53,7 +53,8 @@ impl Animation {
 
         let (u, v) = allocation.position();
 
-        let (u1, v1, u2, v2) = (0.0, 0.0, self.anim_hw[0] as f32, self.anim_hw[1] as f32);
+        let (u1, v1, u2, v2) =
+            (0.0, 0.0, self.anim_hw[0] as f32, self.anim_hw[1] as f32);
 
         let buffer = vec![
             AnimationVertex {

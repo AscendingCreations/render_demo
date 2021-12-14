@@ -62,7 +62,10 @@ where
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("render pass"),
             color_attachments: &[wgpu::RenderPassColorAttachment {
-                view: views.get("framebuffer").as_ref().expect("no frame view?"),
+                view: views
+                    .get("framebuffer")
+                    .as_ref()
+                    .expect("no frame view?"),
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {
@@ -74,17 +77,22 @@ where
                     store: true,
                 },
             }],
-            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                view: views.get("depthbuffer").as_ref().expect("no depth view?"),
-                depth_ops: Some(wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(1.0),
-                    store: true,
-                }),
-                stencil_ops: Some(wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(0),
-                    store: true,
-                }),
-            }),
+            depth_stencil_attachment: Some(
+                wgpu::RenderPassDepthStencilAttachment {
+                    view: views
+                        .get("depthbuffer")
+                        .as_ref()
+                        .expect("no depth view?"),
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(1.0),
+                        store: true,
+                    }),
+                    stencil_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(0),
+                        store: true,
+                    }),
+                },
+            ),
         });
 
         pass.set_bind_group(0, self.camera.bind_group(), &[]);

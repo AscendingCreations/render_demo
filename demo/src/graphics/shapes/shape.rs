@@ -1,4 +1,6 @@
-pub(crate) use crate::graphics::{allocation::Allocation, BufferLayout, BufferPass, ShapeVertex};
+pub(crate) use crate::graphics::{
+    allocation::Allocation, BufferLayout, BufferPass, ShapeVertex,
+};
 use std::cmp;
 use ultraviolet::vec::Vec3;
 
@@ -488,7 +490,14 @@ impl Shape {
         }
     }
 
-    fn join_miter(&self, buffers: &mut Vec<ShapeVertex>, p: Vec3, dm: Vec3, lw: f32, rw: f32) {
+    fn join_miter(
+        &self,
+        buffers: &mut Vec<ShapeVertex>,
+        p: Vec3,
+        dm: Vec3,
+        lw: f32,
+        rw: f32,
+    ) {
         buffers.push(ShapeVertex {
             position: (p + dm * lw).into(),
             color: self.color,
@@ -524,15 +533,29 @@ impl Shape {
             let aa = 1.0;
 
             match self.cap_style {
-                CapStyle::Butt => {
-                    self.start_butt_cap(&mut vertices, p0, diff, normals[i0], self.thickness, aa)
-                }
-                CapStyle::Round => {
-                    self.start_round_cap(&mut vertices, p0, diff, normals[i0], self.thickness)
-                }
-                CapStyle::Square => {
-                    self.start_square_cap(&mut vertices, p0, diff, normals[i0], self.thickness, aa)
-                }
+                CapStyle::Butt => self.start_butt_cap(
+                    &mut vertices,
+                    p0,
+                    diff,
+                    normals[i0],
+                    self.thickness,
+                    aa,
+                ),
+                CapStyle::Round => self.start_round_cap(
+                    &mut vertices,
+                    p0,
+                    diff,
+                    normals[i0],
+                    self.thickness,
+                ),
+                CapStyle::Square => self.start_square_cap(
+                    &mut vertices,
+                    p0,
+                    diff,
+                    normals[i0],
+                    self.thickness,
+                    aa,
+                ),
             }
         }
 
@@ -558,9 +581,13 @@ impl Shape {
                     self.thickness,
                     self.thickness,
                 ),
-                JoinStyle::Miter => {
-                    self.join_miter(&mut vertices, p1, dm[i0], self.thickness, self.thickness)
-                }
+                JoinStyle::Miter => self.join_miter(
+                    &mut vertices,
+                    p1,
+                    dm[i0],
+                    self.thickness,
+                    self.thickness,
+                ),
             }
 
             i0 = i1;
@@ -576,15 +603,29 @@ impl Shape {
             let aa = 1.0;
 
             match self.cap_style {
-                CapStyle::Butt => {
-                    self.end_butt_cap(&mut vertices, p1, diff, normals[i0], self.thickness, aa)
-                }
-                CapStyle::Round => {
-                    self.end_round_cap(&mut vertices, p1, diff, normals[i0], self.thickness)
-                }
-                CapStyle::Square => {
-                    self.end_square_cap(&mut vertices, p1, diff, normals[i0], self.thickness, aa)
-                }
+                CapStyle::Butt => self.end_butt_cap(
+                    &mut vertices,
+                    p1,
+                    diff,
+                    normals[i0],
+                    self.thickness,
+                    aa,
+                ),
+                CapStyle::Round => self.end_round_cap(
+                    &mut vertices,
+                    p1,
+                    diff,
+                    normals[i0],
+                    self.thickness,
+                ),
+                CapStyle::Square => self.end_square_cap(
+                    &mut vertices,
+                    p1,
+                    diff,
+                    normals[i0],
+                    self.thickness,
+                    aa,
+                ),
             }
         }
 
@@ -710,9 +751,13 @@ impl Shape {
                         0.0,
                         self.thickness,
                     ),
-                    JoinStyle::Miter => {
-                        self.join_miter(&mut vertices, p1, dm[i0], 0.0, self.thickness)
-                    }
+                    JoinStyle::Miter => self.join_miter(
+                        &mut vertices,
+                        p1,
+                        dm[i0],
+                        0.0,
+                        self.thickness,
+                    ),
                 }
 
                 i0 = i1;

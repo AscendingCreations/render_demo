@@ -15,7 +15,9 @@ pub trait Controls {
     fn view(&self) -> mint::ColumnMatrix4<f32>;
 }
 
-pub use first_person::{FirstPersonControls, FirstPersonInputs, FirstPersonSettings};
+pub use first_person::{
+    FirstPersonControls, FirstPersonInputs, FirstPersonSettings,
+};
 pub use flat::{FlatControls, FlatInputs, FlatSettings};
 pub use flying::{FlyingControls, FlyingInputs, FlyingSettings};
 pub use orbit::{OrbitControls, OrbitInputs, OrbitSettings};

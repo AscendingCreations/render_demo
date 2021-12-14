@@ -62,7 +62,12 @@ impl Atlas {
         self.names.get(&name).cloned()
     }
 
-    fn grow(&mut self, amount: usize, device: &wgpu::Device, queue: &wgpu::Queue) {
+    fn grow(
+        &mut self,
+        amount: usize,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+    ) {
         if amount == 0 {
             return;
         }
@@ -87,9 +92,10 @@ impl Atlas {
 
         let amount_to_copy = self.layers.len() - amount;
 
-        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("command encoder"),
-        });
+        let mut encoder =
+            device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("command encoder"),
+            });
 
         for (i, _) in self.layers.iter_mut().take(amount_to_copy).enumerate() {
             encoder.copy_texture_to_texture(
@@ -122,16 +128,17 @@ impl Atlas {
         }
 
         self.texture = texture;
-        self.texture_view = self.texture.create_view(&wgpu::TextureViewDescriptor {
-            label: Some("Texture Atlas"),
-            format: Some(wgpu::TextureFormat::Rgba8UnormSrgb),
-            dimension: Some(wgpu::TextureViewDimension::D2Array),
-            aspect: wgpu::TextureAspect::All,
-            base_mip_level: 0,
-            mip_level_count: std::num::NonZeroU32::new(1),
-            base_array_layer: 0,
-            array_layer_count: NonZeroU32::new(self.layers.len() as u32),
-        });
+        self.texture_view =
+            self.texture.create_view(&wgpu::TextureViewDescriptor {
+                label: Some("Texture Atlas"),
+                format: Some(wgpu::TextureFormat::Rgba8UnormSrgb),
+                dimension: Some(wgpu::TextureViewDimension::D2Array),
+                aspect: wgpu::TextureAspect::All,
+                base_mip_level: 0,
+                mip_level_count: std::num::NonZeroU32::new(1),
+                base_array_layer: 0,
+                array_layer_count: NonZeroU32::new(self.layers.len() as u32),
+            });
         queue.submit(std::iter::once(encoder.finish()));
     }
 
@@ -200,7 +207,12 @@ impl Atlas {
         }
     }
 
-    fn upload_allocation(&mut self, buffer: &[u8], allocation: &Allocation, queue: &wgpu::Queue) {
+    fn upload_allocation(
+        &mut self,
+        buffer: &[u8],
+        allocation: &Allocation,
+        queue: &wgpu::Queue,
+    ) {
         let (x, y) = allocation.position();
         let (width, height) = allocation.size();
         let layer = allocation.layer;

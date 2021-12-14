@@ -23,7 +23,11 @@ where
     ActionId: Clone + Eq + Hash + Serialize + Deserialize<'de> + Send + Sync,
     AxisId: Clone + Eq + Hash + Serialize + Deserialize<'de> + Send + Sync,
 {
-    pub fn insert_action<B: IntoIterator<Item = Button>>(&mut self, id: ActionId, buttons: B) {
+    pub fn insert_action<B: IntoIterator<Item = Button>>(
+        &mut self,
+        id: ActionId,
+        buttons: B,
+    ) {
         // Collect the button combination.
         let action = buttons.into_iter().collect::<Vec<Button>>();
 

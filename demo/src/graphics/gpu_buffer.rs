@@ -53,20 +53,25 @@ impl<K: BufferLayout> GpuBuffer<K> {
     /// Used to create GpuBuffer from a BufferPass.
     pub fn create_buffer(device: &wgpu::Device, buffers: BufferPass) -> Self {
         GpuBuffer {
-            vertex_buffer: device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("Vertex Buffer"),
-                contents: &buffers.vertices,
-                usage: wgpu::BufferUsages::VERTEX
-                    | wgpu::BufferUsages::STORAGE
-                    | wgpu::BufferUsages::COPY_DST,
-            }),
+            vertex_buffer: device.create_buffer_init(
+                &wgpu::util::BufferInitDescriptor {
+                    label: Some("Vertex Buffer"),
+                    contents: &buffers.vertices,
+                    usage: wgpu::BufferUsages::VERTEX
+                        | wgpu::BufferUsages::STORAGE
+                        | wgpu::BufferUsages::COPY_DST,
+                },
+            ),
             vertex_count: 0,
             vertex_max: buffers.vertices.len(),
-            index_buffer: device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("Index Buffer"),
-                contents: &buffers.indices,
-                usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
-            }), // set to 0 as we set this as we add sprites.
+            index_buffer: device.create_buffer_init(
+                &wgpu::util::BufferInitDescriptor {
+                    label: Some("Index Buffer"),
+                    contents: &buffers.indices,
+                    usage: wgpu::BufferUsages::INDEX
+                        | wgpu::BufferUsages::COPY_DST,
+                },
+            ), // set to 0 as we set this as we add sprites.
             index_count: (buffers.indices.len() / K::index_stride()),
             index_max: buffers.indices.len(),
             phantom_data: PhantomData,
@@ -76,19 +81,21 @@ impl<K: BufferLayout> GpuBuffer<K> {
     fn resize(&mut self, device: &wgpu::Device, capacity: usize) {
         let buffers = K::with_capacity(capacity);
 
-        self.vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Vertex Buffer"),
-            contents: &buffers.vertices,
-            usage: wgpu::BufferUsages::VERTEX
-                | wgpu::BufferUsages::STORAGE
-                | wgpu::BufferUsages::COPY_DST,
-        });
+        self.vertex_buffer =
+            device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Vertex Buffer"),
+                contents: &buffers.vertices,
+                usage: wgpu::BufferUsages::VERTEX
+                    | wgpu::BufferUsages::STORAGE
+                    | wgpu::BufferUsages::COPY_DST,
+            });
         self.vertex_max = buffers.vertices.len();
-        self.index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Index Buffer"),
-            contents: &buffers.indices,
-            usage: wgpu::BufferUsages::INDEX,
-        });
+        self.index_buffer =
+            device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Index Buffer"),
+                contents: &buffers.indices,
+                usage: wgpu::BufferUsages::INDEX,
+            });
         self.index_count = buffers.indices.len() / K::index_stride();
         self.index_max = buffers.indices.len();
     }
@@ -149,7 +156,12 @@ impl<K: BufferLayout> GpuBuffer<K> {
     /// Sets the vertex_count to array length / vertex_stride.
     /// Sets the index_count to vertex_count / index_offset.
     /// Will resize both vertex_buffer and index_buffer if bytes length is larger than vertex_max.
-    pub fn set_vertices_from(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, bytes: &[u8]) {
+    pub fn set_vertices_from(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        bytes: &[u8],
+    ) {
         let size = bytes.len();
 
         if size > self.vertex_max {

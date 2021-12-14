@@ -1,4 +1,6 @@
-use crate::graphics::{AnimationRenderPipeline, AnimationVertex, GpuBuffer, TextureGroup};
+use crate::graphics::{
+    AnimationRenderPipeline, AnimationVertex, GpuBuffer, TextureGroup,
+};
 
 pub trait RenderAnimations<'a, 'b>
 where

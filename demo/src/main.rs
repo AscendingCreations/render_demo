@@ -274,7 +274,8 @@ async fn main() -> Result<(), RendererError> {
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
         format: wgpu::TextureFormat::Depth32Float,
-        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT,
+        usage: wgpu::TextureUsages::TEXTURE_BINDING
+            | wgpu::TextureUsages::RENDER_ATTACHMENT,
     });
     let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
     let mut size = renderer.size();
@@ -329,17 +330,19 @@ async fn main() -> Result<(), RendererError> {
                 depth_or_array_layers: 1,
             };
 
-            let texture = renderer.device().create_texture(&wgpu::TextureDescriptor {
-                label: Some("depth texture"),
-                size,
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                format: wgpu::TextureFormat::Depth32Float,
-                usage: wgpu::TextureUsages::TEXTURE_BINDING
-                    | wgpu::TextureUsages::RENDER_ATTACHMENT,
-            });
-            let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+            let texture =
+                renderer.device().create_texture(&wgpu::TextureDescriptor {
+                    label: Some("depth texture"),
+                    size,
+                    mip_level_count: 1,
+                    sample_count: 1,
+                    dimension: wgpu::TextureDimension::D2,
+                    format: wgpu::TextureFormat::Depth32Float,
+                    usage: wgpu::TextureUsages::TEXTURE_BINDING
+                        | wgpu::TextureUsages::RENDER_ATTACHMENT,
+                });
+            let view =
+                texture.create_view(&wgpu::TextureViewDescriptor::default());
 
             views.insert("depthbuffer".to_string(), view);
         }
@@ -371,9 +374,11 @@ async fn main() -> Result<(), RendererError> {
         let mut bytes = state.sprite[0].bytes.clone();
         bytes.extend_from_slice(&state.sprite[1].bytes);
 
-        state
-            .sprite_buffer
-            .set_vertices_from(renderer.device(), renderer.queue(), &bytes);
+        state.sprite_buffer.set_vertices_from(
+            renderer.device(),
+            renderer.queue(),
+            &bytes,
+        );
 
         state.map.update(renderer.queue(), &mut state.map_textures);
 
@@ -410,12 +415,11 @@ async fn main() -> Result<(), RendererError> {
             .set_indices_from(renderer.queue(), &state.shapes.buffers.indices);
 
         // Start encoding commands.
-        let mut encoder =
-            renderer
-                .device()
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: Some("command encoder"),
-                });
+        let mut encoder = renderer.device().create_command_encoder(
+            &wgpu::CommandEncoderDescriptor {
+                label: Some("command encoder"),
+            },
+        );
 
         // Run the render pass.
         state.render(&mut encoder, &views);

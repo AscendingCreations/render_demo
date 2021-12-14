@@ -5,7 +5,8 @@ use std::collections::HashSet;
 use std::hash::Hash;
 use winit::dpi::PhysicalPosition;
 use winit::event::{
-    DeviceEvent, ElementState, Event, KeyboardInput, MouseScrollDelta, WindowEvent,
+    DeviceEvent, ElementState, Event, KeyboardInput, MouseScrollDelta,
+    WindowEvent,
 };
 use winit::window::Window;
 
@@ -70,9 +71,9 @@ where
             .actions
             .get(action)
             .map(|bindings| {
-                bindings
-                    .iter()
-                    .any(|buttons| buttons.iter().all(|button| self.is_button_down(*button)))
+                bindings.iter().any(|buttons| {
+                    buttons.iter().all(|button| self.is_button_down(*button))
+                })
             })
             .unwrap_or(false)
     }
@@ -89,7 +90,10 @@ where
         self.keys.contains(&key)
     }
 
-    pub fn is_mouse_button_down(&self, button: winit::event::MouseButton) -> bool {
+    pub fn is_mouse_button_down(
+        &self,
+        button: winit::event::MouseButton,
+    ) -> bool {
         self.mouse_buttons.contains(&button)
     }
 
@@ -111,10 +115,14 @@ where
                 limit,
                 radius,
             } => {
-                let current_position = self.mouse_position.unwrap_or((0.0, 0.0));
-                let last_position = self.last_mouse_position.unwrap_or(current_position);
+                let current_position =
+                    self.mouse_position.unwrap_or((0.0, 0.0));
+                let last_position =
+                    self.last_mouse_position.unwrap_or(current_position);
                 let delta = match axis {
-                    MouseAxis::Horizontal => last_position.0 - current_position.0,
+                    MouseAxis::Horizontal => {
+                        last_position.0 - current_position.0
+                    }
                     MouseAxis::Vertical => last_position.1 - current_position.1,
                 };
 
@@ -207,7 +215,8 @@ where
                     position: PhysicalPosition { x, y },
                     ..
                 } => {
-                    self.mouse_position = Some(((*x as f32) * hidpi, (*y as f32) * hidpi));
+                    self.mouse_position =
+                        Some(((*x as f32) * hidpi, (*y as f32) * hidpi));
                 }
                 WindowEvent::Focused(false) => {
                     self.keys.clear();
@@ -233,7 +242,8 @@ where
                     }
                 }
                 DeviceEvent::MouseWheel {
-                    delta: MouseScrollDelta::PixelDelta(PhysicalPosition { x, y }),
+                    delta:
+                        MouseScrollDelta::PixelDelta(PhysicalPosition { x, y }),
                 } => {
                     if x != 0.0 {
                         self.mouse_wheel.0 = x.signum() as f32;

@@ -21,7 +21,9 @@ impl Layout for MapLayout {
             wgpu::BindGroupLayoutEntry {
                 binding: 1,
                 visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                ty: wgpu::BindingType::Sampler(
+                    wgpu::SamplerBindingType::Filtering,
+                ),
                 count: None,
             },
         ];

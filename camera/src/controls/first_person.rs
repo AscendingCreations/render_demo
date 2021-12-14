@@ -54,7 +54,8 @@ impl FirstPersonControls {
         let (yaw_sin, yaw_cos) = yaw.sin_cos();
         let (pitch_sin, pitch_cos) = pitch.sin_cos();
 
-        let direction = Vec3::new(yaw_cos * pitch_cos, pitch_sin, yaw_sin * pitch_cos);
+        let direction =
+            Vec3::new(yaw_cos * pitch_cos, pitch_sin, yaw_sin * pitch_cos);
 
         Self {
             inputs: FirstPersonInputs::default(),
@@ -96,7 +97,8 @@ impl FirstPersonControls {
         let (yaw_sin, yaw_cos) = self.yaw.sin_cos();
         let (pitch_sin, pitch_cos) = self.pitch.sin_cos();
 
-        self.direction = Vec3::new(yaw_cos * pitch_cos, pitch_sin, yaw_sin * pitch_cos);
+        self.direction =
+            Vec3::new(yaw_cos * pitch_cos, pitch_sin, yaw_sin * pitch_cos);
         self.changed = true;
     }
 
@@ -115,8 +117,10 @@ impl Controls for FirstPersonControls {
 
         if self.inputs.rotate_x != 0.0 || self.inputs.rotate_y != 0.0 {
             // Update the yaw and pitch.
-            self.yaw -= self.settings.sensitivity * delta * self.inputs.rotate_x;
-            self.pitch += self.settings.sensitivity * delta * self.inputs.rotate_y;
+            self.yaw -=
+                self.settings.sensitivity * delta * self.inputs.rotate_x;
+            self.pitch +=
+                self.settings.sensitivity * delta * self.inputs.rotate_y;
 
             // Limit the pitch.
             self.pitch = self
@@ -145,7 +149,8 @@ impl Controls for FirstPersonControls {
 
             let forward = Vec3::new(self.yaw.cos(), 0.0, self.yaw.sin());
 
-            self.position += self.settings.speed * delta * self.inputs.forward * forward;
+            self.position +=
+                self.settings.speed * delta * self.inputs.forward * forward;
             self.position.y = y;
 
             // Reset the input.
@@ -156,9 +161,11 @@ impl Controls for FirstPersonControls {
         if self.inputs.sideward != 0.0 {
             let y = self.position.y;
 
-            let sideward = Vec3::new(self.yaw.cos(), 0.0, self.yaw.sin()).cross(self.up);
+            let sideward =
+                Vec3::new(self.yaw.cos(), 0.0, self.yaw.sin()).cross(self.up);
 
-            self.position += self.settings.speed * delta * self.inputs.sideward * sideward;
+            self.position +=
+                self.settings.speed * delta * self.inputs.sideward * sideward;
             self.position.y = y;
 
             self.inputs.sideward = 0.0;
@@ -176,7 +183,11 @@ impl Controls for FirstPersonControls {
 
         if changed {
             // Calculate the view matrix.
-            self.view = Mat4::look_at(self.position, self.position + self.direction, self.up);
+            self.view = Mat4::look_at(
+                self.position,
+                self.position + self.direction,
+                self.up,
+            );
         }
 
         self.changed = false;

@@ -32,7 +32,8 @@ impl FrameTime {
     pub fn update(&mut self) {
         let frame_time = Instant::now();
 
-        self.delta_seconds = frame_time.duration_since(self.frame_time).as_secs_f32();
+        self.delta_seconds =
+            frame_time.duration_since(self.frame_time).as_secs_f32();
         self.seconds = frame_time.duration_since(self.start_time).as_secs_f32();
         self.frame_time = frame_time;
     }

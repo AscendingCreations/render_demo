@@ -133,7 +133,14 @@ impl Map {
         }
     }
 
-    pub fn set_tile(&mut self, pos: (u32, u32, u32), id: u32, layer: u32, hue: u32, alpha: u32) {
+    pub fn set_tile(
+        &mut self,
+        pos: (u32, u32, u32),
+        id: u32,
+        layer: u32,
+        hue: u32,
+        alpha: u32,
+    ) {
         if pos.0 >= 32 || pos.1 >= 32 || pos.2 >= 8 {
             return;
         }
@@ -144,7 +151,11 @@ impl Map {
     }
 
     /// used to check and update the vertex array or Texture witht he image buffer.
-    pub fn update(&mut self, queue: &wgpu::Queue, map_textures: &mut MapTextures) {
+    pub fn update(
+        &mut self,
+        queue: &wgpu::Queue,
+        map_textures: &mut MapTextures,
+    ) {
         // if pos or tex_pos or color changed.
         if self.img_changed {
             map_textures.update(queue, self.layer, self.image.as_raw());

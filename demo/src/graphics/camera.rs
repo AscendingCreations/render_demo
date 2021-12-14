@@ -16,7 +16,8 @@ impl Layout for CameraLayout {
             label: Some("camera_bind_group_layout"),
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                visibility: wgpu::ShaderStages::VERTEX
+                    | wgpu::ShaderStages::FRAGMENT,
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
                     has_dynamic_offset: false,
@@ -81,28 +82,31 @@ where
         let camera_info = CameraUniform { view_proj, eye };
 
         // Create the uniform buffer.
-        let buffer = renderer
-            .device()
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        let buffer = renderer.device().create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
                 label: Some("camera buffer"),
                 contents: camera_info.as_std140().as_bytes(),
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            });
+                usage: wgpu::BufferUsages::UNIFORM
+                    | wgpu::BufferUsages::COPY_DST,
+            },
+        );
 
         // Create the bind group layout for the camera.
-        let layout = layout_storage.create_layout(renderer.device(), CameraLayout);
+        let layout =
+            layout_storage.create_layout(renderer.device(), CameraLayout);
 
         // Create the bind group.
-        let bind_group = renderer
-            .device()
-            .create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &layout,
-                entries: &[wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: buffer.as_entire_binding(),
-                }],
-                label: Some("camera_bind_group"),
-            });
+        let bind_group =
+            renderer
+                .device()
+                .create_bind_group(&wgpu::BindGroupDescriptor {
+                    layout: &layout,
+                    entries: &[wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: buffer.as_entire_binding(),
+                    }],
+                    label: Some("camera_bind_group"),
+                });
 
         Self {
             camera,
@@ -136,9 +140,11 @@ where
 
         let camera_info = CameraUniform { view_proj, eye };
 
-        renderer
-            .queue()
-            .write_buffer(&self.buffer, 0, camera_info.as_std140().as_bytes());
+        renderer.queue().write_buffer(
+            &self.buffer,
+            0,
+            camera_info.as_std140().as_bytes(),
+        );
     }
 
     pub fn view(&self) -> mint::ColumnMatrix4<f32> {

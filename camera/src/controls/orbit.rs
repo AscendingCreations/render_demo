@@ -107,12 +107,14 @@ impl OrbitControls {
     }
 
     pub fn set_polar(&mut self, polar: f32) {
-        self.polar = polar.clamp(self.settings.min_polar, self.settings.max_polar);
+        self.polar =
+            polar.clamp(self.settings.min_polar, self.settings.max_polar);
         self.changed = true;
     }
 
     pub fn set_radius(&mut self, radius: f32) {
-        self.radius = radius.clamp(self.settings.min_radius, self.settings.max_radius);
+        self.radius =
+            radius.clamp(self.settings.min_radius, self.settings.max_radius);
         self.changed = true;
     }
 }
@@ -127,8 +129,10 @@ impl Controls for OrbitControls {
 
         if self.inputs.rotate_x != 0.0 || self.inputs.rotate_y != 0.0 {
             // Update the azimuth and polar angle.
-            self.azimuth -= self.settings.sensitivity * delta * self.inputs.rotate_x;
-            self.polar += self.settings.sensitivity * delta * self.inputs.rotate_y;
+            self.azimuth -=
+                self.settings.sensitivity * delta * self.inputs.rotate_x;
+            self.polar +=
+                self.settings.sensitivity * delta * self.inputs.rotate_y;
 
             // Limit the polar angle.
             self.polar = self

@@ -1,4 +1,6 @@
-pub(crate) use crate::graphics::{GpuBuffer, SpriteRenderPipeline, SpriteVertex, TextureGroup};
+pub(crate) use crate::graphics::{
+    GpuBuffer, SpriteRenderPipeline, SpriteVertex, TextureGroup,
+};
 
 pub trait RenderSprite<'a, 'b>
 where

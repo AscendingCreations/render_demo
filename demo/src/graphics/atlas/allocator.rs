@@ -4,7 +4,11 @@ pub struct Allocator {
 }
 
 impl Allocator {
-    pub fn allocate(&mut self, width: u32, height: u32) -> Option<guillotiere::Allocation> {
+    pub fn allocate(
+        &mut self,
+        width: u32,
+        height: u32,
+    ) -> Option<guillotiere::Allocation> {
         let allocation = self
             .allocator
             .allocate(guillotiere::Size::new(width as i32, height as i32))?;
@@ -29,8 +33,9 @@ impl Allocator {
     }
 
     pub fn new(size: u32) -> Self {
-        let allocator =
-            guillotiere::AtlasAllocator::new(guillotiere::Size::new(size as i32, size as i32));
+        let allocator = guillotiere::AtlasAllocator::new(
+            guillotiere::Size::new(size as i32, size as i32),
+        );
 
         Self {
             allocator,

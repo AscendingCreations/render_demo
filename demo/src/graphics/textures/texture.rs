@@ -21,10 +21,14 @@ impl Texture {
         let name = path
             .as_ref()
             .file_name()
-            .ok_or_else(|| Error::new(ErrorKind::Other, "could not get filename"))?
+            .ok_or_else(|| {
+                Error::new(ErrorKind::Other, "could not get filename")
+            })?
             .to_os_string()
             .into_string()
-            .map_err(|_| Error::new(ErrorKind::Other, "could not convert name to String"))?;
+            .map_err(|_| {
+                Error::new(ErrorKind::Other, "could not convert name to String")
+            })?;
 
         Ok(Self::from_image(name, image::open(path)?))
     }
@@ -36,7 +40,10 @@ impl Texture {
         Self { name, bytes, size }
     }
 
-    pub fn from_memory(name: String, data: &[u8]) -> Result<Self, RendererError> {
+    pub fn from_memory(
+        name: String,
+        data: &[u8],
+    ) -> Result<Self, RendererError> {
         Ok(Self::from_image(name, image::load_from_memory(data)?))
     }
 

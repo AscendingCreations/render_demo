@@ -8,7 +8,8 @@ pub trait Layout: Pod + Zeroable {
 
     fn layout_key(&self) -> (TypeId, Vec<u8>) {
         let type_id = self.type_id();
-        let bytes: Vec<u8> = bytemuck::try_cast_slice(&[*self]).unwrap_or(&[]).to_vec();
+        let bytes: Vec<u8> =
+            bytemuck::try_cast_slice(&[*self]).unwrap_or(&[]).to_vec();
 
         (type_id, bytes)
     }

@@ -36,8 +36,12 @@ impl Renderer {
         &self.queue
     }
 
-    pub fn resize(&mut self, size: PhysicalSize<u32>) -> Result<(), RendererError> {
-        let surface_format = self.surface.get_preferred_format(&self.adapter).unwrap();
+    pub fn resize(
+        &mut self,
+        size: PhysicalSize<u32>,
+    ) -> Result<(), RendererError> {
+        let surface_format =
+            self.surface.get_preferred_format(&self.adapter).unwrap();
 
         if size.width == 0 || size.height == 0 {
             return Ok(());
@@ -89,16 +93,18 @@ impl Renderer {
                 }
                 _ => (),
             },
-            Event::RedrawRequested(_) => match self.surface.get_current_texture() {
-                Ok(frame) => return Ok(Some(frame)),
-                Err(wgpu::SurfaceError::Lost) => {
-                    self.resize(self.size)?;
+            Event::RedrawRequested(_) => {
+                match self.surface.get_current_texture() {
+                    Ok(frame) => return Ok(Some(frame)),
+                    Err(wgpu::SurfaceError::Lost) => {
+                        self.resize(self.size)?;
+                    }
+                    Err(wgpu::SurfaceError::Outdated) => {
+                        return Ok(None);
+                    }
+                    Err(e) => return Err(RendererError::from(e)),
                 }
-                Err(wgpu::SurfaceError::Outdated) => {
-                    return Ok(None);
-                }
-                Err(e) => return Err(RendererError::from(e)),
-            },
+            }
             Event::MainEventsCleared => {
                 self.window.request_redraw();
             }
@@ -137,7 +143,8 @@ impl AdapterExt for wgpu::Adapter {
     ) -> Result<Renderer, RendererError> {
         let size = window.inner_size();
 
-        let (device, queue) = self.request_device(device_descriptor, trace_path).await?;
+        let (device, queue) =
+            self.request_device(device_descriptor, trace_path).await?;
 
         let surface = unsafe { instance.create_surface(&window) };
         let surface_format = surface.get_preferred_format(&self).unwrap();
@@ -188,9 +195,16 @@ impl InstanceExt for wgpu::Instance {
         trace_path: Option<&Path>,
         present_mode: wgpu::PresentMode,
     ) -> Result<Renderer, RendererError> {
-        let adapter = self.request_adapter(request_adapter_options).await.unwrap();
+        let adapter =
+            self.request_adapter(request_adapter_options).await.unwrap();
         adapter
-            .create_renderer(self, window, device_descriptor, trace_path, present_mode)
+            .create_renderer(
+                self,
+                window,
+                device_descriptor,
+                trace_path,
+                present_mode,
+            )
             .await
     }
 }

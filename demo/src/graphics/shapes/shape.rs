@@ -137,7 +137,7 @@ impl Shape {
                     scale = 600.0;
                 }
 
-                dm = dm * scale;
+                dm *= scale;
             }
 
             result.push(dm);
@@ -224,11 +224,11 @@ impl Shape {
 
         buffers.push(ShapeVertex {
             position: (p + normal * w + diff * aa).into(),
-            color: transparent.into(),
+            color: transparent,
         });
         buffers.push(ShapeVertex {
             position: (p - normal * w - diff * aa).into(),
-            color: transparent.into(),
+            color: transparent,
         });
         buffers.push(ShapeVertex {
             position: (p + normal * w).into(),
@@ -262,11 +262,11 @@ impl Shape {
         });
         buffers.push(ShapeVertex {
             position: (p + normal * w + diff * aa).into(),
-            color: transparent.into(),
+            color: transparent,
         });
         buffers.push(ShapeVertex {
             position: (p - normal * w + diff * aa).into(),
-            color: transparent.into(),
+            color: transparent,
         });
     }
 
@@ -326,14 +326,15 @@ impl Shape {
         });
         buffers.push(ShapeVertex {
             position: (p + normal * w + diff * aa).into(),
-            color: transparent.into(),
+            color: transparent,
         });
         buffers.push(ShapeVertex {
             position: (p - normal * w + diff * aa).into(),
-            color: transparent.into(),
+            color: transparent,
         });
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn join_bevel(
         &self,
         buffers: &mut Vec<ShapeVertex>,
@@ -390,6 +391,7 @@ impl Shape {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn join_round(
         &self,
         buffers: &mut Vec<ShapeVertex>,
@@ -631,7 +633,7 @@ impl Shape {
 
         /* Build the index buffer. */
         for i in (index as u32..(vertices.len() as u32 - 2)).step_by(2) {
-            indices.push(i + 0);
+            indices.push(i);
             indices.push(i + 1);
             indices.push(i + 2);
 
@@ -644,10 +646,10 @@ impl Shape {
         if self.closed {
             indices.push(vertices.len() as u32 - 2);
             indices.push(vertices.len() as u32 - 1);
-            indices.push(index as u32 + 0);
+            indices.push(index as u32);
 
             indices.push(vertices.len() as u32 - 1);
-            indices.push(index as u32 + 0);
+            indices.push(index as u32);
             indices.push(index as u32 + 1);
         }
 
@@ -671,7 +673,7 @@ impl Shape {
             let mut i0 = self.points.len() - 1;
             let mut i1 = 0;
 
-            for _ in 0..self.points.len() {
+            while i1 < self.points.len() {
                 let p1 = self.points[i1];
 
                 match self.join_style {
@@ -701,7 +703,7 @@ impl Shape {
                 }
 
                 i0 = i1;
-                i1 = i1 + 1;
+                i1 += 1;
             }
         } else {
             for i in 0..self.points.len() {
@@ -713,7 +715,7 @@ impl Shape {
         }
 
         for i in (index as u32..(vertices.len() as u32 - 2)).step_by(3) {
-            indices.push(i + 0);
+            indices.push(i);
             indices.push(i + 1);
             indices.push(i + 2);
         }
@@ -765,7 +767,7 @@ impl Shape {
             }
 
             for i in (index as u32..(vertices.len() as u32 - 2)).step_by(2) {
-                indices.push(i + 0);
+                indices.push(i);
                 indices.push(i + 1);
                 indices.push(i + 2);
 
@@ -779,7 +781,7 @@ impl Shape {
             indices.push(index as u32);
 
             indices.push(vertices.len() as u32 - 1);
-            indices.push(index as u32 + 0);
+            indices.push(index as u32);
             indices.push(index as u32 + 1);
         }
 

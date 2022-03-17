@@ -8,4 +8,4 @@ edition = "2021"
 
 [dependencies]
 mint = "0.5"
-ultraviolet = { version = "0.8", features = ["mint"] }
+ultraviolet = { version = "0.9", features = ["mint"] }

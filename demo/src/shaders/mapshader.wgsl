@@ -1,28 +1,31 @@
 struct Camera {
-    view_proj: mat4x4<f32>;
-    eye: vec3<f32>;
+    view_proj: mat4x4<f32>,
+    eye: vec3<f32>,
 };
 
-[[group(0), binding(0)]]
+@group(0)
+@binding(0)
 var<uniform> camera: Camera;
 
 struct VertexInput {
-    [[location(0)]] position: vec3<f32>;
-    [[location(1)]] tex_coords: vec3<f32>;
+    @location(0) position: vec3<f32>,
+    @location(1) tex_coords: vec3<f32>,
 };
 
 struct VertexOutput {
-    [[builtin(position)]] clip_position: vec4<f32>;
-    [[location(0)]] tex_coords: vec3<f32>;
-    [[location(1)]] zpos: f32;
+    @builtin(position) clip_position: vec4<f32>,
+    @location(0) tex_coords: vec3<f32>,
+    @location(1) zpos: f32,
 };
 
-[[group(2), binding(0)]]
+@group(2)
+@binding(0)
 var tex: texture_2d_array<f32>;
-[[group(2), binding(1)]]
+@group(2)
+@binding(1)
 var sample: sampler;
 
-[[stage(vertex)]]
+@stage(vertex)
 fn vertex(
     vertex: VertexInput,
 ) -> VertexOutput {
@@ -34,7 +37,8 @@ fn vertex(
     return out;
 }
 
-[[group(3), binding(0)]]
+@group(3)
+@binding(0)
 var maptex: texture_2d_array<u32>;
 
 fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32>
@@ -47,8 +51,8 @@ fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32>
 }
 
 // Fragment shader
-[[stage(fragment)]]
-fn fragment(in: VertexOutput,) -> [[location(0)]] vec4<f32> {
+@stage(fragment)
+fn fragment(in: VertexOutput,) -> @location(0) vec4<f32> {
     let yoffset = abs((i32(in.zpos) - 8) * 32);
     let coords = vec3<i32> (i32(in.tex_coords.x + .5), i32(in.tex_coords.y + .5), i32(in.tex_coords.z));
     let tile_pos = vec2<i32>(coords.x / 16, (coords.y / 16) + yoffset);

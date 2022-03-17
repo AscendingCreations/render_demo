@@ -56,7 +56,7 @@ impl MapTextures {
                 origin: wgpu::Origin3d { x: 0, y: 0, z: id },
                 aspect: wgpu::TextureAspect::All,
             },
-            &bytemuck::cast_slice(data).to_vec(),
+            bytemuck::cast_slice(data),
             wgpu::ImageDataLayout {
                 offset: 0,
                 bytes_per_row: std::num::NonZeroU32::new(512),

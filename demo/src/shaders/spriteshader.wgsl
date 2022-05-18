@@ -37,23 +37,23 @@ struct VertexOutput {
 var tex: texture_2d_array<f32>;
 @group(2)
 @binding(1)
-var sample: sampler;
+var tex_sample: sampler;
 
-@stage(vertex)
+@vertex
 fn vertex(
     vertex: VertexInput,
 ) -> VertexOutput {
-    var out: VertexOutput;
+    var result: VertexOutput;
     let size = textureDimensions(tex);
     let fsize = vec2<f32> (f32(size.x), f32(size.y));
 
-    out.clip_position =  camera.view_proj * vec4<f32>(vertex.position.xyz, 1.0);
-    out.tex_coords = vec3<f32>(vertex.tex_coords.x / fsize.x, vertex.tex_coords.y / fsize.y, vertex.tex_coords.z);
-    out.col = vertex.color;
-    out.frames = vertex.frames;
-    out.tex_hw = vertex.tex_hw;
-    out.size = fsize;
-    return out;
+    result.clip_position =  camera.view_proj * vec4<f32>(vertex.position.xyz, 1.0);
+    result.tex_coords = vec3<f32>(vertex.tex_coords.x / fsize.x, vertex.tex_coords.y / fsize.y, vertex.tex_coords.z);
+    result.col = vertex.color;
+    result.frames = vertex.frames;
+    result.tex_hw = vertex.tex_hw;
+    result.size = fsize;
+    return result;
 }
 
 fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32>
@@ -66,28 +66,28 @@ fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32>
 }
 
 // Fragment shader
-@stage(fragment)
-fn fragment(in: VertexOutput,) -> @location(0) vec4<f32> {
+@fragment
+fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
     var coords = vec2<f32>(0.0, 0.0);
 
-    if (in.frames[2] > 0u) {
-        let id = time.seconds / (f32(in.frames[1]) / 1000.0);
-        let frame = u32(floor(id % f32(in.frames[0])));
-        coords = vec2<f32>((f32(frame * in.tex_hw[0]) / in.size.x) + in.tex_coords.x, in.tex_coords.y);
+    if (vertex.frames[2] > 0u) {
+        let id = time.seconds / (f32(vertex.frames[1]) / 1000.0);
+        let frame = u32(floor(id % f32(vertex.frames[0])));
+        coords = vec2<f32>((f32(frame * vertex.tex_hw[0]) / vertex.size.x) + vertex.tex_coords.x, vertex.tex_coords.y);
     } else {
-        coords = vec2<f32>(in.tex_coords.x, in.tex_coords.y);
+        coords = vec2<f32>(vertex.tex_coords.x, vertex.tex_coords.y);
     }
 
     var step = vec2<f32>(0.5, 0.5);
-    var tex_pixel = in.size * coords - step.xy / 2.0;
+    var tex_pixel = vertex.size * coords - step.xy / 2.0;
 
     let corner = floor(tex_pixel) + 1.0;
     let frac = min((corner - tex_pixel) * vec2<f32>(2.0, 2.0), vec2<f32>(1.0, 1.0));
 
-    var c1 = textureSample(tex, sample, (floor(tex_pixel + vec2<f32>(0.0, 0.0)) + 0.5) / in.size, i32(in.tex_coords.z));
-    var c2 = textureSample(tex, sample, (floor(tex_pixel + vec2<f32>(step.x, 0.0)) + 0.5) / in.size, i32(in.tex_coords.z));
-    var c3 = textureSample(tex, sample, (floor(tex_pixel + vec2<f32>(0.0, step.y)) + 0.5) / in.size, i32(in.tex_coords.z));
-    var c4 = textureSample(tex, sample, (floor(tex_pixel + step.xy) + 0.5) / in.size, i32(in.tex_coords.z));
+    var c1 = textureSample(tex, tex_sample, (floor(tex_pixel + vec2<f32>(0.0, 0.0)) + 0.5) / vertex.size, i32(vertex.tex_coords.z));
+    var c2 = textureSample(tex, tex_sample, (floor(tex_pixel + vec2<f32>(step.x, 0.0)) + 0.5) / vertex.size, i32(vertex.tex_coords.z));
+    var c3 = textureSample(tex, tex_sample, (floor(tex_pixel + vec2<f32>(0.0, step.y)) + 0.5) / vertex.size, i32(vertex.tex_coords.z));
+    var c4 = textureSample(tex, tex_sample, (floor(tex_pixel + step.xy) + 0.5) / vertex.size, i32(vertex.tex_coords.z));
 
     c1 = c1 * (frac.x * frac.y);
     c2 = c2 *((1.0 - frac.x) * frac.y);
@@ -95,9 +95,9 @@ fn fragment(in: VertexOutput,) -> @location(0) vec4<f32> {
     c4 = c4 *((1.0 - frac.x) * (1.0 - frac.y));
 
     let object_color = (c1 + c2 + c3 + c4);
-    var color =  hueShift(object_color.rgb, f32(in.col.r));
-    let ldchange = in.col.g / 1000000000u;
-    let ldoffset = f32((in.col.g % 900000000u) / 1000000u) / 100.0;
+    var color =  hueShift(object_color.rgb, f32(vertex.col.r));
+    let ldchange = vertex.col.g / 1000000000u;
+    let ldoffset = f32((vertex.col.g % 900000000u) / 1000000u) / 100.0;
 
     if (ldchange > 0u) {
         color = color + vec3<f32>(ldoffset, ldoffset, ldoffset);
@@ -105,9 +105,9 @@ fn fragment(in: VertexOutput,) -> @location(0) vec4<f32> {
         color = color - vec3<f32>(ldoffset, ldoffset, ldoffset);
     }
 
-    color = color * (f32(in.col.b) / 100.0);
+    color = color * (f32(vertex.col.b) / 100.0);
 
-    let alpha = object_color.a * (f32(in.col.a)/ 100.0);
+    let alpha = object_color.a * (f32(vertex.col.a)/ 100.0);
 
     if (alpha <= 0.0) {
         discard;

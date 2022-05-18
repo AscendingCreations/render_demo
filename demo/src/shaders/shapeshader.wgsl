@@ -25,24 +25,24 @@ struct VertexOutput {
     @location(1) col: vec4<f32>,
 };
 
-@stage(vertex)
+@vertex
 fn vertex(
     vertex: VertexInput,
 ) -> VertexOutput {
-    var out: VertexOutput;
+    var result: VertexOutput;
 
-    out.clip_position =  camera.view_proj * vec4<f32>(vertex.position.xyz, 1.0);
-    out.col = vec4<f32>(f32(vertex.color.r) / 255.0, f32(vertex.color.g) / 255.0, f32(vertex.color.b) / 255.0, f32(vertex.color.a) / 255.0);
+    result.clip_position =  camera.view_proj * vec4<f32>(vertex.position.xyz, 1.0);
+    result.col = vec4<f32>(f32(vertex.color.r) / 255.0, f32(vertex.color.g) / 255.0, f32(vertex.color.b) / 255.0, f32(vertex.color.a) / 255.0);
 
-    return out;
+    return result;
 }
 
 // Fragment shader
-@stage(fragment)
-fn fragment(in: VertexOutput,) -> @location(0) vec4<f32> {
-    if (in.col.a <= 0.0) {
+@fragment
+fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
+    if (vertex.col.a <= 0.0) {
         discard;
     }
 
-    return in.col;
+    return vertex.col;
 }

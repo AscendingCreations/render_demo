@@ -39,25 +39,25 @@ struct VertexOutput {
 var tex: texture_2d_array<f32>;
 @group(2)
 @binding(1)
-var sample: sampler;
+var tex_sample: sampler;
 
-@stage(vertex)
+@vertex
 fn vertex(
     vertex: VertexInput,
 ) -> VertexOutput {
-    var out: VertexOutput;
+    var result: VertexOutput;
     let size = textureDimensions(tex);
     let fsize = vec2<f32> (f32(size.x), f32(size.y));
 
-    out.clip_position =  camera.view_proj * vec4<f32>(vertex.position.xyz, 1.0);
-    out.tex_coords = vec2<f32>(vertex.tex_coords.x / fsize.x, vertex.tex_coords.y / fsize.y);
-    out.tex_data = vertex.tex_data;
-    out.hue_alpha = vertex.hue_alpha;
-    out.frames = vertex.frames;
-    out.layer = vertex.layer;
-    out.size = fsize;
+    result.clip_position =  camera.view_proj * vec4<f32>(vertex.position.xyz, 1.0);
+    result.tex_coords = vec2<f32>(vertex.tex_coords.x / fsize.x, vertex.tex_coords.y / fsize.y);
+    result.tex_data = vertex.tex_data;
+    result.hue_alpha = vertex.hue_alpha;
+    result.frames = vertex.frames;
+    result.layer = vertex.layer;
+    result.size = fsize;
 
-    return out;
+    return result;
 }
 
 fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32>
@@ -70,31 +70,31 @@ fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32>
 }
 
 // Fragment shader
-@stage(fragment)
-fn fragment(in: VertexOutput,) -> @location(0) vec4<f32> {
-    let id = time.seconds / (f32(in.frames[2]) / 1000.0);
-    let frame = u32(floor(id % f32(in.frames[0])));
-    var yframes = in.frames[0];
+@fragment
+fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
+    let id = time.seconds / (f32(vertex.frames[2]) / 1000.0);
+    let frame = u32(floor(id % f32(vertex.frames[0])));
+    var yframes = vertex.frames[0];
 
-    if (in.frames[1] > 0u) {
-        yframes = in.frames[1];
+    if (vertex.frames[1] > 0u) {
+        yframes = vertex.frames[1];
     }
 
     let coords = vec2<f32>(
-        ((f32(((frame % yframes) * in.tex_data[2]) + in.tex_data[0]) / in.size.x) + in.tex_coords.x  + (.5 / f32(in.size.x))),
-        ((f32(((frame / yframes) * in.tex_data[3]) + in.tex_data[1]) / in.size.y) + in.tex_coords.y  + (.5 / f32(in.size.x)))
+        ((f32(((frame % yframes) * vertex.tex_data[2]) + vertex.tex_data[0]) / vertex.size.x) + vertex.tex_coords.x  + (.5 / f32(vertex.size.x))),
+        ((f32(((frame / yframes) * vertex.tex_data[3]) + vertex.tex_data[1]) / vertex.size.y) + vertex.tex_coords.y  + (.5 / f32(vertex.size.x)))
     );
 
     var step = vec2<f32>(0.5, 0.5);
-    var tex_pixel = in.size * coords - step.xy / 2.0;
+    var tex_pixel = vertex.size * coords - step.xy / 2.0;
 
     let corner = floor(tex_pixel) + 1.0;
     let frac = min((corner - tex_pixel) * vec2<f32>(2.0, 2.0), vec2<f32>(1.0, 1.0));
 
-    var c1 = textureSample(tex, sample, (floor(tex_pixel + vec2<f32>(0.0, 0.0)) + 0.5) / in.size, in.layer);
-    var c2 = textureSample(tex, sample, (floor(tex_pixel + vec2<f32>(step.x, 0.0)) + 0.5) / in.size, in.layer);
-    var c3 = textureSample(tex, sample, (floor(tex_pixel + vec2<f32>(0.0, step.y)) + 0.5) / in.size, in.layer);
-    var c4 = textureSample(tex, sample, (floor(tex_pixel + step.xy) + 0.5) / in.size, in.layer);
+    var c1 = textureSample(tex, tex_sample, (floor(tex_pixel + vec2<f32>(0.0, 0.0)) + 0.5) / vertex.size, vertex.layer);
+    var c2 = textureSample(tex, tex_sample, (floor(tex_pixel + vec2<f32>(step.x, 0.0)) + 0.5) / vertex.size, vertex.layer);
+    var c3 = textureSample(tex, tex_sample, (floor(tex_pixel + vec2<f32>(0.0, step.y)) + 0.5) / vertex.size, vertex.layer);
+    var c4 = textureSample(tex, tex_sample, (floor(tex_pixel + step.xy) + 0.5) / vertex.size, vertex.layer);
 
     c1 = c1 * (frac.x * frac.y);
     c2 = c2 *((1.0 - frac.x) * frac.y);
@@ -102,13 +102,13 @@ fn fragment(in: VertexOutput,) -> @location(0) vec4<f32> {
     c4 = c4 *((1.0 - frac.x) * (1.0 - frac.y));
 
     let object_color = (c1 + c2 + c3 + c4);
-    let alpha = object_color.a * (f32(in.hue_alpha[1]) / 100.0);
+    let alpha = object_color.a * (f32(vertex.hue_alpha[1]) / 100.0);
 
     if (alpha <= 0.0) {
         discard;
     }
 
-    let color = hueShift(object_color.rgb, f32(in.hue_alpha[0]) % 361.0);
+    let color = hueShift(object_color.rgb, f32(vertex.hue_alpha[0]) % 361.0);
     return vec4<f32>(color, alpha);
 }
 

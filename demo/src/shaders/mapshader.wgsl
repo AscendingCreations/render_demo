@@ -23,18 +23,18 @@ struct VertexOutput {
 var tex: texture_2d_array<f32>;
 @group(2)
 @binding(1)
-var sample: sampler;
+var tex_sample: sampler;
 
-@stage(vertex)
+@vertex
 fn vertex(
     vertex: VertexInput,
 ) -> VertexOutput {
-    var out: VertexOutput;
+    var result: VertexOutput;
 
-    out.zpos = vertex.position.z;
-    out.clip_position =  camera.view_proj * vec4<f32>(vertex.position.xyz, 1.0);
-    out.tex_coords = vertex.tex_coords.xyz;
-    return out;
+    result.zpos = vertex.position.z;
+    result.clip_position =  camera.view_proj * vec4<f32>(vertex.position.xyz, 1.0);
+    result.tex_coords = vertex.tex_coords.xyz;
+    return result;
 }
 
 @group(3)
@@ -51,10 +51,10 @@ fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32>
 }
 
 // Fragment shader
-@stage(fragment)
-fn fragment(in: VertexOutput,) -> @location(0) vec4<f32> {
-    let yoffset = abs((i32(in.zpos) - 8) * 32);
-    let coords = vec3<i32> (i32(in.tex_coords.x + .5), i32(in.tex_coords.y + .5), i32(in.tex_coords.z));
+@fragment
+fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
+    let yoffset = abs((i32(vertex.zpos) - 8) * 32);
+    let coords = vec3<i32> (i32(vertex.tex_coords.x + .5), i32(vertex.tex_coords.y + .5), i32(vertex.tex_coords.z));
     let tile_pos = vec2<i32>(coords.x / 16, (coords.y / 16) + yoffset);
     let tile = textureLoad(maptex, tile_pos.xy, coords.z, 0);
     let pos = vec2<i32>(i32(tile.r % 128u) * 16 + (coords.x % 16), i32(tile.r / 128u) * 16 + (coords.y % 16));

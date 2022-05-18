@@ -1,4 +1,4 @@
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct Allocation {
     pub allocation: guillotiere::Allocation,
     pub layer: usize,

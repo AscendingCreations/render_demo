@@ -41,7 +41,7 @@ impl Renderer {
         size: PhysicalSize<u32>,
     ) -> Result<(), RendererError> {
         let surface_format =
-            self.surface.get_preferred_format(&self.adapter).unwrap();
+            self.surface.get_supported_formats(&self.adapter)[0];
 
         if size.width == 0 || size.height == 0 {
             return Ok(());
@@ -147,7 +147,7 @@ impl AdapterExt for wgpu::Adapter {
             self.request_device(device_descriptor, trace_path).await?;
 
         let surface = unsafe { instance.create_surface(&window) };
-        let surface_format = surface.get_preferred_format(&self).unwrap();
+        let surface_format = surface.get_supported_formats(&self)[0];
 
         surface.configure(
             &device,

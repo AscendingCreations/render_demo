@@ -188,7 +188,7 @@ impl Atlas {
         queue: &wgpu::Queue,
     ) -> Option<Allocation> {
         if let Some(allocation) = self.names.get(texture.name()) {
-            Some(allocation.clone())
+            Some(*allocation)
         } else {
             let (width, height) = texture.size();
 
@@ -201,8 +201,7 @@ impl Atlas {
             };
 
             self.upload_allocation(texture.bytes(), &allocation, queue);
-            self.names
-                .insert(texture.name().to_string(), allocation.clone());
+            self.names.insert(texture.name().to_string(), allocation);
             Some(allocation)
         }
     }

@@ -91,7 +91,7 @@ async fn main() -> Result<(), RendererError> {
     let allocation = sprite_atlas
         .upload(&texture, renderer.device(), renderer.queue())
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
-    let mut sprite = [Sprite::new(allocation.clone()), Sprite::new(allocation)];
+    let mut sprite = [Sprite::new(allocation), Sprite::new(allocation)];
 
     sprite[0].pos = [32, 32, 5];
     sprite[0].hw = [48, 48];
@@ -460,7 +460,7 @@ pub fn parse_example_wgsl() {
         for file_entry in read_files {
             let shader = match file_entry {
                 Ok(entry) => match entry.path().extension() {
-                    Some(ostr) if &*ostr == "wgsl" => {
+                    Some(ostr) if ostr == "wgsl" => {
                         println!("Validating {:?}", entry.path());
                         fs::read_to_string(entry.path()).unwrap_or_default()
                     }

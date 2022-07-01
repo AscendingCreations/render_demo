@@ -61,7 +61,7 @@ where
     ) {
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("render pass"),
-            color_attachments: &[wgpu::RenderPassColorAttachment {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: views
                     .get("framebuffer")
                     .as_ref()
@@ -76,7 +76,7 @@ where
                     }),
                     store: true,
                 },
-            }],
+            })],
             depth_stencil_attachment: Some(
                 wgpu::RenderPassDepthStencilAttachment {
                     view: views

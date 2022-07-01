@@ -14,7 +14,7 @@ impl ShapeRenderPipeline {
         layout_storage: &mut LayoutStorage,
     ) -> Result<Self, RendererError> {
         let shader =
-            device.create_shader_module(&wgpu::ShaderModuleDescriptor {
+            device.create_shader_module(wgpu::ShaderModuleDescriptor {
                 label: Some("Shader"),
                 source: wgpu::ShaderSource::Wgsl(
                     include_str!("../../shaders/shapeshader.wgsl").into(),
@@ -64,11 +64,11 @@ impl ShapeRenderPipeline {
                 fragment: Some(wgpu::FragmentState {
                     module: &shader,
                     entry_point: "fragment",
-                    targets: &[wgpu::ColorTargetState {
+                    targets: &[Some(wgpu::ColorTargetState {
                         format: surface_format,
                         blend: Some(wgpu::BlendState::ALPHA_BLENDING),
                         write_mask: wgpu::ColorWrites::ALL,
-                    }],
+                    })],
                 }),
                 multiview: None,
             });

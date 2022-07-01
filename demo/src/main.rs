@@ -5,12 +5,17 @@ use ::camera::{
 };
 use backtrace::Backtrace;
 use input::{Bindings, FrameTime, InputHandler};
-use lazy_static::lazy_static;
+use log::{error, info, warn, Level, LevelFilter, Metadata, Record};
 use naga::{front::wgsl, valid::Validator};
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use slog::{error, info};
-use sloggers::{file::FileLoggerBuilder, types::Severity, Build};
-use std::{collections::HashMap, fs, panic, path::PathBuf};
+use std::{
+    collections::HashMap,
+    fs::{self, File},
+    io::{Read, Write},
+    panic,
+    path::PathBuf,
+};
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
@@ -36,23 +41,47 @@ enum Axis {
     Pitch,
 }
 
-lazy_static! {
-    static ref LOGGER: slog::Logger = {
-        let mut builder = FileLoggerBuilder::new("paniclog.txt");
-        builder.level(Severity::Debug);
-        builder.build().unwrap()
-    };
+static MY_LOGGER: MyLogger = MyLogger(Level::Debug);
+
+struct MyLogger(pub Level);
+
+impl log::Log for MyLogger {
+    fn enabled(&self, metadata: &Metadata) -> bool {
+        metadata.level() <= self.0
+    }
+
+    fn log(&self, record: &Record) {
+        if self.enabled(record.metadata()) {
+            let msg = format!("{} - {}\n", record.level(), record.args());
+            println!("{}", &msg);
+
+            let mut file = match File::options()
+                .append(true)
+                .create(true)
+                .open("paniclog.txt")
+            {
+                Ok(v) => v,
+                Err(_) => return,
+            };
+
+            let _ = file.write(msg.as_bytes());
+        }
+    }
+    fn flush(&self) {}
 }
 
 #[tokio::main]
 async fn main() -> Result<(), RendererError> {
-    info!(LOGGER, "starting up");
+    log::set_logger(&MY_LOGGER).unwrap();
+    log::set_max_level(LevelFilter::Info);
 
-    /*panic::set_hook(Box::new(|panic_info| {
+    info!("starting up");
+
+    panic::set_hook(Box::new(|panic_info| {
         let bt = Backtrace::new();
 
-        error!(LOGGER, "PANIC: {}, BACKTRACE: {:?}", panic_info, bt);
-    }));*/
+        error!("PANIC: {}, BACKTRACE: {:?}", panic_info, bt);
+    }));
 
     parse_example_wgsl();
     let event_loop = EventLoop::new();

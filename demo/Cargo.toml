@@ -22,10 +22,9 @@ guillotiere = "0.6"
 serde = "1.0"
 camera = { path = "../camera" }
 input = { path = "../input" }
-slog = "2.7"
-sloggers = "2.1"
+log = "0.4.17"
 backtrace = "0.3"
-lazy_static = "1.4"
+once_cell = "1.12.0"
 futures = "0.3.21"
 
 [dependencies.naga]

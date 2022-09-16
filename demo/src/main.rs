@@ -83,7 +83,7 @@ async fn main() -> Result<(), RendererError> {
         error!("PANIC: {}, BACKTRACE: {:?}", panic_info, bt);
     }));
 
-    parse_example_wgsl();
+    //parse_example_wgsl();
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .with_title("Demo")
@@ -92,13 +92,14 @@ async fn main() -> Result<(), RendererError> {
 
     let backends = wgpu::Backends::PRIMARY;
     let instance = wgpu::Instance::new(backends);
+    let surface = unsafe { instance.create_surface(&window) };
 
     let mut renderer = instance
         .create_renderer(
             window,
             &wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,
-                compatible_surface: None,
+                compatible_surface: Some(&surface),
                 force_fallback_adapter: false,
             },
             &wgpu::DeviceDescriptor {
@@ -147,7 +148,7 @@ async fn main() -> Result<(), RendererError> {
         &mut layout_storage,
     )?;
 
-    let settings = FlatSettings { zoom: 1.5 };
+    let settings = FlatSettings { zoom: 2.0 };
 
     let size = renderer.size();
     let controls = FlatControls::new(settings);

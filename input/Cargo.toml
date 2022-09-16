@@ -9,4 +9,4 @@ resolver = "2"
 [dependencies]
 ordered-float = { version = "3.0.0", features = ["serde"] }
 serde = { version = "1.0.139", features = ["derive"] }
-winit = { version = "0.26.1", features = ["serde"] }
+winit = { version = "0.27.3", features = ["serde"] }

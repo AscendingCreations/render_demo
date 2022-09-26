@@ -63,7 +63,7 @@ impl Sprite {
             self.uv[1].saturating_add(v).saturating_add(height) as f32,
         );
 
-        let animate = if self.animate { 1 } else { 0 };
+        let animate = u32::from(self.animate);
 
         let buffer = vec![
             SpriteVertex {

@@ -28,12 +28,12 @@ once_cell = "1.14.0"
 futures = "0.3.24"
 
 [dependencies.naga]
-#git = "https://github.com/gfx-rs/naga"
-#rev = "1aa91549"
+git = "https://github.com/gfx-rs/naga"
+rev = "b209d911"
 version = "0.9.0"
 features = ["span", "validate", "wgsl-in"]
 
 [dependencies.wgpu]
-#git = "https://github.com/gfx-rs/wgpu"
-#rev = "36f8d83"
-version = "0.13.1"
+git = "https://github.com/gfx-rs/wgpu"
+rev = "061e04b"
+version = "0.13"

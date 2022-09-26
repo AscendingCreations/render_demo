@@ -92,14 +92,13 @@ async fn main() -> Result<(), RendererError> {
 
     let backends = wgpu::Backends::PRIMARY;
     let instance = wgpu::Instance::new(backends);
-    let surface = unsafe { instance.create_surface(&window) };
 
     let mut renderer = instance
         .create_renderer(
             window,
             &wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,
-                compatible_surface: Some(&surface),
+                compatible_surface: None,
                 force_fallback_adapter: false,
             },
             &wgpu::DeviceDescriptor {

@@ -26,14 +26,15 @@ log = "0.4.17"
 backtrace = "0.3.66"
 once_cell = "1.15.0"
 futures = "0.3.24"
+wgpu_text = "0.6.3"
 
 [dependencies.naga]
-git = "https://github.com/gfx-rs/naga"
-rev = "b209d911"
+#git = "https://github.com/gfx-rs/naga"
+#rev = "b209d911"
 version = "0.9.0"
 features = ["span", "validate", "wgsl-in"]
 
 [dependencies.wgpu]
-git = "https://github.com/gfx-rs/wgpu"
-rev = "061e04b"
+#git = "https://github.com/gfx-rs/wgpu"
+#rev = "061e04b"
 version = "0.13"

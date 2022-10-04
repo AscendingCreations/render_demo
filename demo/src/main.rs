@@ -16,6 +16,12 @@ use std::{
     panic,
     path::PathBuf,
 };
+use wgpu_text::{
+    section::{
+        BuiltInLineBreaker, Layout, OwnedText, Section, Text, VerticalAlign,
+    },
+    BrushBuilder,
+};
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
@@ -260,6 +266,11 @@ async fn main() -> Result<(), RendererError> {
     shapes.closed = true;
     shapes.set_fill(true);
 
+    let font: &[u8] = include_bytes!("fonts/Inconsolata-Regular.ttf");
+    let brush = BrushBuilder::using_font_bytes(font)
+        .unwrap()
+        .build(renderer.device(), &renderer.surface_config);
+
     let mut state = State {
         layout_storage,
         camera,
@@ -285,6 +296,7 @@ async fn main() -> Result<(), RendererError> {
         shapes,
         shapes_buffer,
         shapes_pipeline,
+        brush,
     };
 
     let mut views = HashMap::new();
@@ -318,6 +330,24 @@ async fn main() -> Result<(), RendererError> {
     let mut input_handler = InputHandler::new(bindings);
 
     let mut frame_time = FrameTime::new();
+
+    let section = Section::default()
+        .add_text(
+            Text::new(
+                "Try typing some text,\n\
+                del - delete all, backspace - remove last character",
+            )
+            .with_scale(25.0)
+            .with_color([1.0, 1.0, 1.0, 1.0]),
+        )
+        .with_bounds((size.width as f32 / 2.0, size.height as f32))
+        .with_layout(
+            Layout::default()
+                .v_align(VerticalAlign::Center)
+                .line_breaker(BuiltInLineBreaker::AnyCharLineBreaker),
+        )
+        .with_screen_position((50.0, size.height as f32 * 0.5))
+        .to_owned();
 
     event_loop.run(move |event, _, control_flow| {
         match event {
@@ -450,11 +480,16 @@ async fn main() -> Result<(), RendererError> {
             },
         );
 
+        let view = views.get("framebuffer").unwrap();
+
+        state.brush.queue(&section);
+        let cmd_buffer =
+            state.brush.draw(renderer.device(), &view, renderer.queue());
         // Run the render pass.
         state.render(&mut encoder, &views);
 
         // Submit our command queue.
-        renderer.queue().submit(std::iter::once(encoder.finish()));
+        renderer.queue().submit([encoder.finish(), cmd_buffer]);
 
         views.remove("framebuffer");
 

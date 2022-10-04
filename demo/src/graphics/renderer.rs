@@ -17,6 +17,7 @@ pub struct Renderer {
     surface_format: wgpu::TextureFormat,
     size: PhysicalSize<u32>,
     present_mode: wgpu::PresentMode,
+    pub surface_config: wgpu::SurfaceConfiguration,
 }
 
 impl Renderer {
@@ -55,7 +56,7 @@ impl Renderer {
                 width: std::cmp::max(1, size.width),
                 height: std::cmp::max(1, size.height),
                 present_mode: self.present_mode,
-                alpha_mode: wgpu::CompositeAlphaMode::Auto,
+                //alpha_mode: wgpu::CompositeAlphaMode::Auto,
             },
         );
 
@@ -149,18 +150,16 @@ impl AdapterExt for wgpu::Adapter {
 
         let surface = unsafe { instance.create_surface(&window) };
         let surface_format = surface.get_supported_formats(&self)[0];
+        let surface_config = wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            format: surface_format,
+            width: size.width,
+            height: size.height,
+            present_mode,
+            //alpha_mode: wgpu::CompositeAlphaMode::Auto,
+        };
 
-        surface.configure(
-            &device,
-            &wgpu::SurfaceConfiguration {
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                format: surface_format,
-                width: size.width,
-                height: size.height,
-                present_mode,
-                alpha_mode: wgpu::CompositeAlphaMode::Auto,
-            },
-        );
+        surface.configure(&device, &surface_config);
 
         Ok(Renderer {
             adapter: self,
@@ -171,6 +170,7 @@ impl AdapterExt for wgpu::Adapter {
             surface_format,
             size,
             present_mode,
+            surface_config,
         })
     }
 }

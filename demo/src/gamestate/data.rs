@@ -1,5 +1,6 @@
 pub(crate) use crate::graphics::*;
 use std::collections::HashMap;
+use wgpu_text::{BrushBuilder, TextBrush};
 
 pub struct State<Controls>
 where
@@ -48,6 +49,7 @@ where
     pub shapes: Shape,
     pub shapes_buffer: GpuBuffer<ShapeVertex>,
     pub shapes_pipeline: ShapeRenderPipeline,
+    pub brush: TextBrush<wgpu_text::font::FontRef<'static>>,
 }
 
 impl<Controls> Pass for State<Controls>

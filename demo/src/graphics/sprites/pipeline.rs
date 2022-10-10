@@ -1,6 +1,6 @@
 use crate::graphics::{
-    BufferLayout, CameraLayout, LayoutStorage, RendererError, SpriteVertex,
-    TextureLayout, TimeLayout,
+    BufferLayout, CameraLayout, LayoutStorage, RendererError, ScreenLayout,
+    SpriteVertex, TextureLayout, TimeLayout,
 };
 
 pub struct SpriteRenderPipeline {
@@ -25,6 +25,7 @@ impl SpriteRenderPipeline {
         let texture_layout =
             layout_storage.create_layout(device, TextureLayout);
         let time_layout = layout_storage.create_layout(device, TimeLayout);
+        let screen_layout = layout_storage.create_layout(device, ScreenLayout);
 
         // Create the render pipeline.
         let render_pipeline =
@@ -36,6 +37,7 @@ impl SpriteRenderPipeline {
                         bind_group_layouts: &[
                             &camera_layout,
                             &time_layout,
+                            &screen_layout,
                             &texture_layout,
                         ],
                         push_constant_ranges: &[],

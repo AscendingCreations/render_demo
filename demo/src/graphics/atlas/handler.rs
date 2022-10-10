@@ -2,9 +2,9 @@ use crate::graphics::{
     atlas::{Allocation, Layer},
     textures::Texture,
 };
-use std::{collections::HashMap, num::NonZeroU32};
+use std::{collections::HashMap, hash::Hash, num::NonZeroU32};
 
-pub struct Atlas {
+pub struct Atlas<U: Hash + Eq + Clone = String> {
     /// Texture in GRAM
     pub texture: wgpu::Texture,
     /// Texture View for WGPU
@@ -14,10 +14,11 @@ pub struct Atlas {
     /// Holds the Original Texture Size and layer information.
     pub extent: wgpu::Extent3d,
     /// File Paths or names to prevent duplicates.
-    pub names: HashMap<String, Allocation>,
+    pub names: HashMap<U, Allocation>,
+    pub format: wgpu::TextureFormat,
 }
 
-impl Atlas {
+impl<U: Hash + Eq + Clone> Atlas<U> {
     fn allocate(&mut self, width: u32, height: u32) -> Option<Allocation> {
         /* Check if the allocation would fit. */
         if width > self.extent.width || height > self.extent.height {
@@ -58,7 +59,7 @@ impl Atlas {
         self.names.clear();
     }
 
-    pub fn get(&mut self, name: String) -> Option<Allocation> {
+    pub fn get(&mut self, name: U) -> Option<Allocation> {
         self.names.get(&name).cloned()
     }
 
@@ -142,7 +143,11 @@ impl Atlas {
         queue.submit(std::iter::once(encoder.finish()));
     }
 
-    pub fn new(device: &wgpu::Device, size: u32) -> Self {
+    pub fn new(
+        device: &wgpu::Device,
+        size: u32,
+        format: wgpu::TextureFormat,
+    ) -> Self {
         let extent = wgpu::Extent3d {
             width: size,
             height: size,
@@ -155,7 +160,7 @@ impl Atlas {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            format,
             usage: wgpu::TextureUsages::TEXTURE_BINDING
                 | wgpu::TextureUsages::COPY_DST
                 | wgpu::TextureUsages::COPY_SRC,
@@ -178,20 +183,22 @@ impl Atlas {
             layers: vec![Layer::new(size)],
             extent,
             names: HashMap::new(),
+            format,
         }
     }
 
     pub fn upload(
         &mut self,
-        texture: &Texture,
+        hash: U,
+        bytes: &[u8],
+        width: u32,
+        height: u32,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
     ) -> Option<Allocation> {
-        if let Some(allocation) = self.names.get(texture.name()) {
+        if let Some(allocation) = self.names.get(&hash) {
             Some(*allocation)
         } else {
-            let (width, height) = texture.size();
-
             let allocation = {
                 let nlayers = self.layers.len();
                 let allocation = self.allocate(width, height)?;
@@ -200,8 +207,8 @@ impl Atlas {
                 allocation
             };
 
-            self.upload_allocation(texture.bytes(), &allocation, queue);
-            self.names.insert(texture.name().to_string(), allocation);
+            self.upload_allocation(bytes, &allocation, queue);
+            self.names.insert(hash, allocation);
             Some(allocation)
         }
     }
@@ -230,7 +237,13 @@ impl Atlas {
             buffer,
             wgpu::ImageDataLayout {
                 offset: 0,
-                bytes_per_row: std::num::NonZeroU32::new(4 * width),
+                bytes_per_row: std::num::NonZeroU32::new(
+                    if self.format == wgpu::TextureFormat::Rgba8UnormSrgb {
+                        4 * width
+                    } else {
+                        width
+                    },
+                ),
                 rows_per_image: std::num::NonZeroU32::new(height),
             },
             wgpu::Extent3d {

@@ -7,6 +7,11 @@ struct Time {
     seconds: f32,
 };
 
+struct ScreenResolution {
+    width: u32,
+    height: u32
+};
+
 @group(0)
 @binding(0)
 var<uniform> camera: Camera;
@@ -14,6 +19,10 @@ var<uniform> camera: Camera;
 @group(1)
 @binding(0)
 var<uniform> time: Time;
+
+@group(2)
+@binding(0)
+var<uniform> resolution: ScreenResolution;
 
 struct VertexInput {
     @location(0) position: vec3<f32>,
@@ -32,10 +41,10 @@ struct VertexOutput {
     @location(4) size: vec2<f32>,
 };
 
-@group(2)
+@group(3)
 @binding(0)
 var tex: texture_2d_array<f32>;
-@group(2)
+@group(3)
 @binding(1)
 var tex_sample: sampler;
 

@@ -120,11 +120,15 @@ async fn main() -> Result<(), RendererError> {
 
     println!("{:?}", renderer.adapter().get_info());
     let mut layout_storage = LayoutStorage::new();
-    let mut sprite_atlas = Atlas::new(renderer.device(), 2048);
+    let mut sprite_atlas = Atlas::new(
+        renderer.device(),
+        2048,
+        wgpu::TextureFormat::Rgba8UnormSrgb,
+    );
     let texture = Texture::from_file("images/Female_1.png")?;
 
-    let allocation = sprite_atlas
-        .upload(&texture, renderer.device(), renderer.queue())
+    let allocation = texture
+        .upload(&mut sprite_atlas, renderer.device(), renderer.queue())
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
     let mut sprite = [Sprite::new(allocation), Sprite::new(allocation)];
 
@@ -191,12 +195,16 @@ async fn main() -> Result<(), RendererError> {
         &mut layout_storage,
     )?;
 
-    let mut map_atlas = Atlas::new(renderer.device(), 2048);
+    let mut map_atlas = Atlas::new(
+        renderer.device(),
+        2048,
+        wgpu::TextureFormat::Rgba8UnormSrgb,
+    );
 
     for i in 0..3 {
         let texture = Texture::from_file(format!("images/tiles/{}.png", i))?;
-        let _ = map_atlas
-            .upload(&texture, renderer.device(), renderer.queue())
+        let _ = texture
+            .upload(&mut map_atlas, renderer.device(), renderer.queue())
             .ok_or_else(|| OtherError::new("failed to upload image"))?;
     }
 
@@ -221,10 +229,14 @@ async fn main() -> Result<(), RendererError> {
         .get_unused_id()
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
 
-    let mut animation_atlas = Atlas::new(renderer.device(), 2048);
+    let mut animation_atlas = Atlas::new(
+        renderer.device(),
+        2048,
+        wgpu::TextureFormat::Rgba8UnormSrgb,
+    );
     let texture = Texture::from_file("images/anim/0.png")?;
-    let allocation = animation_atlas
-        .upload(&texture, renderer.device(), renderer.queue())
+    let allocation = texture
+        .upload(&mut animation_atlas, renderer.device(), renderer.queue())
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
 
     let animation_pipeline = AnimationRenderPipeline::new(
@@ -249,7 +261,14 @@ async fn main() -> Result<(), RendererError> {
     animation.switch_time = 300;
 
     let time_group = TimeGroup::new(&renderer, &mut layout_storage);
-
+    let screen_group = ScreenGroup::new(
+        &renderer,
+        &mut layout_storage,
+        ScreenUniform {
+            width: size.width,
+            height: size.height,
+        },
+    );
     let shapes_pipeline = ShapeRenderPipeline::new(
         renderer.device(),
         renderer.surface_format(),
@@ -275,6 +294,7 @@ async fn main() -> Result<(), RendererError> {
         layout_storage,
         camera,
         time_group,
+        screen_group,
         sprite,
         sprite_pipeline,
         sprite_buffer,
@@ -484,7 +504,7 @@ async fn main() -> Result<(), RendererError> {
 
         state.brush.queue(&section);
         let cmd_buffer =
-            state.brush.draw(renderer.device(), &view, renderer.queue());
+            state.brush.draw(renderer.device(), view, renderer.queue());
         // Run the render pass.
         state.render(&mut encoder, &views);
 

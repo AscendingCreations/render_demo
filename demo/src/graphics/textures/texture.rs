@@ -1,4 +1,7 @@
-pub(crate) use crate::graphics::RendererError;
+pub(crate) use crate::graphics::{
+    atlas::{Allocation, Atlas},
+    RendererError,
+};
 use image::{DynamicImage, GenericImageView, ImageFormat};
 use std::{
     io::{Error, ErrorKind},
@@ -56,6 +59,23 @@ impl Texture {
             name,
             image::load_from_memory_with_format(data, format)?,
         ))
+    }
+
+    pub fn upload(
+        &self,
+        atlas: &mut Atlas,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+    ) -> Option<Allocation> {
+        let (width, height) = self.size;
+        atlas.upload(
+            self.name.clone(),
+            &self.bytes,
+            width,
+            height,
+            device,
+            queue,
+        )
     }
 
     pub fn name(&self) -> &str {

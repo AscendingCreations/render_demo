@@ -12,6 +12,8 @@ where
     pub camera: Camera<Controls>,
     /// time for all animation on shader side.
     pub time_group: TimeGroup,
+    /// Screen Size to the shaders.
+    pub screen_group: ScreenGroup,
     /// Sprite data TODO: Make an array,
     pub sprite: [Sprite; 2],
     /// Render pipe line for Sprites
@@ -110,6 +112,7 @@ where
             &self.sprite_buffer,
             &self.sprite_texture,
             &self.sprite_pipeline,
+            &self.screen_group,
         );
         pass.render_animations(
             &self.animation_buffer,

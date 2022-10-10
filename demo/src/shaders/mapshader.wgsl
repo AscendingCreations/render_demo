@@ -7,6 +7,7 @@ struct Camera {
 @binding(0)
 var<uniform> camera: Camera;
 
+
 struct VertexInput {
     @location(0) position: vec3<f32>,
     @location(1) tex_coords: vec3<f32>,

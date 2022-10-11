@@ -26,7 +26,7 @@ log = "0.4.17"
 backtrace = "0.3.66"
 once_cell = "1.15.0"
 futures = "0.3.24"
-wgpu_text = "0.6.3"
+fontdue = { git = "https://github.com/mooman219/fontdue", rev = "828b4f4" }
 
 [dependencies.naga]
 #git = "https://github.com/gfx-rs/naga"

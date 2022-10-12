@@ -5,7 +5,7 @@ use fontdue::{
 use std::ops::Range;
 
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct FontColor {
     r: u8,
     g: u8,
@@ -24,9 +24,21 @@ impl Default for FontColor {
     }
 }
 
+#[derive(Clone, Copy, Default, Debug)]
+pub struct Glyph {
+    pub ch: char,
+    pub color: FontColor,
+}
+
+impl Glyph {
+    pub fn new(ch: char, color: FontColor) -> Self {
+        Self { ch, color }
+    }
+}
+
 pub struct Text {
-    /// String Blob used to Recreate the layout when changes are made.
-    pub chars: Vec<(char, FontColor)>,
+    /// glyph string layout.
+    pub glyphs: Vec<Glyph>,
     /// Font PX size,
     pub px: f32,
     /// Font Index,
@@ -47,7 +59,7 @@ pub struct Text {
 impl Default for Text {
     fn default() -> Self {
         Self {
-            chars: Vec::new(),
+            glyphs: Vec::new(),
             px: 12.0,
             font_index: 0,
             settings: LayoutSettings::default(),
@@ -68,7 +80,7 @@ impl Text {
 
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
-            chars: Vec::with_capacity(capacity),
+            glyphs: Vec::with_capacity(capacity),
             bytes: Vec::with_capacity(capacity * 20 * 4),
             ..Default::default()
         }
@@ -109,12 +121,9 @@ impl Text {
     }
 
     pub fn append_with(&mut self, string: &str, color: FontColor) {
-        let chars = string.chars();
-
-        for ch in chars {
-            self.chars.push((ch, color));
-        }
-
+        string
+            .chars()
+            .for_each(|ch| self.glyphs.push(Glyph::new(ch, color)));
         self.changed = true;
     }
 
@@ -123,7 +132,7 @@ impl Text {
     }
 
     pub fn insert_with(&mut self, ch: char, cursor: usize, color: FontColor) {
-        self.chars.insert(cursor, (ch, color));
+        self.glyphs.insert(cursor, Glyph::new(ch, color));
         self.changed = true;
     }
 
@@ -137,13 +146,10 @@ impl Text {
         mut cursor: usize,
         color: FontColor,
     ) {
-        let chars = string.chars();
-
-        for ch in chars {
-            self.chars.insert(cursor, (ch, color));
+        string.chars().for_each(|ch| {
+            self.glyphs.insert(cursor, Glyph::new(ch, color));
             cursor += 1;
-        }
-
+        });
         self.changed = true;
     }
 
@@ -157,15 +163,14 @@ impl Text {
         range: Range<usize>,
         color: FontColor,
     ) {
-        let chars: Vec<char> = string.chars().collect();
-        let len = chars.len();
-        let iters = chars.into_iter().zip((0..len).into_iter().map(|_| color));
-        self.chars.splice(range, iters).for_each(drop);
+        self.glyphs
+            .splice(range, string.chars().map(|ch| Glyph::new(ch, color)))
+            .for_each(drop);
         self.changed = true;
     }
 
     pub fn remove_range(&mut self, range: Range<usize>) {
-        self.chars.drain(range).for_each(drop);
+        self.glyphs.drain(range).for_each(drop);
         self.changed = true;
     }
 

@@ -160,8 +160,12 @@ impl Text {
         let chars: Vec<char> = string.chars().collect();
         let len = chars.len();
         let iters = chars.into_iter().zip((0..len).into_iter().map(|_| color));
-        let _: Vec<(char, FontColor)> =
-            self.chars.splice(range, iters).collect();
+        self.chars.splice(range, iters).for_each(drop);
+        self.changed = true;
+    }
+
+    pub fn remove_range(&mut self, range: Range<usize>) {
+        self.chars.drain(range).for_each(drop);
         self.changed = true;
     }
 

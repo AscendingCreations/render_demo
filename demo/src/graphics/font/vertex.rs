@@ -8,15 +8,15 @@ pub struct TextVertex {
     pub position: [f32; 2],
     pub dimension: [f32; 2],
     pub tex_coord: [f32; 3],
-    pub color: [u8; 4],
+    pub color: [u32; 4],
 }
 
 impl Default for TextVertex {
     fn default() -> Self {
         Self {
-            position: [0; 2],
-            dimension: [0; 2],
-            tex_coord: [0; 3],
+            position: [0.0; 2],
+            dimension: [0.0; 2],
+            tex_coord: [0.0; 3],
             color: [0; 4],
         }
     }
@@ -24,12 +24,12 @@ impl Default for TextVertex {
 
 impl BufferLayout for TextVertex {
     fn attributes() -> Vec<wgpu::VertexAttribute> {
-        wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x2, 2 => Float32x3, 3 => Uint8x4].to_vec()
+        wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x2, 2 => Float32x3, 3 => Uint32x4].to_vec()
     }
 
-    ///default set as large enough to contain 90 maps with all layers
+    ///default set as large enough to contain 1024 glyphs.
     fn default_buffer() -> BufferPass {
-        Self::with_capacity(720)
+        Self::with_capacity(4096)
     }
 
     fn with_capacity(capacity: usize) -> BufferPass {
@@ -56,7 +56,7 @@ impl BufferLayout for TextVertex {
     }
 
     fn vertex_stride() -> usize {
-        std::mem::size_of::<[f32; 6]>()
+        std::mem::size_of::<[f32; 11]>()
     }
 
     fn index_stride() -> usize {

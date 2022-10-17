@@ -1,6 +1,7 @@
 pub(crate) use crate::graphics::*;
+use fontdue::layout::GlyphRasterConfig;
+use fontdue::{Font, FontSettings};
 use std::collections::HashMap;
-
 pub struct State<Controls>
 where
     Controls: camera::controls::Controls,
@@ -50,6 +51,14 @@ where
     pub shapes: Shape,
     pub shapes_buffer: GpuBuffer<ShapeVertex>,
     pub shapes_pipeline: ShapeRenderPipeline,
+
+    /// Text test stuff.
+    pub text: Text,
+    pub text_buffer: GpuBuffer<TextVertex>,
+    pub text_pipeline: TextRenderPipeline,
+    pub text_atlas: Atlas<GlyphRasterConfig>,
+    pub text_texture: TextureGroup,
+    pub fonts: Vec<Font>,
 }
 
 impl<Controls> Pass for State<Controls>
@@ -112,6 +121,14 @@ where
             &self.sprite_pipeline,
             &self.screen_group,
         );
+
+        pass.render_text(
+            &self.text_buffer,
+            &self.text_texture,
+            &self.text_pipeline,
+            &self.screen_group,
+        );
+
         pass.render_animations(
             &self.animation_buffer,
             &self.animation_texture,

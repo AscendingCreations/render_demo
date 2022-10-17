@@ -1,8 +1,25 @@
+pub(crate) use crate::graphics::{
+    allocation::Allocation, Atlas, BufferLayout, BufferPass, TextVertex,
+};
+use core::borrow::Borrow;
 use fontdue::{
-    layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle},
+    layout::{
+        CoordinateSystem, GlyphRasterConfig, Layout, LayoutSettings, TextStyle,
+    },
     Font, FontSettings,
 };
 use std::ops::Range;
+use std::{
+    borrow::Cow,
+    collections::HashSet,
+    error::Error,
+    fmt::{self, Display, Formatter},
+    iter,
+    mem::size_of,
+    num::{NonZeroU32, NonZeroU64},
+    slice,
+    sync::Arc,
+};
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
@@ -34,6 +51,13 @@ impl Glyph {
     pub fn new(ch: char, color: FontColor) -> Self {
         Self { ch, color }
     }
+}
+
+struct UploadBounds {
+    x_min: usize,
+    x_max: usize,
+    y_min: usize,
+    y_max: usize,
 }
 
 pub struct Text {
@@ -72,7 +96,138 @@ impl Default for Text {
 }
 
 impl Text {
-    pub fn create_quad(&mut self) {}
+    pub fn create_quad(
+        &mut self,
+        layout: Layout,
+        fonts: &[Font],
+        atlas: &mut Atlas<GlyphRasterConfig>,
+        queue: &wgpu::Queue,
+        device: &wgpu::Device,
+    ) {
+        let mut upload_bounds = None::<UploadBounds>;
+
+        for glyph in layout.glyphs() {
+            if atlas.get(&glyph.key).is_some() {
+                continue;
+            }
+
+            let font = &fonts[glyph.font_index];
+            let (metrics, bitmap) = font.rasterize_config(glyph.key);
+
+            if glyph.char_data.rasterize() {
+                // Find a position in the packer
+                let mut rows: Vec<u8> =
+                    Vec::with_capacity(metrics.width * metrics.height + 1);
+                rows.extend_from_slice(&bitmap);
+                //rows.copy_from_slice(&bitmap);
+
+                let allocation = atlas
+                    .upload(
+                        glyph.key,
+                        &rows,
+                        metrics.width as u32,
+                        metrics.height as u32,
+                        device,
+                        queue,
+                    )
+                    .unwrap();
+                let bounds = allocation.rect();
+                match upload_bounds.as_mut() {
+                    Some(ub) => {
+                        ub.x_min = ub.x_min.min(bounds.0 as usize);
+                        ub.x_max = ub.x_max.max(bounds.2 as usize);
+                        ub.y_min = ub.y_min.min(bounds.1 as usize);
+                        ub.y_max = ub.y_max.max(bounds.3 as usize);
+                    }
+                    None => {
+                        upload_bounds = Some(UploadBounds {
+                            x_min: bounds.0 as usize,
+                            x_max: bounds.2 as usize,
+                            y_min: bounds.1 as usize,
+                            y_max: bounds.3 as usize,
+                        });
+                    }
+                }
+            }
+        }
+
+        let mut buffer = Vec::with_capacity(self.glyphs.len() * 4);
+
+        for (pos, glyph) in layout.glyphs().iter().enumerate() {
+            if let Some(allocation) = atlas.get(&glyph.key) {
+                let (u, v, width, height) = allocation.rect();
+
+                let (x, y, w, h) = (
+                    glyph.x.round(),
+                    glyph.y.round(),
+                    (glyph.x.round() as i32).saturating_add((width - 1) as i32)
+                        as f32,
+                    (glyph.y.round() as i32).saturating_add((height - 1) as i32)
+                        as f32,
+                );
+                let (u1, v1, u2, v2) = (
+                    u as f32,
+                    v as f32,
+                    u.saturating_add(width) as f32,
+                    v.saturating_add(height) as f32,
+                );
+
+                let color = self.glyphs[pos].color;
+
+                let mut other = vec![
+                    TextVertex {
+                        position: [x, y],
+                        tex_coord: [u1, v2, allocation.layer as f32],
+                        color: [
+                            color.r as u32,
+                            color.g as u32,
+                            color.b as u32,
+                            color.a as u32,
+                        ],
+                        dimension: [width as f32, height as f32],
+                    },
+                    TextVertex {
+                        position: [w, y],
+                        tex_coord: [u2, v2, allocation.layer as f32],
+                        color: [
+                            color.r as u32,
+                            color.g as u32,
+                            color.b as u32,
+                            color.a as u32,
+                        ],
+                        dimension: [width as f32, height as f32],
+                    },
+                    TextVertex {
+                        position: [w, h],
+                        tex_coord: [u2, v1, allocation.layer as f32],
+                        color: [
+                            color.r as u32,
+                            color.g as u32,
+                            color.b as u32,
+                            color.a as u32,
+                        ],
+                        dimension: [width as f32, height as f32],
+                    },
+                    TextVertex {
+                        position: [x, h],
+                        tex_coord: [u1, v1, allocation.layer as f32],
+                        color: [
+                            color.r as u32,
+                            color.g as u32,
+                            color.b as u32,
+                            color.a as u32,
+                        ],
+                        dimension: [width as f32, height as f32],
+                    },
+                ];
+
+                buffer.append(&mut other);
+            }
+        }
+
+        self.bytes = bytemuck::cast_slice(&buffer).to_vec();
+        self.changed = false;
+    }
 
     pub fn new() -> Self {
         Self::default()
@@ -175,9 +330,23 @@ impl Text {
     }
 
     /// used to check and update the vertex array.
-    pub fn update(&mut self, _queue: &wgpu::Queue) {
+    pub fn update(
+        &mut self,
+        queue: &wgpu::Queue,
+        device: &wgpu::Device,
+        fonts: &[Font],
+        atlas: &mut Atlas<GlyphRasterConfig>,
+    ) {
         if self.changed {
-            self.create_quad();
+            let string: String =
+                self.glyphs.iter().map(|glyph| glyph.ch).collect();
+            let mut layout = Layout::new(self.coord_sys);
+            layout.reset(&self.settings);
+            layout.append(
+                fonts,
+                &TextStyle::new(&string, self.px, self.font_index),
+            );
+            self.create_quad(layout, fonts, atlas, queue, device);
             self.changed = false;
         }
     }

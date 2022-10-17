@@ -4,6 +4,7 @@ use ::camera::{
     Projection,
 };
 use backtrace::Backtrace;
+use fontdue::{Font, FontSettings};
 use input::{Bindings, FrameTime, InputHandler};
 use log::{error, info, warn, Level, LevelFilter, Metadata, Record};
 use naga::{front::wgsl, valid::Validator};
@@ -279,7 +280,28 @@ async fn main() -> Result<(), RendererError> {
     shapes.closed = true;
     shapes.set_fill(true);
 
-    //let font: &[u8] = include_bytes!("fonts/Inconsolata-Regular.ttf");
+    let font: &[u8] = include_bytes!("fonts/Inconsolata-Regular.ttf");
+    let font = Font::from_bytes(font, FontSettings::default()).unwrap();
+    let fonts = vec![font];
+
+    let text_atlas =
+        Atlas::new(renderer.device(), 2048, wgpu::TextureFormat::R8Unorm);
+
+    let text_pipeline = TextRenderPipeline::new(
+        renderer.device(),
+        renderer.surface_format(),
+        &mut layout_storage,
+    )?;
+    let text_buffer = GpuBuffer::new(renderer.device());
+    let text_texture = TextureGroup::from_view(
+        renderer.device(),
+        &mut layout_storage,
+        &text_atlas.texture_view,
+        TextureLayout,
+    );
+
+    let mut text = Text::new().font_size(32f32);
+    text.append("hello world");
 
     let mut state = State {
         layout_storage,
@@ -307,6 +329,12 @@ async fn main() -> Result<(), RendererError> {
         shapes,
         shapes_buffer,
         shapes_pipeline,
+        text,
+        text_atlas,
+        text_pipeline,
+        text_buffer,
+        text_texture,
+        fonts,
     };
 
     let mut views = HashMap::new();
@@ -364,6 +392,14 @@ async fn main() -> Result<(), RendererError> {
 
         if size != test_size {
             size = test_size;
+
+            state.screen_group.update(
+                &renderer,
+                ScreenUniform {
+                    width: test_size.width,
+                    height: test_size.height,
+                },
+            );
 
             state.camera.set_projection(Projection::Orthographic {
                 left: 0.0,
@@ -429,6 +465,19 @@ async fn main() -> Result<(), RendererError> {
             renderer.device(),
             renderer.queue(),
             &bytes,
+        );
+
+        state.text.update(
+            renderer.queue(),
+            renderer.device(),
+            &state.fonts,
+            &mut state.text_atlas,
+        );
+
+        state.text_buffer.set_vertices_from(
+            renderer.device(),
+            renderer.queue(),
+            &state.text.bytes,
         );
 
         state.map.update(renderer.queue(), &mut state.map_textures);

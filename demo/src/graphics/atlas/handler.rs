@@ -59,8 +59,8 @@ impl<U: Hash + Eq + Clone> Atlas<U> {
         self.names.clear();
     }
 
-    pub fn get(&mut self, name: U) -> Option<Allocation> {
-        self.names.get(&name).cloned()
+    pub fn get(&mut self, name: &U) -> Option<Allocation> {
+        self.names.get(name).cloned()
     }
 
     fn grow(
@@ -80,12 +80,12 @@ impl<U: Hash + Eq + Clone> Atlas<U> {
         };
 
         let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("test"),
+            label: Some("Texture"),
             size: extent,
             mip_level_count: 0,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            format: self.format,
             usage: wgpu::TextureUsages::TEXTURE_BINDING
                 | wgpu::TextureUsages::COPY_DST
                 | wgpu::TextureUsages::COPY_SRC,
@@ -95,7 +95,7 @@ impl<U: Hash + Eq + Clone> Atlas<U> {
 
         let mut encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("command encoder"),
+                label: Some("Texture command encoder"),
             });
 
         for (i, _) in self.layers.iter_mut().take(amount_to_copy).enumerate() {
@@ -132,7 +132,7 @@ impl<U: Hash + Eq + Clone> Atlas<U> {
         self.texture_view =
             self.texture.create_view(&wgpu::TextureViewDescriptor {
                 label: Some("Texture Atlas"),
-                format: Some(wgpu::TextureFormat::Rgba8UnormSrgb),
+                format: Some(self.format),
                 dimension: Some(wgpu::TextureViewDimension::D2Array),
                 aspect: wgpu::TextureAspect::All,
                 base_mip_level: 0,
@@ -155,7 +155,7 @@ impl<U: Hash + Eq + Clone> Atlas<U> {
         };
 
         let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("test"),
+            label: Some("Texture"),
             size: extent,
             mip_level_count: 1,
             sample_count: 1,
@@ -168,7 +168,7 @@ impl<U: Hash + Eq + Clone> Atlas<U> {
 
         let texture_view = texture.create_view(&wgpu::TextureViewDescriptor {
             label: Some("Texture Atlas"),
-            format: Some(wgpu::TextureFormat::Rgba8UnormSrgb),
+            format: Some(format),
             dimension: Some(wgpu::TextureViewDimension::D2Array),
             aspect: wgpu::TextureAspect::All,
             base_mip_level: 0,

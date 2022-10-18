@@ -56,7 +56,7 @@ impl Renderer {
                 width: std::cmp::max(1, size.width),
                 height: std::cmp::max(1, size.height),
                 present_mode: self.present_mode,
-                //alpha_mode: wgpu::CompositeAlphaMode::Auto,
+                alpha_mode: wgpu::CompositeAlphaMode::Auto,
             },
         );
 
@@ -156,7 +156,7 @@ impl AdapterExt for wgpu::Adapter {
             width: size.width,
             height: size.height,
             present_mode,
-            //alpha_mode: wgpu::CompositeAlphaMode::Auto,
+            alpha_mode: wgpu::CompositeAlphaMode::Auto,
         };
 
         surface.configure(&device, &surface_config);

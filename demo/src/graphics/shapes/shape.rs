@@ -792,7 +792,7 @@ impl Shape {
     }
 
     /// used to check and update the ShapeVertex array.
-    pub fn update(&mut self) {
+    pub fn update(&mut self) -> bool {
         // if points added or any data changed recalculate paths.
         if self.changed {
             if self.fill {
@@ -802,6 +802,9 @@ impl Shape {
             }
 
             self.changed = false;
+            true
+        } else {
+            false
         }
     }
 }

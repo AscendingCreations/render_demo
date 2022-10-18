@@ -132,10 +132,13 @@ impl Sprite {
     }
 
     /// used to check and update the vertex array.
-    pub fn update(&mut self) {
+    pub fn update(&mut self) -> bool {
         // if pos or tex_pos or color changed.
         if self.changed {
             self.create_quad();
+            true
+        } else {
+            false
         }
     }
 }

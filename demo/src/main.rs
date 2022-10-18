@@ -108,7 +108,7 @@ async fn main() -> Result<(), RendererError> {
                 label: None,
             },
             None,
-            wgpu::PresentMode::AutoNoVsync,
+            wgpu::PresentMode::AutoVsync,
         )
         .await
         .unwrap();
@@ -465,64 +465,75 @@ async fn main() -> Result<(), RendererError> {
             .create_view(&wgpu::TextureViewDescriptor::default());
         views.insert("framebuffer".to_string(), view);
 
-        state.sprite[0].update();
-        state.sprite[1].update();
+        let update = state.sprite[0].update();
+        let update = state.sprite[1].update() || update;
 
-        let mut bytes = state.sprite[0].bytes.clone();
-        bytes.extend_from_slice(&state.sprite[1].bytes);
+        if update {
+            let mut bytes = state.sprite[0].bytes.clone();
+            bytes.extend_from_slice(&state.sprite[1].bytes);
 
-        state.sprite_buffer.set_vertices_from(
-            renderer.device(),
-            renderer.queue(),
-            &bytes,
-        );
+            state.sprite_buffer.set_vertices_from(
+                renderer.device(),
+                renderer.queue(),
+                &bytes,
+            );
+        }
 
-        state.text.update(
+        let update = state.text.update(
             renderer.queue(),
             renderer.device(),
             &state.fonts,
             &mut state.text_atlas,
         );
 
-        state.text_buffer.set_vertices_from(
-            renderer.device(),
-            renderer.queue(),
-            &state.text.bytes,
-        );
+        if update {
+            state.text_buffer.set_vertices_from(
+                renderer.device(),
+                renderer.queue(),
+                &state.text.bytes,
+            );
+        }
+        let update =
+            state.map.update(renderer.queue(), &mut state.map_textures);
 
-        state.map.update(renderer.queue(), &mut state.map_textures);
+        if update {
+            state.maplower_buffer.set_vertices_from(
+                renderer.device(),
+                renderer.queue(),
+                &state.map.lowerbytes,
+            );
 
-        state.maplower_buffer.set_vertices_from(
-            renderer.device(),
-            renderer.queue(),
-            &state.map.lowerbytes,
-        );
+            state.mapupper_buffer.set_vertices_from(
+                renderer.device(),
+                renderer.queue(),
+                &state.map.upperbytes,
+            );
+        }
 
-        state.mapupper_buffer.set_vertices_from(
-            renderer.device(),
-            renderer.queue(),
-            &state.map.upperbytes,
-        );
+        let update = state.animation.update();
 
-        state.animation.update();
+        if update {
+            state.animation_buffer.set_vertices_from(
+                renderer.device(),
+                renderer.queue(),
+                &state.animation.bytes,
+            );
+        }
 
-        state.animation_buffer.set_vertices_from(
-            renderer.device(),
-            renderer.queue(),
-            &state.animation.bytes,
-        );
+        let update = state.shapes.update();
 
-        state.shapes.update();
+        if update {
+            state.shapes_buffer.set_vertices_from(
+                renderer.device(),
+                renderer.queue(),
+                &state.shapes.buffers.vertices,
+            );
 
-        state.shapes_buffer.set_vertices_from(
-            renderer.device(),
-            renderer.queue(),
-            &state.shapes.buffers.vertices,
-        );
-
-        state
-            .shapes_buffer
-            .set_indices_from(renderer.queue(), &state.shapes.buffers.indices);
+            state.shapes_buffer.set_indices_from(
+                renderer.queue(),
+                &state.shapes.buffers.indices,
+            );
+        }
 
         // Start encoding commands.
         let mut encoder = renderer.device().create_command_encoder(

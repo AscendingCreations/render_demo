@@ -159,7 +159,7 @@ impl Map {
         &mut self,
         queue: &wgpu::Queue,
         map_textures: &mut MapTextures,
-    ) {
+    ) -> bool {
         // if pos or tex_pos or color changed.
         if self.img_changed {
             map_textures.update(queue, self.layer, self.image.as_raw());
@@ -169,6 +169,9 @@ impl Map {
         if self.changed {
             self.create_quad();
             self.changed = false;
+            true
+        } else {
+            false
         }
     }
 }

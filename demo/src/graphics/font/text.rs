@@ -353,10 +353,13 @@ impl Text {
         device: &wgpu::Device,
         fonts: &[Font],
         atlas: &mut Atlas<GlyphRasterConfig>,
-    ) {
+    ) -> bool {
         if self.changed {
             self.create_quad(fonts, atlas, queue, device);
             self.changed = false;
+            true
+        } else {
+            false
         }
     }
 }

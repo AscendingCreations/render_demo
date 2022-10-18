@@ -5,7 +5,7 @@ use std::iter;
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct ShapeVertex {
     pub position: [f32; 3],
-    pub color: [u32; 4],
+    pub color: [u8; 4],
 }
 
 impl Default for ShapeVertex {
@@ -19,7 +19,7 @@ impl Default for ShapeVertex {
 
 impl BufferLayout for ShapeVertex {
     fn attributes() -> Vec<wgpu::VertexAttribute> {
-        wgpu::vertex_attr_array![0 => Float32x3, 1 => Uint32x4].to_vec()
+        wgpu::vertex_attr_array![0 => Float32x3, 1 => Uint32].to_vec()
     }
 
     fn default_buffer() -> BufferPass {
@@ -45,7 +45,7 @@ impl BufferLayout for ShapeVertex {
     }
 
     fn vertex_stride() -> usize {
-        std::mem::size_of::<[f32; 7]>()
+        std::mem::size_of::<[f32; 4]>()
     }
 
     fn index_stride() -> usize {

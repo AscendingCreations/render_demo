@@ -17,7 +17,7 @@ var<uniform> time: Time;
 
 struct VertexInput {
     @location(0) position: vec3<f32>,
-    @location(1) color: vec4<u32>,
+    @location(1) color: u32,
 };
 
 struct VertexOutput {
@@ -32,7 +32,12 @@ fn vertex(
     var result: VertexOutput;
 
     result.clip_position =  camera.view_proj * vec4<f32>(vertex.position.xyz, 1.0);
-    result.col = vec4<f32>(f32(vertex.color.r) / 255.0, f32(vertex.color.g) / 255.0, f32(vertex.color.b) / 255.0, f32(vertex.color.a) / 255.0);
+    result.col = vec4<f32>(
+        f32((vertex.color & 0xffu)),
+        f32((vertex.color & 0xff00u) >> 8u),
+        f32((vertex.color & 0xff0000u) >> 16u),
+        f32((vertex.color & 0xff000000u) >> 24u),
+    ) / 255.0;
 
     return result;
 }

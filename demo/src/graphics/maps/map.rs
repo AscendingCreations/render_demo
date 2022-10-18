@@ -82,19 +82,23 @@ impl Map {
             let mut vertices = vec![
                 MapVertex {
                     position: [x, y, z], //2,3
-                    tex_coord: [0.0, 512.0, self.layer as f32],
+                    tex_coord: [0, 512],
+                    layer: self.layer as i32,
                 },
                 MapVertex {
                     position: [w, y, z], //1
-                    tex_coord: [512.0, 512.0, self.layer as f32],
+                    tex_coord: [512, 512],
+                    layer: self.layer as i32,
                 },
                 MapVertex {
                     position: [w, h, z], //0,6
-                    tex_coord: [512.0, 0.0, self.layer as f32],
+                    tex_coord: [512, 0],
+                    layer: self.layer as i32,
                 },
                 MapVertex {
                     position: [x, h, z], //5
-                    tex_coord: [0.0, 0.0, self.layer as f32],
+                    tex_coord: [0, 0],
+                    layer: self.layer as i32,
                 },
             ];
 

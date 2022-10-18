@@ -305,8 +305,10 @@ async fn main() -> Result<(), RendererError> {
         GroupType::Fonts,
     );
 
-    let mut text = Text::new().font_size(32f32);
-    text.append("hello world");
+    let mut text = Text::new().font_size(16f32);
+    text.append("hello world, this is a test of Letters.");
+    text = text.build_layout(&fonts);
+    text.set_pos(&[0.0, text.get_box_height(), 1.0]);
 
     let mut state = State {
         layout_storage,

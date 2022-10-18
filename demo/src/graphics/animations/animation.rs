@@ -4,13 +4,13 @@ use crate::graphics::{allocation::Allocation, AnimationVertex};
 /// not to be confused with Actual NPC or Player data.
 pub struct Animation {
     pub pos: [f32; 3],
-    pub hw: [u32; 2],
+    pub hw: [u16; 2],
     /// render HW
-    pub anim_hw: [u32; 2],
+    pub anim_hw: [u16; 2],
     /// image HW per frame
-    pub hue_alpha: [u32; 2],
-    pub frames: u32,
-    pub frames_per_row: u32,
+    pub hue_alpha: [u16; 2],
+    pub frames: u16,
+    pub frames_per_row: u16,
     /// in millsecs 1000 = 1sec
     pub switch_time: u32,
     /// Texture area location in Atlas.
@@ -52,41 +52,44 @@ impl Animation {
         };
 
         let (u, v) = allocation.position();
-
-        let (u1, v1, u2, v2) =
-            (0.0, 0.0, self.anim_hw[0] as f32, self.anim_hw[1] as f32);
+        let (u, v) = (u as u16, v as u16);
+        let (u1, v1, u2, v2) = (0, 0, self.anim_hw[0], self.anim_hw[1]);
 
         let buffer = vec![
             AnimationVertex {
+                position: [x, y, self.pos[2]],
                 tex_coord: [u1, v2],
                 tex_data: [u, v, self.anim_hw[0], self.anim_hw[1]],
                 hue_alpha: self.hue_alpha,
-                position: [x, y, self.pos[2]],
-                frames: [self.frames, self.frames_per_row, self.switch_time],
+                frames: [self.frames, self.frames_per_row],
+                time: self.switch_time,
                 layer: allocation.layer as i32,
             },
             AnimationVertex {
+                position: [w, y, self.pos[2]],
                 tex_coord: [u2, v2],
                 tex_data: [u, v, self.anim_hw[0], self.anim_hw[1]],
                 hue_alpha: self.hue_alpha,
-                position: [w, y, self.pos[2]],
-                frames: [self.frames, self.frames_per_row, self.switch_time],
+                frames: [self.frames, self.frames_per_row],
+                time: self.switch_time,
                 layer: allocation.layer as i32,
             },
             AnimationVertex {
+                position: [w, h, self.pos[2]],
                 tex_coord: [u2, v1],
                 tex_data: [u, v, self.anim_hw[0], self.anim_hw[1]],
                 hue_alpha: self.hue_alpha,
-                position: [w, h, self.pos[2]],
-                frames: [self.frames, self.frames_per_row, self.switch_time],
+                frames: [self.frames, self.frames_per_row],
+                time: self.switch_time,
                 layer: allocation.layer as i32,
             },
             AnimationVertex {
+                position: [x, h, self.pos[2]],
                 tex_coord: [u1, v1],
                 tex_data: [u, v, self.anim_hw[0], self.anim_hw[1]],
                 hue_alpha: self.hue_alpha,
-                position: [x, h, self.pos[2]],
-                frames: [self.frames, self.frames_per_row, self.switch_time],
+                frames: [self.frames, self.frames_per_row],
+                time: self.switch_time,
                 layer: allocation.layer as i32,
             },
         ];

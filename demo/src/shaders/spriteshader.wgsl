@@ -26,19 +26,23 @@ var<uniform> resolution: ScreenResolution;
 
 struct VertexInput {
     @location(0) position: vec3<f32>,
-    @location(1) tex_coords: vec3<f32>,
-    @location(2) color: vec4<u32>,
-    @location(3) frames: vec3<u32>,
-    @location(4) tex_hw: vec2<u32>,
+    @location(1) tex_coords: u32,
+    @location(2) rg: vec2<u32>,
+    @location(3) ba: u32,
+    @location(4) frames: u32,
+    @location(5) tex_hw: u32,
+    @location(6) time: u32,
+    @location(7) layer: i32,
 };
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
-    @location(0) tex_coords: vec3<f32>,
+    @location(0) tex_coords: vec2<f32>,
     @location(1) col: vec4<u32>,
     @location(2) frames: vec3<u32>,
     @location(3) tex_hw: vec2<u32>,
     @location(4) size: vec2<f32>,
+    @location(5) layer: i32,
 };
 
 @group(3)
@@ -57,10 +61,11 @@ fn vertex(
     let fsize = vec2<f32> (f32(size.x), f32(size.y));
 
     result.clip_position =  camera.view_proj * vec4<f32>(vertex.position.xyz, 1.0);
-    result.tex_coords = vec3<f32>(vertex.tex_coords.x / fsize.x, vertex.tex_coords.y / fsize.y, vertex.tex_coords.z);
-    result.col = vertex.color;
-    result.frames = vertex.frames;
-    result.tex_hw = vertex.tex_hw;
+    result.tex_coords = vec2<f32>(f32(vertex.tex_coords & 0xffffu) / fsize.x, f32((vertex.tex_coords & 0xffff0000u) >> 16u) / fsize.y);
+    result.layer = vertex.layer;
+    result.col = vec4<u32>(vertex.rg.xy, u32(vertex.ba & 0xffffu), u32((vertex.ba & 0xffff0000u) >> 16u));
+    result.frames = vec3<u32>(u32(vertex.frames & 0xffffu), vertex.time,u32((vertex.frames & 0xffff0000u) >> 16u));
+    result.tex_hw = vec2<u32>(u32(vertex.tex_hw & 0xffffu), u32((vertex.tex_hw & 0xffff0000u) >> 16u));
     result.size = fsize;
     return result;
 }
@@ -93,10 +98,10 @@ fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
     let corner = floor(tex_pixel) + 1.0;
     let frac = min((corner - tex_pixel) * vec2<f32>(2.0, 2.0), vec2<f32>(1.0, 1.0));
 
-    var c1 = textureSample(tex, tex_sample, (floor(tex_pixel + vec2<f32>(0.0, 0.0)) + 0.5) / vertex.size, i32(vertex.tex_coords.z));
-    var c2 = textureSample(tex, tex_sample, (floor(tex_pixel + vec2<f32>(step.x, 0.0)) + 0.5) / vertex.size, i32(vertex.tex_coords.z));
-    var c3 = textureSample(tex, tex_sample, (floor(tex_pixel + vec2<f32>(0.0, step.y)) + 0.5) / vertex.size, i32(vertex.tex_coords.z));
-    var c4 = textureSample(tex, tex_sample, (floor(tex_pixel + step.xy) + 0.5) / vertex.size, i32(vertex.tex_coords.z));
+    var c1 = textureSample(tex, tex_sample, (floor(tex_pixel + vec2<f32>(0.0, 0.0)) + 0.5) / vertex.size, vertex.layer);
+    var c2 = textureSample(tex, tex_sample, (floor(tex_pixel + vec2<f32>(step.x, 0.0)) + 0.5) / vertex.size, vertex.layer);
+    var c3 = textureSample(tex, tex_sample, (floor(tex_pixel + vec2<f32>(0.0, step.y)) + 0.5) / vertex.size, vertex.layer);
+    var c4 = textureSample(tex, tex_sample, (floor(tex_pixel + step.xy) + 0.5) / vertex.size, vertex.layer);
 
     c1 = c1 * (frac.x * frac.y);
     c2 = c2 *((1.0 - frac.x) * frac.y);

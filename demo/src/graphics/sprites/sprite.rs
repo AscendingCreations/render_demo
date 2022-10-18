@@ -7,10 +7,10 @@ use std::cmp;
 /// not to be confused with Actual NPC or Player data.
 pub struct Sprite {
     pub pos: [i32; 3],
-    pub hw: [u32; 2],
-    pub uv: [u32; 4],
+    pub hw: [u16; 2],
+    pub uv: [u16; 4],
     pub color: [u32; 4],
-    pub frames: u32,
+    pub frames: u16,
     /// in millsecs 1000 = 1sec
     pub switch_time: u32,
     pub animate: bool,
@@ -53,46 +53,62 @@ impl Sprite {
         };
 
         let (u, v, width, height) = allocation.rect();
-        let (width, height) =
-            (cmp::min(self.uv[2], width), cmp::min(self.uv[3], height));
-
-        let (u1, v1, u2, v2) = (
-            self.uv[0].saturating_add(u) as f32,
-            self.uv[1].saturating_add(v) as f32,
-            self.uv[0].saturating_add(u).saturating_add(width) as f32,
-            self.uv[1].saturating_add(v).saturating_add(height) as f32,
+        let (u, v, width, height) = (
+            u as u16,
+            v as u16,
+            cmp::min(self.uv[2], width as u16),
+            cmp::min(self.uv[3], height as u16),
         );
 
-        let animate = u32::from(self.animate);
+        let (u1, v1, u2, v2) = (
+            self.uv[0].saturating_add(u),
+            self.uv[1].saturating_add(v),
+            self.uv[0].saturating_add(u).saturating_add(width),
+            self.uv[1].saturating_add(v).saturating_add(height),
+        );
+
+        let animate = u16::from(self.animate);
 
         let buffer = vec![
             SpriteVertex {
                 position: [x, y, self.pos[2] as f32],
-                tex_coord: [u1, v2, allocation.layer as f32],
-                color: self.color,
-                frames: [self.frames, self.switch_time, animate],
+                tex_coord: [u1, v2],
+                rg: [self.color[0], self.color[1]],
+                ba: [self.color[2] as u16, self.color[3] as u16],
+                frames: [self.frames, animate],
                 tex_hw: [width, height],
+                time: self.switch_time,
+                layer: allocation.layer as i32,
             },
             SpriteVertex {
                 position: [w, y, self.pos[2] as f32],
-                tex_coord: [u2, v2, allocation.layer as f32],
-                color: self.color,
-                frames: [self.frames, self.switch_time, animate],
+                tex_coord: [u2, v2],
+                rg: [self.color[0], self.color[1]],
+                ba: [self.color[2] as u16, self.color[3] as u16],
+                frames: [self.frames, animate],
                 tex_hw: [width, height],
+                time: self.switch_time,
+                layer: allocation.layer as i32,
             },
             SpriteVertex {
                 position: [w, h, self.pos[2] as f32],
-                tex_coord: [u2, v1, allocation.layer as f32],
-                color: self.color,
-                frames: [self.frames, self.switch_time, animate],
+                tex_coord: [u2, v1],
+                rg: [self.color[0], self.color[1]],
+                ba: [self.color[2] as u16, self.color[3] as u16],
+                frames: [self.frames, animate],
                 tex_hw: [width, height],
+                time: self.switch_time,
+                layer: allocation.layer as i32,
             },
             SpriteVertex {
                 position: [x, h, self.pos[2] as f32],
-                tex_coord: [u1, v1, allocation.layer as f32],
-                color: self.color,
-                frames: [self.frames, self.switch_time, animate],
+                tex_coord: [u1, v1],
+                rg: [self.color[0], self.color[1]],
+                ba: [self.color[2] as u16, self.color[3] as u16],
+                frames: [self.frames, animate],
                 tex_hw: [width, height],
+                time: self.switch_time,
+                layer: allocation.layer as i32,
             },
         ];
 

@@ -28,7 +28,7 @@ pub struct Shape {
     pub fill: bool,
     pub buffers: BufferPass,
     pub thickness: f32,
-    pub color: [u32; 4],
+    pub color: [u8; 4],
     /// if anything got updated we need to update the buffers too.
     pub changed: bool,
 }
@@ -79,7 +79,7 @@ impl Shape {
         self.changed = true;
     }
 
-    pub fn set_color(&mut self, color: [u32; 4]) {
+    pub fn set_color(&mut self, color: [u8; 4]) {
         self.color = color;
         self.changed = true;
     }

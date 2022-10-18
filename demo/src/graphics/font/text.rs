@@ -99,13 +99,12 @@ impl Default for Text {
 impl Text {
     pub fn create_quad(
         &mut self,
-        layout: Layout,
         fonts: &[Font],
         atlas: &mut Atlas<GlyphRasterConfig>,
         queue: &wgpu::Queue,
         device: &wgpu::Device,
     ) {
-        for glyph in layout.glyphs() {
+        for glyph in self.layout.glyphs() {
             if atlas.get(&glyph.key).is_some() {
                 continue;
             }
@@ -136,55 +135,57 @@ impl Text {
 
         let mut buffer = Vec::with_capacity(self.glyphs.len() * 4);
 
-        for (pos, glyph) in layout.glyphs().iter().enumerate() {
+        for (pos, glyph) in self.layout.glyphs().iter().enumerate() {
             if let Some(allocation) = atlas.get(&glyph.key) {
-                let font = &fonts[glyph.font_index];
-
                 let (u, v, width, height) = allocation.rect();
                 let (u, v, width, height) =
                     (u as i32, v as i32, width as i32, height as i32);
                 let (x, y) = (
                     self.pos[0] + glyph.x.round(),
-                    self.pos[1] + glyph.y.round() + layout.height(),
+                    self.pos[1] + glyph.y.round(),
                 );
                 let (w, h) = (
-                    (x as i32).saturating_add((width - 1) as i32) as f32,
-                    (y as i32).saturating_add((height - 1) as i32) as f32,
+                    (x as i32).saturating_add(width - 1) as f32,
+                    (y as i32).saturating_add(height - 1) as f32,
                 );
 
                 let (u1, v1, u2, v2) = (
-                    u as f32,
-                    v as f32,
-                    u.saturating_add(width) as f32,
-                    v.saturating_add(height) as f32,
+                    u as u16,
+                    v as u16,
+                    u.saturating_add(width) as u16,
+                    v.saturating_add(height) as u16,
                 );
 
                 let color = [
-                    self.glyphs[pos].color.r as u32,
-                    self.glyphs[pos].color.g as u32,
-                    self.glyphs[pos].color.b as u32,
-                    self.glyphs[pos].color.a as u32,
+                    self.glyphs[pos].color.r,
+                    self.glyphs[pos].color.g,
+                    self.glyphs[pos].color.b,
+                    self.glyphs[pos].color.a,
                 ];
 
                 let mut other = vec![
                     TextVertex {
                         position: [x, y, self.pos[2]],
-                        tex_coord: [u1, v2, allocation.layer as f32],
+                        tex_coord: [u1, v2],
+                        layer: allocation.layer as u32,
                         color,
                     },
                     TextVertex {
                         position: [w, y, self.pos[2]],
-                        tex_coord: [u2, v2, allocation.layer as f32],
+                        tex_coord: [u2, v2],
+                        layer: allocation.layer as u32,
                         color,
                     },
                     TextVertex {
                         position: [w, h, self.pos[2]],
-                        tex_coord: [u2, v1, allocation.layer as f32],
+                        tex_coord: [u2, v1],
+                        layer: allocation.layer as u32,
                         color,
                     },
                     TextVertex {
                         position: [x, h, self.pos[2]],
-                        tex_coord: [u1, v1, allocation.layer as f32],
+                        tex_coord: [u1, v1],
+                        layer: allocation.layer as u32,
                         color,
                     },
                 ];
@@ -232,7 +233,7 @@ impl Text {
     }
 
     pub fn coordinate_system(mut self, coord_sys: CoordinateSystem) -> Self {
-        self.coord_sys = coord_sys;
+        self.layout = Layout::new(coord_sys);
         self.changed = true;
         self
     }
@@ -250,6 +251,7 @@ impl Text {
         self.layout
             .append(fonts, &TextStyle::new(&string, self.px, self.font_index));
         self.changed = true;
+        self
     }
 
     /// Gets the height of the Box so you can Position
@@ -346,16 +348,7 @@ impl Text {
         atlas: &mut Atlas<GlyphRasterConfig>,
     ) {
         if self.changed {
-            let string: String =
-                self.glyphs.iter().map(|glyph| glyph.ch).collect();
-            let mut layout = Layout::new(self.coord_sys);
-            layout.reset(&self.settings);
-            layout.append(
-                fonts,
-                &TextStyle::new(&string, self.px, self.font_index),
-            );
-
-            self.create_quad(layout, fonts, atlas, queue, device);
+            self.create_quad(fonts, atlas, queue, device);
             self.changed = false;
         }
     }

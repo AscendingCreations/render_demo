@@ -26,15 +26,17 @@ var<uniform> resolution: ScreenResolution;
 
 struct VertexInput {
     @location(0) pos: vec3<f32>,
-    @location(1) uv: vec3<f32>,
-    @location(2) color: vec4<u32>,
+    @location(1) uv: u32,
+    @location(2) layer: u32,
+    @location(3) color: u32,
 };
 
 struct VertexOutput {
     @builtin(position) position: vec4<f32>,
     @location(0) color: vec4<f32>,
-    @location(1) uv: vec3<f32>,
+    @location(1) uv: vec2<f32>,
     @location(2) size: vec2<f32>,
+    @location(3) layer: i32,
 };
 
 @group(3)
@@ -50,22 +52,22 @@ fn vertex(
 ) -> VertexOutput {
     var result: VertexOutput;
     var pos = vertex.pos;
-    var uv = vec2<f32>(vertex.uv.x, vertex.uv.y);
-    let color = vertex.color;
+    let u = vertex.uv & 0xffffu;
+    let v = (vertex.uv & 0xffff0000u) >> 16u;
     let size = textureDimensions(tex);
     let fsize = vec2<f32> (f32(size.x), f32(size.y));
 
     result.position =  camera.view_proj * vec4<f32>(vertex.pos.xyz, 1.0);
     result.size = fsize;
     result.color = vec4<f32>(
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-    ) ;
+        f32((vertex.color & 0xffu)),
+        f32((vertex.color & 0xff00u) >> 8u),
+        f32((vertex.color & 0xff0000u) >> 16u),
+        f32((vertex.color & 0xff000000u) >> 24u),
+    ) / 255.0;
 
-    var uv  = vec2<f32>(uv) /  fsize;
-    result.uv = vec3<f32>(uv.x, uv.y, vertex.uv.z);
+    result.uv = vec2<f32>(f32(u), f32(v)) /  fsize;
+    result.layer = i32(vertex.layer);
     return result;
 }
 
@@ -80,10 +82,10 @@ fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
     let corner = floor(tex_pixel) + 1.0;
     let frac = min((corner - tex_pixel) * vec2<f32>(2.0, 2.0), vec2<f32>(1.0, 1.0));
 
-    var c1 = textureSample(tex, tex_sample, (floor(tex_pixel + vec2<f32>(0.0, 0.0)) + 0.5) / vertex.size, i32(vertex.uv.z));
-    var c2 = textureSample(tex, tex_sample, (floor(tex_pixel + vec2<f32>(step.x, 0.0)) + 0.5) / vertex.size, i32(vertex.uv.z));
-    var c3 = textureSample(tex, tex_sample, (floor(tex_pixel + vec2<f32>(0.0, step.y)) + 0.5) / vertex.size, i32(vertex.uv.z));
-    var c4 = textureSample(tex, tex_sample, (floor(tex_pixel + step.xy) + 0.5) / vertex.size, i32(vertex.uv.z));
+    var c1 = textureSample(tex, tex_sample, (floor(tex_pixel + vec2<f32>(0.0, 0.0)) + 0.5) / vertex.size, vertex.layer);
+    var c2 = textureSample(tex, tex_sample, (floor(tex_pixel + vec2<f32>(step.x, 0.0)) + 0.5) / vertex.size, vertex.layer);
+    var c3 = textureSample(tex, tex_sample, (floor(tex_pixel + vec2<f32>(0.0, step.y)) + 0.5) / vertex.size, vertex.layer);
+    var c4 = textureSample(tex, tex_sample, (floor(tex_pixel + step.xy) + 0.5) / vertex.size, vertex.layer);
 
     c1 = c1 * (frac.x * frac.y);
     c2 = c2 *((1.0 - frac.x) * frac.y);
@@ -91,10 +93,10 @@ fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
     c4 = c4 *((1.0 - frac.x) * (1.0 - frac.y));
 
     let object_color = (c1 + c2 + c3 + c4);
-    
-    //let r = textureSample(tex, tex_sample, vertex.uv.xy, i32(vertex.uv.z)).r;
+
     if object_color.r <= 0.0 {
         discard;
     }
+
     return vertex.color.rgba * object_color.r;
 }

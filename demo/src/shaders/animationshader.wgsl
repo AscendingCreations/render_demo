@@ -16,12 +16,13 @@ var<uniform> camera: Camera;
 var<uniform> time: Time;
 
 struct VertexInput {
-    @location(0) tex_coords: vec2<f32>,
-    @location(1) tex_data: vec4<u32>,
-    @location(2) position: vec3<f32>,
-    @location(3) hue_alpha: vec2<u32>,
-    @location(4) frames: vec3<u32>,
-    @location(5) layer: i32,
+    @location(0) position: vec3<f32>,
+    @location(1) tex_coords: u32,
+    @location(2) tex_data: vec2<u32>,
+    @location(3) hue_alpha: u32,
+    @location(4) frames: u32,
+    @location(5) time: u32,
+    @location(6) layer: i32,
 };
 
 struct VertexOutput {
@@ -48,12 +49,23 @@ fn vertex(
     var result: VertexOutput;
     let size = textureDimensions(tex);
     let fsize = vec2<f32> (f32(size.x), f32(size.y));
-
     result.clip_position =  camera.view_proj * vec4<f32>(vertex.position.xyz, 1.0);
-    result.tex_coords = vec2<f32>(vertex.tex_coords.x / fsize.x, vertex.tex_coords.y / fsize.y);
-    result.tex_data = vertex.tex_data;
-    result.hue_alpha = vertex.hue_alpha;
-    result.frames = vertex.frames;
+    result.tex_coords = vec2<f32>(f32(vertex.tex_coords & 0xffffu) / fsize.x, f32((vertex.tex_coords & 0xffff0000u) >> 16u) / fsize.y);
+    result.tex_data = vec4<u32>(
+        u32(vertex.tex_data.x & 0xffffu), 
+        u32((vertex.tex_data.x & 0xffff0000u) >> 16u), 
+        u32(vertex.tex_data.y & 0xffffu), 
+        u32((vertex.tex_data.y & 0xffff0000u) >> 16u)
+    );
+    result.hue_alpha = vec2<u32>(
+        u32(vertex.hue_alpha & 0xffffu), 
+        u32((vertex.hue_alpha & 0xffff0000u) >> 16u)
+    );
+    result.frames = vec3<u32>(
+        u32(vertex.frames & 0xffffu), 
+        u32((vertex.frames & 0xffff0000u) >> 16u),
+        vertex.time
+    );
     result.layer = vertex.layer;
     result.size = fsize;
 

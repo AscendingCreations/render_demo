@@ -6,21 +6,24 @@ use std::iter;
 /// 4 of these per each layer.
 pub struct MapVertex {
     pub position: [f32; 3],
-    pub tex_coord: [f32; 3],
+    pub tex_coord: [u16; 2],
+    pub layer: i32,
 }
 
 impl Default for MapVertex {
     fn default() -> Self {
         Self {
             position: [0.0; 3],
-            tex_coord: [0.0; 3],
+            tex_coord: [0; 2],
+            layer: 0,
         }
     }
 }
 
 impl BufferLayout for MapVertex {
     fn attributes() -> Vec<wgpu::VertexAttribute> {
-        wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3].to_vec()
+        wgpu::vertex_attr_array![0 => Float32x3, 1 => Uint32, 2 => Sint32]
+            .to_vec()
     }
 
     ///default set as large enough to contain 90 maps with all layers
@@ -28,12 +31,9 @@ impl BufferLayout for MapVertex {
         Self::with_capacity(720)
     }
     fn with_capacity(capacity: usize) -> BufferPass {
-        let vertex_arr: Vec<MapVertex> = iter::repeat(MapVertex {
-            position: [0.0, 0.0, 0.0],
-            tex_coord: [0.0, 0.0, 0.0],
-        })
-        .take(capacity * 4)
-        .collect();
+        let vertex_arr: Vec<MapVertex> = iter::repeat(MapVertex::default())
+            .take(capacity * 4)
+            .collect();
 
         let mut indices: Vec<u32> = Vec::with_capacity(capacity * 6);
 
@@ -49,7 +49,7 @@ impl BufferLayout for MapVertex {
     }
 
     fn vertex_stride() -> usize {
-        std::mem::size_of::<[f32; 6]>()
+        std::mem::size_of::<[f32; 5]>()
     }
 
     fn index_stride() -> usize {

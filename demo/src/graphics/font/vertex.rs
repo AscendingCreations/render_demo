@@ -6,15 +6,17 @@ use std::iter;
 /// 4 of these per each layer.
 pub struct TextVertex {
     pub position: [f32; 3],
-    pub tex_coord: [f32; 3],
-    pub color: [u32; 4],
+    pub tex_coord: [u16; 2],
+    pub layer: u32,
+    pub color: [u8; 4],
 }
 
 impl Default for TextVertex {
     fn default() -> Self {
         Self {
             position: [0.0, 0.0, 1.0],
-            tex_coord: [0.0; 3],
+            tex_coord: [0; 2],
+            layer: 0,
             color: [0; 4],
         }
     }
@@ -22,7 +24,7 @@ impl Default for TextVertex {
 
 impl BufferLayout for TextVertex {
     fn attributes() -> Vec<wgpu::VertexAttribute> {
-        wgpu::vertex_attr_array![0 => Float32x3,  1 => Float32x3, 2 => Uint32x4]
+        wgpu::vertex_attr_array![0 => Float32x3, 1 => Uint32, 2 => Uint32, 3 => Uint32]
             .to_vec()
     }
 
@@ -32,13 +34,9 @@ impl BufferLayout for TextVertex {
     }
 
     fn with_capacity(capacity: usize) -> BufferPass {
-        let vertex_arr: Vec<TextVertex> = iter::repeat(TextVertex {
-            position: [0.0, 0.0, 1.0],
-            tex_coord: [0.0, 0.0, 0.0],
-            color: [0, 0, 0, 0],
-        })
-        .take(capacity * 4)
-        .collect();
+        let vertex_arr: Vec<TextVertex> = iter::repeat(TextVertex::default())
+            .take(capacity * 4)
+            .collect();
 
         let mut indices: Vec<u32> = Vec::with_capacity(capacity * 6);
 
@@ -54,7 +52,7 @@ impl BufferLayout for TextVertex {
     }
 
     fn vertex_stride() -> usize {
-        std::mem::size_of::<[f32; 10]>()
+        std::mem::size_of::<[f32; 3]>() + std::mem::size_of::<[u32; 3]>()
     }
 
     fn index_stride() -> usize {

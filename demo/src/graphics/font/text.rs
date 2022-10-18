@@ -245,13 +245,12 @@ impl Text {
         self
     }
 
-    pub fn build_layout(mut self, fonts: &[Font]) -> Self {
+    pub fn build_layout(&mut self, fonts: &[Font]) {
         let string: String = self.glyphs.iter().map(|glyph| glyph.ch).collect();
         self.layout.reset(&self.settings);
         self.layout
             .append(fonts, &TextStyle::new(&string, self.px, self.font_index));
         self.changed = true;
-        self
     }
 
     /// Gets the height of the Box so you can Position
@@ -264,6 +263,14 @@ impl Text {
     /// Must call build_layout after you are finished Modifing Text.
     pub fn append(&mut self, string: &str) {
         self.append_with(string, FontColor::default());
+    }
+
+    /// clears the string.
+    /// Must call build_layout after you are finished Modifing Text.
+    pub fn clear(&mut self) {
+        self.bytes.clear();
+        self.glyphs.clear();
+        self.changed = true;
     }
 
     /// Appends to end of string with Color

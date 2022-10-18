@@ -52,7 +52,7 @@ impl BufferLayout for TextVertex {
     }
 
     fn vertex_stride() -> usize {
-        std::mem::size_of::<[f32; 3]>() + std::mem::size_of::<[u32; 3]>()
+        std::mem::size_of::<[f32; 6]>()
     }
 
     fn index_stride() -> usize {

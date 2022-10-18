@@ -108,7 +108,7 @@ async fn main() -> Result<(), RendererError> {
                 label: None,
             },
             None,
-            wgpu::PresentMode::Fifo,
+            wgpu::PresentMode::AutoNoVsync,
         )
         .await
         .unwrap();
@@ -307,8 +307,8 @@ async fn main() -> Result<(), RendererError> {
 
     let mut text = Text::new().font_size(12f32);
     text.append("hello world, this is a test of Letters.");
-    text = text.build_layout(&fonts);
-    text.set_pos(&[0.0, text.get_box_height(), 1.0]);
+    text.build_layout(&fonts);
+    text.set_pos(&[0.0, text.get_box_height(), 0.5]);
 
     let mut state = State {
         layout_storage,
@@ -375,6 +375,8 @@ async fn main() -> Result<(), RendererError> {
     let mut input_handler = InputHandler::new(bindings);
 
     let mut frame_time = FrameTime::new();
+    let mut time = 0.0f32;
+    let mut fps = 0u32;
 
     event_loop.run(move |event, _, control_flow| {
         match event {
@@ -454,9 +456,10 @@ async fn main() -> Result<(), RendererError> {
 
         let camera = &mut state.camera;
         let delta = frame_time.delta_seconds();
+        let seconds = frame_time.seconds();
         camera.update(&renderer, delta);
 
-        state.time_group.update(&renderer, frame_time.seconds());
+        state.time_group.update(&renderer, seconds);
         let view = frame
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
@@ -533,6 +536,16 @@ async fn main() -> Result<(), RendererError> {
 
         // Submit our command queue.
         renderer.queue().submit(std::iter::once(encoder.finish()));
+
+        if time < seconds {
+            state.text.clear();
+            state.text.append(&format!("FPS: {}", fps));
+            state.text.build_layout(&state.fonts);
+            fps = 0u32;
+            time = seconds + 1.0;
+        }
+
+        fps += 1;
 
         views.remove("framebuffer");
 

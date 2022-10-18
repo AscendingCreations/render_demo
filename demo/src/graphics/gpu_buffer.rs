@@ -169,7 +169,8 @@ impl<K: BufferLayout> GpuBuffer<K> {
         }
 
         self.vertex_count = size / K::vertex_stride();
-        self.index_count = self.vertex_count * K::index_offset();
+        self.index_count = (self.vertex_count / K::index_stride()) * K::index_offset();
+
         queue.write_buffer(&self.vertex_buffer, 0, bytes);
     }
 

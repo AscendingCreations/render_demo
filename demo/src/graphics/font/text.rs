@@ -55,13 +55,6 @@ impl Glyph {
     }
 }
 
-struct UploadBounds {
-    x_min: usize,
-    x_max: usize,
-    y_min: usize,
-    y_max: usize,
-}
-
 pub struct Text {
     /// glyph string layout.
     pub glyphs: Vec<Glyph>,

@@ -134,6 +134,7 @@ where
             &self.animation_texture,
             &self.animation_pipeline,
         );
+
         pass.render_maps(
             &self.mapupper_buffer,
             &self.map_texture,

@@ -144,6 +144,7 @@ async fn main() -> Result<(), RendererError> {
         &mut layout_storage,
         &sprite_atlas.texture_view,
         TextureLayout,
+        GroupType::Textures,
     );
 
     let sprite_pipeline = SpriteRenderPipeline::new(
@@ -209,12 +210,14 @@ async fn main() -> Result<(), RendererError> {
         &mut layout_storage,
         &map_textures.texture_view,
         MapLayout,
+        GroupType::Textures,
     );
     let map_texture = TextureGroup::from_view(
         renderer.device(),
         &mut layout_storage,
         &map_atlas.texture_view,
         TextureLayout,
+        GroupType::Textures,
     );
 
     let maplower_buffer = GpuBuffer::with_capacity(renderer.device(), 540);
@@ -245,6 +248,7 @@ async fn main() -> Result<(), RendererError> {
         &mut layout_storage,
         &animation_atlas.texture_view,
         TextureLayout,
+        GroupType::Textures,
     );
 
     let mut animation = Animation::new(allocation);
@@ -298,6 +302,7 @@ async fn main() -> Result<(), RendererError> {
         &mut layout_storage,
         &text_atlas.texture_view,
         TextureLayout,
+        GroupType::Fonts,
     );
 
     let mut text = Text::new().font_size(32f32);
@@ -557,6 +562,7 @@ pub fn parse_example_wgsl() {
                 continue;
             }
         };
+
         for file_entry in read_files {
             let shader = match file_entry {
                 Ok(entry) => match entry.path().extension() {

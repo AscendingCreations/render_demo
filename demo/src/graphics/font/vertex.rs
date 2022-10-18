@@ -5,8 +5,7 @@ use std::iter;
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 /// 4 of these per each layer.
 pub struct TextVertex {
-    pub position: [f32; 2],
-    pub dimension: [f32; 2],
+    pub position: [f32; 3],
     pub tex_coord: [f32; 3],
     pub color: [u32; 4],
 }
@@ -14,8 +13,7 @@ pub struct TextVertex {
 impl Default for TextVertex {
     fn default() -> Self {
         Self {
-            position: [0.0; 2],
-            dimension: [0.0; 2],
+            position: [0.0, 0.0, 1.0],
             tex_coord: [0.0; 3],
             color: [0; 4],
         }
@@ -24,7 +22,8 @@ impl Default for TextVertex {
 
 impl BufferLayout for TextVertex {
     fn attributes() -> Vec<wgpu::VertexAttribute> {
-        wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x2, 2 => Float32x3, 3 => Uint32x4].to_vec()
+        wgpu::vertex_attr_array![0 => Float32x3,  1 => Float32x3, 2 => Uint32x4]
+            .to_vec()
     }
 
     ///default set as large enough to contain 1024 glyphs.
@@ -34,8 +33,7 @@ impl BufferLayout for TextVertex {
 
     fn with_capacity(capacity: usize) -> BufferPass {
         let vertex_arr: Vec<TextVertex> = iter::repeat(TextVertex {
-            position: [0.0, 0.0],
-            dimension: [0.0, 0.0],
+            position: [0.0, 0.0, 1.0],
             tex_coord: [0.0, 0.0, 0.0],
             color: [0, 0, 0, 0],
         })
@@ -56,7 +54,7 @@ impl BufferLayout for TextVertex {
     }
 
     fn vertex_stride() -> usize {
-        std::mem::size_of::<[f32; 11]>()
+        std::mem::size_of::<[f32; 10]>()
     }
 
     fn index_stride() -> usize {

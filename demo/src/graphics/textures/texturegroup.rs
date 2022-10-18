@@ -1,5 +1,12 @@
 pub(crate) use crate::graphics::{Atlas, Layout, LayoutStorage, TextureLayout};
 
+#[derive(PartialEq, Eq, Copy, Clone, Debug, Default)]
+pub enum GroupType {
+    #[default]
+    Textures,
+    Fonts,
+}
+
 pub struct TextureGroup {
     pub bind_group: wgpu::BindGroup,
 }
@@ -10,20 +17,20 @@ impl TextureGroup {
         layout_storage: &mut LayoutStorage,
         texture_view: &wgpu::TextureView,
         layout: K,
+        texture_type: GroupType,
     ) -> Self {
         let diffuse_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            label: Some("Texture_sampler"),
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Nearest,
-            min_filter: wgpu::FilterMode::Nearest,
-            mipmap_filter: wgpu::FilterMode::Nearest,
-            lod_min_clamp: 0.0,
-            lod_max_clamp: 1.0,
-            compare: None,
-            anisotropy_clamp: None,
-            border_color: None,
+            label: if texture_type == GroupType::Textures {
+                Some("Texture_sampler")
+            } else {
+                Some("Font_Texture_sampler")
+            },
+            lod_max_clamp: if texture_type == GroupType::Textures {
+                1.0
+            } else {
+                0f32
+            },
+            ..Default::default()
         });
 
         let entries = vec![
@@ -39,7 +46,11 @@ impl TextureGroup {
 
         let layout = layout_storage.create_layout(device, layout);
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("Texture Bind Group"),
+            label: if texture_type == GroupType::Textures {
+                Some("Texture Bind Group")
+            } else {
+                Some("Font Texture Bind Group")
+            },
             layout: &layout,
             entries: &entries,
         });

@@ -1,10 +1,12 @@
 pub(crate) use crate::graphics::{
-    allocation::Allocation, Atlas, BufferLayout, BufferPass, TextVertex,
+    allocation::Allocation, Atlas, BufferLayout, BufferPass, ScreenUniform,
+    TextVertex,
 };
 use core::borrow::Borrow;
 use fontdue::{
     layout::{
         CoordinateSystem, GlyphRasterConfig, Layout, LayoutSettings, TextStyle,
+        VerticalAlign,
     },
     Font, FontSettings,
 };
@@ -69,27 +71,33 @@ pub struct Text {
     pub font_index: usize,
     /// Layout settings for the Text.
     pub settings: LayoutSettings,
-    /// The direction that the Y coordinate increases in. Defaults to PositiveYDown
-    pub coord_sys: CoordinateSystem,
     /// Vertex array in bytes. Does not need to get changed except on Text update.
     /// This Holds the Created layout for rendering.
     pub bytes: Vec<u8>,
     /// The string index where rendering starts from.
     pub cursor: usize,
+    //Position to Render the Text At based on its Bottom Left Corner.
+    pub pos: [f32; 3],
+    /// The system layout of the Text Appened
+    layout: Layout,
     /// If the location or map array id changed. Rebuild the vertex buffer.
     pub changed: bool,
 }
 
 impl Default for Text {
     fn default() -> Self {
+        let mut layout = Layout::new(CoordinateSystem::PositiveYUp);
+        layout.reset(&LayoutSettings::default());
+
         Self {
             glyphs: Vec::new(),
             px: 12.0,
             font_index: 0,
-            settings: LayoutSettings::default(),
-            coord_sys: CoordinateSystem::PositiveYDown,
             cursor: 0,
+            settings: LayoutSettings::default(),
             bytes: Vec::new(),
+            pos: [0.0, 0.0, 1.0],
+            layout,
             changed: true,
         }
     }
@@ -104,8 +112,6 @@ impl Text {
         queue: &wgpu::Queue,
         device: &wgpu::Device,
     ) {
-        let mut upload_bounds = None::<UploadBounds>;
-
         for glyph in layout.glyphs() {
             if atlas.get(&glyph.key).is_some() {
                 continue;
@@ -118,10 +124,11 @@ impl Text {
                 // Find a position in the packer
                 let mut rows: Vec<u8> =
                     Vec::with_capacity(metrics.width * metrics.height + 1);
-                rows.extend_from_slice(&bitmap);
-                //rows.copy_from_slice(&bitmap);
+                rows.extend_from_slice(
+                    &bitmap[0..metrics.width * metrics.height],
+                );
 
-                let allocation = atlas
+                let _ = atlas
                     .upload(
                         glyph.key,
                         &rows,
@@ -131,23 +138,6 @@ impl Text {
                         queue,
                     )
                     .unwrap();
-                let bounds = allocation.rect();
-                match upload_bounds.as_mut() {
-                    Some(ub) => {
-                        ub.x_min = ub.x_min.min(bounds.0 as usize);
-                        ub.x_max = ub.x_max.max(bounds.2 as usize);
-                        ub.y_min = ub.y_min.min(bounds.1 as usize);
-                        ub.y_max = ub.y_max.max(bounds.3 as usize);
-                    }
-                    None => {
-                        upload_bounds = Some(UploadBounds {
-                            x_min: bounds.0 as usize,
-                            x_max: bounds.2 as usize,
-                            y_min: bounds.1 as usize,
-                            y_max: bounds.3 as usize,
-                        });
-                    }
-                }
             }
         }
 
@@ -155,16 +145,20 @@ impl Text {
 
         for (pos, glyph) in layout.glyphs().iter().enumerate() {
             if let Some(allocation) = atlas.get(&glyph.key) {
-                let (u, v, width, height) = allocation.rect();
+                let font = &fonts[glyph.font_index];
 
-                let (x, y, w, h) = (
-                    glyph.x.round(),
-                    glyph.y.round(),
-                    (glyph.x.round() as i32).saturating_add((width - 1) as i32)
-                        as f32,
-                    (glyph.y.round() as i32).saturating_add((height - 1) as i32)
-                        as f32,
+                let (u, v, width, height) = allocation.rect();
+                let (u, v, width, height) =
+                    (u as i32, v as i32, width as i32, height as i32);
+                let (x, y) = (
+                    self.pos[0] + glyph.x.round(),
+                    self.pos[1] + glyph.y.round() + layout.height(),
                 );
+                let (w, h) = (
+                    (x as i32).saturating_add((width - 1) as i32) as f32,
+                    (y as i32).saturating_add((height - 1) as i32) as f32,
+                );
+
                 let (u1, v1, u2, v2) = (
                     u as f32,
                     v as f32,
@@ -172,52 +166,33 @@ impl Text {
                     v.saturating_add(height) as f32,
                 );
 
-                let color = self.glyphs[pos].color;
+                let color = [
+                    self.glyphs[pos].color.r as u32,
+                    self.glyphs[pos].color.g as u32,
+                    self.glyphs[pos].color.b as u32,
+                    self.glyphs[pos].color.a as u32,
+                ];
 
                 let mut other = vec![
                     TextVertex {
-                        position: [x, y],
+                        position: [x, y, self.pos[2]],
                         tex_coord: [u1, v2, allocation.layer as f32],
-                        color: [
-                            color.r as u32,
-                            color.g as u32,
-                            color.b as u32,
-                            color.a as u32,
-                        ],
-                        dimension: [width as f32, height as f32],
+                        color,
                     },
                     TextVertex {
-                        position: [w, y],
+                        position: [w, y, self.pos[2]],
                         tex_coord: [u2, v2, allocation.layer as f32],
-                        color: [
-                            color.r as u32,
-                            color.g as u32,
-                            color.b as u32,
-                            color.a as u32,
-                        ],
-                        dimension: [width as f32, height as f32],
+                        color,
                     },
                     TextVertex {
-                        position: [w, h],
+                        position: [w, h, self.pos[2]],
                         tex_coord: [u2, v1, allocation.layer as f32],
-                        color: [
-                            color.r as u32,
-                            color.g as u32,
-                            color.b as u32,
-                            color.a as u32,
-                        ],
-                        dimension: [width as f32, height as f32],
+                        color,
                     },
                     TextVertex {
-                        position: [x, h],
+                        position: [x, h, self.pos[2]],
                         tex_coord: [u1, v1, allocation.layer as f32],
-                        color: [
-                            color.r as u32,
-                            color.g as u32,
-                            color.b as u32,
-                            color.a as u32,
-                        ],
-                        dimension: [width as f32, height as f32],
+                        color,
                     },
                 ];
 
@@ -246,6 +221,11 @@ impl Text {
         self.changed = true;
     }
 
+    pub fn set_pos(&mut self, pos: &[f32; 3]) {
+        self.pos = *pos;
+        self.changed = true;
+    }
+
     pub fn font_index(mut self, index: usize) -> Self {
         self.font_index = index;
         self.changed = true;
@@ -264,17 +244,35 @@ impl Text {
         self
     }
 
+    ///This will set the Text Blobs Settings. but will not rebuild the Layout. Must call Build_layout;
     pub fn settings(mut self, settings: LayoutSettings) -> Self {
         self.settings = settings;
         self.changed = true;
         self
     }
 
-    //Appends to end of string.
+    pub fn build_layout(mut self, fonts: &[Font]) -> Self {
+        let string: String = self.glyphs.iter().map(|glyph| glyph.ch).collect();
+        self.layout.reset(&self.settings);
+        self.layout
+            .append(fonts, &TextStyle::new(&string, self.px, self.font_index));
+        self.changed = true;
+    }
+
+    /// Gets the height of the Box so you can Position
+    /// the Text from the bottom left corner rather than Top left.
+    pub fn get_box_height(&self) -> f32 {
+        self.layout.height()
+    }
+
+    /// Appends to end of string.
+    /// Must call build_layout after you are finished Modifing Text.
     pub fn append(&mut self, string: &str) {
         self.append_with(string, FontColor::default());
     }
 
+    /// Appends to end of string with Color
+    /// Must call build_layout after you are finished Modifing Text.
     pub fn append_with(&mut self, string: &str, color: FontColor) {
         string
             .chars()
@@ -282,19 +280,27 @@ impl Text {
         self.changed = true;
     }
 
+    /// Inserts char into Cursor Position, Will panic if Cursor is outside of bounds.
+    /// Must call build_layout after you are finished Modifing Text.
     pub fn insert(&mut self, ch: char, cursor: usize) {
         self.insert_with(ch, cursor, FontColor::default());
     }
 
+    /// Inserts char into Cursor Position with color, Will panic if Cursor is outside of bounds.
+    /// Must call build_layout after you are finished Modifing Text.
     pub fn insert_with(&mut self, ch: char, cursor: usize, color: FontColor) {
         self.glyphs.insert(cursor, Glyph::new(ch, color));
         self.changed = true;
     }
 
+    /// Inserts str into Cursor Position Will panic if Cursor is outside of bounds.
+    /// Must call build_layout after you are finished Modifing Text.
     pub fn insert_str(&mut self, string: &str, cursor: usize) {
         self.insert_str_with(string, cursor, FontColor::default())
     }
 
+    /// Inserts str into Cursor Position with color, Will panic if Cursor is outside of bounds.
+    /// Must call build_layout after you are finished Modifing Text.
     pub fn insert_str_with(
         &mut self,
         string: &str,
@@ -308,10 +314,16 @@ impl Text {
         self.changed = true;
     }
 
+    /// Replaces cursor Range with str into Cursor Position, Will panic if Cursor is outside of bounds.
+    /// string can be bigger that replacing parts or smaller.
+    /// Must call build_layout after you are finished Modifing Text.
     pub fn replace_range(&mut self, string: &str, range: Range<usize>) {
         self.replace_range_with(string, range, FontColor::default());
     }
 
+    /// Replaces cursor Range with str into Cursor Position with color, Will panic if Cursor is outside of bounds.
+    /// string can be bigger that replacing parts or smaller.
+    /// Must call build_layout after you are finished Modifing Text.
     pub fn replace_range_with(
         &mut self,
         string: &str,
@@ -324,12 +336,15 @@ impl Text {
         self.changed = true;
     }
 
+    /// removes cursor Range from the char string, Will panic if Cursor is outside of bounds.
+    /// Must call build_layout after you are finished Modifing Text.
     pub fn remove_range(&mut self, range: Range<usize>) {
         self.glyphs.drain(range).for_each(drop);
         self.changed = true;
     }
 
     /// used to check and update the vertex array.
+    /// must call build_layout before you can Call this.
     pub fn update(
         &mut self,
         queue: &wgpu::Queue,
@@ -346,6 +361,7 @@ impl Text {
                 fonts,
                 &TextStyle::new(&string, self.px, self.font_index),
             );
+
             self.create_quad(layout, fonts, atlas, queue, device);
             self.changed = false;
         }

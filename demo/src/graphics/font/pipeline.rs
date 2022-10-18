@@ -75,7 +75,7 @@ impl TextRenderPipeline {
                     targets: &[Some(wgpu::ColorTargetState {
                         format: surface_format,
                         blend: Some(
-                            wgpu::BlendState::ALPHA_BLENDING,
+                            wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
                         ),
                         write_mask: wgpu::ColorWrites::ALL,
                     })],

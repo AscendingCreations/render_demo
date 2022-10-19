@@ -22,7 +22,7 @@ var<uniform> time: Time;
 
 @group(2)
 @binding(0)
-var<uniform> resolution: ScreenResolution;
+var<uniform> resolution: vec2<u32>;
 
 struct VertexInput {
     @location(0) pos: vec3<f32>,
@@ -57,7 +57,13 @@ fn vertex(
     let size = textureDimensions(tex);
     let fsize = vec2<f32> (f32(size.x), f32(size.y));
 
-    result.position =  camera.view_proj * vec4<f32>(vertex.pos.xyz, 1.0);
+    //result.position = matix * vec4<f32>(vertex.pos.xyz, 1.0);
+    result.position = vec4<f32>(
+        2.0 * vec2<f32>(vertex.pos.xy) / vec2<f32>(resolution) - 1.0,
+       vertex.pos.z,
+        1.0,
+    );
+
     result.size = fsize;
     result.color = vec4<f32>(
         f32((vertex.color & 0xffu)),
@@ -74,25 +80,7 @@ fn vertex(
 // Fragment shader
 @fragment
 fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
-    let coords = vec2<f32>(vertex.uv.x, vertex.uv.y);
-    
-    var step = vec2<f32>(0.5, 0.5);
-    var tex_pixel = vertex.size * coords - step.xy / 2.0;
-
-    let corner = floor(tex_pixel) + 1.0;
-    let frac = min((corner - tex_pixel) * vec2<f32>(2.0, 2.0), vec2<f32>(1.0, 1.0));
-
-    var c1 = textureSample(tex, tex_sample, (floor(tex_pixel + vec2<f32>(0.0, 0.0)) + 0.5) / vertex.size, vertex.layer);
-    var c2 = textureSample(tex, tex_sample, (floor(tex_pixel + vec2<f32>(step.x, 0.0)) + 0.5) / vertex.size, vertex.layer);
-    var c3 = textureSample(tex, tex_sample, (floor(tex_pixel + vec2<f32>(0.0, step.y)) + 0.5) / vertex.size, vertex.layer);
-    var c4 = textureSample(tex, tex_sample, (floor(tex_pixel + step.xy) + 0.5) / vertex.size, vertex.layer);
-
-    c1 = c1 * (frac.x * frac.y);
-    c2 = c2 *((1.0 - frac.x) * frac.y);
-    c3 = c3 * (frac.x * (1.0 - frac.y));
-    c4 = c4 *((1.0 - frac.x) * (1.0 - frac.y));
-
-    let object_color = (c1 + c2 + c3 + c4);
+    let object_color = textureSample(tex, tex_sample, vertex.uv.xy, vertex.layer);
 
     if object_color.r <= 0.0 {
         discard;

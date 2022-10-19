@@ -305,7 +305,7 @@ async fn main() -> Result<(), RendererError> {
         GroupType::Fonts,
     );
 
-    let mut text = Text::new().font_size(12f32);
+    let mut text = Text::new().font_size(20f32);
     text.append("hello world, this is a test of Letters.");
     text.build_layout(&fonts);
     text.set_pos(&[0.0, text.get_box_height(), 0.5]);
@@ -549,9 +549,9 @@ async fn main() -> Result<(), RendererError> {
         renderer.queue().submit(std::iter::once(encoder.finish()));
 
         if time < seconds {
-            state.text.clear();
+            /*state.text.clear();
             state.text.append(&format!("FPS: {}", fps));
-            state.text.build_layout(&state.fonts);
+            state.text.build_layout(&state.fonts);*/
             fps = 0u32;
             time = seconds + 1.0;
         }

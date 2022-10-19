@@ -141,12 +141,12 @@ impl Text {
                 let (u, v, width, height) =
                     (u as i32, v as i32, width as i32, height as i32);
                 let (x, y) = (
-                    self.pos[0] + glyph.x.round(),
-                    self.pos[1] + glyph.y.round(),
+                    self.pos[0] + glyph.x.trunc(),
+                    self.pos[1] + glyph.y.trunc(),
                 );
                 let (w, h) = (
-                    (x as i32).saturating_add(width - 1) as f32,
-                    (y as i32).saturating_add(height - 1) as f32,
+                    (x as i32).saturating_add(width) as f32,
+                    (y as i32).saturating_add(height) as f32,
                 );
 
                 let (u1, v1, u2, v2) = (

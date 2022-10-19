@@ -20,9 +20,14 @@ where
         buffer: &'b GpuBuffer<ShapeVertex>,
         pipeline: &'b ShapeRenderPipeline,
     ) {
-        self.set_vertex_buffer(0, buffer.vertices(None));
-        self.set_index_buffer(buffer.indices(None), wgpu::IndexFormat::Uint32);
-        self.set_pipeline(pipeline.render_pipeline());
-        self.draw_indexed(0..buffer.index_count() as u32, 0, 0..1);
+        if buffer.vertex_count() > 0 {
+            self.set_vertex_buffer(0, buffer.vertices(None));
+            self.set_index_buffer(
+                buffer.indices(None),
+                wgpu::IndexFormat::Uint32,
+            );
+            self.set_pipeline(pipeline.render_pipeline());
+            self.draw_indexed(0..buffer.index_count() as u32, 0, 0..1);
+        }
     }
 }

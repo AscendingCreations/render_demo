@@ -73,8 +73,7 @@ impl Sprite {
             SpriteVertex {
                 position: [x, y, self.pos[2] as f32],
                 tex_coord: [u1, v2],
-                rg: [self.color[0], self.color[1]],
-                ba: [self.color[2] as u16, self.color[3] as u16],
+                color: self.color,
                 frames: [self.frames, animate],
                 tex_hw: [width, height],
                 time: self.switch_time,
@@ -83,8 +82,7 @@ impl Sprite {
             SpriteVertex {
                 position: [w, y, self.pos[2] as f32],
                 tex_coord: [u2, v2],
-                rg: [self.color[0], self.color[1]],
-                ba: [self.color[2] as u16, self.color[3] as u16],
+                color: self.color,
                 frames: [self.frames, animate],
                 tex_hw: [width, height],
                 time: self.switch_time,
@@ -93,8 +91,7 @@ impl Sprite {
             SpriteVertex {
                 position: [w, h, self.pos[2] as f32],
                 tex_coord: [u2, v1],
-                rg: [self.color[0], self.color[1]],
-                ba: [self.color[2] as u16, self.color[3] as u16],
+                color: self.color,
                 frames: [self.frames, animate],
                 tex_hw: [width, height],
                 time: self.switch_time,
@@ -103,8 +100,7 @@ impl Sprite {
             SpriteVertex {
                 position: [x, h, self.pos[2] as f32],
                 tex_coord: [u1, v1],
-                rg: [self.color[0], self.color[1]],
-                ba: [self.color[2] as u16, self.color[3] as u16],
+                color: self.color,
                 frames: [self.frames, animate],
                 tex_hw: [width, height],
                 time: self.switch_time,

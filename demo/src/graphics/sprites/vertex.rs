@@ -6,8 +6,7 @@ use std::iter;
 pub struct SpriteVertex {
     pub position: [f32; 3],
     pub tex_coord: [u16; 2],
-    pub rg: [u32; 2],
-    pub ba: [u16; 2],
+    pub color: [u32; 4],
     pub frames: [u16; 2],
     pub tex_hw: [u16; 2],
     pub time: u32,
@@ -19,8 +18,7 @@ impl Default for SpriteVertex {
         Self {
             position: [0.0; 3],
             tex_coord: [0; 2],
-            rg: [0; 2],
-            ba: [0; 2],
+            color: [0; 4],
             frames: [0; 2],
             tex_hw: [0; 2],
             time: 0,
@@ -31,7 +29,7 @@ impl Default for SpriteVertex {
 
 impl BufferLayout for SpriteVertex {
     fn attributes() -> Vec<wgpu::VertexAttribute> {
-        wgpu::vertex_attr_array![0 => Float32x3, 1 => Uint32, 2 => Uint32x2, 3 => Uint32, 4 => Uint32, 5 => Uint32, 6 => Uint32, 7 => Sint32  ]
+        wgpu::vertex_attr_array![0 => Float32x3, 1 => Uint32, 2 => Uint32x4, 3 => Uint32, 4 => Uint32, 5 => Uint32, 6 => Sint32 ]
             .to_vec()
     }
 
@@ -59,7 +57,7 @@ impl BufferLayout for SpriteVertex {
     }
 
     fn vertex_stride() -> usize {
-        std::mem::size_of::<[f32; 11]>()
+        std::mem::size_of::<[f32; 12]>()
     }
 
     fn index_stride() -> usize {

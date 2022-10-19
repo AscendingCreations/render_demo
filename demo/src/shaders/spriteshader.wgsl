@@ -27,12 +27,11 @@ var<uniform> resolution: ScreenResolution;
 struct VertexInput {
     @location(0) position: vec3<f32>,
     @location(1) tex_coords: u32,
-    @location(2) rg: vec2<u32>,
-    @location(3) ba: u32,
-    @location(4) frames: u32,
-    @location(5) tex_hw: u32,
-    @location(6) time: u32,
-    @location(7) layer: i32,
+    @location(2) color: vec4<u32>,
+    @location(3) frames: u32,
+    @location(4) tex_hw: u32,
+    @location(5) time: u32,
+    @location(6) layer: i32,
 };
 
 struct VertexOutput {
@@ -63,7 +62,7 @@ fn vertex(
     result.clip_position =  camera.view_proj * vec4<f32>(vertex.position.xyz, 1.0);
     result.tex_coords = vec2<f32>(f32(vertex.tex_coords & 0xffffu) / fsize.x, f32((vertex.tex_coords & 0xffff0000u) >> 16u) / fsize.y);
     result.layer = vertex.layer;
-    result.col = vec4<u32>(vertex.rg.xy, u32(vertex.ba & 0xffffu), u32((vertex.ba & 0xffff0000u) >> 16u));
+    result.col = vertex.color;
     result.frames = vec3<u32>(u32(vertex.frames & 0xffffu), vertex.time,u32((vertex.frames & 0xffff0000u) >> 16u));
     result.tex_hw = vec2<u32>(u32(vertex.tex_hw & 0xffffu), u32((vertex.tex_hw & 0xffff0000u) >> 16u));
     result.size = fsize;

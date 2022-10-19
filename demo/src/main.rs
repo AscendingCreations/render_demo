@@ -153,10 +153,10 @@ async fn main() -> Result<(), RendererError> {
         &mut layout_storage,
     )?;
 
-    let settings = FlatSettings { zoom: 2.0 };
+    // let settings = FlatSettings { zoom: 2.0 };
 
     let size = renderer.size();
-    let controls = FlatControls::new(settings);
+    let controls = FlatControls::new(FlatSettings::default());
     let camera = Camera::new(
         &renderer,
         &mut layout_storage,

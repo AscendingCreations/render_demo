@@ -115,37 +115,29 @@ async fn main() -> Result<(), RendererError> {
 
     println!("{:?}", renderer.adapter().get_info());
     let mut layout_storage = LayoutStorage::new();
-    let mut sprite_atlas = Atlas::new(
+
+    let mut sprite_atlas = AtlasGroup::new(
         renderer.device(),
         2048,
         wgpu::TextureFormat::Rgba8UnormSrgb,
+        &mut layout_storage,
+        GroupType::Textures,
     );
-    let texture = Texture::from_file("images/Female_1.png")?;
 
-    let allocation = texture
-        .upload(&mut sprite_atlas, renderer.device(), renderer.queue())
+    let allocation = Texture::from_file("images/Female_1.png")?
+        .group_upload(&mut sprite_atlas, renderer.device(), renderer.queue())
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
     let mut sprite = [Sprite::new(allocation), Sprite::new(allocation)];
 
     sprite[0].pos = [32, 32, 5];
     sprite[0].hw = [48, 48];
     sprite[0].uv = [48, 96, 48, 48];
-    sprite[0].color = [100, 0, 100, 100];
-    sprite[0].changed = true;
+    sprite[0].color = [255, 255, 255, 255];
 
     sprite[1].pos = [64, 32, 6];
     sprite[1].hw = [48, 48];
     sprite[1].uv = [48, 96, 48, 48];
-    sprite[1].color = [0, 0, 100, 100];
-    sprite[1].changed = true;
-
-    let sprite_texture = TextureGroup::from_view(
-        renderer.device(),
-        &mut layout_storage,
-        &sprite_atlas.texture_view,
-        TextureLayout,
-        GroupType::Textures,
-    );
+    sprite[1].color = [100, 100, 100, 255];
 
     let sprite_pipeline = SpriteRenderPipeline::new(
         renderer.device(),
@@ -153,10 +145,8 @@ async fn main() -> Result<(), RendererError> {
         &mut layout_storage,
     )?;
 
-    // let settings = FlatSettings { zoom: 2.0 };
-
     let size = renderer.size();
-    let controls = FlatControls::new(FlatSettings::default());
+
     let camera = Camera::new(
         &renderer,
         &mut layout_storage,
@@ -168,7 +158,7 @@ async fn main() -> Result<(), RendererError> {
             near: 1.0,
             far: -100.0,
         },
-        controls,
+        FlatControls::new(FlatSettings::default()),
     );
 
     let sprite_buffer = GpuBuffer::with_capacity(renderer.device(), 1);
@@ -191,16 +181,17 @@ async fn main() -> Result<(), RendererError> {
         &mut layout_storage,
     )?;
 
-    let mut map_atlas = Atlas::new(
+    let mut map_atlas = AtlasGroup::new(
         renderer.device(),
         2048,
         wgpu::TextureFormat::Rgba8UnormSrgb,
+        &mut layout_storage,
+        GroupType::Textures,
     );
 
     for i in 0..3 {
-        let texture = Texture::from_file(format!("images/tiles/{}.png", i))?;
-        let _ = texture
-            .upload(&mut map_atlas, renderer.device(), renderer.queue())
+        let _ = Texture::from_file(format!("images/tiles/{}.png", i))?
+            .group_upload(&mut map_atlas, renderer.device(), renderer.queue())
             .ok_or_else(|| OtherError::new("failed to upload image"))?;
     }
 
@@ -212,13 +203,6 @@ async fn main() -> Result<(), RendererError> {
         MapLayout,
         GroupType::Textures,
     );
-    let map_texture = TextureGroup::from_view(
-        renderer.device(),
-        &mut layout_storage,
-        &map_atlas.texture_view,
-        TextureLayout,
-        GroupType::Textures,
-    );
 
     let maplower_buffer = GpuBuffer::with_capacity(renderer.device(), 540);
     let mapupper_buffer = GpuBuffer::with_capacity(renderer.device(), 180);
@@ -227,37 +211,29 @@ async fn main() -> Result<(), RendererError> {
         .get_unused_id()
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
 
-    let mut animation_atlas = Atlas::new(
+    let mut animation_atlas = AtlasGroup::new(
         renderer.device(),
         2048,
         wgpu::TextureFormat::Rgba8UnormSrgb,
-    );
-    let texture = Texture::from_file("images/anim/0.png")?;
-    let allocation = texture
-        .upload(&mut animation_atlas, renderer.device(), renderer.queue())
-        .ok_or_else(|| OtherError::new("failed to upload image"))?;
-
-    let animation_pipeline = AnimationRenderPipeline::new(
-        renderer.device(),
-        renderer.surface_format(),
         &mut layout_storage,
-    )?;
-    let animation_buffer = GpuBuffer::new(renderer.device());
-    let animation_texture = TextureGroup::from_view(
-        renderer.device(),
-        &mut layout_storage,
-        &animation_atlas.texture_view,
-        TextureLayout,
         GroupType::Textures,
     );
 
-    let mut animation = Animation::new(allocation);
-    animation.pos = [0.0, 0.0, 1.0];
-    animation.hw = [64; 2];
-    animation.anim_hw = [64; 2];
-    animation.frames = 8;
-    animation.frames_per_row = 4;
+    let allocation = Texture::from_file("images/anim/0.png")?
+        .group_upload(&mut animation_atlas, renderer.device(), renderer.queue())
+        .ok_or_else(|| OtherError::new("failed to upload image"))?;
+
+    let animation_buffer = GpuBuffer::new(renderer.device());
+
+    let mut animation = Sprite::new(allocation);
+
+    animation.pos = [96, 96, 5];
+    animation.hw = [64, 64];
+    animation.uv = [0, 0, 64, 64];
+    animation.color = [255, 255, 255, 255];
+    animation.frames = [8, 4];
     animation.switch_time = 300;
+    animation.animate = true;
 
     let time_group = TimeGroup::new(&renderer, &mut layout_storage);
     let screen_group = ScreenGroup::new(
@@ -288,22 +264,19 @@ async fn main() -> Result<(), RendererError> {
     let font = Font::from_bytes(font, FontSettings::default()).unwrap();
     let fonts = vec![font];
 
-    let text_atlas =
-        Atlas::new(renderer.device(), 2048, wgpu::TextureFormat::R8Unorm);
-
+    let text_atlas = AtlasGroup::new(
+        renderer.device(),
+        2048,
+        wgpu::TextureFormat::R8Unorm,
+        &mut layout_storage,
+        GroupType::Fonts,
+    );
     let text_pipeline = TextRenderPipeline::new(
         renderer.device(),
         renderer.surface_format(),
         &mut layout_storage,
     )?;
     let text_buffer = GpuBuffer::new(renderer.device());
-    let text_texture = TextureGroup::from_view(
-        renderer.device(),
-        &mut layout_storage,
-        &text_atlas.texture_view,
-        TextureLayout,
-        GroupType::Fonts,
-    );
 
     let mut text = Text::new().font_size(20f32);
     text.append("hello world, this is a test of Letters.");
@@ -319,20 +292,16 @@ async fn main() -> Result<(), RendererError> {
         sprite_pipeline,
         sprite_buffer,
         sprite_atlas,
-        sprite_texture,
         map,
         map_pipeline,
         maplower_buffer,
         mapupper_buffer,
-        map_texture,
         map_group,
         map_atlas,
         map_textures,
         animation,
         animation_buffer,
-        animation_pipeline,
         animation_atlas,
-        animation_texture,
         shapes,
         shapes_buffer,
         shapes_pipeline,
@@ -340,7 +309,6 @@ async fn main() -> Result<(), RendererError> {
         text_atlas,
         text_pipeline,
         text_buffer,
-        text_texture,
         fonts,
     };
 
@@ -454,12 +422,12 @@ async fn main() -> Result<(), RendererError> {
             *control_flow = ControlFlow::Exit;
         }
 
-        let camera = &mut state.camera;
         let delta = frame_time.delta_seconds();
         let seconds = frame_time.seconds();
-        camera.update(&renderer, delta);
 
+        state.camera.update(&renderer, delta);
         state.time_group.update(&renderer, seconds);
+
         let view = frame
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
@@ -549,9 +517,9 @@ async fn main() -> Result<(), RendererError> {
         renderer.queue().submit(std::iter::once(encoder.finish()));
 
         if time < seconds {
-            /*state.text.clear();
+            state.text.clear();
             state.text.append(&format!("FPS: {}", fps));
-            state.text.build_layout(&state.fonts);*/
+            state.text.build_layout(&state.fonts);
             fps = 0u32;
             time = seconds + 1.0;
         }

@@ -8,11 +8,16 @@ use std::cmp;
 pub struct Sprite {
     pub pos: [i32; 3],
     pub hw: [u16; 2],
+    // used for static offsets or animation Start positions
     pub uv: [u16; 4],
-    pub color: [u32; 4],
-    pub frames: u16,
+    /// Color dah  number / 255.
+    pub color: [u8; 4],
+    // frames, frames_per_row: this will cycle thru
+    // frames per rox at the uv start.
+    pub frames: [u16; 2],
     /// in millsecs 1000 = 1sec
     pub switch_time: u32,
+    /// turn on animation if set.
     pub animate: bool,
     /// Texture area location in Atlas.
     pub texture: Option<Allocation>,
@@ -27,10 +32,10 @@ impl Default for Sprite {
             pos: [0; 3],
             hw: [0; 2],
             uv: [0; 4],
-            frames: 0,
+            frames: [0; 2],
             switch_time: 0,
             animate: false,
-            color: [0, 0, 100, 100],
+            color: [255, 255, 255, 255],
             texture: None,
             bytes: Vec::new(),
             changed: true,
@@ -43,8 +48,8 @@ impl Sprite {
         let (x, y, w, h) = (
             self.pos[0] as f32,
             self.pos[1] as f32,
-            self.pos[0].saturating_add((self.hw[0] - 1) as i32) as f32,
-            self.pos[1].saturating_add((self.hw[1] - 1) as i32) as f32,
+            self.pos[0].saturating_add((self.hw[0] ) as i32) as f32,
+            self.pos[1].saturating_add((self.hw[1] ) as i32) as f32,
         );
 
         let allocation = match &self.texture {
@@ -54,57 +59,40 @@ impl Sprite {
 
         let (u, v, width, height) = allocation.rect();
         let (u, v, width, height) = (
-            u as u16,
-            v as u16,
+            self.uv[0].saturating_add(u as u16),
+            self.uv[1].saturating_add(v as u16),
             cmp::min(self.uv[2], width as u16),
             cmp::min(self.uv[3], height as u16),
         );
 
-        let (u1, v1, u2, v2) = (
-            self.uv[0].saturating_add(u),
-            self.uv[1].saturating_add(v),
-            self.uv[0].saturating_add(u).saturating_add(width),
-            self.uv[1].saturating_add(v).saturating_add(height),
-        );
+        let animate = u32::from(self.animate);
 
-        let animate = u16::from(self.animate);
+        let default = SpriteVertex {
+            position: [0.0, 0.0, 0.0],
+            tex_data: [u, v, width, height],
+            color: self.color,
+            frames: self.frames,
+            animate,
+            time: self.switch_time,
+            layer: allocation.layer as i32,
+        };
 
         let buffer = vec![
             SpriteVertex {
                 position: [x, y, self.pos[2] as f32],
-                tex_coord: [u1, v2],
-                color: self.color,
-                frames: [self.frames, animate],
-                tex_hw: [width, height],
-                time: self.switch_time,
-                layer: allocation.layer as i32,
+                ..default
             },
             SpriteVertex {
                 position: [w, y, self.pos[2] as f32],
-                tex_coord: [u2, v2],
-                color: self.color,
-                frames: [self.frames, animate],
-                tex_hw: [width, height],
-                time: self.switch_time,
-                layer: allocation.layer as i32,
+                ..default
             },
             SpriteVertex {
                 position: [w, h, self.pos[2] as f32],
-                tex_coord: [u2, v1],
-                color: self.color,
-                frames: [self.frames, animate],
-                tex_hw: [width, height],
-                time: self.switch_time,
-                layer: allocation.layer as i32,
+                ..default
             },
             SpriteVertex {
                 position: [x, h, self.pos[2] as f32],
-                tex_coord: [u1, v1],
-                color: self.color,
-                frames: [self.frames, animate],
-                tex_hw: [width, height],
-                time: self.switch_time,
-                layer: allocation.layer as i32,
+                ..default
             },
         ];
 
@@ -114,16 +102,8 @@ impl Sprite {
 
     pub fn new(texture: Allocation) -> Self {
         Self {
-            pos: [0; 3],
-            hw: [0; 2],
-            uv: [0; 4],
-            frames: 0,
-            switch_time: 0,
-            animate: false,
-            color: [0, 0, 100, 100],
             texture: Some(texture),
-            bytes: Vec::new(),
-            changed: true,
+            ..Default::default()
         }
     }
 

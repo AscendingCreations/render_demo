@@ -1,5 +1,6 @@
 struct Camera {
-    view_proj: mat4x4<f32>,
+    view: mat4x4<f32>,
+    proj: mat4x4<f32>,
     eye: vec3<f32>,
 };
 
@@ -20,10 +21,6 @@ var<uniform> camera: Camera;
 @binding(0)
 var<uniform> time: Time;
 
-@group(2)
-@binding(0)
-var<uniform> resolution: vec2<u32>;
-
 struct VertexInput {
     @location(0) pos: vec3<f32>,
     @location(1) uv: u32,
@@ -39,10 +36,10 @@ struct VertexOutput {
     @location(3) layer: i32,
 };
 
-@group(3)
+@group(2)
 @binding(0)
 var tex: texture_2d_array<f32>;
-@group(3)
+@group(2)
 @binding(1)
 var tex_sample: sampler;
 
@@ -57,13 +54,7 @@ fn vertex(
     let size = textureDimensions(tex);
     let fsize = vec2<f32> (f32(size.x), f32(size.y));
 
-    //result.position = matix * vec4<f32>(vertex.pos.xyz, 1.0);
-    result.position = vec4<f32>(
-        2.0 * vec2<f32>(vertex.pos.xy) / vec2<f32>(resolution) - 1.0,
-       vertex.pos.z,
-        1.0,
-    );
-
+    result.position = camera.proj * vec4<f32>(vertex.pos.xyz, 1.0);
     result.size = fsize;
     result.color = vec4<f32>(
         f32((vertex.color & 0xffu)),

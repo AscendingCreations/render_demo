@@ -31,7 +31,8 @@ impl Layout for CameraLayout {
 
 #[derive(AsStd140)]
 pub struct CameraUniform {
-    view_proj: mint::ColumnMatrix4<f32>,
+    view: mint::ColumnMatrix4<f32>,
+    proj: mint::ColumnMatrix4<f32>,
     eye: mint::Vector3<f32>,
 }
 
@@ -74,12 +75,11 @@ where
         camera.update(0.0);
 
         // Create the camera uniform.
-        let proj: Mat4 = camera.projection().into();
-        let view: Mat4 = camera.view().into();
-        let view_proj: mint::ColumnMatrix4<f32> = (proj * view).into();
+        let proj = camera.projection();
+        let view = camera.view();
         let eye: mint::Vector3<f32> = camera.eye().into();
 
-        let camera_info = CameraUniform { view_proj, eye };
+        let camera_info = CameraUniform { view, proj, eye };
 
         // Create the uniform buffer.
         let buffer = renderer.device().create_buffer_init(
@@ -133,12 +133,11 @@ where
         }
 
         // Create the camera uniform.
-        let proj: Mat4 = self.camera.projection().into();
-        let view: Mat4 = self.camera.view().into();
-        let view_proj: mint::ColumnMatrix4<f32> = (proj * view).into();
+        let proj  = self.camera.projection();
+        let view = self.camera.view();
         let eye: mint::Vector3<f32> = self.camera.eye().into();
 
-        let camera_info = CameraUniform { view_proj, eye };
+        let camera_info = CameraUniform { view, proj, eye };
 
         renderer.queue().write_buffer(
             &self.buffer,

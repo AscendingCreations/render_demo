@@ -23,7 +23,6 @@ impl TextRenderPipeline {
 
         let camera_layout = layout_storage.create_layout(device, CameraLayout);
         let time_layout = layout_storage.create_layout(device, TimeLayout);
-        let screen_layout = layout_storage.create_layout(device, ScreenLayout);
         let texture_layout =
             layout_storage.create_layout(device, TextureLayout);
 
@@ -37,7 +36,6 @@ impl TextRenderPipeline {
                         bind_group_layouts: &[
                             &camera_layout,
                             &time_layout,
-                            &screen_layout,
                             &texture_layout,
                         ],
                         push_constant_ranges: &[],

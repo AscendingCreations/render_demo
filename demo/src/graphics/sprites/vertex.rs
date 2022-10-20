@@ -5,10 +5,10 @@ use std::iter;
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct SpriteVertex {
     pub position: [f32; 3],
-    pub tex_coord: [u16; 2],
-    pub color: [u32; 4],
+    pub tex_data: [u16; 4],
+    pub color: [u8; 4],
     pub frames: [u16; 2],
-    pub tex_hw: [u16; 2],
+    pub animate: u32,
     pub time: u32,
     pub layer: i32,
 }
@@ -17,10 +17,10 @@ impl Default for SpriteVertex {
     fn default() -> Self {
         Self {
             position: [0.0; 3],
-            tex_coord: [0; 2],
+            tex_data: [0; 4],
             color: [0; 4],
             frames: [0; 2],
-            tex_hw: [0; 2],
+            animate: 0,
             time: 0,
             layer: 0,
         }
@@ -29,7 +29,7 @@ impl Default for SpriteVertex {
 
 impl BufferLayout for SpriteVertex {
     fn attributes() -> Vec<wgpu::VertexAttribute> {
-        wgpu::vertex_attr_array![0 => Float32x3, 1 => Uint32, 2 => Uint32x4, 3 => Uint32, 4 => Uint32, 5 => Uint32, 6 => Sint32 ]
+        wgpu::vertex_attr_array![0 => Float32x3, 1 => Uint32x2, 2 => Uint32, 3 => Uint32, 4 => Uint32, 5 => Uint32, 6 => Sint32 ]
             .to_vec()
     }
 
@@ -57,7 +57,7 @@ impl BufferLayout for SpriteVertex {
     }
 
     fn vertex_stride() -> usize {
-        std::mem::size_of::<[f32; 12]>()
+        std::mem::size_of::<[f32; 10]>()
     }
 
     fn index_stride() -> usize {

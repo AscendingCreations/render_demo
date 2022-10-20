@@ -1,3 +1,4 @@
+use crate::gamestate::group::AtlasGroup;
 pub(crate) use crate::graphics::{
     atlas::{Allocation, Atlas},
     RendererError,
@@ -69,6 +70,23 @@ impl Texture {
     ) -> Option<Allocation> {
         let (width, height) = self.size;
         atlas.upload(
+            self.name.clone(),
+            &self.bytes,
+            width,
+            height,
+            device,
+            queue,
+        )
+    }
+
+    pub fn group_upload(
+        &self,
+        atlas_group: &mut AtlasGroup,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+    ) -> Option<Allocation> {
+        let (width, height) = self.size;
+        atlas_group.atlas.upload(
             self.name.clone(),
             &self.bytes,
             width,

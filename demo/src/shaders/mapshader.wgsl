@@ -1,5 +1,6 @@
 struct Camera {
-    view_proj: mat4x4<f32>,
+    view: mat4x4<f32>,
+    proj: mat4x4<f32>,
     eye: vec3<f32>,
 };
 
@@ -35,7 +36,7 @@ fn vertex(
     var result: VertexOutput;
     result.tex_coords = vec2<f32>(f32(vertex.tex_coords & 0xffffu), f32((vertex.tex_coords & 0xffff0000u) >> 16u));
     result.zpos = vertex.position.z;
-    result.clip_position =  camera.view_proj * vec4<f32>(vertex.position.xyz, 1.0);
+    result.clip_position =  (camera.proj * camera.view) * vec4<f32>(vertex.position.xyz, 1.0);
     result.layer = vertex.layer;
     return result;
 }

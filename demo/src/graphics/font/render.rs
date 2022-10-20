@@ -1,6 +1,8 @@
 pub(crate) use crate::graphics::{
-    GpuBuffer, ScreenGroup, TextRenderPipeline, TextVertex, TextureGroup,
+    AtlasGroup, GpuBuffer, ScreenGroup, TextRenderPipeline, TextVertex,
+    TextureGroup,
 };
+use fontdue::layout::GlyphRasterConfig;
 
 pub trait RenderText<'a, 'b>
 where
@@ -9,9 +11,8 @@ where
     fn render_text(
         &mut self,
         buffer: &'b GpuBuffer<TextVertex>,
-        texture_group: &'b TextureGroup,
+        atlas_group: &'b AtlasGroup<GlyphRasterConfig>,
         pipeline: &'b TextRenderPipeline,
-        screen_group: &'b ScreenGroup,
     );
 }
 
@@ -22,13 +23,11 @@ where
     fn render_text(
         &mut self,
         buffer: &'b GpuBuffer<TextVertex>,
-        texture_group: &'b TextureGroup,
+        atlas_group: &'b AtlasGroup<GlyphRasterConfig>,
         pipeline: &'b TextRenderPipeline,
-        screen_group: &'b ScreenGroup,
     ) {
         if buffer.vertex_count() > 0 {
-            self.set_bind_group(2, screen_group.bind_group(), &[]);
-            self.set_bind_group(3, &texture_group.bind_group, &[]);
+            self.set_bind_group(2, &atlas_group.texture.bind_group, &[]);
             self.set_vertex_buffer(0, buffer.vertices(None));
             self.set_index_buffer(
                 buffer.indices(None),

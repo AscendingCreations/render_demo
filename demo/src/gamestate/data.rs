@@ -20,10 +20,8 @@ where
     pub sprite_pipeline: SpriteRenderPipeline,
     /// Vertex buffer group for Sprites
     pub sprite_buffer: GpuBuffer<SpriteVertex>,
-    /// Atlas to hold Sprite Images
-    pub sprite_atlas: Atlas,
-    /// Texture Bind group for Sprite Atlas
-    pub sprite_texture: TextureGroup,
+    /// AtlasGroup to hold Sprite Images
+    pub sprite_atlas: AtlasGroup,
     /// maps TODO: make this an array.
     pub map: Map,
     /// Render Pipeline for maps
@@ -31,21 +29,16 @@ where
     /// vertex buffer group for maps
     pub maplower_buffer: GpuBuffer<MapVertex>,
     pub mapupper_buffer: GpuBuffer<MapVertex>,
-    /// Texture bind group for Map Atlas
-    pub map_texture: TextureGroup,
     /// Texture Bind group for Maptextures
     pub map_group: TextureGroup,
-    /// contains the Tile images.
-    pub map_atlas: Atlas,
     /// contains the Map layer grids in pixel form.
     pub map_textures: MapTextures,
-
+    /// contains the Tile images.
+    pub map_atlas: AtlasGroup,
     /// animation test stuff.
-    pub animation: Animation,
-    pub animation_buffer: GpuBuffer<AnimationVertex>,
-    pub animation_pipeline: AnimationRenderPipeline,
-    pub animation_atlas: Atlas,
-    pub animation_texture: TextureGroup,
+    pub animation: Sprite,
+    pub animation_buffer: GpuBuffer<SpriteVertex>,
+    pub animation_atlas: AtlasGroup,
 
     /// Basic shape rendering.
     pub shapes: Shape,
@@ -56,8 +49,7 @@ where
     pub text: Text,
     pub text_buffer: GpuBuffer<TextVertex>,
     pub text_pipeline: TextRenderPipeline,
-    pub text_atlas: Atlas<GlyphRasterConfig>,
-    pub text_texture: TextureGroup,
+    pub text_atlas: AtlasGroup<GlyphRasterConfig>,
     pub fonts: Vec<Font>,
 }
 
@@ -111,35 +103,34 @@ where
 
         pass.render_maps(
             &self.maplower_buffer,
-            &self.map_texture,
+            &self.map_atlas,
             &self.map_group,
             &self.map_pipeline,
         );
+
         pass.render_sprite(
             &self.sprite_buffer,
-            &self.sprite_texture,
+            &self.sprite_atlas,
             &self.sprite_pipeline,
-            &self.screen_group,
         );
 
-        pass.render_text(
-            &self.text_buffer,
-            &self.text_texture,
-            &self.text_pipeline,
-            &self.screen_group,
-        );
-
-        pass.render_animations(
+        pass.render_sprite(
             &self.animation_buffer,
-            &self.animation_texture,
-            &self.animation_pipeline,
+            &self.animation_atlas,
+            &self.sprite_pipeline,
         );
 
         pass.render_maps(
             &self.mapupper_buffer,
-            &self.map_texture,
+            &self.map_atlas,
             &self.map_group,
             &self.map_pipeline,
+        );
+
+        pass.render_text(
+            &self.text_buffer,
+            &self.text_atlas,
+            &self.text_pipeline,
         );
 
         pass.render_shape(&self.shapes_buffer, &self.shapes_pipeline);

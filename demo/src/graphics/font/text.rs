@@ -1,6 +1,6 @@
 pub(crate) use crate::graphics::{
-    allocation::Allocation, Atlas, BufferLayout, BufferPass, ScreenUniform,
-    TextVertex,
+    allocation::Allocation, Atlas, AtlasGroup, BufferLayout, BufferPass,
+    ScreenUniform, TextVertex,
 };
 use core::borrow::Borrow;
 use fontdue::{
@@ -352,10 +352,10 @@ impl Text {
         queue: &wgpu::Queue,
         device: &wgpu::Device,
         fonts: &[Font],
-        atlas: &mut Atlas<GlyphRasterConfig>,
+        atlas: &mut AtlasGroup<GlyphRasterConfig>,
     ) -> bool {
         if self.changed {
-            self.create_quad(fonts, atlas, queue, device);
+            self.create_quad(fonts, &mut atlas.atlas, queue, device);
             self.changed = false;
             true
         } else {

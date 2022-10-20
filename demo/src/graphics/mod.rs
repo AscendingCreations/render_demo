@@ -1,4 +1,3 @@
-mod animations;
 mod atlas;
 mod camera;
 mod error;
@@ -15,7 +14,6 @@ mod textures;
 mod time_uniform;
 
 pub use self::camera::*;
-pub use animations::*;
 pub use atlas::*;
 pub use error::*;
 pub use font::*;

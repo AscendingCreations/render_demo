@@ -27,6 +27,7 @@ impl Layout for ScreenLayout {
     }
 }
 
+// This is more for Rendering GUI as we dont need a Camera for anything GUI based.
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, AsStd140)]
 pub struct ScreenUniform {

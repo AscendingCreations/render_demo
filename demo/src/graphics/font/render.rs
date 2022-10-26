@@ -2,6 +2,7 @@ pub(crate) use crate::graphics::{
     AtlasGroup, GpuBuffer, ScreenGroup, TextRenderPipeline, TextVertex,
     TextureGroup,
 };
+use cosmic_text::CacheKey;
 use fontdue::layout::GlyphRasterConfig;
 
 pub trait RenderText<'a, 'b>
@@ -11,7 +12,8 @@ where
     fn render_text(
         &mut self,
         buffer: &'b GpuBuffer<TextVertex>,
-        atlas_group: &'b AtlasGroup<GlyphRasterConfig>,
+        text_atlas_group: &'b AtlasGroup<CacheKey>,
+        emoji_atlas_group: &'b AtlasGroup<CacheKey>,
         pipeline: &'b TextRenderPipeline,
     );
 }
@@ -23,11 +25,13 @@ where
     fn render_text(
         &mut self,
         buffer: &'b GpuBuffer<TextVertex>,
-        atlas_group: &'b AtlasGroup<GlyphRasterConfig>,
+        text_atlas_group: &'b AtlasGroup<CacheKey>,
+        emoji_atlas_group: &'b AtlasGroup<CacheKey>,
         pipeline: &'b TextRenderPipeline,
     ) {
         if buffer.vertex_count() > 0 {
-            self.set_bind_group(1, &atlas_group.texture.bind_group, &[]);
+            self.set_bind_group(1, &text_atlas_group.texture.bind_group, &[]);
+            self.set_bind_group(2, &emoji_atlas_group.texture.bind_group, &[]);
             self.set_vertex_buffer(0, buffer.vertices(None));
             self.set_index_buffer(
                 buffer.indices(None),

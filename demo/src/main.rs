@@ -4,6 +4,9 @@ use ::camera::{
     Projection,
 };
 use backtrace::Backtrace;
+use cosmic_text::{
+    FontSystem, Style, SwashCache, TextAction, TextBuffer, TextMetrics,
+};
 use fontdue::{Font, FontSettings};
 use input::{Bindings, FrameTime, InputHandler};
 use log::{error, info, warn, Level, LevelFilter, Metadata, Record};
@@ -43,6 +46,7 @@ enum Axis {
 }
 
 static MY_LOGGER: MyLogger = MyLogger(Level::Debug);
+static FONT_SYSTEM: Lazy<FontSystem<'static>> = Lazy::new(FontSystem::new);
 
 struct MyLogger(pub Level);
 
@@ -261,10 +265,6 @@ async fn main() -> Result<(), RendererError> {
     shapes.closed = true;
     shapes.set_fill(true);
 
-    let font: &[u8] = include_bytes!("fonts/Inconsolata-Regular.ttf");
-    let font = Font::from_bytes(font, FontSettings::default()).unwrap();
-    let fonts = vec![font];
-
     let text_atlas = AtlasGroup::new(
         renderer.device(),
         2048,
@@ -272,17 +272,34 @@ async fn main() -> Result<(), RendererError> {
         &mut layout_storage,
         GroupType::Fonts,
     );
+
+    let emoji_atlas = AtlasGroup::new(
+        renderer.device(),
+        2048,
+        wgpu::TextureFormat::R8Unorm,
+        &mut layout_storage,
+        GroupType::Textures,
+    );
+
     let text_pipeline = TextRenderPipeline::new(
         renderer.device(),
         renderer.surface_format(),
         &mut layout_storage,
     )?;
     let text_buffer = GpuBuffer::new(renderer.device());
+    let emoji_buffer = GpuBuffer::new(renderer.device());
 
-    let mut text = Text::new().font_size(20f32);
-    text.append("hello world, this is a test of Letters.");
-    text.build_layout(&fonts);
-    text.set_pos(&[0.0, text.get_box_height(), 0.5]);
+    let text = Text::new(&FONT_SYSTEM);
+    let attr = cosmic_text::Attrs::new().style(Style::Italic);
+    let mut textbuffer = TextBuffer::new(
+        &FONT_SYSTEM,
+        attr,
+        TextMetrics::new(14, 20)
+            .scale(((renderer.size().height / 1600) + 1) as i32),
+    );
+
+    textbuffer
+        .set_size(renderer.size().width as i32, renderer.size().height as i32);
 
     let mut state = State {
         layout_storage,
@@ -308,9 +325,10 @@ async fn main() -> Result<(), RendererError> {
         shapes_pipeline,
         text,
         text_atlas,
+        emoji_atlas,
         text_pipeline,
         text_buffer,
-        fonts,
+        emoji_buffer,
     };
 
     let mut views = HashMap::new();
@@ -448,17 +466,25 @@ async fn main() -> Result<(), RendererError> {
         let update = state.text.update(
             renderer.queue(),
             renderer.device(),
-            &state.fonts,
+            [100, 100, 1],
+            &mut textbuffer,
             &mut state.text_atlas,
+            &mut state.emoji_atlas,
         );
 
         if update {
             state.text_buffer.set_vertices_from(
                 renderer.device(),
                 renderer.queue(),
-                &state.text.bytes,
+                &state.text.text_bytes,
+            );
+            state.emoji_buffer.set_vertices_from(
+                renderer.device(),
+                renderer.queue(),
+                &state.text.emoji_bytes,
             );
         }
+
         let update =
             state.map.update(renderer.queue(), &mut state.map_textures);
 
@@ -515,9 +541,8 @@ async fn main() -> Result<(), RendererError> {
         renderer.queue().submit(std::iter::once(encoder.finish()));
 
         if time < seconds {
-            state.text.clear();
-            state.text.append(&format!("FPS: {}", fps));
-            state.text.build_layout(&state.fonts);
+            textbuffer.set_text(&format!("FPS: {}", fps));
+            textbuffer.redraw = true;
             fps = 0u32;
             time = seconds + 1.0;
         }

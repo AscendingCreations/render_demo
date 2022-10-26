@@ -45,8 +45,8 @@ impl Default for FontColor {
     }
 }
 
-pub struct Text<'a> {
-    pub cache: SwashCache<'a>,
+pub struct Text {
+    pub cache: SwashCache<'static>,
     /// Vertex array in bytes. This Holds colored Glyphs
     pub emoji_bytes: Vec<u8>,
     /// Vertex array in bytes. This Holds regular glyphs
@@ -54,11 +54,11 @@ pub struct Text<'a> {
     pub cleared: bool,
 }
 
-impl<'a> Text<'a> {
+impl Text {
     pub fn create_quad(
         &mut self,
         pos: [i32; 3],
-        buffer: &mut TextBuffer<'a>,
+        buffer: &mut TextBuffer<'static>,
         text_atlas: &mut AtlasGroup<CacheKey>,
         emoji_atlas: &mut AtlasGroup<CacheKey>,
         queue: &wgpu::Queue,
@@ -71,8 +71,6 @@ impl<'a> Text<'a> {
                 {
                     continue;
                 }
-
-                let matches = buffer.font_matches();
 
                 let image =
                     self.cache.get_image_uncached(glyph.cache_key).unwrap();
@@ -197,7 +195,7 @@ impl<'a> Text<'a> {
         Ok(())
     }
 
-    pub fn new(font_system: &'a FontSystem<'a>) -> Self {
+    pub fn new(font_system: &'static FontSystem<'static>) -> Self {
         Self {
             cache: SwashCache::new(font_system),
             emoji_bytes: Vec::new(),
@@ -213,12 +211,12 @@ impl<'a> Text<'a> {
         queue: &wgpu::Queue,
         device: &wgpu::Device,
         pos: [i32; 3],
-        buffer: &mut TextBuffer<'a>,
+        buffer: &mut TextBuffer<'static>,
         text_atlas: &mut AtlasGroup<CacheKey>,
         emoji_atlas: &mut AtlasGroup<CacheKey>,
     ) -> bool {
         if buffer.redraw {
-            self.create_quad(
+            let error = self.create_quad(
                 pos,
                 buffer,
                 text_atlas,
@@ -226,7 +224,7 @@ impl<'a> Text<'a> {
                 queue,
                 device,
             );
-            buffer.redraw = false;
+
             true
         } else {
             false

@@ -42,6 +42,14 @@ var tex: texture_2d_array<f32>;
 @binding(1)
 var tex_sample: sampler;
 
+@group(2)
+@binding(0)
+var emoji_tex: texture_2d_array<f32>;
+@group(2)
+@binding(1)
+var emoji_tex_sample: sampler;
+
+
 @vertex
 fn vertex(
     vertex: VertexInput,

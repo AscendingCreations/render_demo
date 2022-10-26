@@ -1,4 +1,5 @@
 pub(crate) use crate::graphics::*;
+use cosmic_text::{CacheKey, FontSystem};
 use fontdue::layout::GlyphRasterConfig;
 use fontdue::{Font, FontSettings};
 use std::collections::HashMap;
@@ -48,9 +49,10 @@ where
     /// Text test stuff.
     pub text: Text,
     pub text_buffer: GpuBuffer<TextVertex>,
+    pub emoji_buffer: GpuBuffer<TextVertex>,
     pub text_pipeline: TextRenderPipeline,
-    pub text_atlas: AtlasGroup<GlyphRasterConfig>,
-    pub fonts: Vec<Font>,
+    pub text_atlas: AtlasGroup<CacheKey>,
+    pub emoji_atlas: AtlasGroup<CacheKey>,
 }
 
 impl<Controls> Pass for State<Controls>
@@ -130,6 +132,14 @@ where
         pass.render_text(
             &self.text_buffer,
             &self.text_atlas,
+            &self.emoji_atlas,
+            &self.text_pipeline,
+        );
+
+        pass.render_text(
+            &self.emoji_buffer,
+            &self.text_atlas,
+            &self.emoji_atlas,
             &self.text_pipeline,
         );
 

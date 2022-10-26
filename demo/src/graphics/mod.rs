@@ -1,5 +1,4 @@
 mod atlas;
-mod camera;
 mod error;
 mod font;
 mod gpu_buffer;
@@ -10,10 +9,11 @@ mod renderer;
 mod screen_layout;
 mod shapes;
 mod sprites;
+mod system;
 mod textures;
 mod time_uniform;
 
-pub use self::camera::*;
+pub use self::system::*;
 pub use atlas::*;
 pub use error::*;
 pub use font::*;

@@ -30,4 +30,4 @@ cosmic-text.workspace = true
 fontdue.workspace = true
 naga.workspace = true
 wgpu.workspace = true
-
+swash.workspace = true

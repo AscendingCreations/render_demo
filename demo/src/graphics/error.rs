@@ -33,6 +33,8 @@ pub enum RendererError {
     Device(#[from] wgpu::RequestDeviceError),
     #[error(transparent)]
     ImageError(#[from] image::ImageError),
+    #[error("Image atlas has no more space.")]
+    AtlasFull,
     #[error(transparent)]
     Other(#[from] OtherError),
 }

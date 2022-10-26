@@ -12,8 +12,8 @@ struct Time {
 @binding(0)
 var<uniform> camera: Camera;
 
-@group(1)
-@binding(0)
+@group(0)
+@binding(1)
 var<uniform> time: Time;
 
 struct VertexInput {
@@ -39,10 +39,10 @@ struct VertexOutput {
     @location(7) animate: u32,
 };
 
-@group(2)
+@group(1)
 @binding(0)
 var tex: texture_2d_array<f32>;
-@group(2)
+@group(1)
 @binding(1)
 var tex_sample: sampler;
 

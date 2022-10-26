@@ -1,6 +1,5 @@
 use crate::graphics::{
-    BufferLayout, CameraLayout, LayoutStorage, RendererError, ShapeVertex,
-    TimeLayout,
+    BufferLayout, LayoutStorage, RendererError, ShapeVertex, SystemLayout,
 };
 
 pub struct ShapeRenderPipeline {
@@ -21,8 +20,7 @@ impl ShapeRenderPipeline {
                 ),
             });
 
-        let camera_layout = layout_storage.create_layout(device, CameraLayout);
-        let time_layout = layout_storage.create_layout(device, TimeLayout);
+        let system_layout = layout_storage.create_layout(device, SystemLayout);
 
         // Create the render pipeline.
         let render_pipeline =
@@ -31,7 +29,7 @@ impl ShapeRenderPipeline {
                 layout: Some(&device.create_pipeline_layout(
                     &wgpu::PipelineLayoutDescriptor {
                         label: Some("render_pipeline_layout"),
-                        bind_group_layouts: &[&camera_layout, &time_layout],
+                        bind_group_layouts: &[&system_layout],
                         push_constant_ranges: &[],
                     },
                 )),

@@ -1,6 +1,6 @@
 use crate::graphics::{
-    BufferLayout, CameraLayout, LayoutStorage, RendererError, ScreenLayout,
-    TextVertex, TextureLayout, TimeLayout,
+    BufferLayout, LayoutStorage, RendererError, ScreenLayout, SystemLayout,
+    TextVertex, TextureLayout,
 };
 
 pub struct TextRenderPipeline {
@@ -21,8 +21,7 @@ impl TextRenderPipeline {
                 ),
             });
 
-        let camera_layout = layout_storage.create_layout(device, CameraLayout);
-        let time_layout = layout_storage.create_layout(device, TimeLayout);
+        let system_layout = layout_storage.create_layout(device, SystemLayout);
         let texture_layout =
             layout_storage.create_layout(device, TextureLayout);
 
@@ -33,11 +32,7 @@ impl TextRenderPipeline {
                 layout: Some(&device.create_pipeline_layout(
                     &wgpu::PipelineLayoutDescriptor {
                         label: Some("Text_render_pipeline_layout"),
-                        bind_group_layouts: &[
-                            &camera_layout,
-                            &time_layout,
-                            &texture_layout,
-                        ],
+                        bind_group_layouts: &[&system_layout, &texture_layout],
                         push_constant_ranges: &[],
                     },
                 )),

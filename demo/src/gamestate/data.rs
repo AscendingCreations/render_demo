@@ -8,10 +8,10 @@ where
 {
     /// Storage container for layouts for faster initlization
     pub layout_storage: LayoutStorage,
-    /// World Camera Controls. Deturmines how the world is looked at.
-    pub camera: Camera<Controls>,
+    /// World Camera Controls and time. Deturmines how the world is looked at.
+    pub system: System<Controls>,
     /// time for all animation on shader side.
-    pub time_group: TimeGroup,
+    pub text_colored_group: TextColoredGroup,
     /// Screen Size to the shaders.
     pub screen_group: ScreenGroup,
     /// Sprite data TODO: Make an array,
@@ -98,8 +98,8 @@ where
             ),
         });
 
-        pass.set_bind_group(0, self.camera.bind_group(), &[]);
-        pass.set_bind_group(1, self.time_group.bind_group(), &[]);
+        pass.set_bind_group(0, self.system.bind_group(), &[]);
+        pass.set_bind_group(1, self.text_colored_group.bind_group(), &[]);
 
         pass.render_maps(
             &self.maplower_buffer,

@@ -4,9 +4,17 @@ struct Camera {
     eye: vec3<f32>,
 };
 
+struct Time {
+    seconds: f32,
+};
+
 @group(0)
 @binding(0)
 var<uniform> camera: Camera;
+
+@group(0)
+@binding(1)
+var<uniform> time: Time;
 
 
 struct VertexInput {
@@ -22,10 +30,10 @@ struct VertexOutput {
     @location(2) layer: i32,
 };
 
-@group(2)
+@group(1)
 @binding(0)
 var tex: texture_2d_array<f32>;
-@group(2)
+@group(1)
 @binding(1)
 var tex_sample: sampler;
 
@@ -41,7 +49,7 @@ fn vertex(
     return result;
 }
 
-@group(3)
+@group(2)
 @binding(0)
 var maptex: texture_2d_array<u32>;
 

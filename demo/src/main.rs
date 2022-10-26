@@ -147,7 +147,7 @@ async fn main() -> Result<(), RendererError> {
 
     let size = renderer.size();
 
-    let camera = Camera::new(
+    let system = System::new(
         &renderer,
         &mut layout_storage,
         Projection::Orthographic {
@@ -235,7 +235,8 @@ async fn main() -> Result<(), RendererError> {
     animation.switch_time = 300;
     animation.animate = true;
 
-    let time_group = TimeGroup::new(&renderer, &mut layout_storage);
+    let text_colored_group =
+        TextColoredGroup::new(&renderer, &mut layout_storage);
     let screen_group = ScreenGroup::new(
         &renderer,
         &mut layout_storage,
@@ -285,8 +286,8 @@ async fn main() -> Result<(), RendererError> {
 
     let mut state = State {
         layout_storage,
-        camera,
-        time_group,
+        system,
+        text_colored_group,
         screen_group,
         sprite,
         sprite_pipeline,
@@ -378,7 +379,7 @@ async fn main() -> Result<(), RendererError> {
                 },
             );
 
-            state.camera.set_projection(Projection::Orthographic {
+            state.system.set_projection(Projection::Orthographic {
                 left: 0.0,
                 right: size.width as f32,
                 bottom: 0.0,
@@ -422,11 +423,8 @@ async fn main() -> Result<(), RendererError> {
             *control_flow = ControlFlow::Exit;
         }
 
-        let delta = frame_time.delta_seconds();
         let seconds = frame_time.seconds();
-
-        state.camera.update(&renderer, delta);
-        state.time_group.update(&renderer, seconds);
+        state.system.update(&renderer, &frame_time);
 
         let view = frame
             .texture

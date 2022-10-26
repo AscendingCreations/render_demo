@@ -466,7 +466,7 @@ async fn main() -> Result<(), RendererError> {
         let update = state.text.update(
             renderer.queue(),
             renderer.device(),
-            [100, 100, 1],
+            [0, 0, 1],
             &mut textbuffer,
             &mut state.text_atlas,
             &mut state.emoji_atlas,

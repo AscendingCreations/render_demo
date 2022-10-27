@@ -216,7 +216,7 @@ impl Text {
         emoji_atlas: &mut AtlasGroup<CacheKey>,
     ) -> bool {
         if buffer.redraw {
-            let error = self.create_quad(
+            let _ = self.create_quad(
                 pos,
                 buffer,
                 text_atlas,

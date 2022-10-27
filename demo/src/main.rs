@@ -290,12 +290,14 @@ async fn main() -> Result<(), RendererError> {
     let emoji_buffer = GpuBuffer::new(renderer.device());
 
     let text = Text::new(&FONT_SYSTEM);
-    let attr = cosmic_text::Attrs::new().style(Style::Italic);
+    let attr = cosmic_text::Attrs::new();
+
+    let scale = renderer.window().current_monitor().unwrap().scale_factor();
+
     let mut textbuffer = TextBuffer::new(
         &FONT_SYSTEM,
         attr,
-        TextMetrics::new(14, 20)
-            .scale(((renderer.size().height / 1600) + 1) as i32),
+        TextMetrics::new(14, 20).scale(scale as i32),
     );
 
     textbuffer
@@ -329,6 +331,7 @@ async fn main() -> Result<(), RendererError> {
         text_pipeline,
         text_buffer,
         emoji_buffer,
+        is_colored: false,
     };
 
     let mut views = HashMap::new();
@@ -535,7 +538,7 @@ async fn main() -> Result<(), RendererError> {
         );
 
         // Run the render pass.
-        state.render(&mut encoder, &views);
+        state.render(&mut encoder, &views, &renderer);
 
         // Submit our command queue.
         renderer.queue().submit(std::iter::once(encoder.finish()));

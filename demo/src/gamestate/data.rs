@@ -53,6 +53,7 @@ where
     pub text_pipeline: TextRenderPipeline,
     pub text_atlas: AtlasGroup<CacheKey>,
     pub emoji_atlas: AtlasGroup<CacheKey>,
+    pub is_colored: bool,
 }
 
 impl<Controls> Pass for State<Controls>
@@ -63,6 +64,7 @@ where
         &mut self,
         encoder: &mut wgpu::CommandEncoder,
         views: &HashMap<String, wgpu::TextureView>,
+        renderer: &crate::Renderer,
     ) {
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("render pass"),
@@ -129,12 +131,21 @@ where
             &self.map_pipeline,
         );
 
+        if self.is_colored {
+            self.is_colored = false;
+            self.system.set_text_colored(renderer, false);
+        }
         pass.render_text(
             &self.text_buffer,
             &self.text_atlas,
             &self.emoji_atlas,
             &self.text_pipeline,
         );
+
+        if !self.is_colored && self.emoji_buffer.vertex_count() > 0 {
+            self.is_colored = true;
+            self.system.set_text_colored(renderer, true);
+        }
 
         pass.render_text(
             &self.emoji_buffer,

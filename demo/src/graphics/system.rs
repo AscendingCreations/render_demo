@@ -224,7 +224,7 @@ where
         );
     }
 
-    pub fn set_text_colored(&mut self, renderer: &Renderer, colored: bool) {
+    pub fn set_text_colored(&self, renderer: &Renderer, colored: bool) {
         let colored_info = TextColoredUniform {
             colored: colored as u32,
         };

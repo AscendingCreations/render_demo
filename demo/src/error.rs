@@ -1,4 +1,4 @@
-pub(crate) use thiserror::Error;
+use thiserror::Error;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct OtherError {
@@ -22,7 +22,7 @@ impl OtherError {
 }
 
 #[derive(Debug, Error)]
-pub enum RendererError {
+pub enum AscendingError {
     #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error(transparent)]

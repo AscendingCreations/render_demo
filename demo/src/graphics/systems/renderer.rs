@@ -5,8 +5,7 @@ use winit::{
     event::{Event, WindowEvent},
     window::Window,
 };
-
-pub(crate) use super::RendererError;
+use crate::AscendingError;
 
 pub struct Renderer {
     adapter: wgpu::Adapter,
@@ -40,7 +39,7 @@ impl Renderer {
     pub fn resize(
         &mut self,
         size: PhysicalSize<u32>,
-    ) -> Result<(), RendererError> {
+    ) -> Result<(), AscendingError> {
         let surface_format =
             self.surface.get_supported_formats(&self.adapter)[0];
 
@@ -81,7 +80,7 @@ impl Renderer {
     pub fn update(
         &mut self,
         event: &Event<()>,
-    ) -> Result<Option<wgpu::SurfaceTexture>, RendererError> {
+    ) -> Result<Option<wgpu::SurfaceTexture>, AscendingError> {
         match event {
             Event::WindowEvent {
                 ref event,
@@ -104,7 +103,7 @@ impl Renderer {
                     Err(wgpu::SurfaceError::Outdated) => {
                         return Ok(None);
                     }
-                    Err(e) => return Err(RendererError::from(e)),
+                    Err(e) => return Err(AscendingError::from(e)),
                 }
             }
             Event::MainEventsCleared => {
@@ -130,7 +129,7 @@ pub trait AdapterExt {
         device_descriptor: &wgpu::DeviceDescriptor,
         trace_path: Option<&Path>,
         present_mode: wgpu::PresentMode,
-    ) -> Result<Renderer, RendererError>;
+    ) -> Result<Renderer, AscendingError>;
 }
 
 #[async_trait]
@@ -142,7 +141,7 @@ impl AdapterExt for wgpu::Adapter {
         device_descriptor: &wgpu::DeviceDescriptor,
         trace_path: Option<&Path>,
         present_mode: wgpu::PresentMode,
-    ) -> Result<Renderer, RendererError> {
+    ) -> Result<Renderer, AscendingError> {
         let size = window.inner_size();
 
         let (device, queue) =
@@ -184,7 +183,7 @@ pub trait InstanceExt {
         device_descriptor: &wgpu::DeviceDescriptor,
         trace_path: Option<&Path>,
         present_mode: wgpu::PresentMode,
-    ) -> Result<Renderer, RendererError>;
+    ) -> Result<Renderer, AscendingError>;
 }
 
 #[async_trait]
@@ -196,7 +195,7 @@ impl InstanceExt for wgpu::Instance {
         device_descriptor: &wgpu::DeviceDescriptor,
         trace_path: Option<&Path>,
         present_mode: wgpu::PresentMode,
-    ) -> Result<Renderer, RendererError> {
+    ) -> Result<Renderer, AscendingError> {
         let adapter =
             self.request_adapter(request_adapter_options).await.unwrap();
         adapter

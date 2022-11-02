@@ -1,9 +1,9 @@
 #![allow(dead_code, clippy::collapsible_match, unused_imports)]
-use ::camera::{
+use backtrace::Backtrace;
+use camera::{
     controls::{FlatControls, FlatSettings},
     Projection,
 };
-use backtrace::Backtrace;
 use cosmic_text::{
     Action as TextAction, Buffer, FontSystem, Metrics, Style, SwashCache,
 };
@@ -25,9 +25,11 @@ use winit::{
     window::WindowBuilder,
 };
 
+mod error;
 mod gamestate;
 mod graphics;
 
+use error::*;
 use gamestate::*;
 use graphics::*;
 
@@ -75,7 +77,7 @@ impl log::Log for MyLogger {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), RendererError> {
+async fn main() -> Result<(), AscendingError> {
     log::set_logger(&MY_LOGGER).unwrap();
     log::set_max_level(LevelFilter::Info);
 
@@ -240,14 +242,7 @@ async fn main() -> Result<(), RendererError> {
 
     let text_colored_group =
         TextColoredGroup::new(&renderer, &mut layout_storage);
-    let screen_group = ScreenGroup::new(
-        &renderer,
-        &mut layout_storage,
-        ScreenUniform {
-            width: size.width,
-            height: size.height,
-        },
-    );
+
     let shapes_pipeline = ShapeRenderPipeline::new(
         renderer.device(),
         renderer.surface_format(),
@@ -302,7 +297,6 @@ async fn main() -> Result<(), RendererError> {
         layout_storage,
         system,
         text_colored_group,
-        screen_group,
         sprite,
         sprite_pipeline,
         sprite_buffer,
@@ -386,14 +380,6 @@ async fn main() -> Result<(), RendererError> {
 
         if size != test_size {
             size = test_size;
-
-            state.screen_group.update(
-                &renderer,
-                ScreenUniform {
-                    width: test_size.width,
-                    height: test_size.height,
-                },
-            );
 
             state.system.set_projection(Projection::Orthographic {
                 left: 0.0,

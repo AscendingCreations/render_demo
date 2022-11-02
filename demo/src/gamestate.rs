@@ -1,3 +1,3 @@
-pub(crate) mod data;
+mod data;
 
 pub use data::*;

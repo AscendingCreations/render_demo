@@ -1,5 +1,5 @@
-pub(crate) use crate::graphics::{
-    allocation::Allocation, BufferLayout, BufferPass, Color, SpriteVertex,
+use crate::graphics::{
+    Allocation, BufferLayout, BufferPass, Color, SpriteVertex,
 };
 use std::cmp;
 

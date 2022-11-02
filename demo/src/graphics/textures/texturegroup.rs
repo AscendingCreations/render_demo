@@ -1,4 +1,4 @@
-pub(crate) use crate::graphics::{Atlas, Layout, LayoutStorage, TextureLayout};
+use crate::graphics::{Atlas, Layout, LayoutStorage, TextureLayout};
 
 #[derive(PartialEq, Eq, Copy, Clone, Debug, Default)]
 pub enum GroupType {

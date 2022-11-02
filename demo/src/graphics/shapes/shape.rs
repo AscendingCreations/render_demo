@@ -1,5 +1,5 @@
-pub(crate) use crate::graphics::{
-    allocation::Allocation, BufferLayout, BufferPass, Color, ShapeVertex,
+use crate::graphics::{
+    Allocation, BufferLayout, BufferPass, Color, ShapeVertex,
 };
 use std::cmp;
 use ultraviolet::vec::Vec3;

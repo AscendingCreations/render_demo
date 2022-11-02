@@ -1,11 +1,10 @@
+use crate::graphics::{Layout, LayoutStorage, Renderer};
 use bytemuck::{Pod, Zeroable};
 use camera::Projection;
 use crevice::std140::{AsStd140, Std140};
 use input::FrameTime;
 use ultraviolet::Mat4;
 use wgpu::util::DeviceExt;
-
-pub(crate) use super::{Layout, LayoutStorage, Renderer};
 
 #[repr(C)]
 #[derive(Clone, Copy, Hash, Pod, Zeroable)]
@@ -235,7 +234,7 @@ where
             colored_info.as_std140().as_bytes(),
         );
     }
-    
+
     pub fn view(&self) -> mint::ColumnMatrix4<f32> {
         self.camera.view()
     }

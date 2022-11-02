@@ -1,5 +1,6 @@
-use crate::graphics::{
-    BufferLayout, LayoutStorage, RendererError, ShapeVertex, SystemLayout,
+use crate::{
+    graphics::{BufferLayout, LayoutStorage, ShapeVertex, SystemLayout},
+    AscendingError,
 };
 
 pub struct ShapeRenderPipeline {
@@ -11,7 +12,7 @@ impl ShapeRenderPipeline {
         device: &wgpu::Device,
         surface_format: wgpu::TextureFormat,
         layout_storage: &mut LayoutStorage,
-    ) -> Result<Self, RendererError> {
+    ) -> Result<Self, AscendingError> {
         let shader =
             device.create_shader_module(wgpu::ShaderModuleDescriptor {
                 label: Some("Shader"),

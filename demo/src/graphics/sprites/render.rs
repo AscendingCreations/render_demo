@@ -1,5 +1,5 @@
-pub(crate) use crate::graphics::{
-    AtlasGroup, GpuBuffer, ScreenGroup, SpriteRenderPipeline, SpriteVertex,
+use crate::graphics::{
+    AtlasGroup, GpuBuffer, SpriteRenderPipeline, SpriteVertex,
 };
 
 pub trait RenderSprite<'a, 'b>

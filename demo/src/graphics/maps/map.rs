@@ -1,4 +1,4 @@
-pub(crate) use crate::graphics::{MapTextures, MapVertex};
+use crate::graphics::{MapTextures, MapVertex};
 use image::{self, ImageBuffer};
 
 #[allow(dead_code)]
@@ -160,9 +160,11 @@ impl Map {
         *pixel = image::Rgba([id, layer, 0, alpha]);
 
         if alpha == 0 {
-            self.filled_tiles[pos.2 as usize] = self.filled_tiles[pos.2 as usize].saturating_sub(1);
+            self.filled_tiles[pos.2 as usize] =
+                self.filled_tiles[pos.2 as usize].saturating_sub(1);
         } else {
-            self.filled_tiles[pos.2 as usize] = self.filled_tiles[pos.2 as usize].saturating_add(1);
+            self.filled_tiles[pos.2 as usize] =
+                self.filled_tiles[pos.2 as usize].saturating_add(1);
         }
 
         self.img_changed = true;

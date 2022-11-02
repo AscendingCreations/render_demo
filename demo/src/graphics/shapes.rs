@@ -1,7 +1,7 @@
-pub(crate) mod pipeline;
-pub(crate) mod render;
-pub(crate) mod shape;
-pub(crate) mod vertex;
+mod pipeline;
+mod render;
+mod shape;
+mod vertex;
 
 pub use pipeline::*;
 pub use render::*;

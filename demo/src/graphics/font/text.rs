@@ -1,6 +1,9 @@
-pub(crate) use crate::graphics::{
-    allocation::Allocation, Atlas, AtlasGroup, BufferLayout, BufferPass, Color,
-    RendererError, ScreenUniform, TextVertex,
+use crate::{
+    graphics::{
+        Allocation, Atlas, AtlasGroup, BufferLayout, BufferPass, Color,
+        TextVertex,
+    },
+    AscendingError,
 };
 use core::borrow::Borrow;
 use cosmic_text::{Buffer, CacheKey, FontSystem, SwashCache, SwashContent};
@@ -8,7 +11,6 @@ use std::ops::Range;
 use std::{
     borrow::Cow,
     collections::HashSet,
-    error::Error,
     fmt::{self, Display, Formatter},
     iter,
     mem::size_of,
@@ -39,7 +41,7 @@ impl Text {
         emoji_atlas: &mut AtlasGroup<CacheKey>,
         queue: &wgpu::Queue,
         device: &wgpu::Device,
-    ) -> Result<(), RendererError> {
+    ) -> Result<(), AscendingError> {
         for run in buffer.layout_runs() {
             for glyph in run.glyphs.iter() {
                 if text_atlas.atlas.get(&glyph.cache_key).is_some()
@@ -72,7 +74,7 @@ impl Text {
                                 device,
                                 queue,
                             )
-                            .ok_or(RendererError::AtlasFull)?;
+                            .ok_or(AscendingError::AtlasFull)?;
                     } else {
                         let _ = text_atlas
                             .atlas
@@ -84,7 +86,7 @@ impl Text {
                                 device,
                                 queue,
                             )
-                            .ok_or(RendererError::AtlasFull)?;
+                            .ok_or(AscendingError::AtlasFull)?;
                     }
                 }
             }

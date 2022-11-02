@@ -1,7 +1,6 @@
-use crate::gamestate::group::AtlasGroup;
-pub(crate) use crate::graphics::{
-    atlas::{Allocation, Atlas},
-    RendererError,
+use crate::{
+    graphics::{Allocation, Atlas, AtlasGroup},
+    AscendingError, OtherError,
 };
 use image::{DynamicImage, GenericImageView, ImageFormat};
 use std::{
@@ -21,7 +20,7 @@ impl Texture {
         &self.bytes
     }
 
-    pub fn from_file(path: impl AsRef<Path>) -> Result<Self, RendererError> {
+    pub fn from_file(path: impl AsRef<Path>) -> Result<Self, AscendingError> {
         let name = path
             .as_ref()
             .file_name()
@@ -47,7 +46,7 @@ impl Texture {
     pub fn from_memory(
         name: String,
         data: &[u8],
-    ) -> Result<Self, RendererError> {
+    ) -> Result<Self, AscendingError> {
         Ok(Self::from_image(name, image::load_from_memory(data)?))
     }
 
@@ -55,7 +54,7 @@ impl Texture {
         name: String,
         data: &[u8],
         format: ImageFormat,
-    ) -> Result<Self, RendererError> {
+    ) -> Result<Self, AscendingError> {
         Ok(Self::from_image(
             name,
             image::load_from_memory_with_format(data, format)?,

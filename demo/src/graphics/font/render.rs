@@ -1,6 +1,5 @@
-pub(crate) use crate::graphics::{
-    AtlasGroup, GpuBuffer, ScreenGroup, TextRenderPipeline, TextVertex,
-    TextureGroup,
+use crate::graphics::{
+    AtlasGroup, GpuBuffer, TextRenderPipeline, TextVertex, TextureGroup,
 };
 use cosmic_text::CacheKey;
 

@@ -1,4 +1,4 @@
-pub(crate) use crate::graphics::Layout;
+use crate::graphics::Layout;
 use bytemuck::{Pod, Zeroable};
 
 #[repr(C)]

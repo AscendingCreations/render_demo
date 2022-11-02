@@ -1,4 +1,4 @@
-pub(crate) use crate::graphics::{GpuBuffer, ShapeRenderPipeline, ShapeVertex};
+use crate::graphics::{GpuBuffer, ShapeRenderPipeline, ShapeVertex};
 
 pub trait RenderShape<'a, 'b>
 where

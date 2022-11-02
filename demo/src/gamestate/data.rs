@@ -1,4 +1,4 @@
-pub(crate) use crate::graphics::*;
+use crate::graphics::*;
 use cosmic_text::{CacheKey, FontSystem};
 use std::collections::HashMap;
 
@@ -12,8 +12,6 @@ where
     pub system: System<Controls>,
     /// time for all animation on shader side.
     pub text_colored_group: TextColoredGroup,
-    /// Screen Size to the shaders.
-    pub screen_group: ScreenGroup,
     /// Sprite data TODO: Make an array,
     pub sprite: [Sprite; 2],
     /// Render pipe line for Sprites

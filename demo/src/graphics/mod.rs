@@ -15,6 +15,7 @@ mod time_uniform;
 
 pub use self::system::*;
 pub use atlas::*;
+pub use cosmic_text::Color;
 pub use error::*;
 pub use font::*;
 pub use gpu_buffer::*;

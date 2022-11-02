@@ -5,7 +5,7 @@ use ::camera::{
 };
 use backtrace::Backtrace;
 use cosmic_text::{
-    FontSystem, Style, SwashCache, TextAction, TextBuffer, TextMetrics,
+    Action as TextAction, Buffer, FontSystem, Metrics, Style, SwashCache,
 };
 use fontdue::{Font, FontSettings};
 use input::{Bindings, FrameTime, InputHandler};
@@ -136,12 +136,12 @@ async fn main() -> Result<(), RendererError> {
     sprite[0].pos = [32, 32, 5];
     sprite[0].hw = [48, 48];
     sprite[0].uv = [48, 96, 48, 48];
-    sprite[0].color = [255, 255, 255, 255];
+    sprite[0].color = Color::rgba(255, 255, 255, 255);
 
     sprite[1].pos = [64, 32, 6];
     sprite[1].hw = [48, 48];
     sprite[1].uv = [48, 96, 48, 48];
-    sprite[1].color = [100, 100, 100, 255];
+    sprite[1].color = Color::rgba(100, 100, 100, 255);
 
     let sprite_pipeline = SpriteRenderPipeline::new(
         renderer.device(),
@@ -171,13 +171,13 @@ async fn main() -> Result<(), RendererError> {
 
     (0..32).for_each(|x| {
         (0..32).for_each(|y| {
-            map.set_tile((x, y, 0), 1, 0, 0, 100);
+            map.set_tile((x, y, 0), 1, 0, 255);
         });
     });
 
-    map.set_tile((1, 31, 1), 2, 0, 0, 100);
-    map.set_tile((1, 30, 6), 2, 0, 0, 80);
-    map.set_tile((0, 0, 1), 2, 0, 0, 100);
+    map.set_tile((1, 31, 1), 2, 0, 255);
+    map.set_tile((1, 30, 6), 2, 0, 180);
+    map.set_tile((0, 0, 1), 2, 0, 255);
     map.pos = [32, 32];
     let map_pipeline = MapRenderPipeline::new(
         renderer.device(),
@@ -234,7 +234,7 @@ async fn main() -> Result<(), RendererError> {
     animation.pos = [96, 96, 5];
     animation.hw = [64, 64];
     animation.uv = [0, 0, 64, 64];
-    animation.color = [255, 255, 255, 255];
+    animation.color = Color::rgba(255, 255, 255, 255);
     animation.frames = [8, 4];
     animation.switch_time = 300;
     animation.animate = true;
@@ -289,16 +289,12 @@ async fn main() -> Result<(), RendererError> {
     let text_buffer = GpuBuffer::new(renderer.device());
     let emoji_buffer = GpuBuffer::new(renderer.device());
 
-    let text = Text::new(&FONT_SYSTEM);
-    let attr = cosmic_text::Attrs::new();
+    let text = Text::new(&FONT_SYSTEM, None);
 
     let scale = renderer.window().current_monitor().unwrap().scale_factor();
 
-    let mut textbuffer = TextBuffer::new(
-        &FONT_SYSTEM,
-        attr,
-        TextMetrics::new(14, 20).scale(scale as i32),
-    );
+    let mut textbuffer =
+        Buffer::new(&FONT_SYSTEM, Metrics::new(14, 20).scale(scale as i32));
 
     textbuffer
         .set_size(renderer.size().width as i32, renderer.size().height as i32);
@@ -475,6 +471,8 @@ async fn main() -> Result<(), RendererError> {
             &mut state.emoji_atlas,
         );
 
+        state.text.reset_cleared();
+
         if update {
             state.text_buffer.set_vertices_from(
                 renderer.device(),
@@ -544,7 +542,9 @@ async fn main() -> Result<(), RendererError> {
         renderer.queue().submit(std::iter::once(encoder.finish()));
 
         if time < seconds {
-            textbuffer.set_text(&format!("FPS: {}", fps));
+            textbuffer
+                .set_text(&format!("FPS: {}", fps), cosmic_text::Attrs::new());
+            //println!("{fps}");
             textbuffer.redraw = true;
             fps = 0u32;
             time = seconds + 1.0;

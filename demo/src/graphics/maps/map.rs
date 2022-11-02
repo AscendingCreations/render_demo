@@ -150,7 +150,6 @@ impl Map {
         pos: (u32, u32, u32),
         id: u32,
         layer: u32,
-        hue: u32,
         alpha: u32,
     ) {
         if pos.0 >= 32 || pos.1 >= 32 || pos.2 >= 8 {
@@ -158,7 +157,7 @@ impl Map {
         }
 
         let pixel = self.image.get_pixel_mut(pos.0, pos.1 + (pos.2 * 32));
-        *pixel = image::Rgba([id, layer, hue, alpha]);
+        *pixel = image::Rgba([id, layer, 0, alpha]);
 
         if alpha == 0 {
             self.filled_tiles[pos.2 as usize] = self.filled_tiles[pos.2 as usize].saturating_sub(1);

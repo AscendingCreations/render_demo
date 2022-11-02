@@ -112,7 +112,6 @@ fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
             (f32(((frame % yframes) * vertex.tex_data[2]) + vertex.tex_data[0]) + vertex.tex_coords.x) / vertex.size.x,
             (f32(((frame / yframes) * vertex.tex_data[3]) + vertex.tex_data[1]) + vertex.tex_coords.y) / vertex.size.y
         );
-        //coords = vec2<f32>((f32(frame * vertex.tex_hw[0]) / vertex.size.x) + vertex.tex_coords.x, vertex.tex_coords.y);
     } else {
         coords = vec2<f32>(
             (f32(vertex.tex_data[0]) + vertex.tex_coords.x)  / vertex.size.x, 

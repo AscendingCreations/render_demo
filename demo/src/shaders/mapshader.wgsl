@@ -16,7 +16,6 @@ var<uniform> camera: Camera;
 @binding(1)
 var<uniform> time: Time;
 
-
 struct VertexInput {
     @location(0) position: vec3<f32>,
     @location(1) tex_coords: u32,
@@ -53,15 +52,6 @@ fn vertex(
 @binding(0)
 var maptex: texture_2d_array<u32>;
 
-fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32>
-{
-    var pi = 3.14159;
-    let rad = hue * (pi/180.0);
-    let k = vec3<f32>(0.57735, 0.57735, 0.57735);
-    let cosAngle = cos(rad);
-    return vec3<f32>(color * cosAngle + cross(k, color) * sin(rad) + k * dot(k, color) * (1.0 - cosAngle));
-}
-
 // Fragment shader
 @fragment
 fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
@@ -71,13 +61,12 @@ fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
     let tile = textureLoad(maptex, tile_pos.xy, coords.z, 0);
     let pos = vec2<i32>(i32(tile.r % 128u) * 16 + (coords.x % 16), i32(tile.r / 128u) * 16 + (coords.y % 16));
     let object_color = textureLoad(tex, pos.xy, i32(tile.g), 0);
-    let alpha = object_color.a * (f32(tile.a) / 100.0);
+    let alpha = object_color.a * (f32(tile.a) / 255.0);
 
     if (alpha <= 0.0) {
         discard;
     }
 
-    let color = hueShift(object_color.rgb, f32(tile.b) % 361.0);
-    return vec4<f32>(color, alpha);
+    return vec4<f32>(object_color.rgb, alpha);
 }
 

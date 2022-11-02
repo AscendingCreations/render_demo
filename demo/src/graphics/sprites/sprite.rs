@@ -1,5 +1,5 @@
 pub(crate) use crate::graphics::{
-    allocation::Allocation, BufferLayout, BufferPass, SpriteVertex,
+    allocation::Allocation, BufferLayout, BufferPass, Color, SpriteVertex,
 };
 use std::cmp;
 
@@ -11,7 +11,7 @@ pub struct Sprite {
     // used for static offsets or animation Start positions
     pub uv: [u16; 4],
     /// Color dah  number / 255.
-    pub color: [u8; 4],
+    pub color: Color,
     // frames, frames_per_row: this will cycle thru
     // frames per rox at the uv start.
     pub frames: [u16; 2],
@@ -35,7 +35,7 @@ impl Default for Sprite {
             frames: [0; 2],
             switch_time: 0,
             animate: false,
-            color: [255, 255, 255, 255],
+            color: Color::rgba(255, 255, 255, 255),
             texture: None,
             bytes: Vec::new(),
             changed: true,
@@ -48,8 +48,8 @@ impl Sprite {
         let (x, y, w, h) = (
             self.pos[0] as f32,
             self.pos[1] as f32,
-            self.pos[0].saturating_add((self.hw[0] ) as i32) as f32,
-            self.pos[1].saturating_add((self.hw[1] ) as i32) as f32,
+            self.pos[0].saturating_add((self.hw[0]) as i32) as f32,
+            self.pos[1].saturating_add((self.hw[1]) as i32) as f32,
         );
 
         let allocation = match &self.texture {
@@ -70,7 +70,7 @@ impl Sprite {
         let default = SpriteVertex {
             position: [0.0, 0.0, 0.0],
             tex_data: [u, v, width, height],
-            color: self.color,
+            color: self.color.0,
             frames: self.frames,
             animate,
             time: self.switch_time,

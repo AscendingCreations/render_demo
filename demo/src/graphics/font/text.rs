@@ -1,9 +1,9 @@
 pub(crate) use crate::graphics::{
-    allocation::Allocation, Atlas, AtlasGroup, BufferLayout, BufferPass,
+    allocation::Allocation, Atlas, AtlasGroup, BufferLayout, BufferPass, Color,
     RendererError, ScreenUniform, TextVertex,
 };
 use core::borrow::Borrow;
-use cosmic_text::{CacheKey, FontSystem, SwashCache, SwashContent, TextBuffer};
+use cosmic_text::{Buffer, CacheKey, FontSystem, SwashCache, SwashContent};
 use fontdue::{
     layout::{
         CoordinateSystem, GlyphRasterConfig, Layout, LayoutSettings, TextStyle,
@@ -25,40 +25,23 @@ use std::{
 };
 use swash::scale::{image::Content, ScaleContext};
 
-#[repr(C)]
-#[derive(Clone, Copy, Debug)]
-pub struct FontColor {
-    r: u8,
-    g: u8,
-    b: u8,
-    a: u8,
-}
-
-impl Default for FontColor {
-    fn default() -> Self {
-        Self {
-            r: 0,
-            g: 0,
-            b: 0,
-            a: 255,
-        }
-    }
-}
-
 pub struct Text {
     pub cache: SwashCache<'static>,
     /// Vertex array in bytes. This Holds colored Glyphs
     pub emoji_bytes: Vec<u8>,
     /// Vertex array in bytes. This Holds regular glyphs
     pub text_bytes: Vec<u8>,
-    pub cleared: bool,
+    ///default color.
+    pub color: Color,
+    /// will rerender everything and needs to be reset to false.
+    cleared: bool,
 }
 
 impl Text {
     pub fn create_quad(
         &mut self,
         pos: [i32; 3],
-        buffer: &mut TextBuffer<'static>,
+        buffer: &mut Buffer<'static>,
         text_atlas: &mut AtlasGroup<CacheKey>,
         emoji_atlas: &mut AtlasGroup<CacheKey>,
         queue: &wgpu::Queue,
@@ -135,7 +118,7 @@ impl Text {
 
                 let (u, v, width, height) = allocation.rect();
                 let (u, v, width, height) =
-                    (u as i32, v as i32, width as i32, height as i32);
+                    (u as i32, v as i32, width as i32 + 1, height as i32);
 
                 let (x, y) = (
                     (pos[0] + glyph.x_int) as f32,
@@ -153,32 +136,39 @@ impl Text {
                     v.saturating_add(height) as u16,
                 );
 
-                let color = [255, 255, 255, 255];
+                let color = if is_color {
+                    Color::rgba(255, 255, 255, 255)
+                } else {
+                    match glyph.color_opt {
+                        Some(color) => color,
+                        None => self.color,
+                    }
+                };
 
                 let mut other = vec![
                     TextVertex {
                         position: [x, y, pos[2] as f32],
                         tex_coord: [u1, v2],
                         layer: allocation.layer as u32,
-                        color,
+                        color: color.0,
                     },
                     TextVertex {
                         position: [w, y, pos[2] as f32],
                         tex_coord: [u2, v2],
                         layer: allocation.layer as u32,
-                        color,
+                        color: color.0,
                     },
                     TextVertex {
                         position: [w, h, pos[2] as f32],
                         tex_coord: [u2, v1],
                         layer: allocation.layer as u32,
-                        color,
+                        color: color.0,
                     },
                     TextVertex {
                         position: [x, h, pos[2] as f32],
                         tex_coord: [u1, v1],
                         layer: allocation.layer as u32,
-                        color,
+                        color: color.0,
                     },
                 ];
 
@@ -195,13 +185,22 @@ impl Text {
         Ok(())
     }
 
-    pub fn new(font_system: &'static FontSystem<'static>) -> Self {
+    pub fn new(
+        font_system: &'static FontSystem<'static>,
+        color: Option<Color>,
+    ) -> Self {
         Self {
             cache: SwashCache::new(font_system),
             emoji_bytes: Vec::new(),
             text_bytes: Vec::new(),
+            color: color.unwrap_or(Color::rgba(0, 0, 0, 255)),
             cleared: false,
         }
+    }
+
+    /// Sets cleared to false.
+    pub fn reset_cleared(&mut self) {
+        self.cleared = false;
     }
 
     /// used to check and update the vertex array.
@@ -211,11 +210,11 @@ impl Text {
         queue: &wgpu::Queue,
         device: &wgpu::Device,
         pos: [i32; 3],
-        buffer: &mut TextBuffer<'static>,
+        buffer: &mut Buffer<'static>,
         text_atlas: &mut AtlasGroup<CacheKey>,
         emoji_atlas: &mut AtlasGroup<CacheKey>,
     ) -> bool {
-        if buffer.redraw {
+        if buffer.redraw || self.cleared {
             let _ = self.create_quad(
                 pos,
                 buffer,

@@ -5,14 +5,14 @@ use std::iter;
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct ShapeVertex {
     pub position: [f32; 3],
-    pub color: [u8; 4],
+    pub color: u32,
 }
 
 impl Default for ShapeVertex {
     fn default() -> Self {
         Self {
             position: [0.0; 3],
-            color: [0; 4],
+            color: 0,
         }
     }
 }

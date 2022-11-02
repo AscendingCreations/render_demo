@@ -1,5 +1,5 @@
 pub(crate) use crate::graphics::{
-    allocation::Allocation, BufferLayout, BufferPass, ShapeVertex,
+    allocation::Allocation, BufferLayout, BufferPass, Color, ShapeVertex,
 };
 use std::cmp;
 use ultraviolet::vec::Vec3;
@@ -28,7 +28,7 @@ pub struct Shape {
     pub fill: bool,
     pub buffers: BufferPass,
     pub thickness: f32,
-    pub color: [u8; 4],
+    pub color: Color,
     /// if anything got updated we need to update the buffers too.
     pub changed: bool,
 }
@@ -43,7 +43,7 @@ impl Default for Shape {
             fill: false,
             buffers: BufferPass::new(),
             thickness: 1.0,
-            color: [0, 0, 0, 255],
+            color: Color::rgba(0, 0, 0, 255),
             changed: true,
         }
     }
@@ -79,7 +79,7 @@ impl Shape {
         self.changed = true;
     }
 
-    pub fn set_color(&mut self, color: [u8; 4]) {
+    pub fn set_color(&mut self, color: Color) {
         self.color = color;
         self.changed = true;
     }
@@ -156,7 +156,8 @@ impl Shape {
         aa: f32,
     ) {
         let p = p + diff * aa * 0.5;
-        let transparent = [self.color[0], self.color[1], self.color[2], 0];
+        let transparent =
+            Color::rgba(self.color.r(), self.color.g(), self.color.b(), 0).0;
 
         buffers.push(ShapeVertex {
             position: (p + normal * w + diff * aa).into(),
@@ -168,11 +169,11 @@ impl Shape {
         });
         buffers.push(ShapeVertex {
             position: (p + normal * w).into(),
-            color: self.color,
+            color: self.color.0,
         });
         buffers.push(ShapeVertex {
             position: (p - normal * w).into(),
-            color: self.color,
+            color: self.color.0,
         });
     }
 
@@ -192,21 +193,21 @@ impl Shape {
 
             buffers.push(ShapeVertex {
                 position: (p - normal * ax.x - diff * ax.y).into(),
-                color: self.color,
+                color: self.color.0,
             });
             buffers.push(ShapeVertex {
                 position: p.into(),
-                color: self.color,
+                color: self.color.0,
             });
         }
 
         buffers.push(ShapeVertex {
             position: (p + normal * w).into(),
-            color: self.color,
+            color: self.color.0,
         });
         buffers.push(ShapeVertex {
             position: (p - normal * w).into(),
-            color: self.color,
+            color: self.color.0,
         });
     }
 
@@ -220,7 +221,8 @@ impl Shape {
         aa: f32,
     ) {
         let p = p + diff * (w - aa);
-        let transparent = [self.color[0], self.color[1], self.color[2], 0];
+        let transparent =
+            Color::rgba(self.color.r(), self.color.g(), self.color.b(), 0).0;
 
         buffers.push(ShapeVertex {
             position: (p + normal * w + diff * aa).into(),
@@ -232,11 +234,11 @@ impl Shape {
         });
         buffers.push(ShapeVertex {
             position: (p + normal * w).into(),
-            color: self.color,
+            color: self.color.0,
         });
         buffers.push(ShapeVertex {
             position: (p - normal * w).into(),
-            color: self.color,
+            color: self.color.0,
         });
     }
 
@@ -250,15 +252,16 @@ impl Shape {
         aa: f32,
     ) {
         let p = p - diff * aa * 0.5;
-        let transparent = [self.color[0], self.color[1], self.color[2], 0];
+        let transparent =
+            Color::rgba(self.color.r(), self.color.g(), self.color.b(), 0).0;
 
         buffers.push(ShapeVertex {
             position: (p + normal * w).into(),
-            color: self.color,
+            color: self.color.0,
         });
         buffers.push(ShapeVertex {
             position: (p - normal * w).into(),
-            color: self.color,
+            color: self.color.0,
         });
         buffers.push(ShapeVertex {
             position: (p + normal * w + diff * aa).into(),
@@ -282,11 +285,11 @@ impl Shape {
 
         buffers.push(ShapeVertex {
             position: (p + normal * w).into(),
-            color: self.color,
+            color: self.color.0,
         });
         buffers.push(ShapeVertex {
             position: (p - normal * w).into(),
-            color: self.color,
+            color: self.color.0,
         });
 
         for i in 0..ncap {
@@ -295,11 +298,11 @@ impl Shape {
 
             buffers.push(ShapeVertex {
                 position: p.into(),
-                color: self.color,
+                color: self.color.0,
             });
             buffers.push(ShapeVertex {
                 position: (p - normal * ax.x + diff * ax.y).into(),
-                color: self.color,
+                color: self.color.0,
             });
         }
     }
@@ -314,15 +317,16 @@ impl Shape {
         aa: f32,
     ) {
         let p = p - diff * (w - aa);
-        let transparent = [self.color[0], self.color[1], self.color[2], 0];
+        let transparent =
+            Color::rgba(self.color.r(), self.color.g(), self.color.b(), 0).0;
 
         buffers.push(ShapeVertex {
             position: (p + normal * w).into(),
-            color: self.color,
+            color: self.color.0,
         });
         buffers.push(ShapeVertex {
             position: (p - normal * w).into(),
-            color: self.color,
+            color: self.color.0,
         });
         buffers.push(ShapeVertex {
             position: (p + normal * w + diff * aa).into(),
@@ -352,20 +356,20 @@ impl Shape {
 
             buffers.push(ShapeVertex {
                 position: l0.into(),
-                color: self.color,
+                color: self.color.0,
             });
             buffers.push(ShapeVertex {
                 position: (p1 - n0 * rw).into(),
-                color: self.color,
+                color: self.color.0,
             });
 
             buffers.push(ShapeVertex {
                 position: l1.into(),
-                color: self.color,
+                color: self.color.0,
             });
             buffers.push(ShapeVertex {
                 position: (p1 - n1 * rw).into(),
-                color: self.color,
+                color: self.color.0,
             });
         } else {
             let l0 = p1 - dm * lw;
@@ -373,20 +377,20 @@ impl Shape {
 
             buffers.push(ShapeVertex {
                 position: (p1 + n0 * rw).into(),
-                color: self.color,
+                color: self.color.0,
             });
             buffers.push(ShapeVertex {
                 position: l0.into(),
-                color: self.color,
+                color: self.color.0,
             });
 
             buffers.push(ShapeVertex {
                 position: (p1 + n1 * rw).into(),
-                color: self.color,
+                color: self.color.0,
             });
             buffers.push(ShapeVertex {
                 position: l1.into(),
-                color: self.color,
+                color: self.color.0,
             });
         }
     }
@@ -411,11 +415,11 @@ impl Shape {
 
             buffers.push(ShapeVertex {
                 position: l0.into(),
-                color: self.color,
+                color: self.color.0,
             });
             buffers.push(ShapeVertex {
                 position: (p1 - n0 * rw).into(),
-                color: self.color,
+                color: self.color.0,
             });
 
             let a0 = (-n0.y).atan2(-n0.x);
@@ -431,21 +435,21 @@ impl Shape {
 
                 buffers.push(ShapeVertex {
                     position: p1.into(),
-                    color: self.color,
+                    color: self.color.0,
                 });
                 buffers.push(ShapeVertex {
                     position: (p1 + ax).into(),
-                    color: self.color,
+                    color: self.color.0,
                 });
             }
 
             buffers.push(ShapeVertex {
                 position: l1.into(),
-                color: self.color,
+                color: self.color.0,
             });
             buffers.push(ShapeVertex {
                 position: (p1 - n1 * rw).into(),
-                color: self.color,
+                color: self.color.0,
             });
         } else {
             let r0 = p1 - dm * lw;
@@ -453,11 +457,11 @@ impl Shape {
 
             buffers.push(ShapeVertex {
                 position: (p1 + n0 * rw).into(),
-                color: self.color,
+                color: self.color.0,
             });
             buffers.push(ShapeVertex {
                 position: r0.into(),
-                color: self.color,
+                color: self.color.0,
             });
 
             let a0 = n0.y.atan2(n0.x);
@@ -473,21 +477,21 @@ impl Shape {
 
                 buffers.push(ShapeVertex {
                     position: (p1 + ax).into(),
-                    color: self.color,
+                    color: self.color.0,
                 });
                 buffers.push(ShapeVertex {
                     position: p1.into(),
-                    color: self.color,
+                    color: self.color.0,
                 });
             }
 
             buffers.push(ShapeVertex {
                 position: (p1 + n1 * rw).into(),
-                color: self.color,
+                color: self.color.0,
             });
             buffers.push(ShapeVertex {
                 position: r1.into(),
-                color: self.color,
+                color: self.color.0,
             });
         }
     }
@@ -502,11 +506,11 @@ impl Shape {
     ) {
         buffers.push(ShapeVertex {
             position: (p + dm * lw).into(),
-            color: self.color,
+            color: self.color.0,
         });
         buffers.push(ShapeVertex {
             position: (p - dm * rw).into(),
-            color: self.color,
+            color: self.color.0,
         });
     }
 
@@ -681,23 +685,23 @@ impl Shape {
                         if cross[i1] > 0.0 {
                             vertices.push(ShapeVertex {
                                 position: (p1 + dm[i1] * woff).into(),
-                                color: self.color,
+                                color: self.color.0,
                             });
                         } else {
                             vertices.push(ShapeVertex {
                                 position: (p1 + normals[i0] * woff).into(),
-                                color: self.color,
+                                color: self.color.0,
                             });
                             vertices.push(ShapeVertex {
                                 position: (p1 + normals[i1] * woff).into(),
-                                color: self.color,
+                                color: self.color.0,
                             });
                         }
                     }
                     _ => {
                         vertices.push(ShapeVertex {
                             position: (p1 + dm[i1] * woff).into(),
-                            color: self.color,
+                            color: self.color.0,
                         });
                     }
                 }
@@ -709,7 +713,7 @@ impl Shape {
             for i in 0..self.points.len() {
                 vertices.push(ShapeVertex {
                     position: self.points[i].into(),
-                    color: self.color,
+                    color: self.color.0,
                 });
             }
         }

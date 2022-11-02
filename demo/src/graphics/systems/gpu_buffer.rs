@@ -1,5 +1,5 @@
 use crate::graphics::SpriteVertex;
-use std::marker::PhantomData;
+use std::{marker::PhantomData, ops::Range};
 use wgpu::util::DeviceExt;
 
 //This Holds onto all the Vertexs Compressed into a byte array.
@@ -73,7 +73,7 @@ impl<K: BufferLayout> GpuBuffer<K> {
                         | wgpu::BufferUsages::COPY_DST,
                 },
             ), // set to 0 as we set this as we add sprites.
-            index_count: (buffers.indices.len() / K::index_stride()),
+            index_count: 0, //(buffers.indices.len() / K::index_stride()),
             index_max: buffers.indices.len(),
             phantom_data: PhantomData,
         }
@@ -98,7 +98,6 @@ impl<K: BufferLayout> GpuBuffer<K> {
                 contents: &buffers.indices,
                 usage: wgpu::BufferUsages::INDEX,
             });
-        self.index_count = buffers.indices.len() / K::index_stride();
         self.index_max = buffers.indices.len();
     }
 
@@ -120,9 +119,9 @@ impl<K: BufferLayout> GpuBuffer<K> {
     /// Returns wgpu::BufferSlice of indices.
     /// bounds is used to set a specific Range if needed.
     /// If bounds is None then range is 0..index_count.
-    pub fn indices(&self, bounds: Option<(u64, u64)>) -> wgpu::BufferSlice {
+    pub fn indices(&self, bounds: Option<Range<u64>>) -> wgpu::BufferSlice {
         let range = if let Some(bounds) = bounds {
-            bounds.0..bounds.1
+            bounds
         } else {
             0..(self.index_count * K::index_stride()) as u64
         };
@@ -136,7 +135,7 @@ impl<K: BufferLayout> GpuBuffer<K> {
         Self::create_buffer(device, K::default_buffer())
     }
 
-    /// Set the Index based on how many Vertex's Exist / indices stride.
+    /// Set the Index based on how many Vertex's Exist
     pub fn set_index_count(&mut self, count: usize) {
         self.index_count = count;
     }
@@ -150,7 +149,7 @@ impl<K: BufferLayout> GpuBuffer<K> {
             return;
         }
 
-        self.index_count = (self.vertex_count / K::index_stride()) * K::index_offset();
+        self.index_count = size / K::index_stride();
         queue.write_buffer(&self.index_buffer, 0, bytes);
     }
 
@@ -196,7 +195,8 @@ impl<K: BufferLayout> GpuBuffer<K> {
         }
 
         self.vertex_count = vertex_size / K::vertex_stride();
-        self.index_count = (self.vertex_count / K::index_stride()) * K::index_offset();
+        self.index_count =
+            (self.vertex_count / K::index_stride()) * K::index_offset();
         queue.write_buffer(&self.vertex_buffer, 0, &buffers.vertices);
         queue.write_buffer(&self.index_buffer, 0, &buffers.indices);
     }
@@ -224,9 +224,9 @@ impl<K: BufferLayout> GpuBuffer<K> {
     /// Returns wgpu::BufferSlice of vertices.
     /// bounds is used to set a specific Range if needed.
     /// If bounds is None then range is 0..vertex_count.
-    pub fn vertices(&self, bounds: Option<(u64, u64)>) -> wgpu::BufferSlice {
+    pub fn vertices(&self, bounds: Option<Range<u64>>) -> wgpu::BufferSlice {
         let range = if let Some(bounds) = bounds {
-            bounds.0..bounds.1
+            bounds
         } else {
             0..self.vertex_count as u64
         };

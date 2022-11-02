@@ -27,6 +27,7 @@ pub struct Shape {
     pub join_style: JoinStyle,
     pub fill: bool,
     pub buffers: BufferPass,
+    pub indices_count: usize,
     pub thickness: f32,
     pub color: Color,
     /// if anything got updated we need to update the buffers too.
@@ -42,6 +43,7 @@ impl Default for Shape {
             join_style: JoinStyle::Miter,
             fill: false,
             buffers: BufferPass::new(),
+            indices_count: 0,
             thickness: 1.0,
             color: Color::rgba(0, 0, 0, 255),
             changed: true,
@@ -660,7 +662,8 @@ impl Shape {
         self.buffers = BufferPass {
             vertices: bytemuck::cast_slice(&vertices).to_vec(),
             indices: bytemuck::cast_slice(&indices).to_vec(),
-        }
+        };
+        self.indices_count = indices.len();
     }
 
     pub fn fill(&mut self) {
@@ -792,7 +795,8 @@ impl Shape {
         self.buffers = BufferPass {
             vertices: bytemuck::cast_slice(&vertices).to_vec(),
             indices: bytemuck::cast_slice(&indices).to_vec(),
-        }
+        };
+        self.indices_count = indices.len();
     }
 
     /// used to check and update the ShapeVertex array.

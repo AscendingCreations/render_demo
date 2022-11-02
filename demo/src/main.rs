@@ -256,6 +256,8 @@ async fn main() -> Result<(), AscendingError> {
     shapes.push_point(216.0, 200.0, 1.0);
     shapes.push_point(216.0, 216.0, 1.0);
     shapes.push_point(200.0, 216.0, 1.0);
+    shapes.cap_style = CapStyle::Round;
+    shapes.join_style = JoinStyle::Round;
     shapes.closed = true;
     shapes.set_fill(true);
 

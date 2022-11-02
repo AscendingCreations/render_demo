@@ -2,6 +2,7 @@ use crate::graphics::SpriteVertex;
 use std::marker::PhantomData;
 use wgpu::util::DeviceExt;
 
+//This Holds onto all the Vertexs Compressed into a byte array.
 pub struct BufferPass {
     pub vertices: Vec<u8>,
     pub indices: Vec<u8>,
@@ -78,6 +79,7 @@ impl<K: BufferLayout> GpuBuffer<K> {
         }
     }
 
+    //private but resizes the buffer on the GPU when needed.
     fn resize(&mut self, device: &wgpu::Device, capacity: usize) {
         let buffers = K::with_capacity(capacity);
 
@@ -148,7 +150,7 @@ impl<K: BufferLayout> GpuBuffer<K> {
             return;
         }
 
-        self.index_count = size / K::index_stride();
+        self.index_count = (self.vertex_count / K::index_stride()) * K::index_offset();
         queue.write_buffer(&self.index_buffer, 0, bytes);
     }
 
@@ -175,6 +177,7 @@ impl<K: BufferLayout> GpuBuffer<K> {
         queue.write_buffer(&self.vertex_buffer, 0, bytes);
     }
 
+    /// Sets both buffers from another 'BufferPass'
     pub fn set_buffers_from(
         &mut self,
         device: &wgpu::Device,
@@ -193,7 +196,7 @@ impl<K: BufferLayout> GpuBuffer<K> {
         }
 
         self.vertex_count = vertex_size / K::vertex_stride();
-        self.index_count = self.vertex_count * K::index_offset();
+        self.index_count = (self.vertex_count / K::index_stride()) * K::index_offset();
         queue.write_buffer(&self.vertex_buffer, 0, &buffers.vertices);
         queue.write_buffer(&self.index_buffer, 0, &buffers.indices);
     }

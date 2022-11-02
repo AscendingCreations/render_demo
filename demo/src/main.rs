@@ -7,7 +7,6 @@ use backtrace::Backtrace;
 use cosmic_text::{
     Action as TextAction, Buffer, FontSystem, Metrics, Style, SwashCache,
 };
-use fontdue::{Font, FontSettings};
 use input::{Bindings, FrameTime, InputHandler};
 use log::{error, info, warn, Level, LevelFilter, Metadata, Record};
 use naga::{front::wgsl, valid::Validator};

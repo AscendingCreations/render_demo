@@ -23,7 +23,6 @@ backtrace = "0.3.66"
 once_cell = "1.15.0"
 futures = "0.3.24"
 cosmic-text = { git = "https://github.com/pop-os/cosmic-text" }
-fontdue = { git = "https://github.com/mooman219/fontdue", rev = "828b4f4" }
 ordered-float = { version = "3.3.0", features = ["serde"] }
 swash = "0.1"
 

@@ -3,7 +3,6 @@ pub(crate) use crate::graphics::{
     TextureGroup,
 };
 use cosmic_text::CacheKey;
-use fontdue::layout::GlyphRasterConfig;
 
 pub trait RenderText<'a, 'b>
 where

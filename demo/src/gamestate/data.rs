@@ -1,8 +1,7 @@
 pub(crate) use crate::graphics::*;
 use cosmic_text::{CacheKey, FontSystem};
-use fontdue::layout::GlyphRasterConfig;
-use fontdue::{Font, FontSettings};
 use std::collections::HashMap;
+
 pub struct State<Controls>
 where
     Controls: camera::controls::Controls,

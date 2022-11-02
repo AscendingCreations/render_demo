@@ -4,13 +4,6 @@ pub(crate) use crate::graphics::{
 };
 use core::borrow::Borrow;
 use cosmic_text::{Buffer, CacheKey, FontSystem, SwashCache, SwashContent};
-use fontdue::{
-    layout::{
-        CoordinateSystem, GlyphRasterConfig, Layout, LayoutSettings, TextStyle,
-        VerticalAlign,
-    },
-    Font, FontSettings,
-};
 use std::ops::Range;
 use std::{
     borrow::Cow,

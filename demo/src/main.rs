@@ -1,10 +1,12 @@
 #![allow(dead_code, clippy::collapsible_match, unused_imports)]
-use ::camera::{
+use backtrace::Backtrace;
+use camera::{
     controls::{FlatControls, FlatSettings},
     Projection,
 };
-use backtrace::Backtrace;
-use fontdue::{Font, FontSettings};
+use cosmic_text::{
+    Action as TextAction, Buffer, FontSystem, Metrics, Style, SwashCache,
+};
 use input::{Bindings, FrameTime, InputHandler};
 use log::{error, info, warn, Level, LevelFilter, Metadata, Record};
 use naga::{front::wgsl, valid::Validator};
@@ -23,9 +25,11 @@ use winit::{
     window::WindowBuilder,
 };
 
+mod error;
 mod gamestate;
 mod graphics;
 
+use error::*;
 use gamestate::*;
 use graphics::*;
 
@@ -43,6 +47,7 @@ enum Axis {
 }
 
 static MY_LOGGER: MyLogger = MyLogger(Level::Debug);
+static FONT_SYSTEM: Lazy<FontSystem<'static>> = Lazy::new(FontSystem::new);
 
 struct MyLogger(pub Level);
 
@@ -72,7 +77,7 @@ impl log::Log for MyLogger {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), RendererError> {
+async fn main() -> Result<(), AscendingError> {
     log::set_logger(&MY_LOGGER).unwrap();
     log::set_max_level(LevelFilter::Info);
 
@@ -132,12 +137,12 @@ async fn main() -> Result<(), RendererError> {
     sprite[0].pos = [32, 32, 5];
     sprite[0].hw = [48, 48];
     sprite[0].uv = [48, 96, 48, 48];
-    sprite[0].color = [255, 255, 255, 255];
+    sprite[0].color = Color::rgba(255, 255, 255, 255);
 
     sprite[1].pos = [64, 32, 6];
     sprite[1].hw = [48, 48];
     sprite[1].uv = [48, 96, 48, 48];
-    sprite[1].color = [100, 100, 100, 255];
+    sprite[1].color = Color::rgba(100, 100, 100, 255);
 
     let sprite_pipeline = SpriteRenderPipeline::new(
         renderer.device(),
@@ -147,7 +152,7 @@ async fn main() -> Result<(), RendererError> {
 
     let size = renderer.size();
 
-    let camera = Camera::new(
+    let system = System::new(
         &renderer,
         &mut layout_storage,
         Projection::Orthographic {
@@ -167,13 +172,13 @@ async fn main() -> Result<(), RendererError> {
 
     (0..32).for_each(|x| {
         (0..32).for_each(|y| {
-            map.set_tile((x, y, 0), 1, 0, 0, 100);
+            map.set_tile((x, y, 0), 1, 0, 255);
         });
     });
 
-    map.set_tile((1, 31, 1), 2, 0, 0, 100);
-    map.set_tile((1, 30, 6), 2, 0, 0, 80);
-    map.set_tile((0, 0, 1), 2, 0, 0, 100);
+    map.set_tile((1, 31, 1), 2, 0, 255);
+    map.set_tile((1, 30, 6), 2, 0, 180);
+    map.set_tile((0, 0, 1), 2, 0, 255);
     map.pos = [32, 32];
     let map_pipeline = MapRenderPipeline::new(
         renderer.device(),
@@ -230,20 +235,14 @@ async fn main() -> Result<(), RendererError> {
     animation.pos = [96, 96, 5];
     animation.hw = [64, 64];
     animation.uv = [0, 0, 64, 64];
-    animation.color = [255, 255, 255, 255];
+    animation.color = Color::rgba(255, 255, 255, 255);
     animation.frames = [8, 4];
     animation.switch_time = 300;
     animation.animate = true;
 
-    let time_group = TimeGroup::new(&renderer, &mut layout_storage);
-    let screen_group = ScreenGroup::new(
-        &renderer,
-        &mut layout_storage,
-        ScreenUniform {
-            width: size.width,
-            height: size.height,
-        },
-    );
+    let text_colored_group =
+        TextColoredGroup::new(&renderer, &mut layout_storage);
+
     let shapes_pipeline = ShapeRenderPipeline::new(
         renderer.device(),
         renderer.surface_format(),
@@ -260,10 +259,6 @@ async fn main() -> Result<(), RendererError> {
     shapes.closed = true;
     shapes.set_fill(true);
 
-    let font: &[u8] = include_bytes!("fonts/Inconsolata-Regular.ttf");
-    let font = Font::from_bytes(font, FontSettings::default()).unwrap();
-    let fonts = vec![font];
-
     let text_atlas = AtlasGroup::new(
         renderer.device(),
         2048,
@@ -271,23 +266,37 @@ async fn main() -> Result<(), RendererError> {
         &mut layout_storage,
         GroupType::Fonts,
     );
+
+    let emoji_atlas = AtlasGroup::new(
+        renderer.device(),
+        2048,
+        wgpu::TextureFormat::R8Unorm,
+        &mut layout_storage,
+        GroupType::Textures,
+    );
+
     let text_pipeline = TextRenderPipeline::new(
         renderer.device(),
         renderer.surface_format(),
         &mut layout_storage,
     )?;
     let text_buffer = GpuBuffer::new(renderer.device());
+    let emoji_buffer = GpuBuffer::new(renderer.device());
 
-    let mut text = Text::new().font_size(20f32);
-    text.append("hello world, this is a test of Letters.");
-    text.build_layout(&fonts);
-    text.set_pos(&[0.0, text.get_box_height(), 0.5]);
+    let text = Text::new(&FONT_SYSTEM, None);
+
+    let scale = renderer.window().current_monitor().unwrap().scale_factor();
+
+    let mut textbuffer =
+        Buffer::new(&FONT_SYSTEM, Metrics::new(14, 20).scale(scale as i32));
+
+    textbuffer
+        .set_size(renderer.size().width as i32, renderer.size().height as i32);
 
     let mut state = State {
         layout_storage,
-        camera,
-        time_group,
-        screen_group,
+        system,
+        text_colored_group,
         sprite,
         sprite_pipeline,
         sprite_buffer,
@@ -307,9 +316,11 @@ async fn main() -> Result<(), RendererError> {
         shapes_pipeline,
         text,
         text_atlas,
+        emoji_atlas,
         text_pipeline,
         text_buffer,
-        fonts,
+        emoji_buffer,
+        is_colored: false,
     };
 
     let mut views = HashMap::new();
@@ -370,15 +381,7 @@ async fn main() -> Result<(), RendererError> {
         if size != test_size {
             size = test_size;
 
-            state.screen_group.update(
-                &renderer,
-                ScreenUniform {
-                    width: test_size.width,
-                    height: test_size.height,
-                },
-            );
-
-            state.camera.set_projection(Projection::Orthographic {
+            state.system.set_projection(Projection::Orthographic {
                 left: 0.0,
                 right: size.width as f32,
                 bottom: 0.0,
@@ -422,11 +425,8 @@ async fn main() -> Result<(), RendererError> {
             *control_flow = ControlFlow::Exit;
         }
 
-        let delta = frame_time.delta_seconds();
         let seconds = frame_time.seconds();
-
-        state.camera.update(&renderer, delta);
-        state.time_group.update(&renderer, seconds);
+        state.system.update(&renderer, &frame_time);
 
         let view = frame
             .texture
@@ -450,17 +450,27 @@ async fn main() -> Result<(), RendererError> {
         let update = state.text.update(
             renderer.queue(),
             renderer.device(),
-            &state.fonts,
+            [0, 0, 1],
+            &mut textbuffer,
             &mut state.text_atlas,
+            &mut state.emoji_atlas,
         );
+
+        state.text.reset_cleared();
 
         if update {
             state.text_buffer.set_vertices_from(
                 renderer.device(),
                 renderer.queue(),
-                &state.text.bytes,
+                &state.text.text_bytes,
+            );
+            state.emoji_buffer.set_vertices_from(
+                renderer.device(),
+                renderer.queue(),
+                &state.text.emoji_bytes,
             );
         }
+
         let update =
             state.map.update(renderer.queue(), &mut state.map_textures);
 
@@ -511,15 +521,16 @@ async fn main() -> Result<(), RendererError> {
         );
 
         // Run the render pass.
-        state.render(&mut encoder, &views);
+        state.render(&mut encoder, &views, &renderer);
 
         // Submit our command queue.
         renderer.queue().submit(std::iter::once(encoder.finish()));
 
         if time < seconds {
-            state.text.clear();
-            state.text.append(&format!("FPS: {}", fps));
-            state.text.build_layout(&state.fonts);
+            textbuffer
+                .set_text(&format!("FPS: {}", fps), cosmic_text::Attrs::new());
+            //println!("{fps}");
+            textbuffer.redraw = true;
             fps = 0u32;
             time = seconds + 1.0;
         }

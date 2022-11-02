@@ -1,7 +1,9 @@
 use bytemuck::{Pod, Zeroable};
-use std::any::{Any, TypeId};
-use std::collections::HashMap;
-use std::rc::Rc;
+use std::{
+    any::{Any, TypeId},
+    collections::HashMap,
+    rc::Rc,
+};
 
 pub trait Layout: Pod + Zeroable {
     fn create_layout(&self, device: &wgpu::Device) -> wgpu::BindGroupLayout;

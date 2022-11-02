@@ -1,4 +1,4 @@
-pub(crate) use crate::graphics::{BufferLayout, BufferPass};
+use crate::graphics::{BufferLayout, BufferPass};
 use std::iter;
 
 #[repr(C)]
@@ -6,7 +6,7 @@ use std::iter;
 pub struct SpriteVertex {
     pub position: [f32; 3],
     pub tex_data: [u16; 4],
-    pub color: [u8; 4],
+    pub color: u32,
     pub frames: [u16; 2],
     pub animate: u32,
     pub time: u32,
@@ -18,7 +18,7 @@ impl Default for SpriteVertex {
         Self {
             position: [0.0; 3],
             tex_data: [0; 4],
-            color: [0; 4],
+            color: 0,
             frames: [0; 2],
             animate: 0,
             time: 0,

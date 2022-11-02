@@ -1,5 +1,5 @@
-pub(crate) use crate::graphics::{
-    AtlasGroup, GpuBuffer, ScreenGroup, SpriteRenderPipeline, SpriteVertex,
+use crate::graphics::{
+    AtlasGroup, GpuBuffer, SpriteRenderPipeline, SpriteVertex,
 };
 
 pub trait RenderSprite<'a, 'b>
@@ -25,7 +25,7 @@ where
         pipeline: &'b SpriteRenderPipeline,
     ) {
         if buffer.vertex_count() > 0 {
-            self.set_bind_group(2, &atlas_group.texture.bind_group, &[]);
+            self.set_bind_group(1, &atlas_group.texture.bind_group, &[]);
             self.set_vertex_buffer(0, buffer.vertices(None));
             self.set_index_buffer(
                 buffer.indices(None),

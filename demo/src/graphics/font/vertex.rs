@@ -1,4 +1,4 @@
-pub(crate) use crate::graphics::{BufferLayout, BufferPass};
+use crate::graphics::{BufferLayout, BufferPass};
 use std::iter;
 
 #[repr(C)]
@@ -8,7 +8,7 @@ pub struct TextVertex {
     pub position: [f32; 3],
     pub tex_coord: [u16; 2],
     pub layer: u32,
-    pub color: [u8; 4],
+    pub color: u32,
 }
 
 impl Default for TextVertex {
@@ -17,7 +17,7 @@ impl Default for TextVertex {
             position: [0.0, 0.0, 1.0],
             tex_coord: [0; 2],
             layer: 0,
-            color: [0; 4],
+            color: 0,
         }
     }
 }

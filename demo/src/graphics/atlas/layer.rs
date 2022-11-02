@@ -1,4 +1,4 @@
-pub(crate) use crate::graphics::atlas::Allocator;
+use crate::graphics::Allocator;
 
 pub struct Layer {
     pub allocator: Allocator,

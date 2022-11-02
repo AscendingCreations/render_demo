@@ -1,6 +1,8 @@
-use crate::graphics::{
-    BufferLayout, CameraLayout, LayoutStorage, RendererError, ScreenLayout,
-    TextVertex, TextureLayout, TimeLayout,
+use crate::{
+    graphics::{
+        BufferLayout, LayoutStorage, SystemLayout, TextVertex, TextureLayout,
+    },
+    AscendingError,
 };
 
 pub struct TextRenderPipeline {
@@ -12,7 +14,7 @@ impl TextRenderPipeline {
         device: &wgpu::Device,
         surface_format: wgpu::TextureFormat,
         layout_storage: &mut LayoutStorage,
-    ) -> Result<Self, RendererError> {
+    ) -> Result<Self, AscendingError> {
         let shader =
             device.create_shader_module(wgpu::ShaderModuleDescriptor {
                 label: Some("Shader"),
@@ -21,8 +23,7 @@ impl TextRenderPipeline {
                 ),
             });
 
-        let camera_layout = layout_storage.create_layout(device, CameraLayout);
-        let time_layout = layout_storage.create_layout(device, TimeLayout);
+        let system_layout = layout_storage.create_layout(device, SystemLayout);
         let texture_layout =
             layout_storage.create_layout(device, TextureLayout);
 
@@ -33,11 +34,7 @@ impl TextRenderPipeline {
                 layout: Some(&device.create_pipeline_layout(
                     &wgpu::PipelineLayoutDescriptor {
                         label: Some("Text_render_pipeline_layout"),
-                        bind_group_layouts: &[
-                            &camera_layout,
-                            &time_layout,
-                            &texture_layout,
-                        ],
+                        bind_group_layouts: &[&system_layout, &texture_layout],
                         push_constant_ranges: &[],
                     },
                 )),

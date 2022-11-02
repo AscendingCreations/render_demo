@@ -10,5 +10,6 @@ pub trait Pass {
         &mut self,
         encoder: &mut wgpu::CommandEncoder,
         views: &HashMap<String, wgpu::TextureView>,
+        renderer: &crate::Renderer,
     );
 }

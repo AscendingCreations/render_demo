@@ -1,6 +1,8 @@
-use crate::graphics::{
-    BufferLayout, CameraLayout, LayoutStorage, RendererError, ScreenLayout,
-    SpriteVertex, TextureLayout, TimeLayout,
+use crate::{
+    graphics::{
+        BufferLayout, LayoutStorage, SpriteVertex, SystemLayout, TextureLayout,
+    },
+    AscendingError,
 };
 
 pub struct SpriteRenderPipeline {
@@ -12,7 +14,7 @@ impl SpriteRenderPipeline {
         device: &wgpu::Device,
         surface_format: wgpu::TextureFormat,
         layout_storage: &mut LayoutStorage,
-    ) -> Result<Self, RendererError> {
+    ) -> Result<Self, AscendingError> {
         let shader =
             device.create_shader_module(wgpu::ShaderModuleDescriptor {
                 label: Some("Shader"),
@@ -21,10 +23,9 @@ impl SpriteRenderPipeline {
                 ),
             });
 
-        let camera_layout = layout_storage.create_layout(device, CameraLayout);
+        let system_layout = layout_storage.create_layout(device, SystemLayout);
         let texture_layout =
             layout_storage.create_layout(device, TextureLayout);
-        let time_layout = layout_storage.create_layout(device, TimeLayout);
 
         // Create the render pipeline.
         let render_pipeline =
@@ -33,11 +34,7 @@ impl SpriteRenderPipeline {
                 layout: Some(&device.create_pipeline_layout(
                     &wgpu::PipelineLayoutDescriptor {
                         label: Some("render_pipeline_layout"),
-                        bind_group_layouts: &[
-                            &camera_layout,
-                            &time_layout,
-                            &texture_layout,
-                        ],
+                        bind_group_layouts: &[&system_layout, &texture_layout],
                         push_constant_ranges: &[],
                     },
                 )),

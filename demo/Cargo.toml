@@ -27,7 +27,6 @@ backtrace.workspace = true
 once_cell.workspace = true
 futures.workspace = true
 cosmic-text.workspace = true
-fontdue.workspace = true
 naga.workspace = true
 wgpu.workspace = true
-
+swash.workspace = true

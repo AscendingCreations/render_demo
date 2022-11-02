@@ -12,8 +12,8 @@ struct Time {
 @binding(0)
 var<uniform> camera: Camera;
 
-@group(1)
-@binding(0)
+@group(0)
+@binding(1)
 var<uniform> time: Time;
 
 struct VertexInput {
@@ -39,10 +39,10 @@ struct VertexOutput {
     @location(7) animate: u32,
 };
 
-@group(2)
+@group(1)
 @binding(0)
 var tex: texture_2d_array<f32>;
-@group(2)
+@group(1)
 @binding(1)
 var tex_sample: sampler;
 
@@ -112,7 +112,6 @@ fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
             (f32(((frame % yframes) * vertex.tex_data[2]) + vertex.tex_data[0]) + vertex.tex_coords.x) / vertex.size.x,
             (f32(((frame / yframes) * vertex.tex_data[3]) + vertex.tex_data[1]) + vertex.tex_coords.y) / vertex.size.y
         );
-        //coords = vec2<f32>((f32(frame * vertex.tex_hw[0]) / vertex.size.x) + vertex.tex_coords.x, vertex.tex_coords.y);
     } else {
         coords = vec2<f32>(
             (f32(vertex.tex_data[0]) + vertex.tex_coords.x)  / vertex.size.x, 

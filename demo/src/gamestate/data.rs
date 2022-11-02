@@ -1,19 +1,17 @@
-pub(crate) use crate::graphics::*;
-use fontdue::layout::GlyphRasterConfig;
-use fontdue::{Font, FontSettings};
+use crate::graphics::*;
+use cosmic_text::{CacheKey, FontSystem};
 use std::collections::HashMap;
+
 pub struct State<Controls>
 where
     Controls: camera::controls::Controls,
 {
     /// Storage container for layouts for faster initlization
     pub layout_storage: LayoutStorage,
-    /// World Camera Controls. Deturmines how the world is looked at.
-    pub camera: Camera<Controls>,
+    /// World Camera Controls and time. Deturmines how the world is looked at.
+    pub system: System<Controls>,
     /// time for all animation on shader side.
-    pub time_group: TimeGroup,
-    /// Screen Size to the shaders.
-    pub screen_group: ScreenGroup,
+    pub text_colored_group: TextColoredGroup,
     /// Sprite data TODO: Make an array,
     pub sprite: [Sprite; 2],
     /// Render pipe line for Sprites
@@ -48,9 +46,11 @@ where
     /// Text test stuff.
     pub text: Text,
     pub text_buffer: GpuBuffer<TextVertex>,
+    pub emoji_buffer: GpuBuffer<TextVertex>,
     pub text_pipeline: TextRenderPipeline,
-    pub text_atlas: AtlasGroup<GlyphRasterConfig>,
-    pub fonts: Vec<Font>,
+    pub text_atlas: AtlasGroup<CacheKey>,
+    pub emoji_atlas: AtlasGroup<CacheKey>,
+    pub is_colored: bool,
 }
 
 impl<Controls> Pass for State<Controls>
@@ -61,6 +61,7 @@ where
         &mut self,
         encoder: &mut wgpu::CommandEncoder,
         views: &HashMap<String, wgpu::TextureView>,
+        renderer: &crate::Renderer,
     ) {
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("render pass"),
@@ -98,8 +99,8 @@ where
             ),
         });
 
-        pass.set_bind_group(0, self.camera.bind_group(), &[]);
-        pass.set_bind_group(1, self.time_group.bind_group(), &[]);
+        pass.set_bind_group(0, self.system.bind_group(), &[]);
+        pass.set_bind_group(1, self.text_colored_group.bind_group(), &[]);
 
         pass.render_maps(
             &self.maplower_buffer,
@@ -127,9 +128,26 @@ where
             &self.map_pipeline,
         );
 
+        if self.is_colored {
+            self.is_colored = false;
+            self.system.set_text_colored(renderer, false);
+        }
         pass.render_text(
             &self.text_buffer,
             &self.text_atlas,
+            &self.emoji_atlas,
+            &self.text_pipeline,
+        );
+
+        if !self.is_colored && self.emoji_buffer.vertex_count() > 0 {
+            self.is_colored = true;
+            self.system.set_text_colored(renderer, true);
+        }
+
+        pass.render_text(
+            &self.emoji_buffer,
+            &self.text_atlas,
+            &self.emoji_atlas,
             &self.text_pipeline,
         );
 

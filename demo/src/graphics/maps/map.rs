@@ -1,4 +1,4 @@
-pub(crate) use crate::graphics::{MapTextures, MapVertex};
+use crate::graphics::{MapTextures, MapVertex};
 use image::{self, ImageBuffer};
 
 #[allow(dead_code)]
@@ -59,6 +59,8 @@ pub struct Map {
     pub lowerbytes: Vec<u8>,
     /// vertex array in bytes for fringe layers.
     pub upperbytes: Vec<u8>,
+    /// Count of how many Filled Tiles Exist. this is to optimize out empty maps in rendering.
+    pub filled_tiles: [u8; MapLayers::Count as usize],
     /// if the image changed we need to reupload it to the texture.
     pub img_changed: bool,
     /// if the location or map array id changed. to rebuild the vertex buffer.
@@ -79,6 +81,11 @@ impl Map {
 
         for i in 0..8 {
             let z = MapLayers::indexed_layerz(i);
+
+            if self.filled_tiles[i as usize] == 0 {
+                continue;
+            }
+
             let mut vertices = vec![
                 MapVertex {
                     position: [x, y, z], //2,3
@@ -131,6 +138,7 @@ impl Map {
             layer: 0,
             lowerbytes: Vec::new(),
             upperbytes: Vec::new(),
+            filled_tiles: [0; MapLayers::Count as usize],
             image,
             img_changed: true,
             changed: true,
@@ -142,7 +150,6 @@ impl Map {
         pos: (u32, u32, u32),
         id: u32,
         layer: u32,
-        hue: u32,
         alpha: u32,
     ) {
         if pos.0 >= 32 || pos.1 >= 32 || pos.2 >= 8 {
@@ -150,7 +157,16 @@ impl Map {
         }
 
         let pixel = self.image.get_pixel_mut(pos.0, pos.1 + (pos.2 * 32));
-        *pixel = image::Rgba([id, layer, hue, alpha]);
+        *pixel = image::Rgba([id, layer, 0, alpha]);
+
+        if alpha == 0 {
+            self.filled_tiles[pos.2 as usize] =
+                self.filled_tiles[pos.2 as usize].saturating_sub(1);
+        } else {
+            self.filled_tiles[pos.2 as usize] =
+                self.filled_tiles[pos.2 as usize].saturating_add(1);
+        }
+
         self.img_changed = true;
     }
 

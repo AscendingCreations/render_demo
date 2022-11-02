@@ -1,7 +1,4 @@
-use crate::graphics::{
-    atlas::{Allocation, Layer},
-    textures::Texture,
-};
+use crate::graphics::{Allocation, Layer, Texture};
 use std::{collections::HashMap, hash::Hash, num::NonZeroU32};
 
 pub struct Atlas<U: Hash + Eq + Clone = String> {

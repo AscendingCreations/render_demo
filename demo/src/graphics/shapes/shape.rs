@@ -667,62 +667,19 @@ impl Shape {
     }
 
     pub fn fill(&mut self) {
-        let normals = self.compute_normals();
-        let cross = self.compute_cross(&normals);
-        let dm = self.compute_dm(&normals);
-        let woff = 0.0;
         let index = 0;
-
         let mut vertices = Vec::new();
         let mut indices = Vec::new();
 
-        if self.thickness > 0.0 {
-            let mut i0 = self.points.len() - 1;
-            let mut i1 = 0;
-
-            while i1 < self.points.len() {
-                let p1 = self.points[i1];
-
-                match self.join_style {
-                    JoinStyle::Bevel | JoinStyle::Round => {
-                        if cross[i1] > 0.0 {
-                            vertices.push(ShapeVertex {
-                                position: (p1 + dm[i1] * woff).into(),
-                                color: self.color.0,
-                            });
-                        } else {
-                            vertices.push(ShapeVertex {
-                                position: (p1 + normals[i0] * woff).into(),
-                                color: self.color.0,
-                            });
-                            vertices.push(ShapeVertex {
-                                position: (p1 + normals[i1] * woff).into(),
-                                color: self.color.0,
-                            });
-                        }
-                    }
-                    _ => {
-                        vertices.push(ShapeVertex {
-                            position: (p1 + dm[i1] * woff).into(),
-                            color: self.color.0,
-                        });
-                    }
-                }
-
-                i0 = i1;
-                i1 += 1;
-            }
-        } else {
-            for i in 0..self.points.len() {
-                vertices.push(ShapeVertex {
-                    position: self.points[i].into(),
-                    color: self.color.0,
-                });
-            }
+        for i in 0..self.points.len() {
+            vertices.push(ShapeVertex {
+                position: self.points[i].into(),
+                color: self.color.0,
+            });
         }
 
         for i in (index as u32..(vertices.len() as u32 - 2)).step_by(3) {
-            indices.push(i);
+            indices.push(i + 0);
             indices.push(i + 1);
             indices.push(i + 2);
         }
@@ -730,67 +687,6 @@ impl Shape {
         indices.push(vertices.len() as u32 - 2);
         indices.push(vertices.len() as u32 - 1);
         indices.push(index as u32);
-
-        if self.thickness > 0.0 {
-            let index = vertices.len();
-            let mut i0 = self.points.len() - 1;
-            let mut i1 = 0;
-
-            for _ in 0..self.points.len() {
-                let p1 = self.points[i1];
-
-                match self.join_style {
-                    JoinStyle::Bevel => self.join_bevel(
-                        &mut vertices,
-                        p1,
-                        normals[i0],
-                        normals[i1],
-                        dm[i0],
-                        cross[i0],
-                        0.0,
-                        self.thickness,
-                    ),
-                    JoinStyle::Round => self.join_round(
-                        &mut vertices,
-                        p1,
-                        normals[i0],
-                        normals[i1],
-                        dm[i0],
-                        cross[i0],
-                        0.0,
-                        self.thickness,
-                    ),
-                    JoinStyle::Miter => self.join_miter(
-                        &mut vertices,
-                        p1,
-                        dm[i0],
-                        0.0,
-                        self.thickness,
-                    ),
-                }
-
-                i0 = i1;
-                i1 = (i1 + 1) % self.points.len();
-            }
-
-            for i in (index as u32..(vertices.len() as u32 - 2)).step_by(2) {
-                indices.push(i);
-                indices.push(i + 1);
-                indices.push(i + 2);
-
-                indices.push(i + 2);
-                indices.push(i + 3);
-                indices.push(i + 1);
-            }
-
-            indices.push(vertices.len() as u32 - 2);
-            indices.push(vertices.len() as u32 - 1);
-            indices.push(index as u32);
-
-            indices.push(vertices.len() as u32 - 1);
-            indices.push(index as u32);
-            indices.push(index as u32 + 1);
-        }
 
         self.buffers = BufferPass {
             vertices: bytemuck::cast_slice(&vertices).to_vec(),

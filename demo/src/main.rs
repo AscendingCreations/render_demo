@@ -256,8 +256,7 @@ async fn main() -> Result<(), AscendingError> {
     shapes.push_point(216.0, 200.0, 1.0);
     shapes.push_point(216.0, 216.0, 1.0);
     shapes.push_point(200.0, 216.0, 1.0);
-    shapes.cap_style = CapStyle::Round;
-    shapes.join_style = JoinStyle::Round;
+    shapes.join_style = JoinStyle::Bevel;
     shapes.closed = true;
     shapes.set_fill(true);
 
@@ -513,6 +512,10 @@ async fn main() -> Result<(), AscendingError> {
                 renderer.queue(),
                 &state.shapes.buffers.indices,
             );
+
+            state
+                .shapes_buffer
+                .set_index_count(state.shapes.indices_count);
         }
 
         // Start encoding commands.

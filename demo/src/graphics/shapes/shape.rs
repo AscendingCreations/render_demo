@@ -20,658 +20,85 @@ pub enum JoinStyle {
 
 /// rendering data for all sprites.
 /// not to be confused with Actual NPC or Player data.
-pub struct Shape {
-    pub points: Vec<Vec3>,
-    pub closed: bool,
-    pub cap_style: CapStyle,
-    pub join_style: JoinStyle,
-    pub fill: bool,
+pub struct Shapes {
+    pub shapes: Vec<Shape>,
     pub buffers: BufferPass,
     pub indices_count: usize,
-    pub thickness: f32,
-    pub color: Color,
     /// if anything got updated we need to update the buffers too.
     pub changed: bool,
 }
 
-impl Default for Shape {
+pub enum Shape {
+    Rect {
+        position: [u32; 3],
+        size: [u32; 2],
+        thickness: u32,
+        filled: bool,
+        color: Color,
+    },
+    Line {
+        positions: [u32; 6],
+        thickness: u32,
+        color: Color,
+    },
+    None,
+}
+
+impl Default for Shapes {
     fn default() -> Self {
         Self {
-            points: Vec::new(),
-            closed: false,
-            cap_style: CapStyle::Butt,
-            join_style: JoinStyle::Miter,
-            fill: false,
+            shapes: Vec::new(),
             buffers: BufferPass::new(),
             indices_count: 0,
-            thickness: 1.0,
-            color: Color::rgba(0, 0, 0, 255),
             changed: true,
         }
     }
 }
 
-impl Shape {
+impl Shapes {
     pub fn new() -> Self {
         Self::default()
     }
 
-    pub fn push_point(&mut self, x: f32, y: f32, z: f32) {
-        self.points.push(Vec3::new(x, y, z));
+    pub fn push_shape(&mut self, shape: Shape) {
+        self.shapes.push(shape);
         self.changed = true;
     }
 
-    pub fn clear_points(&mut self) {
-        self.points.clear();
+    pub fn clear_shapes(&mut self) {
+        self.shapes.clear();
         self.changed = true;
     }
 
-    pub fn set_thickness(&mut self, thickness: f32) {
-        self.thickness = thickness;
+    pub fn get_mut_shapes(&mut self) -> &mut Vec<Shape> {
         self.changed = true;
-    }
-
-    pub fn set_closed(&mut self, closed: bool) {
-        self.closed = closed;
-        self.changed = true;
-    }
-
-    pub fn set_fill(&mut self, filled: bool) {
-        self.fill = filled;
-        self.changed = true;
-    }
-
-    pub fn set_color(&mut self, color: Color) {
-        self.color = color;
-        self.changed = true;
-    }
-
-    pub fn set_cap_style(&mut self, cap_style: CapStyle) {
-        self.cap_style = cap_style;
-        self.changed = true;
-    }
-
-    pub fn set_join_style(&mut self, join_style: JoinStyle) {
-        self.join_style = join_style;
-        self.changed = true;
-    }
-
-    fn compute_normals(&self) -> Vec<Vec3> {
-        let mut normals: Vec<Vec3> = Vec::new();
-
-        for i0 in 0..self.points.len() {
-            let i1 = (i0 + 1) % self.points.len();
-            let mut normal = self.points[i1] - self.points[i0];
-            normal.normalize();
-            normals.push(Vec3::new(normal.y, -normal.x, normal.z));
-        }
-
-        normals
-    }
-
-    fn compute_cross(&self, normals: &[Vec3]) -> Vec<f32> {
-        let mut cross: Vec<f32> = Vec::new();
-
-        for i0 in 0..normals.len() {
-            let i1 = (i0 + 1) % normals.len();
-            let n0 = normals[i0];
-            let n1 = normals[i1];
-
-            cross.push(n1.x * n0.y - n0.x * n1.y);
-        }
-
-        cross
-    }
-
-    fn compute_dm(&self, normals: &[Vec3]) -> Vec<Vec3> {
-        let mut result = Vec::new();
-
-        for i0 in 0..self.points.len() {
-            let i1 = (i0 + 1) % self.points.len();
-
-            let mut dm = (normals[i0] + normals[i1]) * 0.5;
-            let dmr2 = dm.mag_sq();
-
-            if dmr2 > 0.000001 {
-                let mut scale = 1.0 / dmr2;
-
-                if scale > 600.0 {
-                    scale = 600.0;
-                }
-
-                dm *= scale;
-            }
-
-            result.push(dm);
-        }
-
-        result
-    }
-
-    fn start_butt_cap(
-        &mut self,
-        buffers: &mut Vec<ShapeVertex>,
-        p: Vec3,
-        diff: Vec3,
-        normal: Vec3,
-        w: f32,
-        aa: f32,
-    ) {
-        let p = p + diff * aa * 0.5;
-        let transparent =
-            Color::rgba(self.color.r(), self.color.g(), self.color.b(), 0).0;
-
-        buffers.push(ShapeVertex {
-            position: (p + normal * w + diff * aa).into(),
-            color: transparent,
-        });
-        buffers.push(ShapeVertex {
-            position: (p - normal * w - diff * aa).into(),
-            color: transparent,
-        });
-        buffers.push(ShapeVertex {
-            position: (p + normal * w).into(),
-            color: self.color.0,
-        });
-        buffers.push(ShapeVertex {
-            position: (p - normal * w).into(),
-            color: self.color.0,
-        });
-    }
-
-    fn start_round_cap(
-        &mut self,
-        buffers: &mut Vec<ShapeVertex>,
-        p: Vec3,
-        diff: Vec3,
-        normal: Vec3,
-        w: f32,
-    ) {
-        let ncap = 16;
-
-        for i in 0..ncap {
-            let a = i as f32 / (ncap - 1) as f32 * std::f32::consts::PI;
-            let ax = Vec3::new(a.cos(), a.sin(), p.z) * w;
-
-            buffers.push(ShapeVertex {
-                position: (p - normal * ax.x - diff * ax.y).into(),
-                color: self.color.0,
-            });
-            buffers.push(ShapeVertex {
-                position: p.into(),
-                color: self.color.0,
-            });
-        }
-
-        buffers.push(ShapeVertex {
-            position: (p + normal * w).into(),
-            color: self.color.0,
-        });
-        buffers.push(ShapeVertex {
-            position: (p - normal * w).into(),
-            color: self.color.0,
-        });
-    }
-
-    fn start_square_cap(
-        &mut self,
-        buffers: &mut Vec<ShapeVertex>,
-        p: Vec3,
-        diff: Vec3,
-        normal: Vec3,
-        w: f32,
-        aa: f32,
-    ) {
-        let p = p + diff * (w - aa);
-        let transparent =
-            Color::rgba(self.color.r(), self.color.g(), self.color.b(), 0).0;
-
-        buffers.push(ShapeVertex {
-            position: (p + normal * w + diff * aa).into(),
-            color: transparent,
-        });
-        buffers.push(ShapeVertex {
-            position: (p - normal * w - diff * aa).into(),
-            color: transparent,
-        });
-        buffers.push(ShapeVertex {
-            position: (p + normal * w).into(),
-            color: self.color.0,
-        });
-        buffers.push(ShapeVertex {
-            position: (p - normal * w).into(),
-            color: self.color.0,
-        });
-    }
-
-    fn end_butt_cap(
-        &mut self,
-        buffers: &mut Vec<ShapeVertex>,
-        p: Vec3,
-        diff: Vec3,
-        normal: Vec3,
-        w: f32,
-        aa: f32,
-    ) {
-        let p = p - diff * aa * 0.5;
-        let transparent =
-            Color::rgba(self.color.r(), self.color.g(), self.color.b(), 0).0;
-
-        buffers.push(ShapeVertex {
-            position: (p + normal * w).into(),
-            color: self.color.0,
-        });
-        buffers.push(ShapeVertex {
-            position: (p - normal * w).into(),
-            color: self.color.0,
-        });
-        buffers.push(ShapeVertex {
-            position: (p + normal * w + diff * aa).into(),
-            color: transparent,
-        });
-        buffers.push(ShapeVertex {
-            position: (p - normal * w + diff * aa).into(),
-            color: transparent,
-        });
-    }
-
-    fn end_round_cap(
-        &mut self,
-        buffers: &mut Vec<ShapeVertex>,
-        p: Vec3,
-        diff: Vec3,
-        normal: Vec3,
-        w: f32,
-    ) {
-        let ncap = 16;
-
-        buffers.push(ShapeVertex {
-            position: (p + normal * w).into(),
-            color: self.color.0,
-        });
-        buffers.push(ShapeVertex {
-            position: (p - normal * w).into(),
-            color: self.color.0,
-        });
-
-        for i in 0..ncap {
-            let a = i as f32 / (ncap - 1) as f32 * std::f32::consts::PI;
-            let ax = Vec3::new(a.cos(), a.sin(), p.z) * w;
-
-            buffers.push(ShapeVertex {
-                position: p.into(),
-                color: self.color.0,
-            });
-            buffers.push(ShapeVertex {
-                position: (p - normal * ax.x + diff * ax.y).into(),
-                color: self.color.0,
-            });
-        }
-    }
-
-    fn end_square_cap(
-        &mut self,
-        buffers: &mut Vec<ShapeVertex>,
-        p: Vec3,
-        diff: Vec3,
-        normal: Vec3,
-        w: f32,
-        aa: f32,
-    ) {
-        let p = p - diff * (w - aa);
-        let transparent =
-            Color::rgba(self.color.r(), self.color.g(), self.color.b(), 0).0;
-
-        buffers.push(ShapeVertex {
-            position: (p + normal * w).into(),
-            color: self.color.0,
-        });
-        buffers.push(ShapeVertex {
-            position: (p - normal * w).into(),
-            color: self.color.0,
-        });
-        buffers.push(ShapeVertex {
-            position: (p + normal * w + diff * aa).into(),
-            color: transparent,
-        });
-        buffers.push(ShapeVertex {
-            position: (p - normal * w + diff * aa).into(),
-            color: transparent,
-        });
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    fn join_bevel(
-        &self,
-        buffers: &mut Vec<ShapeVertex>,
-        p1: Vec3,
-        n0: Vec3,
-        n1: Vec3,
-        dm: Vec3,
-        cross: f32,
-        lw: f32,
-        rw: f32,
-    ) {
-        if cross > 0.0 {
-            let l0 = p1 + dm * lw;
-            let l1 = p1 + dm * lw;
-
-            buffers.push(ShapeVertex {
-                position: l0.into(),
-                color: self.color.0,
-            });
-            buffers.push(ShapeVertex {
-                position: (p1 - n0 * rw).into(),
-                color: self.color.0,
-            });
-
-            buffers.push(ShapeVertex {
-                position: l1.into(),
-                color: self.color.0,
-            });
-            buffers.push(ShapeVertex {
-                position: (p1 - n1 * rw).into(),
-                color: self.color.0,
-            });
-        } else {
-            let l0 = p1 - dm * lw;
-            let l1 = p1 - dm * lw;
-
-            buffers.push(ShapeVertex {
-                position: (p1 + n0 * rw).into(),
-                color: self.color.0,
-            });
-            buffers.push(ShapeVertex {
-                position: l0.into(),
-                color: self.color.0,
-            });
-
-            buffers.push(ShapeVertex {
-                position: (p1 + n1 * rw).into(),
-                color: self.color.0,
-            });
-            buffers.push(ShapeVertex {
-                position: l1.into(),
-                color: self.color.0,
-            });
-        }
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    fn join_round(
-        &self,
-        buffers: &mut Vec<ShapeVertex>,
-        p1: Vec3,
-        n0: Vec3,
-        n1: Vec3,
-        dm: Vec3,
-        cross: f32,
-        lw: f32,
-        rw: f32,
-    ) {
-        let ncap = 16;
-
-        if cross > 0.0 {
-            let l0 = p1 + dm * lw;
-            let l1 = p1 + dm * lw;
-
-            buffers.push(ShapeVertex {
-                position: l0.into(),
-                color: self.color.0,
-            });
-            buffers.push(ShapeVertex {
-                position: (p1 - n0 * rw).into(),
-                color: self.color.0,
-            });
-
-            let a0 = (-n0.y).atan2(-n0.x);
-            let mut a1 = (-n1.y).atan2(-n1.x);
-
-            if a1 > a0 {
-                a1 -= std::f32::consts::PI * 2.0;
-            }
-
-            for i in 0..ncap {
-                let a = i as f32 / (ncap - 1) as f32 * (a1 - a0) + a0;
-                let ax = Vec3::new(a.cos(), a.sin(), 0.0) * rw;
-
-                buffers.push(ShapeVertex {
-                    position: p1.into(),
-                    color: self.color.0,
-                });
-                buffers.push(ShapeVertex {
-                    position: (p1 + ax).into(),
-                    color: self.color.0,
-                });
-            }
-
-            buffers.push(ShapeVertex {
-                position: l1.into(),
-                color: self.color.0,
-            });
-            buffers.push(ShapeVertex {
-                position: (p1 - n1 * rw).into(),
-                color: self.color.0,
-            });
-        } else {
-            let r0 = p1 - dm * lw;
-            let r1 = p1 - dm * lw;
-
-            buffers.push(ShapeVertex {
-                position: (p1 + n0 * rw).into(),
-                color: self.color.0,
-            });
-            buffers.push(ShapeVertex {
-                position: r0.into(),
-                color: self.color.0,
-            });
-
-            let a0 = n0.y.atan2(n0.x);
-            let mut a1 = n1.y.atan2(n1.x);
-
-            if a1 < a0 {
-                a1 += std::f32::consts::PI * 2.0;
-            }
-
-            for i in 0..ncap {
-                let a = i as f32 / (ncap - 1) as f32 * (a1 - a0) + a0;
-                let ax = Vec3::new(a.cos(), a.sin(), 0.0) * rw;
-
-                buffers.push(ShapeVertex {
-                    position: (p1 + ax).into(),
-                    color: self.color.0,
-                });
-                buffers.push(ShapeVertex {
-                    position: p1.into(),
-                    color: self.color.0,
-                });
-            }
-
-            buffers.push(ShapeVertex {
-                position: (p1 + n1 * rw).into(),
-                color: self.color.0,
-            });
-            buffers.push(ShapeVertex {
-                position: r1.into(),
-                color: self.color.0,
-            });
-        }
-    }
-
-    fn join_miter(
-        &self,
-        buffers: &mut Vec<ShapeVertex>,
-        p: Vec3,
-        dm: Vec3,
-        lw: f32,
-        rw: f32,
-    ) {
-        buffers.push(ShapeVertex {
-            position: (p + dm * lw).into(),
-            color: self.color.0,
-        });
-        buffers.push(ShapeVertex {
-            position: (p - dm * rw).into(),
-            color: self.color.0,
-        });
-    }
-
-    pub fn stroke(&mut self) {
-        let normals = self.compute_normals();
-        let cross = self.compute_cross(&normals);
-        let dm = self.compute_dm(&normals);
-        let index = 0;
-
-        let mut vertices = Vec::new();
-        let mut indices = Vec::new();
-
-        let (mut i0, mut i1, start, end) = if self.closed {
-            (self.points.len() - 1, 0, 0, self.points.len())
-        } else {
-            (0, 1, 1, self.points.len() - 1)
-        };
-
-        let mut p0 = self.points[i0];
-        let mut p1 = self.points[i1];
-
-        if !self.closed {
-            let mut diff = p1 - p0;
-            diff.normalize();
-
-            let aa = 1.0;
-
-            match self.cap_style {
-                CapStyle::Butt => self.start_butt_cap(
-                    &mut vertices,
-                    p0,
-                    diff,
-                    normals[i0],
-                    self.thickness,
-                    aa,
-                ),
-                CapStyle::Round => self.start_round_cap(
-                    &mut vertices,
-                    p0,
-                    diff,
-                    normals[i0],
-                    self.thickness,
-                ),
-                CapStyle::Square => self.start_square_cap(
-                    &mut vertices,
-                    p0,
-                    diff,
-                    normals[i0],
-                    self.thickness,
-                    aa,
-                ),
-            }
-        }
-
-        for _ in start..end {
-            match self.join_style {
-                JoinStyle::Bevel => self.join_bevel(
-                    &mut vertices,
-                    p1,
-                    normals[i0],
-                    normals[i1],
-                    dm[i0],
-                    cross[i0],
-                    self.thickness,
-                    self.thickness,
-                ),
-                JoinStyle::Round => self.join_round(
-                    &mut vertices,
-                    p1,
-                    normals[i0],
-                    normals[i1],
-                    dm[i0],
-                    cross[i0],
-                    self.thickness,
-                    self.thickness,
-                ),
-                JoinStyle::Miter => self.join_miter(
-                    &mut vertices,
-                    p1,
-                    dm[i0],
-                    self.thickness,
-                    self.thickness,
-                ),
-            }
-
-            i0 = i1;
-            p0 = p1;
-            i1 = (i1 + 1) % self.points.len();
-            p1 = self.points[i1];
-        }
-
-        if !self.closed {
-            let mut diff = p1 - p0;
-            diff.normalize();
-
-            let aa = 1.0;
-
-            match self.cap_style {
-                CapStyle::Butt => self.end_butt_cap(
-                    &mut vertices,
-                    p1,
-                    diff,
-                    normals[i0],
-                    self.thickness,
-                    aa,
-                ),
-                CapStyle::Round => self.end_round_cap(
-                    &mut vertices,
-                    p1,
-                    diff,
-                    normals[i0],
-                    self.thickness,
-                ),
-                CapStyle::Square => self.end_square_cap(
-                    &mut vertices,
-                    p1,
-                    diff,
-                    normals[i0],
-                    self.thickness,
-                    aa,
-                ),
-            }
-        }
-
-        /* Build the index buffer. */
-        for i in (index as u32..(vertices.len() as u32 - 2)).step_by(2) {
-            indices.push(i);
-            indices.push(i + 1);
-            indices.push(i + 2);
-
-            indices.push(i + 2);
-            indices.push(i + 3);
-            indices.push(i + 1);
-        }
-
-        /* Loop the end to the beginning if the path is closed. */
-        if self.closed {
-            indices.push(vertices.len() as u32 - 2);
-            indices.push(vertices.len() as u32 - 1);
-            indices.push(index as u32);
-
-            indices.push(vertices.len() as u32 - 1);
-            indices.push(index as u32);
-            indices.push(index as u32 + 1);
-        }
-
-        self.buffers = BufferPass {
-            vertices: bytemuck::cast_slice(&vertices).to_vec(),
-            indices: bytemuck::cast_slice(&indices).to_vec(),
-        };
-        self.indices_count = indices.len();
+        &mut self.shapes
     }
 
     pub fn fill(&mut self) {
         let index = 0;
-        let mut vertices = Vec::new();
-        let mut indices = Vec::new();
+        /* let mut vertices = Vec::new();
+        let mut indices = Vec::new();*/
 
-        for i in 0..self.points.len() {
+        for shape in &self.shapes {
+            match shape {
+                Shape::Rect {
+                    position,
+                    size,
+                    thickness,
+                    filled,
+                    color,
+                } => {}
+                Shape::Line {
+                    positions,
+                    thickness,
+                    color,
+                } => {}
+                Shape::None => continue,
+            }
+        }
+
+        /*  for i in 0..self.points.len() {
             vertices.push(ShapeVertex {
                 position: self.points[i].into(),
                 color: self.color.0,
@@ -692,18 +119,14 @@ impl Shape {
             vertices: bytemuck::cast_slice(&vertices).to_vec(),
             indices: bytemuck::cast_slice(&indices).to_vec(),
         };
-        self.indices_count = indices.len();
+        self.indices_count = indices.len();*/
     }
 
     /// used to check and update the ShapeVertex array.
     pub fn update(&mut self) -> bool {
         // if points added or any data changed recalculate paths.
         if self.changed {
-            if self.fill {
-                self.fill();
-            } else {
-                self.stroke();
-            }
+            self.fill();
 
             self.changed = false;
             true

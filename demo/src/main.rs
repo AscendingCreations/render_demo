@@ -47,7 +47,7 @@ enum Axis {
 }
 
 static MY_LOGGER: MyLogger = MyLogger(Level::Debug);
-static FONT_SYSTEM: Lazy<FontSystem<'static>> = Lazy::new(FontSystem::new);
+static FONT_SYSTEM: Lazy<FontSystem> = Lazy::new(FontSystem::new);
 
 struct MyLogger(pub Level);
 
@@ -289,7 +289,7 @@ async fn main() -> Result<(), AscendingError> {
     let scale = renderer.window().current_monitor().unwrap().scale_factor();
 
     let mut textbuffer =
-        Buffer::new(&FONT_SYSTEM, Metrics::new(14, 20).scale(scale as i32));
+        Buffer::new(&FONT_SYSTEM, Metrics::new(16, 24).scale(scale as i32));
 
     textbuffer
         .set_size(renderer.size().width as i32, renderer.size().height as i32);
@@ -532,8 +532,10 @@ async fn main() -> Result<(), AscendingError> {
         renderer.queue().submit(std::iter::once(encoder.finish()));
 
         if time < seconds {
-            textbuffer
-                .set_text(&format!("FPS: {}", fps), cosmic_text::Attrs::new());
+            textbuffer.set_text(
+                &format!("生活,삶,जिंदगी FPS: {}", fps),
+                cosmic_text::Attrs::new(),
+            );
             //println!("{fps}");
             textbuffer.redraw = true;
             fps = 0u32;

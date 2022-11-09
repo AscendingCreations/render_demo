@@ -180,10 +180,7 @@ impl Text {
         Ok(())
     }
 
-    pub fn new(
-        font_system: &'static FontSystem<'static>,
-        color: Option<Color>,
-    ) -> Self {
+    pub fn new(font_system: &'static FontSystem, color: Option<Color>) -> Self {
         Self {
             cache: SwashCache::new(font_system),
             emoji_bytes: Vec::new(),

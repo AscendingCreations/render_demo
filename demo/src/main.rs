@@ -19,6 +19,7 @@ use std::{
     panic,
     path::PathBuf,
 };
+use wgpu_profiler::{wgpu_profiler, GpuProfiler, GpuTimerScopeResult};
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
@@ -108,7 +109,8 @@ async fn main() -> Result<(), AscendingError> {
                 force_fallback_adapter: false,
             },
             &wgpu::DeviceDescriptor {
-                features: wgpu::Features::empty(),
+                features: wgpu::Features::TIMESTAMP_QUERY
+                    | wgpu::Features::WRITE_TIMESTAMP_INSIDE_PASSES,
                 limits: wgpu::Limits::default(),
                 label: None,
             },
@@ -294,6 +296,12 @@ async fn main() -> Result<(), AscendingError> {
     textbuffer
         .set_size(renderer.size().width as i32, renderer.size().height as i32);
 
+    let profiler = GpuProfiler::new(
+        4,
+        renderer.queue().get_timestamp_period(),
+        renderer.device().features(),
+    );
+
     let mut state = State {
         layout_storage,
         system,
@@ -322,6 +330,7 @@ async fn main() -> Result<(), AscendingError> {
         text_buffer,
         emoji_buffer,
         is_colored: false,
+        profiler,
     };
 
     let mut views = HashMap::new();
@@ -357,6 +366,7 @@ async fn main() -> Result<(), AscendingError> {
     let mut frame_time = FrameTime::new();
     let mut time = 0.0f32;
     let mut fps = 0u32;
+    let mut latest_profiler_results = None;
 
     event_loop.run(move |event, _, control_flow| {
         match event {
@@ -526,12 +536,28 @@ async fn main() -> Result<(), AscendingError> {
         );
 
         // Run the render pass.
-        state.render(&mut encoder, &views, &renderer);
+        wgpu_profiler!(
+            "name of your scope",
+            &mut state.profiler,
+            &mut encoder,
+            renderer.device(),
+            {
+                state.render(&mut encoder, &views, &renderer);
+            }
+        );
+        state.profiler.resolve_queries(&mut encoder);
 
         // Submit our command queue.
         renderer.queue().submit(std::iter::once(encoder.finish()));
 
+        state.profiler.end_frame().unwrap();
+        if let Some(profiling_data) = state.profiler.process_finished_frame() {
+            // You usually want to write to disk only under some condition, e.g. press of a key or button
+            latest_profiler_results = Some(profiling_data);
+        }
+
         if time < seconds {
+            console_output(&latest_profiler_results);
             textbuffer.set_text(
                 &format!("生活,삶,जिंदगी FPS: {}", fps),
                 cosmic_text::Attrs::new(),
@@ -607,5 +633,36 @@ pub fn parse_example_wgsl() {
             .validate(&module.0)
             .unwrap();
         }
+    }
+}
+
+fn scopes_to_console_recursive(
+    results: &[GpuTimerScopeResult],
+    indentation: u32,
+) {
+    for scope in results {
+        if indentation > 0 {
+            print!("{:<width$}", "|", width = 4);
+        }
+        println!(
+            "{:.3}microsecs - {}",
+            (scope.time.end - scope.time.start) * 1000.0 * 1000.0,
+            scope.label
+        );
+        if !scope.nested_scopes.is_empty() {
+            scopes_to_console_recursive(&scope.nested_scopes, indentation + 1);
+        }
+    }
+}
+
+fn console_output(results: &Option<Vec<GpuTimerScopeResult>>) {
+    print!("\x1B[2J\x1B[1;1H"); // Clear terminal and put cursor to first row first column
+    println!("wgpu_profiler!");
+    println!();
+    match results {
+        Some(results) => {
+            scopes_to_console_recursive(&results, 0);
+        }
+        None => println!("No profiling results available yet!"),
     }
 }

@@ -1,6 +1,7 @@
 use crate::graphics::*;
 use cosmic_text::{CacheKey, FontSystem};
 use std::collections::HashMap;
+use wgpu_profiler::{wgpu_profiler, GpuProfiler};
 
 pub struct State<Controls>
 where
@@ -51,6 +52,7 @@ where
     pub text_atlas: AtlasGroup<CacheKey>,
     pub emoji_atlas: AtlasGroup<CacheKey>,
     pub is_colored: bool,
+    pub profiler: GpuProfiler,
 }
 
 impl<Controls> Pass for State<Controls>
@@ -132,24 +134,21 @@ where
             self.is_colored = false;
             self.system.set_text_colored(renderer, false);
         }
+
+        self.profiler
+            .begin_scope("Text", &mut pass, &renderer.device());
         pass.render_text(
             &self.text_buffer,
             &self.text_atlas,
             &self.emoji_atlas,
             &self.text_pipeline,
         );
+        self.profiler.end_scope(&mut pass);
 
         if !self.is_colored && self.emoji_buffer.vertex_count() > 0 {
             self.is_colored = true;
             self.system.set_text_colored(renderer, true);
         }
-
-        pass.render_text(
-            &self.emoji_buffer,
-            &self.text_atlas,
-            &self.emoji_atlas,
-            &self.text_pipeline,
-        );
 
         pass.render_shape(&self.shapes_buffer, &self.shapes_pipeline);
     }

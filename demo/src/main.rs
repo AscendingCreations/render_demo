@@ -242,9 +242,6 @@ async fn main() -> Result<(), AscendingError> {
     animation.switch_time = 300;
     animation.animate = true;
 
-    let text_colored_group =
-        TextColoredGroup::new(&renderer, &mut layout_storage);
-
     let shapes_pipeline = ShapeRenderPipeline::new(
         renderer.device(),
         renderer.surface_format(),
@@ -284,7 +281,6 @@ async fn main() -> Result<(), AscendingError> {
         &mut layout_storage,
     )?;
     let text_buffer = GpuBuffer::new(renderer.device());
-    let emoji_buffer = GpuBuffer::new(renderer.device());
 
     let text = Text::new(&FONT_SYSTEM, None);
 
@@ -305,7 +301,6 @@ async fn main() -> Result<(), AscendingError> {
     let mut state = State {
         layout_storage,
         system,
-        text_colored_group,
         sprite,
         sprite_pipeline,
         sprite_buffer,
@@ -328,8 +323,6 @@ async fn main() -> Result<(), AscendingError> {
         emoji_atlas,
         text_pipeline,
         text_buffer,
-        emoji_buffer,
-        is_colored: false,
         profiler,
     };
 
@@ -476,11 +469,6 @@ async fn main() -> Result<(), AscendingError> {
                 renderer.queue(),
                 &state.text.text_bytes,
             );
-            state.emoji_buffer.set_vertices_from(
-                renderer.device(),
-                renderer.queue(),
-                &state.text.emoji_bytes,
-            );
         }
 
         let update =
@@ -572,7 +560,7 @@ async fn main() -> Result<(), AscendingError> {
         }
 
         if time_save < seconds {
-            let mut file = File::create("old.txt").unwrap();
+            let mut file = File::create("vbo.txt").unwrap();
 
             for data in &time_data {
                 file.write(data.as_bytes()).unwrap();

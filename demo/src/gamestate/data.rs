@@ -11,8 +11,6 @@ where
     pub layout_storage: LayoutStorage,
     /// World Camera Controls and time. Deturmines how the world is looked at.
     pub system: System<Controls>,
-    /// time for all animation on shader side.
-    pub text_colored_group: TextColoredGroup,
     /// Sprite data TODO: Make an array,
     pub sprite: [Sprite; 2],
     /// Render pipe line for Sprites
@@ -47,11 +45,9 @@ where
     /// Text test stuff.
     pub text: Text,
     pub text_buffer: GpuBuffer<TextVertex>,
-    pub emoji_buffer: GpuBuffer<TextVertex>,
     pub text_pipeline: TextRenderPipeline,
     pub text_atlas: AtlasGroup<CacheKey>,
     pub emoji_atlas: AtlasGroup<CacheKey>,
-    pub is_colored: bool,
     pub profiler: GpuProfiler,
 }
 
@@ -102,7 +98,6 @@ where
         });
 
         pass.set_bind_group(0, self.system.bind_group(), &[]);
-        pass.set_bind_group(1, self.text_colored_group.bind_group(), &[]);
 
         pass.render_maps(
             &self.maplower_buffer,
@@ -130,11 +125,6 @@ where
             &self.map_pipeline,
         );
 
-        if self.is_colored {
-            self.is_colored = false;
-            self.system.set_text_colored(renderer, false);
-        }
-
         self.profiler
             .begin_scope("Text", &mut pass, &renderer.device());
         pass.render_text(
@@ -144,11 +134,6 @@ where
             &self.text_pipeline,
         );
         self.profiler.end_scope(&mut pass);
-
-        if !self.is_colored && self.emoji_buffer.vertex_count() > 0 {
-            self.is_colored = true;
-            self.system.set_text_colored(renderer, true);
-        }
 
         pass.render_shape(&self.shapes_buffer, &self.shapes_pipeline);
     }

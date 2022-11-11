@@ -16,15 +16,12 @@ var<uniform> camera: Camera;
 @binding(1)
 var<uniform> time: Time;
 
-@group(0)
-@binding(2)
-var<uniform> colored: u32;
-
 struct VertexInput {
     @location(0) pos: vec3<f32>,
     @location(1) uv: u32,
     @location(2) layer: u32,
     @location(3) color: u32,
+    @location(4) is_color: u32,
 };
 
 struct VertexOutput {
@@ -33,6 +30,7 @@ struct VertexOutput {
     @location(1) uv: vec2<f32>,
     @location(2) size: vec2<f32>,
     @location(3) layer: i32,
+    @location(4) is_color: u32,
 };
 
 @group(1)
@@ -48,7 +46,6 @@ var emoji_tex: texture_2d_array<f32>;
 @group(2)
 @binding(1)
 var emoji_tex_sample: sampler;
-
 
 @vertex
 fn vertex(

@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     fs::{self, File},
-    io::{Read, Write},
+    io::{prelude::*, Read, Write},
     panic,
     path::PathBuf,
 };
@@ -366,7 +366,8 @@ async fn main() -> Result<(), AscendingError> {
     let mut frame_time = FrameTime::new();
     let mut time = 0.0f32;
     let mut fps = 0u32;
-    let mut latest_profiler_results = None;
+    let mut time_data: Vec<String> = Vec::with_capacity(10_000);
+    let mut time_save = frame_time.seconds() + 10.0;
 
     event_loop.run(move |event, _, control_flow| {
         match event {
@@ -553,11 +554,13 @@ async fn main() -> Result<(), AscendingError> {
         state.profiler.end_frame().unwrap();
         if let Some(profiling_data) = state.profiler.process_finished_frame() {
             // You usually want to write to disk only under some condition, e.g. press of a key or button
-            latest_profiler_results = Some(profiling_data);
+            let mut string = String::new();
+            scopes_to_string_recursive(&profiling_data, &mut string, 0);
+            string.push('\n');
+            time_data.push(string);
         }
 
         if time < seconds {
-            console_output(&latest_profiler_results);
             textbuffer.set_text(
                 &format!("生活,삶,जिंदगी FPS: {}", fps),
                 cosmic_text::Attrs::new(),
@@ -566,6 +569,17 @@ async fn main() -> Result<(), AscendingError> {
             textbuffer.redraw = true;
             fps = 0u32;
             time = seconds + 1.0;
+        }
+
+        if time_save < seconds {
+            let mut file = File::create("old.txt").unwrap();
+
+            for data in &time_data {
+                file.write(data.as_bytes()).unwrap();
+            }
+
+            time_data.clear();
+            time_save = seconds + 1000.0;
         }
 
         fps += 1;
@@ -636,33 +650,27 @@ pub fn parse_example_wgsl() {
     }
 }
 
-fn scopes_to_console_recursive(
+fn scopes_to_string_recursive(
     results: &[GpuTimerScopeResult],
+    string: &mut String,
     indentation: u32,
 ) {
+    let mut first = true;
     for scope in results {
-        if indentation > 0 {
-            print!("{:<width$}", "|", width = 4);
+        if !first || indentation > 0 {
+            string.push(',');
         }
-        println!(
-            "{:.3}microsecs - {}",
-            (scope.time.end - scope.time.start) * 1000.0 * 1000.0,
-            scope.label
-        );
-        if !scope.nested_scopes.is_empty() {
-            scopes_to_console_recursive(&scope.nested_scopes, indentation + 1);
-        }
-    }
-}
 
-fn console_output(results: &Option<Vec<GpuTimerScopeResult>>) {
-    print!("\x1B[2J\x1B[1;1H"); // Clear terminal and put cursor to first row first column
-    println!("wgpu_profiler!");
-    println!();
-    match results {
-        Some(results) => {
-            scopes_to_console_recursive(&results, 0);
+        let time1 = (scope.time.end - scope.time.start) * 1000.0 * 1000.0;
+        string.push_str(&format!("{time1}"));
+        first = false;
+
+        if !scope.nested_scopes.is_empty() {
+            scopes_to_string_recursive(
+                &scope.nested_scopes,
+                string,
+                indentation + 1,
+            );
         }
-        None => println!("No profiling results available yet!"),
     }
 }

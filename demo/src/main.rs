@@ -57,6 +57,7 @@ impl log::Log for MyLogger {
         metadata.level() <= self.0
     }
 
+    //This logs to a panic file
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
             let msg = format!("{} - {}\n", record.level(), record.args());

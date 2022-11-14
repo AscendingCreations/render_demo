@@ -22,8 +22,6 @@ use swash::scale::{image::Content, ScaleContext};
 
 pub struct Text {
     pub cache: SwashCache<'static>,
-    /// Vertex array in bytes. This Holds colored Glyphs
-    pub emoji_bytes: Vec<u8>,
     /// Vertex array in bytes. This Holds regular glyphs
     pub text_bytes: Vec<u8>,
     ///default color.
@@ -92,8 +90,7 @@ impl Text {
             }
         }
 
-        let mut emoji_buf = Vec::with_capacity(32 * 4);
-        let mut text_buf = Vec::with_capacity(32 * 4);
+        let mut text_buf = Vec::with_capacity(64 * 4);
 
         for run in buffer.layout_runs() {
             let line_y = run.line_y;
@@ -140,50 +137,48 @@ impl Text {
                     }
                 };
 
+                let default = TextVertex {
+                    position: [0.0; 3],
+                    tex_coord: [0; 2],
+                    layer: allocation.layer as u32,
+                    color: color.0,
+                    is_color: is_color as u32,
+                };
+
                 let mut other = vec![
                     TextVertex {
                         position: [x, y, pos[2] as f32],
                         tex_coord: [u1, v2],
-                        layer: allocation.layer as u32,
-                        color: color.0,
+                        ..default
                     },
                     TextVertex {
                         position: [w, y, pos[2] as f32],
                         tex_coord: [u2, v2],
-                        layer: allocation.layer as u32,
-                        color: color.0,
+                        ..default
                     },
                     TextVertex {
                         position: [w, h, pos[2] as f32],
                         tex_coord: [u2, v1],
-                        layer: allocation.layer as u32,
-                        color: color.0,
+                        ..default
                     },
                     TextVertex {
                         position: [x, h, pos[2] as f32],
                         tex_coord: [u1, v1],
-                        layer: allocation.layer as u32,
-                        color: color.0,
+                        ..default
                     },
                 ];
 
-                if is_color {
-                    emoji_buf.append(&mut other);
-                } else {
-                    text_buf.append(&mut other);
-                }
+                text_buf.append(&mut other);
             }
         }
 
         self.text_bytes = bytemuck::cast_slice(&text_buf).to_vec();
-        self.emoji_bytes = bytemuck::cast_slice(&emoji_buf).to_vec();
         Ok(())
     }
 
     pub fn new(font_system: &'static FontSystem, color: Option<Color>) -> Self {
         Self {
             cache: SwashCache::new(font_system),
-            emoji_bytes: Vec::new(),
             text_bytes: Vec::new(),
             color: color.unwrap_or(Color::rgba(0, 0, 0, 255)),
             cleared: false,

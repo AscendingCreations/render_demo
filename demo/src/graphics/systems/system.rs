@@ -37,17 +37,6 @@ impl Layout for SystemLayout {
                     },
                     count: None,
                 },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 2,
-                    visibility: wgpu::ShaderStages::VERTEX
-                        | wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                },
             ],
         })
     }
@@ -66,17 +55,10 @@ pub struct TimeUniform {
     seconds: f32,
 }
 
-#[derive(AsStd140)]
-pub struct TextColoredUniform {
-    //which texture array to use for the glyph.
-    colored: u32,
-}
-
 pub struct System<Controls: camera::controls::Controls> {
     camera: camera::Camera<Controls>,
     camera_buffer: wgpu::Buffer,
     time_buffer: wgpu::Buffer,
-    text_colored_buffer: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
 }
 
@@ -119,7 +101,6 @@ where
 
         let camera_info = CameraUniform { view, proj, eye };
         let time_info = TimeUniform { seconds: 0.0 };
-        let colored_info = TextColoredUniform { colored: 0 };
 
         // Create the uniform buffers.
         let camera_buffer = renderer.device().create_buffer_init(
@@ -135,15 +116,6 @@ where
             &wgpu::util::BufferInitDescriptor {
                 label: Some("time buffer"),
                 contents: time_info.as_std140().as_bytes(),
-                usage: wgpu::BufferUsages::UNIFORM
-                    | wgpu::BufferUsages::COPY_DST,
-            },
-        );
-
-        let text_colored_buffer = renderer.device().create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("text colored buffer"),
-                contents: colored_info.as_std140().as_bytes(),
                 usage: wgpu::BufferUsages::UNIFORM
                     | wgpu::BufferUsages::COPY_DST,
             },
@@ -168,10 +140,6 @@ where
                             binding: 1,
                             resource: time_buffer.as_entire_binding(),
                         },
-                        wgpu::BindGroupEntry {
-                            binding: 2,
-                            resource: text_colored_buffer.as_entire_binding(),
-                        },
                     ],
                     label: Some("system_bind_group"),
                 });
@@ -180,7 +148,6 @@ where
             camera,
             camera_buffer,
             time_buffer,
-            text_colored_buffer,
             bind_group,
         }
     }
@@ -220,18 +187,6 @@ where
             &self.time_buffer,
             0,
             time_info.as_std140().as_bytes(),
-        );
-    }
-
-    pub fn set_text_colored(&self, renderer: &Renderer, colored: bool) {
-        let colored_info = TextColoredUniform {
-            colored: colored as u32,
-        };
-
-        renderer.queue().write_buffer(
-            &self.text_colored_buffer,
-            0,
-            colored_info.as_std140().as_bytes(),
         );
     }
 

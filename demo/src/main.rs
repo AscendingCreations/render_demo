@@ -251,14 +251,15 @@ async fn main() -> Result<(), AscendingError> {
 
     let shapes_buffer = GpuBuffer::new(renderer.device());
 
-    /*let mut shapes = Shape::new();
-    shapes.push_point(200.0, 200.0, 1.0);
-    shapes.push_point(216.0, 200.0, 1.0);
-    shapes.push_point(216.0, 216.0, 1.0);
-    shapes.push_point(200.0, 216.0, 1.0);
-    shapes.join_style = JoinStyle::Round;
-    shapes.closed = true;
-    shapes.set_fill(true);*/
+    let mut shapes = Shapes::new();
+
+    shapes.push_shape(Shape::Rect {
+        position: [150, 150, 1],
+        size: [10, 10],
+        thickness: 1,
+        filled: true,
+        color: Color::rgba(255, 255, 255, 255),
+    });
 
     let text_atlas = AtlasGroup::new(
         renderer.device(),
@@ -316,7 +317,7 @@ async fn main() -> Result<(), AscendingError> {
         animation,
         animation_buffer,
         animation_atlas,
-        // shapes,
+        shapes,
         shapes_buffer,
         shapes_pipeline,
         text,
@@ -499,24 +500,15 @@ async fn main() -> Result<(), AscendingError> {
             );
         }
 
-        /* let update = state.shapes.update();
+        let update = state.shapes.update();
 
         if update {
             state.shapes_buffer.set_vertices_from(
                 renderer.device(),
                 renderer.queue(),
-                &state.shapes.buffers.vertices,
+                &state.shapes.buffers,
             );
-
-            state.shapes_buffer.set_indices_from(
-                renderer.queue(),
-                &state.shapes.buffers.indices,
-            );
-
-            state
-                .shapes_buffer
-                .set_index_count(state.shapes.indices_count);
-        }*/
+        }
 
         // Start encoding commands.
         let mut encoder = renderer.device().create_command_encoder(

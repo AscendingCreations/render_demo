@@ -22,7 +22,7 @@ pub enum JoinStyle {
 /// not to be confused with Actual NPC or Player data.
 pub struct Shapes {
     pub shapes: Vec<Shape>,
-    pub buffers: BufferPass,
+    pub buffers: Vec<u8>,
     pub indices_count: usize,
     /// if anything got updated we need to update the buffers too.
     pub changed: bool,
@@ -48,7 +48,7 @@ impl Default for Shapes {
     fn default() -> Self {
         Self {
             shapes: Vec::new(),
-            buffers: BufferPass::new(),
+            buffers: Vec::new(),
             indices_count: 0,
             changed: true,
         }
@@ -77,26 +77,60 @@ impl Shapes {
 
     pub fn fill(&mut self) {
         let index = 0;
-        /* let mut vertices = Vec::new();
-        let mut indices = Vec::new();*/
+        let mut vertices = Vec::new();
+        /*let mut indices = Vec::new();*/
 
         for shape in &self.shapes {
-            match shape {
+            let buffer = match shape {
                 Shape::Rect {
                     position,
                     size,
                     thickness,
                     filled,
                     color,
-                } => {}
+                } => {
+                    let mut pos = [
+                        position[0] as f32,
+                        position[1] as f32,
+                        position[2] as f32,
+                    ];
+                    let size = [size[0] as f32, size[1] as f32];
+
+                    vec![
+                        ShapeVertex {
+                            position: pos,
+                            color: color.0,
+                        },
+                        ShapeVertex {
+                            position: [pos[0] + size[0], pos[1], pos[2]],
+                            color: color.0,
+                        },
+                        ShapeVertex {
+                            position: [
+                                pos[0] + size[0],
+                                pos[1] + size[1],
+                                pos[2],
+                            ],
+                            color: color.0,
+                        },
+                        ShapeVertex {
+                            position: [pos[0], pos[1] + size[1], pos[2]],
+                            color: color.0,
+                        },
+                    ]
+                }
                 Shape::Line {
                     positions,
                     thickness,
                     color,
-                } => {}
+                } => continue,
                 Shape::None => continue,
-            }
+            };
+
+            vertices.append(&mut bytemuck::cast_slice(&buffer).to_vec());
         }
+
+        self.buffers = vertices;
 
         /*  for i in 0..self.points.len() {
             vertices.push(ShapeVertex {

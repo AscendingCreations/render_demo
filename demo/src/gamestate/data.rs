@@ -38,7 +38,7 @@ where
     pub animation_atlas: AtlasGroup,
 
     /// Basic shape rendering.
-    //pub shapes: Shape,
+    pub shapes: Shapes,
     pub shapes_buffer: GpuBuffer<ShapeVertex>,
     pub shapes_pipeline: ShapeRenderPipeline,
 

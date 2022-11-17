@@ -255,10 +255,10 @@ async fn main() -> Result<(), AscendingError> {
 
     shapes.push_shape(Shape::Rect {
         position: [150, 150, 1],
-        size: [10, 10],
-        thickness: 1,
-        filled: true,
-        color: Color::rgba(255, 255, 255, 255),
+        size: [100, 100],
+        border_width: 1,
+        border_color: Color::rgba(255, 255, 255, 255),
+        color: Color::rgba(255, 0, 0, 255),
     });
 
     let text_atlas = AtlasGroup::new(

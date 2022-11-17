@@ -2,6 +2,7 @@ use crate::graphics::{
     Allocation, BufferLayout, BufferPass, Color, ShapeVertex,
 };
 use std::cmp;
+use std::iter;
 use ultraviolet::vec::Vec3;
 
 #[derive(Copy, Clone, Debug)]
@@ -32,9 +33,9 @@ pub enum Shape {
     Rect {
         position: [u32; 3],
         size: [u32; 2],
-        thickness: u32,
-        filled: bool,
+        border_width: u32,
         color: Color,
+        border_color: Color,
     },
     Line {
         positions: [u32; 6],
@@ -85,39 +86,29 @@ impl Shapes {
                 Shape::Rect {
                     position,
                     size,
-                    thickness,
-                    filled,
                     color,
+                    border_width,
+                    border_color,
                 } => {
-                    let mut pos = [
-                        position[0] as f32,
-                        position[1] as f32,
-                        position[2] as f32,
-                    ];
-                    let size = [size[0] as f32, size[1] as f32];
+                    let mut b_width = *border_width as f32;
 
-                    vec![
-                        ShapeVertex {
-                            position: pos,
-                            color: color.0,
-                        },
-                        ShapeVertex {
-                            position: [pos[0] + size[0], pos[1], pos[2]],
-                            color: color.0,
-                        },
-                        ShapeVertex {
-                            position: [
-                                pos[0] + size[0],
-                                pos[1] + size[1],
-                                pos[2],
-                            ],
-                            color: color.0,
-                        },
-                        ShapeVertex {
-                            position: [pos[0], pos[1] + size[1], pos[2]],
-                            color: color.0,
-                        },
-                    ]
+                    if b_width > 1.0 {
+                        b_width = 1.0;
+                    }
+
+                    iter::repeat(ShapeVertex {
+                        position: [
+                            position[0] as f32,
+                            position[1] as f32,
+                            position[2] as f32,
+                        ],
+                        color: color.0,
+                        size: [size[0] as f32, size[1] as f32],
+                        border_width: b_width,
+                        border_color: border_color.0,
+                    })
+                    .take(4)
+                    .collect::<Vec<ShapeVertex>>()
                 }
                 Shape::Line {
                     positions,

@@ -46,6 +46,15 @@ var tex: texture_2d_array<f32>;
 @binding(1)
 var tex_sample: sampler;
 
+fn unpack_color(color: u32) -> vec4<f32> {
+    return vec4<f32>(
+        f32((color & 0xff0000u) >> 16u),
+        f32((color & 0xff00u) >> 8u),
+        f32((color & 0xffu)),
+        f32((color & 0xff000000u) >> 24u),
+    ) / 255.0;
+}
+
 @vertex
 fn vertex(
     vertex: VertexInput,
@@ -61,7 +70,7 @@ fn vertex(
         u32((vertex.tex_data[1] & 0xffff0000u) >> 16u) 
     );
 
-    result.clip_position =  (camera.proj * camera.view) * vec4<f32>(vertex.position.xyz, 1.0);
+    result.clip_position = (camera.proj * camera.view) * vec4<f32>(vertex.position.xyz, 1.0);
 
     switch v {
         case 1u: {
@@ -80,12 +89,7 @@ fn vertex(
 
     result.tex_data = tex_data;
     result.layer = vertex.layer;
-    result.col = vec4<f32>(
-        f32((vertex.color & 0xffu)),
-        f32((vertex.color & 0xff00u) >> 8u),
-        f32((vertex.color & 0xff0000u) >> 16u),
-        f32((vertex.color & 0xff000000u) >> 24u),
-    ) / 255.0;
+    result.col = unpack_color(vertex.color);
     result.frames = vec2<u32>(u32(vertex.frames & 0xffffu), u32((vertex.frames & 0xffff0000u) >> 16u));
     result.size = fsize;
     result.animate = vertex.animate;
@@ -114,7 +118,7 @@ fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
         );
     } else {
         coords = vec2<f32>(
-            (f32(vertex.tex_data[0]) + vertex.tex_coords.x)  / vertex.size.x, 
+            (f32(vertex.tex_data[0]) + vertex.tex_coords.x) / vertex.size.x,
             (f32(vertex.tex_data[1]) + vertex.tex_coords.y) / vertex.size.y
         );
     }

@@ -137,14 +137,14 @@ async fn main() -> Result<(), AscendingError> {
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
     let mut sprite = [Sprite::new(allocation), Sprite::new(allocation)];
 
-    sprite[0].pos = [32, 32, 5];
-    sprite[0].hw = [48, 48];
-    sprite[0].uv = [48, 96, 48, 48];
+    sprite[0].pos = [0, 0, 5];
+    sprite[0].hw = [32, 32];
+    sprite[0].uv = [32, 64, 32, 32];
     sprite[0].color = Color::rgba(255, 255, 255, 255);
 
     sprite[1].pos = [64, 32, 6];
-    sprite[1].hw = [48, 48];
-    sprite[1].uv = [48, 96, 48, 48];
+    sprite[1].hw = [32, 32];
+    sprite[1].uv = [32, 64, 32, 32];
     sprite[1].color = Color::rgba(100, 100, 100, 255);
 
     let sprite_pipeline = SpriteRenderPipeline::new(
@@ -182,7 +182,7 @@ async fn main() -> Result<(), AscendingError> {
     map.set_tile((1, 31, 1), 2, 0, 255);
     map.set_tile((1, 30, 6), 2, 0, 180);
     map.set_tile((0, 0, 1), 2, 0, 255);
-    map.pos = [32, 32];
+    map.pos = [0, 0];
     let map_pipeline = MapRenderPipeline::new(
         renderer.device(),
         renderer.surface_format(),

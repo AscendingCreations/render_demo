@@ -87,7 +87,7 @@ fn distance_alg(
     radius: f32
 ) -> f32 {
     var inner_size: vec2<f32> = size - vec2<f32>(radius, radius) * 2.0;
-    var top_left: vec2<f32> = position + vec2<f32>(radius, radius);
+    var top_left: vec2<f32> = vec2<f32>(position.x + radius, position.y - radius);
     var bottom_right: vec2<f32> = top_left + inner_size;
 
     var top_left_distance: vec2<f32> = top_left - frag_coord;

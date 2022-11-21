@@ -47,6 +47,15 @@ var emoji_tex: texture_2d_array<f32>;
 @binding(1)
 var emoji_tex_sample: sampler;
 
+fn unpack_color(color: u32) -> vec4<f32> {
+    return vec4<f32>(
+        f32((color & 0xff0000u) >> 16u),
+        f32((color & 0xff00u) >> 8u),
+        f32((color & 0xffu)),
+        f32((color & 0xff000000u) >> 24u),
+    ) / 255.0;
+}
+
 @vertex
 fn vertex(
     vertex: VertexInput,
@@ -60,13 +69,7 @@ fn vertex(
 
     result.position = camera.proj * vec4<f32>(vertex.pos.xyz, 1.0);
     result.size = fsize;
-    result.color = vec4<f32>(
-        f32((vertex.color & 0xffu)),
-        f32((vertex.color & 0xff00u) >> 8u),
-        f32((vertex.color & 0xff0000u) >> 16u),
-        f32((vertex.color & 0xff000000u) >> 24u),
-    ) / 255.0;
-
+    result.color = unpack_color(vertex.color);
     result.uv = vec2<f32>(f32(u), f32(v)) /  fsize;
     result.layer = i32(vertex.layer);
     return result;

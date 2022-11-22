@@ -127,6 +127,11 @@ where
             &self.sprite_pipeline,
         );
 
+        pass.set_vertex_buffer(0, self.buffer_object3.vertices());
+        pass.set_index_buffer(
+            self.buffer_object3.indices(),
+            wgpu::IndexFormat::Uint16,
+        );
         pass.render_sprite(
             &self.animation_buffer,
             &self.animation_atlas,

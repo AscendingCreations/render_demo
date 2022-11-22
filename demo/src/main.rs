@@ -116,7 +116,7 @@ async fn main() -> Result<(), AscendingError> {
                 label: None,
             },
             None,
-            wgpu::PresentMode::AutoVsync,
+            wgpu::PresentMode::Immediate,
         )
         .await
         .unwrap();
@@ -135,17 +135,25 @@ async fn main() -> Result<(), AscendingError> {
     let allocation = Texture::from_file("images/Female_1.png")?
         .group_upload(&mut sprite_atlas, renderer.device(), renderer.queue())
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
-    let mut sprite = [Sprite::new(allocation), Sprite::new(allocation)];
+    let mut sprites = Vec::new();
 
-    sprite[0].pos = [32, 32, 5];
-    sprite[0].hw = [48, 48];
-    sprite[0].uv = [48, 96, 48, 48];
-    sprite[0].color = Color::rgba(255, 255, 255, 255);
+    let mut x = 0;
+    let mut y = 0;
 
-    sprite[1].pos = [64, 32, 6];
-    sprite[1].hw = [48, 48];
-    sprite[1].uv = [48, 96, 48, 48];
-    sprite[1].color = Color::rgba(100, 100, 100, 255);
+    for i in 0..2000 {
+        if i % 50 == 0 {
+            y += 12;
+            x = 0;
+        }
+
+        let mut sprite = Sprite::new(allocation);
+        sprite.pos = [x, y, 5];
+        sprite.hw = [48, 48];
+        sprite.uv = [48, 96, 48, 48];
+        sprite.color = Color::rgba(255, 255, 255, 255);
+        sprites.push(sprite);
+        x += 12;
+    }
 
     let sprite_pipeline = SpriteRenderPipeline::new(
         renderer.device(),
@@ -302,7 +310,7 @@ async fn main() -> Result<(), AscendingError> {
     let mut state = State {
         layout_storage,
         system,
-        sprite,
+        sprites,
         sprite_pipeline,
         sprite_buffer,
         sprite_atlas,
@@ -439,12 +447,18 @@ async fn main() -> Result<(), AscendingError> {
             .create_view(&wgpu::TextureViewDescriptor::default());
         views.insert("framebuffer".to_string(), view);
 
-        let update = state.sprite[0].update();
-        let update = state.sprite[1].update() || update;
+        let mut update = false;
+
+        for sprite in &mut state.sprites {
+            update = sprite.update() || update;
+        }
 
         if update {
-            let mut bytes = state.sprite[0].bytes.clone();
-            bytes.extend_from_slice(&state.sprite[1].bytes);
+            let mut bytes = Vec::with_capacity(state.sprites.len() * 4);
+
+            for sprite in &state.sprites {
+                bytes.extend_from_slice(&sprite.bytes);
+            }
 
             state.sprite_buffer.set_vertices_from(
                 renderer.device(),

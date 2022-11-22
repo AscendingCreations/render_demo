@@ -12,7 +12,7 @@ where
     /// World Camera Controls and time. Deturmines how the world is looked at.
     pub system: System<Controls>,
     /// Sprite data TODO: Make an array,
-    pub sprite: [Sprite; 2],
+    pub sprites: Vec<Sprite>,
     /// Render pipe line for Sprites
     pub sprite_pipeline: SpriteRenderPipeline,
     /// Vertex buffer group for Sprites

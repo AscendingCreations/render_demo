@@ -17,20 +17,24 @@ var<uniform> camera: Camera;
 var<uniform> time: Time;
 
 struct VertexInput {
-    @location(0) pos: vec3<f32>,
-    @location(1) uv: u32,
-    @location(2) layer: u32,
-    @location(3) color: u32,
-    @location(4) is_color: u32,
+    @builtin(vertex_index) vertex_idx: u32,
+    @location(0) v_pos: vec2<f32>,
+    @location(1) pos: vec3<f32>,
+    @location(2) hw: vec2<f32>,
+    @location(3) uv: vec2<f32>,
+    @location(4) layer: u32,
+    @location(5) color: u32,
+    @location(6) is_color: u32,
 };
 
 struct VertexOutput {
     @builtin(position) position: vec4<f32>,
-    @location(0) color: vec4<f32>,
-    @location(1) uv: vec2<f32>,
-    @location(2) size: vec2<f32>,
-    @location(3) layer: i32,
-    @location(4) is_color: u32,
+    @location(0) v_pos: vec2<f32>,
+    @location(1) color: vec4<f32>,
+    @location(2) uv: vec2<f32>,
+    @location(3) size: vec2<f32>,
+    @location(4) layer: i32,
+    @location(5) is_color: u32,
 };
 
 @group(1)
@@ -62,16 +66,34 @@ fn vertex(
 ) -> VertexOutput {
     var result: VertexOutput;
     var pos = vertex.pos;
-    let u = vertex.uv & 0xffffu;
-    let v = (vertex.uv & 0xffff0000u) >> 16u;
     let size = textureDimensions(tex);
     let fsize = vec2<f32> (f32(size.x), f32(size.y));
+    let v = vertex.vertex_idx % 4u;
 
-    result.position = camera.proj * vec4<f32>(vertex.pos.xyz, 1.0);
+    switch v {
+        case 1u: {
+            result.uv = vec2<f32>(vertex.uv.x + vertex.hw.x, vertex.uv.y + vertex.hw.y) /  fsize;
+            pos.x += vertex.hw.x;
+        }
+        case 2u: {
+            result.uv = vec2<f32>(vertex.uv.x + vertex.hw.x, vertex.uv.y) /  fsize;
+            pos.x += vertex.hw.x;
+            pos.y += vertex.hw.y;
+        }
+        case 3u: {
+            result.uv = vec2<f32>(vertex.uv.x, vertex.uv.y) /  fsize;
+            pos.y += vertex.hw.y;
+        }
+        default: {
+            result.uv = vec2<f32>(vertex.uv.x, vertex.uv.y + vertex.hw.y) /  fsize;
+        }
+    }
+
+    result.position = camera.proj * vec4<f32>(pos.xyz, 1.0);
     result.size = fsize;
     result.color = unpack_color(vertex.color);
-    result.uv = vec2<f32>(f32(u), f32(v)) /  fsize;
     result.layer = i32(vertex.layer);
+    result.v_pos = vertex.v_pos;
     return result;
 }
 

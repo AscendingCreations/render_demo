@@ -1,6 +1,7 @@
 use crate::{
     graphics::{
-        BufferLayout, LayoutStorage, SystemLayout, TextVertex, TextureLayout,
+        InstanceLayout, LayoutStorage, StaticBufferObject, SystemLayout,
+        TextVertex, TextureLayout,
     },
     AscendingError,
 };
@@ -41,11 +42,20 @@ impl TextRenderPipeline {
                 vertex: wgpu::VertexState {
                     module: &shader,
                     entry_point: "vertex",
-                    buffers: &[wgpu::VertexBufferLayout {
-                        array_stride: TextVertex::vertex_stride() as u64,
-                        step_mode: wgpu::VertexStepMode::Vertex,
-                        attributes: &TextVertex::attributes(),
-                    }],
+                    buffers: &[
+                        wgpu::VertexBufferLayout {
+                            array_stride: StaticBufferObject::vertex_size(),
+                            step_mode: wgpu::VertexStepMode::Vertex,
+                            attributes: &[
+                                StaticBufferObject::vertex_attribute(),
+                            ],
+                        },
+                        wgpu::VertexBufferLayout {
+                            array_stride: TextVertex::instance_stride() as u64,
+                            step_mode: wgpu::VertexStepMode::Instance,
+                            attributes: &TextVertex::attributes(),
+                        },
+                    ],
                 },
                 primitive: wgpu::PrimitiveState {
                     topology: wgpu::PrimitiveTopology::TriangleList,

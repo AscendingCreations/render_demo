@@ -116,7 +116,7 @@ async fn main() -> Result<(), AscendingError> {
                 label: None,
             },
             None,
-            wgpu::PresentMode::AutoVsync,
+            wgpu::PresentMode::Immediate,
         )
         .await
         .unwrap();
@@ -169,7 +169,7 @@ async fn main() -> Result<(), AscendingError> {
         FlatControls::new(FlatSettings::default()),
     );
 
-    let sprite_buffer = GpuBuffer::with_capacity(renderer.device(), 1);
+    let sprite_buffer = InstanceBuffer::with_capacity(renderer.device(), 1);
 
     let mut map = Map::new();
 
@@ -212,8 +212,8 @@ async fn main() -> Result<(), AscendingError> {
         GroupType::Textures,
     );
 
-    let maplower_buffer = GpuBuffer::with_capacity(renderer.device(), 540);
-    let mapupper_buffer = GpuBuffer::with_capacity(renderer.device(), 180);
+    let maplower_buffer = InstanceBuffer::with_capacity(renderer.device(), 540);
+    let mapupper_buffer = InstanceBuffer::with_capacity(renderer.device(), 180);
 
     map.layer = map_textures
         .get_unused_id()
@@ -231,7 +231,7 @@ async fn main() -> Result<(), AscendingError> {
         .group_upload(&mut animation_atlas, renderer.device(), renderer.queue())
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
 
-    let animation_buffer = GpuBuffer::new(renderer.device());
+    let animation_buffer = InstanceBuffer::new(renderer.device());
 
     let mut animation = Sprite::new(allocation);
 
@@ -282,7 +282,7 @@ async fn main() -> Result<(), AscendingError> {
         renderer.surface_format(),
         &mut layout_storage,
     )?;
-    let text_buffer = GpuBuffer::new(renderer.device());
+    let text_buffer = InstanceBuffer::new(renderer.device());
 
     let text = Text::new(&FONT_SYSTEM, None);
 
@@ -300,6 +300,7 @@ async fn main() -> Result<(), AscendingError> {
         renderer.device().features(),
     );
 
+    let buffer_object = StaticBufferObject::new(renderer.device());
     let mut state = State {
         layout_storage,
         system,
@@ -326,6 +327,7 @@ async fn main() -> Result<(), AscendingError> {
         text_pipeline,
         text_buffer,
         profiler,
+        buffer_object,
     };
 
     let mut views = HashMap::new();
@@ -447,7 +449,7 @@ async fn main() -> Result<(), AscendingError> {
             let mut bytes = state.sprite[0].bytes.clone();
             bytes.extend_from_slice(&state.sprite[1].bytes);
 
-            state.sprite_buffer.set_vertices_from(
+            state.sprite_buffer.set_from(
                 renderer.device(),
                 renderer.queue(),
                 &bytes,
@@ -466,7 +468,7 @@ async fn main() -> Result<(), AscendingError> {
         state.text.reset_cleared();
 
         if update {
-            state.text_buffer.set_vertices_from(
+            state.text_buffer.set_from(
                 renderer.device(),
                 renderer.queue(),
                 &state.text.text_bytes,
@@ -477,13 +479,13 @@ async fn main() -> Result<(), AscendingError> {
             state.map.update(renderer.queue(), &mut state.map_textures);
 
         if update {
-            state.maplower_buffer.set_vertices_from(
+            state.maplower_buffer.set_from(
                 renderer.device(),
                 renderer.queue(),
                 &state.map.lowerbytes,
             );
 
-            state.mapupper_buffer.set_vertices_from(
+            state.mapupper_buffer.set_from(
                 renderer.device(),
                 renderer.queue(),
                 &state.map.upperbytes,
@@ -493,14 +495,14 @@ async fn main() -> Result<(), AscendingError> {
         let update = state.animation.update();
 
         if update {
-            state.animation_buffer.set_vertices_from(
+            state.animation_buffer.set_from(
                 renderer.device(),
                 renderer.queue(),
                 &state.animation.bytes,
             );
         }
 
-        let update = state.shapes.update();
+        /*let update = state.shapes.update();
 
         if update {
             state.shapes_buffer.set_vertices_from(
@@ -508,7 +510,7 @@ async fn main() -> Result<(), AscendingError> {
                 renderer.queue(),
                 &state.shapes.buffers,
             );
-        }
+        }*/
 
         // Start encoding commands.
         let mut encoder = renderer.device().create_command_encoder(
@@ -519,7 +521,7 @@ async fn main() -> Result<(), AscendingError> {
 
         // Run the render pass.
         wgpu_profiler!(
-            "name of your scope",
+            "main scope",
             &mut state.profiler,
             &mut encoder,
             renderer.device(),

@@ -48,8 +48,8 @@ impl Sprite {
         let (x, y, w, h) = (
             self.pos[0] as f32,
             self.pos[1] as f32,
-            self.pos[0].saturating_add((self.hw[0] as f32) as i32) as f32,
-            self.pos[1].saturating_add((self.hw[1] as f32) as i32) as f32,
+            self.hw[0] as f32,
+            self.hw[1] as f32,
         );
 
         let allocation = match &self.texture {
@@ -67,36 +67,18 @@ impl Sprite {
 
         let animate = u32::from(self.animate);
 
-        let default = SpriteVertex {
-            position: [0.0, 0.0, 0.0],
+        let instance = vec![SpriteVertex {
+            position: [x, y, self.pos[2] as f32],
+            hw: [w, h],
             tex_data: [u, v, width, height],
             color: self.color.0,
             frames: self.frames,
             animate,
             time: self.switch_time,
             layer: allocation.layer as i32,
-        };
+        }];
 
-        let buffer = vec![
-            SpriteVertex {
-                position: [x, y, self.pos[2] as f32],
-                ..default
-            },
-            SpriteVertex {
-                position: [w, y, self.pos[2] as f32],
-                ..default
-            },
-            SpriteVertex {
-                position: [w, h, self.pos[2] as f32],
-                ..default
-            },
-            SpriteVertex {
-                position: [x, h, self.pos[2] as f32],
-                ..default
-            },
-        ];
-
-        self.bytes = bytemuck::cast_slice(&buffer).to_vec();
+        self.bytes = bytemuck::cast_slice(&instance).to_vec();
         self.changed = false;
     }
 

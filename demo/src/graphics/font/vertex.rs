@@ -1,4 +1,4 @@
-use crate::graphics::{BufferLayout, BufferPass};
+use crate::graphics::InstanceLayout;
 use std::iter;
 
 #[repr(C)]
@@ -6,7 +6,8 @@ use std::iter;
 /// 4 of these per each layer.
 pub struct TextVertex {
     pub position: [f32; 3],
-    pub tex_coord: [u16; 2],
+    pub hw: [f32; 2],
+    pub tex_coord: [f32; 2],
     pub layer: u32,
     pub color: u32,
     pub is_color: u32,
@@ -16,7 +17,8 @@ impl Default for TextVertex {
     fn default() -> Self {
         Self {
             position: [0.0, 0.0, 1.0],
-            tex_coord: [0; 2],
+            hw: [0.0; 2],
+            tex_coord: [0.0; 2],
             layer: 0,
             color: 0,
             is_color: 0,
@@ -24,44 +26,25 @@ impl Default for TextVertex {
     }
 }
 
-impl BufferLayout for TextVertex {
+impl InstanceLayout for TextVertex {
     fn attributes() -> Vec<wgpu::VertexAttribute> {
-        wgpu::vertex_attr_array![0 => Float32x3, 1 => Uint32, 2 => Uint32, 3 => Uint32, 4 => Uint32]
+        wgpu::vertex_attr_array![1 => Float32x3, 2 => Float32x2, 3 => Float32x2, 4 => Uint32, 5 => Uint32, 6 => Uint32]
             .to_vec()
     }
 
     ///default set as large enough to contain 1024 glyphs.
-    fn default_buffer() -> BufferPass {
-        Self::with_capacity(4096)
+    fn default_buffer() -> Vec<u8> {
+        Self::with_capacity(1024)
     }
 
-    fn with_capacity(capacity: usize) -> BufferPass {
-        let vertex_arr: Vec<TextVertex> = iter::repeat(TextVertex::default())
-            .take(capacity * 4)
-            .collect();
+    fn with_capacity(capacity: usize) -> Vec<u8> {
+        let instance_arr: Vec<TextVertex> =
+            iter::repeat(TextVertex::default()).take(capacity).collect();
 
-        let mut indices: Vec<u32> = Vec::with_capacity(capacity * 6);
-
-        (0..capacity as u32).for_each(|i| {
-            let x = i * 4;
-            indices.extend_from_slice(&[x, x + 1, x + 2, x, x + 2, x + 3]);
-        });
-
-        BufferPass {
-            vertices: bytemuck::cast_slice(&vertex_arr).to_vec(),
-            indices: bytemuck::cast_slice(&indices).to_vec(),
-        }
+        bytemuck::cast_slice(&instance_arr).to_vec()
     }
 
-    fn vertex_stride() -> usize {
-        std::mem::size_of::<[f32; 7]>()
-    }
-
-    fn index_stride() -> usize {
-        4
-    }
-
-    fn index_offset() -> usize {
-        6
+    fn instance_stride() -> usize {
+        std::mem::size_of::<[f32; 10]>()
     }
 }

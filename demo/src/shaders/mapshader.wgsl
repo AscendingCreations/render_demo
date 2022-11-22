@@ -17,9 +17,11 @@ var<uniform> camera: Camera;
 var<uniform> time: Time;
 
 struct VertexInput {
-    @location(0) position: vec3<f32>,
-    @location(1) tex_coords: u32,
-    @location(2) layer: i32,
+    @builtin(vertex_index) vertex_idx: u32,
+    @location(0) v_pos: vec2<f32>,
+    @location(1) position: vec3<f32>,
+    @location(2) hw: vec2<f32>,
+    @location(3) layer: i32,
 };
 
 struct VertexOutput {
@@ -41,9 +43,30 @@ fn vertex(
     vertex: VertexInput,
 ) -> VertexOutput {
     var result: VertexOutput;
-    result.tex_coords = vec2<f32>(f32(vertex.tex_coords & 0xffffu), f32((vertex.tex_coords & 0xffff0000u) >> 16u));
-    result.zpos = vertex.position.z;
-    result.clip_position =  (camera.proj * camera.view) * vec4<f32>(vertex.position.xyz, 1.0);
+    var pos = vertex.position;
+    let v = vertex.vertex_idx % 4u;
+
+    switch v {
+        case 1u: {
+            result.tex_coords = vec2<f32>(vertex.hw.x, vertex.hw.y);
+            pos.x += vertex.hw.x;
+        }
+        case 2u: {
+            result.tex_coords = vec2<f32>(vertex.hw.x, 0.0);
+            pos.x += vertex.hw.x;
+            pos.y += vertex.hw.y;
+        }
+        case 3u: {
+            result.tex_coords = vec2<f32>(0.0, 0.0);
+            pos.y += vertex.hw.y;
+        }
+        default: {
+            result.tex_coords = vec2<f32>(0.0, vertex.hw.y);
+        }
+    }
+
+    result.zpos = pos.z;
+    result.clip_position =  (camera.proj * camera.view) * vec4<f32>(pos, 1.0);
     result.layer = vertex.layer;
     return result;
 }

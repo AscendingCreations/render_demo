@@ -69,12 +69,7 @@ pub struct Map {
 
 impl Map {
     pub fn create_quad(&mut self) {
-        let (x, y, w, h) = (
-            self.pos[0] as f32,
-            self.pos[1] as f32,
-            self.pos[0].saturating_add(512) as f32,
-            self.pos[1].saturating_add(512) as f32,
-        );
+        let (x, y) = (self.pos[0] as f32, self.pos[1] as f32);
 
         let mut lowerbuffer = Vec::new();
         let mut upperbuffer = Vec::new();
@@ -86,33 +81,16 @@ impl Map {
                 continue;
             }
 
-            let mut vertices = vec![
-                MapVertex {
-                    position: [x, y, z], //2,3
-                    tex_coord: [0, 512],
-                    layer: self.layer as i32,
-                },
-                MapVertex {
-                    position: [w, y, z], //1
-                    tex_coord: [512, 512],
-                    layer: self.layer as i32,
-                },
-                MapVertex {
-                    position: [w, h, z], //0,6
-                    tex_coord: [512, 0],
-                    layer: self.layer as i32,
-                },
-                MapVertex {
-                    position: [x, h, z], //5
-                    tex_coord: [0, 0],
-                    layer: self.layer as i32,
-                },
-            ];
+            let map_vertex = MapVertex {
+                position: [x, y, z], //2,3
+                hw: [512.0, 512.0],
+                layer: self.layer as i32,
+            };
 
             if i >= 6 {
-                upperbuffer.append(&mut vertices);
+                upperbuffer.push(map_vertex);
             } else {
-                lowerbuffer.append(&mut vertices);
+                lowerbuffer.push(map_vertex);
             }
         }
 

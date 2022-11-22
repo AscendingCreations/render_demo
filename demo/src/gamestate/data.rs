@@ -16,7 +16,7 @@ where
     /// Render pipe line for Sprites
     pub sprite_pipeline: SpriteRenderPipeline,
     /// Vertex buffer group for Sprites
-    pub sprite_buffer: GpuBuffer<SpriteVertex>,
+    pub sprite_buffer: InstanceBuffer<SpriteVertex>,
     /// AtlasGroup to hold Sprite Images
     pub sprite_atlas: AtlasGroup,
     /// maps TODO: make this an array.
@@ -24,8 +24,8 @@ where
     /// Render Pipeline for maps
     pub map_pipeline: MapRenderPipeline,
     /// vertex buffer group for maps
-    pub maplower_buffer: GpuBuffer<MapVertex>,
-    pub mapupper_buffer: GpuBuffer<MapVertex>,
+    pub maplower_buffer: InstanceBuffer<MapVertex>,
+    pub mapupper_buffer: InstanceBuffer<MapVertex>,
     /// Texture Bind group for Maptextures
     pub map_group: TextureGroup,
     /// contains the Map layer grids in pixel form.
@@ -34,7 +34,7 @@ where
     pub map_atlas: AtlasGroup,
     /// animation test stuff.
     pub animation: Sprite,
-    pub animation_buffer: GpuBuffer<SpriteVertex>,
+    pub animation_buffer: InstanceBuffer<SpriteVertex>,
     pub animation_atlas: AtlasGroup,
 
     /// Basic shape rendering.
@@ -44,11 +44,12 @@ where
 
     /// Text test stuff.
     pub text: Text,
-    pub text_buffer: GpuBuffer<TextVertex>,
+    pub text_buffer: InstanceBuffer<TextVertex>,
     pub text_pipeline: TextRenderPipeline,
     pub text_atlas: AtlasGroup<CacheKey>,
     pub emoji_atlas: AtlasGroup<CacheKey>,
     pub profiler: GpuProfiler,
+    pub buffer_object: StaticBufferObject,
 }
 
 impl<Controls> Pass for State<Controls>
@@ -98,6 +99,11 @@ where
         });
 
         pass.set_bind_group(0, self.system.bind_group(), &[]);
+        pass.set_vertex_buffer(0, self.buffer_object.vertices());
+        pass.set_index_buffer(
+            self.buffer_object.indices(),
+            wgpu::IndexFormat::Uint16,
+        );
 
         pass.render_maps(
             &self.maplower_buffer,
@@ -135,6 +141,6 @@ where
         );
         self.profiler.end_scope(&mut pass);
 
-        pass.render_shape(&self.shapes_buffer, &self.shapes_pipeline);
+        //pass.render_shape(&self.shapes_buffer, &self.shapes_pipeline);
     }
 }

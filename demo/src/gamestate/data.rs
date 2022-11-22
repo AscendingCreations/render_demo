@@ -12,7 +12,7 @@ where
     /// World Camera Controls and time. Deturmines how the world is looked at.
     pub system: System<Controls>,
     /// Sprite data TODO: Make an array,
-    pub sprite: [Sprite; 2],
+    pub sprites: Vec<Sprite>,
     /// Render pipe line for Sprites
     pub sprite_pipeline: SpriteRenderPipeline,
     /// Vertex buffer group for Sprites
@@ -50,6 +50,10 @@ where
     pub emoji_atlas: AtlasGroup<CacheKey>,
     pub profiler: GpuProfiler,
     pub buffer_object: StaticBufferObject,
+    pub buffer_object1: StaticBufferObject,
+    pub buffer_object2: StaticBufferObject,
+    pub buffer_object3: StaticBufferObject,
+    pub buffer_object4: StaticBufferObject,
 }
 
 impl<Controls> Pass for State<Controls>
@@ -112,6 +116,11 @@ where
             &self.map_pipeline,
         );
 
+        pass.set_vertex_buffer(0, self.buffer_object1.vertices());
+        pass.set_index_buffer(
+            self.buffer_object1.indices(),
+            wgpu::IndexFormat::Uint16,
+        );
         pass.render_sprite(
             &self.sprite_buffer,
             &self.sprite_atlas,
@@ -124,6 +133,11 @@ where
             &self.sprite_pipeline,
         );
 
+        pass.set_vertex_buffer(0, self.buffer_object.vertices());
+        pass.set_index_buffer(
+            self.buffer_object.indices(),
+            wgpu::IndexFormat::Uint16,
+        );
         pass.render_maps(
             &self.mapupper_buffer,
             &self.map_atlas,
@@ -131,6 +145,11 @@ where
             &self.map_pipeline,
         );
 
+        pass.set_vertex_buffer(0, self.buffer_object2.vertices());
+        pass.set_index_buffer(
+            self.buffer_object.indices(),
+            wgpu::IndexFormat::Uint16,
+        );
         self.profiler
             .begin_scope("Text", &mut pass, &renderer.device());
         pass.render_text(

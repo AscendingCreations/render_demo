@@ -165,6 +165,6 @@ where
         );
         self.profiler.end_scope(&mut pass);
 
-        //pass.render_shape(&self.shapes_buffer, &self.shapes_pipeline);
+        pass.render_shape(&self.shapes_buffer, &self.shapes_pipeline);
     }
 }

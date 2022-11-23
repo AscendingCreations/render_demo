@@ -21,6 +21,7 @@ use std::{
 };
 use wgpu_profiler::{wgpu_profiler, GpuProfiler, GpuTimerScopeResult};
 use winit::{
+    dpi::PhysicalSize,
     event::*,
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
@@ -95,6 +96,7 @@ async fn main() -> Result<(), AscendingError> {
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .with_title("Demo")
+        .with_inner_size(PhysicalSize::new(800, 600))
         .build(&event_loop)
         .unwrap();
 
@@ -140,14 +142,9 @@ async fn main() -> Result<(), AscendingError> {
     let mut x = 0;
     let mut y = 0;
 
-    for i in 0..100_000 {
+    for i in 0..2 {
         if i % 50 == 0 {
             y += 12;
-            x = 0;
-        }
-
-        if i % 1000 == 0 {
-            y = 0;
             x = 0;
         }
 
@@ -277,8 +274,8 @@ async fn main() -> Result<(), AscendingError> {
     let mut shapes = Shapes::new();
 
     shapes.push_shape(Shape::Rect {
-        position: [150, 150, 1],
-        size: [100, 100],
+        position: [0, 0, 1],
+        size: [800, 600],
         border_width: 1,
         border_color: Color::rgba(255, 255, 255, 255),
         color: Color::rgba(255, 0, 0, 255),
@@ -540,7 +537,7 @@ async fn main() -> Result<(), AscendingError> {
             );
         }
 
-        /*let update = state.shapes.update();
+        let update = state.shapes.update();
 
         if update {
             state.shapes_buffer.set_vertices_from(
@@ -548,7 +545,7 @@ async fn main() -> Result<(), AscendingError> {
                 renderer.queue(),
                 &state.shapes.buffers,
             );
-        }*/
+        }
 
         // Start encoding commands.
         let mut encoder = renderer.device().create_command_encoder(

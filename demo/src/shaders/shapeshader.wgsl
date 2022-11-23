@@ -80,6 +80,26 @@ fn vertex(
     return result;
 }
 
+fn distance_alg2(
+    frag_coord: vec2<f32>, //-0.9375 , -0.75
+    position: vec2<f32>, //226,226
+    size: vec2<f32>, //148,148
+    radius: f32 //0.0
+) -> f32 {
+    var inner_size: vec2<f32> = size - vec2<f32>(radius, radius) * 2.0; //148,148
+    var bottom_left: vec2<f32> = vec2<f32>(position.x + radius, position.y + radius);//226,226
+    var top_right: vec2<f32> = bottom_left + inner_size; //374, 374
+
+    var bottom_left_distance: vec2<f32> = abs(bottom_left - frag_coord); 
+    var top_right_distance: vec2<f32> = top_right - frag_coord;// 374,374 + 247,250
+
+    var dist: vec2<f32> = vec2<f32>(
+        max(max(top_right_distance.x, bottom_left_distance.x), 0.0),
+        max(max(top_right_distance.y, bottom_left_distance.y), 0.0) //624,624
+    );
+    return sqrt(dist.x * dist.x + dist.y * dist.y);
+}
+
 fn distance_alg(
     frag_coord: vec2<f32>,
     position: vec2<f32>,
@@ -90,13 +110,14 @@ fn distance_alg(
     var top_left: vec2<f32> = vec2<f32>(position.x + radius, position.y - radius);
     var bottom_right: vec2<f32> = top_left + inner_size;
 
-    var top_left_distance: vec2<f32> = top_left - frag_coord;
+    var top_left_distance: vec2<f32> =  top_left - frag_coord;
     var bottom_right_distance: vec2<f32> = frag_coord - bottom_right;
 
     var dist: vec2<f32> = vec2<f32>(
         max(max(top_left_distance.x, bottom_right_distance.x), 0.0),
         max(max(top_left_distance.y, bottom_right_distance.y), 0.0)
     );
+
     return sqrt(dist.x * dist.x + dist.y * dist.y);
 }
 
@@ -110,15 +131,16 @@ fn get_distance(center: vec2<f32>, size: vec2<f32>, radius: f32) -> f32 {
 fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
     var mixed_color: vec4<f32> = vertex.color;
     let radius = 1.0;
+    let clippy = vec2<f32>(vertex.clip_position.x, vertex.clip_position.y);
 
     if (vertex.border_width > 0.0) {
         var border: f32 = max(radius - vertex.border_width, 0.0);
 
-        let distance = distance_alg(
-            vertex.clip_position.xy - vec2<f32>(0.5, 0.5),
-            vertex.position.xy + vec2<f32>(vertex.border_width, vertex.border_width),
-            vertex.size - vec2<f32>(vertex.border_width * 2.0, vertex.border_width * 2.0),
-            border
+        let distance = distance_alg( 
+            clippy - vec2<f32>(0.5, 0.5), //-0.9375 , -0.75
+            vertex.position.xy + vec2<f32>(vertex.border_width, vertex.border_width), //226,226
+            vec2<f32>(225.0, 225.0) - vec2<f32>(vertex.border_width * 2.0, vertex.border_width * 2.0), //148,148
+            border //0.0
         );
 
         let border_mix: f32 = smoothstep(
@@ -131,7 +153,7 @@ fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
     }
 
     let dist: f32 = distance_alg(
-        vertex.clip_position.xy,
+        clippy,
         vertex.position.xy,
         vertex.size,
         radius

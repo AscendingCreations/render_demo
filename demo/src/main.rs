@@ -140,7 +140,7 @@ async fn main() -> Result<(), AscendingError> {
     let mut x = 0;
     let mut y = 0;
 
-    for i in 0..2000 {
+    for i in 0..2 {
         if i % 50 == 0 {
             y += 12;
             x = 0;
@@ -190,7 +190,7 @@ async fn main() -> Result<(), AscendingError> {
     map.set_tile((1, 31, 1), 2, 0, 255);
     map.set_tile((1, 30, 6), 2, 0, 180);
     map.set_tile((0, 0, 1), 2, 0, 255);
-    map.pos = [32, 32];
+    map.pos = [0, 0];
     let map_pipeline = MapRenderPipeline::new(
         renderer.device(),
         renderer.surface_format(),
@@ -575,7 +575,11 @@ async fn main() -> Result<(), AscendingError> {
         }
 
         if time_save < seconds {
-            let mut file = File::create("vbo.txt").unwrap();
+            let name = format!(
+                "old-{}.csv",
+                chrono::Local::now().format("%Y_%m_%d-%I_%M_%S_%p")
+            );
+            let mut file = File::create(&name).unwrap();
 
             for data in &time_data {
                 file.write(data.as_bytes()).unwrap();

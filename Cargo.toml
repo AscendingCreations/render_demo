@@ -25,6 +25,7 @@ futures = "0.3.24"
 cosmic-text = { git = "https://github.com/pop-os/cosmic-text" }
 ordered-float = { version = "3.3.0", features = ["serde"] }
 swash = "0.1"
+chrono = { version = "0.4.23", features = ["clock", "serde", "std"] }
 
 [workspace.dependencies.naga]
 #git = "https://github.com/gfx-rs/naga"

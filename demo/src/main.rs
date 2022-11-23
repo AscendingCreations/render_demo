@@ -148,8 +148,8 @@ async fn main() -> Result<(), AscendingError> {
 
         let mut sprite = Sprite::new(allocation);
         sprite.pos = [x, y, 5];
-        sprite.hw = [32, 32];
-        sprite.uv = [32, 64, 32, 32];
+        sprite.hw = [48, 48];
+        sprite.uv = [48, 96, 48, 48];
         sprite.color = Color::rgba(255, 255, 255, 255);
         sprites.push(sprite);
         x += 12;

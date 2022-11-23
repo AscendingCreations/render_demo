@@ -30,4 +30,5 @@ cosmic-text.workspace = true
 naga.workspace = true
 wgpu.workspace = true
 swash.workspace = true
+chrono.workspace = true
 wgpu-profiler = {git = "https://github.com/Wumpf/wgpu-profiler.git"}

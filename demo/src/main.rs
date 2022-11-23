@@ -588,7 +588,11 @@ async fn main() -> Result<(), AscendingError> {
         }
 
         if time_save < seconds {
-            let mut file = File::create("vbo.txt").unwrap();
+            let name = format!(
+                "new-{}.csv",
+                chrono::Local::now().format("%Y_%m_%d-%I_%M_%S_%p")
+            );
+            let mut file = File::create(&name).unwrap();
 
             for data in &time_data {
                 file.write(data.as_bytes()).unwrap();

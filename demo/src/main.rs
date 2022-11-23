@@ -140,9 +140,14 @@ async fn main() -> Result<(), AscendingError> {
     let mut x = 0;
     let mut y = 0;
 
-    for i in 0..2 {
+    for i in 0..100_000 {
         if i % 50 == 0 {
             y += 12;
+            x = 0;
+        }
+
+        if i % 1000 == 0 {
+            y = 0;
             x = 0;
         }
 

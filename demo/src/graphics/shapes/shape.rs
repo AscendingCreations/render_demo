@@ -78,7 +78,6 @@ impl Shapes {
     }
 
     pub fn fill(&mut self) {
-        let index = 0;
         let mut shapes = Vec::new();
 
         for shape in &self.shapes {

@@ -36,6 +36,7 @@ pub enum Shape {
         border_width: u32,
         color: Color,
         border_color: Color,
+        radius: f32,
     },
     Line {
         positions: [u32; 6],
@@ -89,6 +90,7 @@ impl Shapes {
                     color,
                     border_width,
                     border_color,
+                    radius,
                 } => {
                     let mut b_width = *border_width as f32;
 
@@ -106,6 +108,7 @@ impl Shapes {
                         size: [size[0] as f32, size[1] as f32],
                         border_width: b_width,
                         border_color: border_color.0,
+                        radius,
                     })
                     .take(4)
                     .collect::<Vec<ShapeVertex>>()

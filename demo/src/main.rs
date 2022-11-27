@@ -157,16 +157,6 @@ async fn main() -> Result<(), AscendingError> {
         x += 12;
     }
 
-    /*sprite[0].pos = [0, 0, 5];
-    sprite[0].hw = [32, 32];
-    sprite[0].uv = [32, 64, 32, 32];
-    sprite[0].color = Color::rgba(255, 255, 255, 255);
-
-    sprite[1].pos = [64, 32, 6];
-    sprite[1].hw = [32, 32];
-    sprite[1].uv = [32, 64, 32, 32];
-    sprite[1].color = Color::rgba(100, 100, 100, 255);*/
-
     let sprite_pipeline = SpriteRenderPipeline::new(
         renderer.device(),
         renderer.surface_format(),
@@ -187,6 +177,7 @@ async fn main() -> Result<(), AscendingError> {
             far: -100.0,
         },
         FlatControls::new(FlatSettings::default()),
+        [size.width as f32, size.height as f32],
     );
 
     let sprite_buffer = InstanceBuffer::with_capacity(renderer.device(), 1);
@@ -274,11 +265,12 @@ async fn main() -> Result<(), AscendingError> {
     let mut shapes = Shapes::new();
 
     shapes.push_shape(Shape::Rect {
-        position: [0, 0, 1],
-        size: [800, 600],
+        position: [150, 150, 1],
+        size: [100, 100],
         border_width: 1,
         border_color: Color::rgba(255, 255, 255, 255),
         color: Color::rgba(255, 0, 0, 255),
+        radius: 10.0,
     });
 
     let text_atlas = AtlasGroup::new(
@@ -465,7 +457,10 @@ async fn main() -> Result<(), AscendingError> {
 
         let seconds = frame_time.seconds();
         state.system.update(&renderer, &frame_time);
-
+        state.system.update_screen(
+            &renderer,
+            [test_size.width as f32, test_size.height as f32],
+        );
         let view = frame
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());

@@ -2,10 +2,15 @@ struct Camera {
     view: mat4x4<f32>,
     proj: mat4x4<f32>,
     eye: vec3<f32>,
+    scale: f32,
 };
 
 struct Time {
     seconds: f32,
+};
+
+struct Screen {
+    size: vec2<f32>,
 };
 
 @group(0)
@@ -15,6 +20,10 @@ var<uniform> camera: Camera;
 @group(0)
 @binding(1)
 var<uniform> time: Time;
+
+@group(0)
+@binding(2)
+var<uniform> screen: Screen;
 
 struct VertexInput {
     @builtin(vertex_index) vertex_idx: u32,

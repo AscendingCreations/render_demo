@@ -70,4 +70,8 @@ impl Controls for FlatControls {
     fn view(&self) -> mint::ColumnMatrix4<f32> {
         self.view.into()
     }
+
+    fn scale(&self) -> f32 {
+        self.settings.zoom
+    }
 }

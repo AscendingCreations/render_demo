@@ -37,11 +37,20 @@ impl ShapeRenderPipeline {
                 vertex: wgpu::VertexState {
                     module: &shader,
                     entry_point: "vertex",
-                    buffers: &[wgpu::VertexBufferLayout {
-                        array_stride: ShapeVertex::vertex_stride() as u64,
-                        step_mode: wgpu::VertexStepMode::Vertex,
-                        attributes: &ShapeVertex::attributes(),
-                    }],
+                    buffers: &[
+                        wgpu::VertexBufferLayout {
+                            array_stride: StaticBufferObject::vertex_size(),
+                            step_mode: wgpu::VertexStepMode::Vertex,
+                            attributes: &[
+                                StaticBufferObject::vertex_attribute(),
+                            ],
+                        },
+                        wgpu::VertexBufferLayout {
+                            array_stride: ShapeVertex::instance_stride() as u64,
+                            step_mode: wgpu::VertexStepMode::Instance,
+                            attributes: &ShapeVertex::attributes(),
+                        },
+                    ],
                 },
                 primitive: wgpu::PrimitiveState {
                     topology: wgpu::PrimitiveTopology::TriangleList,

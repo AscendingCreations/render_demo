@@ -1,6 +1,6 @@
 use crate::{
-    graphics::{BufferLayout, LayoutStorage, ShapeVertex, SystemLayout},
-    AscendingError,
+    graphics::{InstanceLayout, LayoutStorage, ShapeVertex, SystemLayout},
+    AscendingError, StaticBufferObject,
 };
 
 pub struct ShapeRenderPipeline {

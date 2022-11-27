@@ -260,7 +260,7 @@ async fn main() -> Result<(), AscendingError> {
         &mut layout_storage,
     )?;
 
-    let shapes_buffer = GpuBuffer::new(renderer.device());
+    let shapes_buffer = InstanceBuffer::new(renderer.device());
 
     let mut shapes = Shapes::new();
 
@@ -535,7 +535,7 @@ async fn main() -> Result<(), AscendingError> {
         let update = state.shapes.update();
 
         if update {
-            state.shapes_buffer.set_vertices_from(
+            state.shapes_buffer.set_from(
                 renderer.device(),
                 renderer.queue(),
                 &state.shapes.buffers,

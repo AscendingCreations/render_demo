@@ -1,4 +1,4 @@
-use crate::graphics::{BufferLayout, BufferPass};
+use crate::graphics::InstanceLayout;
 use std::iter;
 
 #[repr(C)]
@@ -25,7 +25,7 @@ impl Default for ShapeVertex {
     }
 }
 
-impl InstanceLayout for MapVertex {
+impl InstanceLayout for ShapeVertex {
     fn attributes() -> Vec<wgpu::VertexAttribute> {
         wgpu::vertex_attr_array![1 => Float32x3, 2 => Float32x2, 3 => Float32, 4 => Uint32, 5 => Uint32, 6 => Float32]
             .to_vec()

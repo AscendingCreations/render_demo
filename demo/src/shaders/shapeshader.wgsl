@@ -27,11 +27,13 @@ var<uniform> screen: Screen;
 
 struct VertexInput {
     @builtin(vertex_index) vertex_idx: u32,
-    @location(0) position: vec3<f32>,
-    @location(1) size: vec2<f32>,
-    @location(2) border_width: f32,
-    @location(3) color: u32,
-    @location(4) border_color: u32,
+    @location(0) v_pos: vec2<f32>,
+    @location(1) position: vec3<f32>,
+    @location(2) size: vec2<f32>,
+    @location(3) border_width: f32,
+    @location(4) color: u32,
+    @location(5) border_color: u32,
+    @location(6) radius: f32,
 };
 
 struct VertexOutput {
@@ -41,6 +43,7 @@ struct VertexOutput {
     @location(2) border_color: vec4<f32>,
     @location(3) size: vec2<f32>,
     @location(4) border_width: f32,
+    @location(5) radius: f32,
 };
 
 fn unpack_color(color: u32) -> vec4<f32> {
@@ -81,6 +84,7 @@ fn vertex(
     result.clip_position = camera.proj * camera.view * vec4<f32>(pos, vertex.position.z, 1.0);
     result.size = vertex.size * camera.scale;
     result.position = vertex.position.xy * camera.scale;
+    result.radius = vertex.radius;
     return result;
 }
 

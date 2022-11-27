@@ -39,7 +39,7 @@ where
 
     /// Basic shape rendering.
     pub shapes: Shapes,
-    pub shapes_buffer: GpuBuffer<ShapeVertex>,
+    pub shapes_buffer: InstanceBuffer<ShapeVertex>,
     pub shapes_pipeline: ShapeRenderPipeline,
 
     /// Text test stuff.
@@ -165,6 +165,11 @@ where
         );
         self.profiler.end_scope(&mut pass);
 
+        pass.set_vertex_buffer(0, self.buffer_object4.vertices());
+        pass.set_index_buffer(
+            self.buffer_object4.indices(),
+            wgpu::IndexFormat::Uint16,
+        );
         pass.render_shape(&self.shapes_buffer, &self.shapes_pipeline);
     }
 }

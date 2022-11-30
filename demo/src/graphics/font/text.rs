@@ -110,23 +110,14 @@ impl Text {
 
                 let (u, v, width, height) = allocation.rect();
                 let (u, v, width, height) =
-                    (u as i32, v as i32, width as i32 + 1, height as i32);
+                    (u as i32, v as i32, width as f32, height as f32);
 
                 let (x, y) = (
                     (pos[0] + glyph.x_int) as f32,
                     (pos[1] + line_y + glyph.y_int) as f32,
                 );
-                let (w, h) = (
-                    (x as i32).saturating_add(width) as f32,
-                    (y as i32).saturating_add(height) as f32,
-                );
 
-                let (u1, v1, u2, v2) = (
-                    u as u16,
-                    v as u16,
-                    u.saturating_add(width) as u16,
-                    v.saturating_add(height) as u16,
-                );
+                let (u1, v1) = (u as f32, v as f32);
 
                 let color = if is_color {
                     Color::rgba(255, 255, 255, 255)
@@ -138,37 +129,15 @@ impl Text {
                 };
 
                 let default = TextVertex {
-                    position: [0.0; 3],
-                    tex_coord: [0; 2],
+                    position: [x, y, pos[2] as f32],
+                    hw: [width, height],
+                    tex_coord: [u1, v1],
                     layer: allocation.layer as u32,
                     color: color.0,
                     is_color: is_color as u32,
                 };
 
-                let mut other = vec![
-                    TextVertex {
-                        position: [x, y, pos[2] as f32],
-                        tex_coord: [u1, v2],
-                        ..default
-                    },
-                    TextVertex {
-                        position: [w, y, pos[2] as f32],
-                        tex_coord: [u2, v2],
-                        ..default
-                    },
-                    TextVertex {
-                        position: [w, h, pos[2] as f32],
-                        tex_coord: [u2, v1],
-                        ..default
-                    },
-                    TextVertex {
-                        position: [x, h, pos[2] as f32],
-                        tex_coord: [u1, v1],
-                        ..default
-                    },
-                ];
-
-                text_buf.append(&mut other);
+                text_buf.push(default);
             }
         }
 

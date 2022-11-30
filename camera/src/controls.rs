@@ -13,6 +13,11 @@ pub trait Controls {
 
     /// Retrieves the view matrix.
     fn view(&self) -> mint::ColumnMatrix4<f32>;
+
+    ///returns the scale if one exists. otherwise 1.0
+    fn scale(&self) -> f32 {
+        1.0
+    }
 }
 
 pub use first_person::{

@@ -1,7 +1,7 @@
 use crate::{
     graphics::{
-        BufferLayout, LayoutStorage, MapLayout, MapVertex, SystemLayout,
-        TextureLayout,
+        InstanceLayout, LayoutStorage, MapLayout, MapVertex,
+        StaticBufferObject, SystemLayout, TextureLayout,
     },
     AscendingError,
 };
@@ -47,11 +47,20 @@ impl MapRenderPipeline {
                 vertex: wgpu::VertexState {
                     module: &shader,
                     entry_point: "vertex",
-                    buffers: &[wgpu::VertexBufferLayout {
-                        array_stride: MapVertex::vertex_stride() as u64,
-                        step_mode: wgpu::VertexStepMode::Vertex,
-                        attributes: &MapVertex::attributes(),
-                    }],
+                    buffers: &[
+                        wgpu::VertexBufferLayout {
+                            array_stride: StaticBufferObject::vertex_size(),
+                            step_mode: wgpu::VertexStepMode::Vertex,
+                            attributes: &[
+                                StaticBufferObject::vertex_attribute(),
+                            ],
+                        },
+                        wgpu::VertexBufferLayout {
+                            array_stride: MapVertex::instance_stride() as u64,
+                            step_mode: wgpu::VertexStepMode::Instance,
+                            attributes: &MapVertex::attributes(),
+                        },
+                    ],
                 },
                 primitive: wgpu::PrimitiveState {
                     topology: wgpu::PrimitiveTopology::TriangleList,

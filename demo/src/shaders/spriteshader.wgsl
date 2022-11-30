@@ -2,10 +2,15 @@ struct Camera {
     view: mat4x4<f32>,
     proj: mat4x4<f32>,
     eye: vec3<f32>,
+    scale: f32,
 };
 
 struct Time {
     seconds: f32,
+};
+
+struct Screen {
+    size: vec2<f32>,
 };
 
 @group(0)
@@ -16,15 +21,21 @@ var<uniform> camera: Camera;
 @binding(1)
 var<uniform> time: Time;
 
+@group(0)
+@binding(2)
+var<uniform> screen: Screen;
+
 struct VertexInput {
     @builtin(vertex_index) vertex_idx: u32,
-    @location(0) position: vec3<f32>,
-    @location(1) tex_data: vec2<u32>,
-    @location(2) color: u32,
-    @location(3) frames: u32,
-    @location(4) animate: u32,
-    @location(5) time: u32,
-    @location(6) layer: i32,
+    @location(0) v_pos: vec2<f32>,
+    @location(1) position: vec3<f32>,
+    @location(2) hw: vec2<f32>,
+    @location(3) tex_data: vec2<u32>,
+    @location(4) color: u32,
+    @location(5) frames: u32,
+    @location(6) animate: u32,
+    @location(7) time: u32,
+    @location(8) layer: i32,
 };
 
 struct VertexOutput {
@@ -46,6 +57,15 @@ var tex: texture_2d_array<f32>;
 @binding(1)
 var tex_sample: sampler;
 
+fn unpack_color(color: u32) -> vec4<f32> {
+    return vec4<f32>(
+        f32((color & 0xff0000u) >> 16u),
+        f32((color & 0xff00u) >> 8u),
+        f32((color & 0xffu)),
+        f32((color & 0xff000000u) >> 24u),
+    ) / 255.0;
+}
+
 @vertex
 fn vertex(
     vertex: VertexInput,
@@ -60,32 +80,31 @@ fn vertex(
         u32(vertex.tex_data[1] & 0xffffu),
         u32((vertex.tex_data[1] & 0xffff0000u) >> 16u) 
     );
-
-    result.clip_position =  (camera.proj * camera.view) * vec4<f32>(vertex.position.xyz, 1.0);
-
+    var pos = vertex.position;
+    
     switch v {
         case 1u: {
             result.tex_coords = vec2<f32>(f32(tex_data[2]), f32(tex_data[3]));
+            pos.x += vertex.hw.x;
         }
         case 2u: {
             result.tex_coords = vec2<f32>(f32(tex_data[2]), 0.0);
+            pos.x += vertex.hw.x;
+            pos.y += vertex.hw.y;
         }
         case 3u: {
             result.tex_coords = vec2<f32>(0.0, 0.0);
+            pos.y += vertex.hw.y;
         }
         default: {
             result.tex_coords = vec2<f32>(0.0, f32(tex_data[3]));
         }
     }
 
+    result.clip_position = (camera.proj * camera.view) * vec4<f32>(pos, 1.0);
     result.tex_data = tex_data;
     result.layer = vertex.layer;
-    result.col = vec4<f32>(
-        f32((vertex.color & 0xffu)),
-        f32((vertex.color & 0xff00u) >> 8u),
-        f32((vertex.color & 0xff0000u) >> 16u),
-        f32((vertex.color & 0xff000000u) >> 24u),
-    ) / 255.0;
+    result.col = unpack_color(vertex.color);
     result.frames = vec2<u32>(u32(vertex.frames & 0xffffu), u32((vertex.frames & 0xffff0000u) >> 16u));
     result.size = fsize;
     result.animate = vertex.animate;
@@ -114,7 +133,7 @@ fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
         );
     } else {
         coords = vec2<f32>(
-            (f32(vertex.tex_data[0]) + vertex.tex_coords.x)  / vertex.size.x, 
+            (f32(vertex.tex_data[0]) + vertex.tex_coords.x) / vertex.size.x,
             (f32(vertex.tex_data[1]) + vertex.tex_coords.y) / vertex.size.y
         );
     }

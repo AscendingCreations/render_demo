@@ -1,6 +1,7 @@
 use crate::{
     graphics::{
-        BufferLayout, LayoutStorage, SpriteVertex, SystemLayout, TextureLayout,
+        InstanceLayout, LayoutStorage, SpriteVertex, StaticBufferObject,
+        SystemLayout, TextureLayout,
     },
     AscendingError,
 };
@@ -41,11 +42,21 @@ impl SpriteRenderPipeline {
                 vertex: wgpu::VertexState {
                     module: &shader,
                     entry_point: "vertex",
-                    buffers: &[wgpu::VertexBufferLayout {
-                        array_stride: SpriteVertex::vertex_stride() as u64,
-                        step_mode: wgpu::VertexStepMode::Vertex,
-                        attributes: &SpriteVertex::attributes(),
-                    }],
+                    buffers: &[
+                        wgpu::VertexBufferLayout {
+                            array_stride: StaticBufferObject::vertex_size(),
+                            step_mode: wgpu::VertexStepMode::Vertex,
+                            attributes: &[
+                                StaticBufferObject::vertex_attribute(),
+                            ],
+                        },
+                        wgpu::VertexBufferLayout {
+                            array_stride: SpriteVertex::instance_stride()
+                                as u64,
+                            step_mode: wgpu::VertexStepMode::Instance,
+                            attributes: &SpriteVertex::attributes(),
+                        },
+                    ],
                 },
                 primitive: wgpu::PrimitiveState {
                     topology: wgpu::PrimitiveTopology::TriangleList,

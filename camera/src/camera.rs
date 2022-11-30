@@ -61,4 +61,8 @@ where
     pub fn view(&self) -> mint::ColumnMatrix4<f32> {
         self.controls.view()
     }
+
+    pub fn scale(&self) -> f32 {
+        self.controls.scale()
+    }
 }

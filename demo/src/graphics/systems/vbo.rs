@@ -1,8 +1,9 @@
-use crate::graphics::SpriteVertex;
 use std::{marker::PhantomData, ops::Range};
 use wgpu::util::DeviceExt;
 
 //This Holds onto all the Vertexs Compressed into a byte array.
+//This is Used for objects that need more advanced VBO/IBO other wise use the Instance buffers.
+
 pub struct BufferPass {
     pub vertices: Vec<u8>,
     pub indices: Vec<u8>,
@@ -59,7 +60,6 @@ impl<K: BufferLayout> GpuBuffer<K> {
                     label: Some("Vertex Buffer"),
                     contents: &buffers.vertices,
                     usage: wgpu::BufferUsages::VERTEX
-                        | wgpu::BufferUsages::STORAGE
                         | wgpu::BufferUsages::COPY_DST,
                 },
             ),
@@ -88,7 +88,6 @@ impl<K: BufferLayout> GpuBuffer<K> {
                 label: Some("Vertex Buffer"),
                 contents: &buffers.vertices,
                 usage: wgpu::BufferUsages::VERTEX
-                    | wgpu::BufferUsages::STORAGE
                     | wgpu::BufferUsages::COPY_DST,
             });
         self.vertex_max = buffers.vertices.len();

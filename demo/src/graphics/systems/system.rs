@@ -37,6 +37,17 @@ impl Layout for SystemLayout {
                     },
                     count: None,
                 },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::VERTEX
+                        | wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
             ],
         })
     }
@@ -47,6 +58,12 @@ pub struct CameraUniform {
     view: mint::ColumnMatrix4<f32>,
     proj: mint::ColumnMatrix4<f32>,
     eye: mint::Vector3<f32>,
+    scale: f32,
+}
+
+#[derive(AsStd140)]
+pub struct ScreenUniform {
+    size: mint::Vector2<f32>,
 }
 
 #[derive(AsStd140)]
@@ -57,8 +74,10 @@ pub struct TimeUniform {
 
 pub struct System<Controls: camera::controls::Controls> {
     camera: camera::Camera<Controls>,
+    screen_size: [f32; 2],
     camera_buffer: wgpu::Buffer,
     time_buffer: wgpu::Buffer,
+    screen_buffer: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
 }
 
@@ -87,6 +106,7 @@ where
         layout_storage: &mut LayoutStorage,
         projection: Projection,
         controls: Controls,
+        screen_size: [f32; 2],
     ) -> Self {
         let mut camera = camera::Camera::new(projection, controls);
 
@@ -98,9 +118,18 @@ where
         let proj = camera.projection();
         let view = camera.view();
         let eye: mint::Vector3<f32> = camera.eye().into();
+        let scale = camera.scale();
 
-        let camera_info = CameraUniform { view, proj, eye };
+        let camera_info = CameraUniform {
+            view,
+            proj,
+            eye,
+            scale,
+        };
         let time_info = TimeUniform { seconds: 0.0 };
+        let screen_info = ScreenUniform {
+            size: screen_size.into(),
+        };
 
         // Create the uniform buffers.
         let camera_buffer = renderer.device().create_buffer_init(
@@ -116,6 +145,15 @@ where
             &wgpu::util::BufferInitDescriptor {
                 label: Some("time buffer"),
                 contents: time_info.as_std140().as_bytes(),
+                usage: wgpu::BufferUsages::UNIFORM
+                    | wgpu::BufferUsages::COPY_DST,
+            },
+        );
+
+        let screen_buffer = renderer.device().create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Screen buffer"),
+                contents: screen_info.as_std140().as_bytes(),
                 usage: wgpu::BufferUsages::UNIFORM
                     | wgpu::BufferUsages::COPY_DST,
             },
@@ -140,14 +178,20 @@ where
                             binding: 1,
                             resource: time_buffer.as_entire_binding(),
                         },
+                        wgpu::BindGroupEntry {
+                            binding: 2,
+                            resource: screen_buffer.as_entire_binding(),
+                        },
                     ],
                     label: Some("system_bind_group"),
                 });
 
         Self {
             camera,
+            screen_size,
             camera_buffer,
             time_buffer,
+            screen_buffer,
             bind_group,
         }
     }
@@ -169,8 +213,14 @@ where
             let proj = self.camera.projection();
             let view = self.camera.view();
             let eye: mint::Vector3<f32> = self.camera.eye().into();
+            let scale = self.camera.scale();
 
-            let camera_info = CameraUniform { view, proj, eye };
+            let camera_info = CameraUniform {
+                view,
+                proj,
+                eye,
+                scale,
+            };
 
             renderer.queue().write_buffer(
                 &self.camera_buffer,
@@ -188,6 +238,25 @@ where
             0,
             time_info.as_std140().as_bytes(),
         );
+    }
+
+    pub fn update_screen(
+        &mut self,
+        renderer: &Renderer,
+        screen_size: [f32; 2],
+    ) {
+        if self.screen_size != screen_size {
+            self.screen_size = screen_size;
+            let screen_info = ScreenUniform {
+                size: screen_size.into(),
+            };
+
+            renderer.queue().write_buffer(
+                &self.screen_buffer,
+                0,
+                screen_info.as_std140().as_bytes(),
+            );
+        }
     }
 
     pub fn view(&self) -> mint::ColumnMatrix4<f32> {

@@ -116,7 +116,7 @@ async fn main() -> Result<(), AscendingError> {
                 label: None,
             },
             None,
-            wgpu::PresentMode::AutoVsync,
+            wgpu::PresentMode::Immediate,
         )
         .await
         .unwrap();
@@ -135,6 +135,7 @@ async fn main() -> Result<(), AscendingError> {
     let allocation = Texture::from_file("images/Female_1.png")?
         .group_upload(&mut sprite_atlas, renderer.device(), renderer.queue())
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
+
     let mut sprites = Vec::with_capacity(2001);
 
     let mut x = 0;

@@ -116,7 +116,7 @@ async fn main() -> Result<(), AscendingError> {
                 label: None,
             },
             None,
-            wgpu::PresentMode::Immediate,
+            wgpu::PresentMode::AutoVsync,
         )
         .await
         .unwrap();
@@ -513,7 +513,7 @@ async fn main() -> Result<(), AscendingError> {
                 cosmic_text::Attrs::new(),
             );
 
-            textbuffer.redraw = true;
+            textbuffer.set_redraw(true);
             fps = 0u32;
             time = seconds + 1.0;
         }

@@ -170,7 +170,7 @@ impl Text {
         text_atlas: &mut AtlasGroup<CacheKey>,
         emoji_atlas: &mut AtlasGroup<CacheKey>,
     ) -> bool {
-        if buffer.redraw || self.cleared {
+        if buffer.redraw() || self.cleared {
             let _ = self.create_quad(
                 pos,
                 buffer,

@@ -38,12 +38,10 @@ struct VertexInput {
 
 struct VertexOutput {
     @builtin(position) position: vec4<f32>,
-    @location(0) v_pos: vec2<f32>,
     @location(1) color: vec4<f32>,
     @location(2) uv: vec2<f32>,
-    @location(3) size: vec2<f32>,
-    @location(4) layer: i32,
-    @location(5) is_color: u32,
+    @location(3) layer: i32,
+    @location(4) is_color: u32,
 };
 
 @group(1)
@@ -99,21 +97,32 @@ fn vertex(
     }
 
     result.position = camera.proj * vec4<f32>(pos.xyz, 1.0);
-    result.size = fsize;
     result.color = unpack_color(vertex.color);
     result.layer = i32(vertex.layer);
-    result.v_pos = vertex.v_pos;
+    result.is_color = vertex.is_color;
     return result;
 }
 
 // Fragment shader
 @fragment
 fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
-    let object_color = textureSample(tex, tex_sample, vertex.uv.xy, vertex.layer);
+    var object_color = vec4<f32>(0.0);
+ 
+    if vertex.is_color == 1u {
+        let object_color = textureSampleLevel(emoji_tex, emoji_tex_sample, vertex.uv.xy, vertex.layer, 1.0);
 
-    if object_color.r <= 0.0 {
-        discard;
+        if object_color.a <= 0.0 {
+            discard;
+        }
+
+        return vertex.color.rgba * object_color;
+    } else {
+        let object_color = textureSampleLevel(tex, tex_sample, vertex.uv.xy, vertex.layer, 1.0);
+
+        if object_color.r <= 0.0 {
+            discard;
+        }
+
+        return vertex.color.rgba * object_color.r;
     }
-
-    return vertex.color.rgba * object_color.r;
 }

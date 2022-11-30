@@ -35,7 +35,11 @@ impl TextRenderPipeline {
                 layout: Some(&device.create_pipeline_layout(
                     &wgpu::PipelineLayoutDescriptor {
                         label: Some("Text_render_pipeline_layout"),
-                        bind_group_layouts: &[&system_layout, &texture_layout],
+                        bind_group_layouts: &[
+                            &system_layout,
+                            &texture_layout,
+                            &texture_layout,
+                        ],
                         push_constant_ranges: &[],
                     },
                 )),

@@ -92,7 +92,6 @@ async fn main() -> Result<(), AscendingError> {
         error!("PANIC: {}, BACKTRACE: {:?}", panic_info, bt);
     }));
 
-    //parse_example_wgsl();
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .with_title("Demo")
@@ -112,13 +111,12 @@ async fn main() -> Result<(), AscendingError> {
                 force_fallback_adapter: false,
             },
             &wgpu::DeviceDescriptor {
-                features: wgpu::Features::TIMESTAMP_QUERY
-                    | wgpu::Features::WRITE_TIMESTAMP_INSIDE_PASSES,
+                features: wgpu::Features::default(),
                 limits: wgpu::Limits::default(),
                 label: None,
             },
             None,
-            wgpu::PresentMode::Immediate,
+            wgpu::PresentMode::AutoVsync,
         )
         .await
         .unwrap();
@@ -163,7 +161,7 @@ async fn main() -> Result<(), AscendingError> {
         &mut layout_storage,
     )?;
 
-    let size = renderer.size();
+    let mut size = renderer.size();
 
     let system = System::new(
         &renderer,
@@ -284,7 +282,7 @@ async fn main() -> Result<(), AscendingError> {
     let emoji_atlas = AtlasGroup::new(
         renderer.device(),
         2048,
-        wgpu::TextureFormat::R8Unorm,
+        wgpu::TextureFormat::Rgba8UnormSrgb,
         &mut layout_storage,
         GroupType::Textures,
     );
@@ -303,20 +301,9 @@ async fn main() -> Result<(), AscendingError> {
     let mut textbuffer =
         Buffer::new(&FONT_SYSTEM, Metrics::new(16, 24).scale(scale as i32));
 
-    textbuffer
-        .set_size(renderer.size().width as i32, renderer.size().height as i32);
-
-    let profiler = GpuProfiler::new(
-        4,
-        renderer.queue().get_timestamp_period(),
-        renderer.device().features(),
-    );
+    textbuffer.set_size(size.width as i32, size.height as i32);
 
     let buffer_object = StaticBufferObject::new(renderer.device());
-    let buffer_object1 = StaticBufferObject::new(renderer.device());
-    let buffer_object2 = StaticBufferObject::new(renderer.device());
-    let buffer_object3 = StaticBufferObject::new(renderer.device());
-    let buffer_object4 = StaticBufferObject::new(renderer.device());
 
     let mut state = State {
         layout_storage,
@@ -343,36 +330,12 @@ async fn main() -> Result<(), AscendingError> {
         emoji_atlas,
         text_pipeline,
         text_buffer,
-        profiler,
         buffer_object,
-        buffer_object1,
-        buffer_object2,
-        buffer_object3,
-        buffer_object4,
     };
 
     let mut views = HashMap::new();
 
-    let size = wgpu::Extent3d {
-        width: renderer.size().width,
-        height: renderer.size().height,
-        depth_or_array_layers: 1,
-    };
-
-    let texture = renderer.device().create_texture(&wgpu::TextureDescriptor {
-        label: Some("depth texture"),
-        size,
-        mip_level_count: 1,
-        sample_count: 1,
-        dimension: wgpu::TextureDimension::D2,
-        format: wgpu::TextureFormat::Depth32Float,
-        usage: wgpu::TextureUsages::TEXTURE_BINDING
-            | wgpu::TextureUsages::RENDER_ATTACHMENT,
-    });
-    let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-    let mut size = renderer.size();
-
-    views.insert("depthbuffer".to_string(), view);
+    views.insert("depthbuffer".to_string(), renderer.create_depth_texture());
 
     let mut bindings = Bindings::<Action, Axis>::new();
     bindings.insert_action(
@@ -384,8 +347,6 @@ async fn main() -> Result<(), AscendingError> {
     let mut frame_time = FrameTime::new();
     let mut time = 0.0f32;
     let mut fps = 0u32;
-    let mut time_data: Vec<String> = Vec::with_capacity(10_000);
-    let mut time_save = frame_time.seconds() + 10.0;
 
     event_loop.run(move |event, _, control_flow| {
         match event {
@@ -393,55 +354,24 @@ async fn main() -> Result<(), AscendingError> {
                 ref event,
                 window_id,
                 ..
-            } if window_id == renderer.window().id() => {
-                if let WindowEvent::CloseRequested = *event {
+            } if window_id == renderer.window().id() => match *event {
+                WindowEvent::CloseRequested => {
                     *control_flow = ControlFlow::Exit;
                 }
-            }
+                _ => {}
+            },
             _ => {}
         }
 
-        let test_size = renderer.size();
+        let new_size = renderer.size();
+        let inner_size = renderer.window().inner_size();
 
-        if test_size.width == 0 || test_size.height == 0 {
-            size = test_size;
+        if new_size.width == 0
+            || new_size.height == 0
+            || inner_size.width == 0
+            || inner_size.height == 0
+        {
             return;
-        }
-
-        if size != test_size {
-            size = test_size;
-
-            state.system.set_projection(Projection::Orthographic {
-                left: 0.0,
-                right: size.width as f32,
-                bottom: 0.0,
-                top: size.height as f32,
-                near: 1.0,
-                far: -100.0,
-            });
-
-            let size = wgpu::Extent3d {
-                width: size.width,
-                height: size.height,
-                depth_or_array_layers: 1,
-            };
-
-            let texture =
-                renderer.device().create_texture(&wgpu::TextureDescriptor {
-                    label: Some("depth texture"),
-                    size,
-                    mip_level_count: 1,
-                    sample_count: 1,
-                    dimension: wgpu::TextureDimension::D2,
-                    format: wgpu::TextureFormat::Depth32Float,
-                    usage: wgpu::TextureUsages::TEXTURE_BINDING
-                        | wgpu::TextureUsages::RENDER_ATTACHMENT
-                        | wgpu::TextureUsages::COPY_DST,
-                });
-            let view =
-                texture.create_view(&wgpu::TextureViewDescriptor::default());
-
-            views.insert("depthbuffer".to_string(), view);
         }
 
         input_handler.update(renderer.window(), &event, 1.0);
@@ -451,6 +381,24 @@ async fn main() -> Result<(), AscendingError> {
             _ => return,
         };
 
+        if size != new_size {
+            size = new_size;
+
+            state.system.set_projection(Projection::Orthographic {
+                left: 0.0,
+                right: new_size.width as f32,
+                bottom: 0.0,
+                top: new_size.height as f32,
+                near: 1.0,
+                far: -100.0,
+            });
+
+            views.insert(
+                "depthbuffer".to_string(),
+                renderer.create_depth_texture(),
+            );
+        }
+
         if input_handler.is_action_down(&Action::Quit) {
             *control_flow = ControlFlow::Exit;
         }
@@ -459,12 +407,15 @@ async fn main() -> Result<(), AscendingError> {
         state.system.update(&renderer, &frame_time);
         state.system.update_screen(
             &renderer,
-            [test_size.width as f32, test_size.height as f32],
+            [new_size.width as f32, new_size.height as f32],
         );
-        let view = frame
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
-        views.insert("framebuffer".to_string(), view);
+
+        views.insert(
+            "framebuffer".to_string(),
+            frame
+                .texture
+                .create_view(&wgpu::TextureViewDescriptor::default()),
+        );
 
         let mut update = false;
 
@@ -550,53 +501,20 @@ async fn main() -> Result<(), AscendingError> {
         );
 
         // Run the render pass.
-        wgpu_profiler!(
-            "main scope",
-            &mut state.profiler,
-            &mut encoder,
-            renderer.device(),
-            {
-                state.render(&mut encoder, &views, &renderer);
-            }
-        );
-        state.profiler.resolve_queries(&mut encoder);
+        state.render(&mut encoder, &views, &renderer);
 
         // Submit our command queue.
         renderer.queue().submit(std::iter::once(encoder.finish()));
 
-        state.profiler.end_frame().unwrap();
-        if let Some(profiling_data) = state.profiler.process_finished_frame() {
-            // You usually want to write to disk only under some condition, e.g. press of a key or button
-            let mut string = String::new();
-            scopes_to_string_recursive(&profiling_data, &mut string, 0);
-            string.push('\n');
-            time_data.push(string);
-        }
-
         if time < seconds {
             textbuffer.set_text(
-                &format!("生活,삶,जिंदगी FPS: {}", fps),
+                &format!("生活,삶,जिंदगी 😀 FPS: {}", fps),
                 cosmic_text::Attrs::new(),
             );
-            //println!("{fps}");
+
             textbuffer.redraw = true;
             fps = 0u32;
             time = seconds + 1.0;
-        }
-
-        if time_save < seconds {
-            let name = format!(
-                "new-{}.csv",
-                chrono::Local::now().format("%Y_%m_%d-%I_%M_%S_%p")
-            );
-            let mut file = File::create(&name).unwrap();
-
-            for data in &time_data {
-                file.write(data.as_bytes()).unwrap();
-            }
-
-            time_data.clear();
-            time_save = seconds + 1000.0;
         }
 
         fps += 1;
@@ -607,87 +525,4 @@ async fn main() -> Result<(), AscendingError> {
         frame_time.update();
         frame.present();
     })
-}
-
-pub fn parse_example_wgsl() {
-    let read_dir = match PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("src")
-        .read_dir()
-    {
-        Ok(iter) => iter,
-        Err(e) => {
-            println!("Unable to open the examples folder: {:?}", e);
-            return;
-        }
-    };
-    for example_entry in read_dir {
-        let read_files = match example_entry {
-            Ok(dir_entry) => match dir_entry.path().read_dir() {
-                Ok(iter) => iter,
-                Err(_) => continue,
-            },
-            Err(e) => {
-                println!("Skipping example: {:?}", e);
-                continue;
-            }
-        };
-
-        for file_entry in read_files {
-            let shader = match file_entry {
-                Ok(entry) => match entry.path().extension() {
-                    Some(ostr) if ostr == "wgsl" => {
-                        println!("Validating {:?}", entry.path());
-                        fs::read_to_string(entry.path()).unwrap_or_default()
-                    }
-                    _ => continue,
-                },
-                Err(e) => {
-                    println!("Skipping file: {:?}", e);
-                    continue;
-                }
-            };
-
-            let result = wgsl::parse_str(&shader);
-
-            let module = match result {
-                Ok(v) => (v, Some(shader)),
-                Err(ref e) => {
-                    e.emit_to_stderr(&shader);
-                    return;
-                }
-            };
-            // TODO: re-use the validator
-            Validator::new(
-                naga::valid::ValidationFlags::all(),
-                naga::valid::Capabilities::all(),
-            )
-            .validate(&module.0)
-            .unwrap();
-        }
-    }
-}
-
-fn scopes_to_string_recursive(
-    results: &[GpuTimerScopeResult],
-    string: &mut String,
-    indentation: u32,
-) {
-    let mut first = true;
-    for scope in results {
-        if !first || indentation > 0 {
-            string.push(',');
-        }
-
-        let time1 = (scope.time.end - scope.time.start) * 1000.0 * 1000.0;
-        string.push_str(&format!("{time1}"));
-        first = false;
-
-        if !scope.nested_scopes.is_empty() {
-            scopes_to_string_recursive(
-                &scope.nested_scopes,
-                string,
-                indentation + 1,
-            );
-        }
-    }
 }

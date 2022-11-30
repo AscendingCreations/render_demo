@@ -1,3 +1,4 @@
+use crate::AscendingError;
 use async_trait::async_trait;
 use std::path::Path;
 use winit::{
@@ -5,7 +6,6 @@ use winit::{
     event::{Event, WindowEvent},
     window::Window,
 };
-use crate::AscendingError;
 
 pub struct Renderer {
     adapter: wgpu::Adapter,
@@ -52,8 +52,8 @@ impl Renderer {
             &wgpu::SurfaceConfiguration {
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
                 format: surface_format,
-                width: std::cmp::max(1, size.width),
-                height: std::cmp::max(1, size.height),
+                width: size.width,
+                height: size.height,
                 present_mode: self.present_mode,
                 alpha_mode: wgpu::CompositeAlphaMode::Auto,
             },
@@ -117,6 +117,28 @@ impl Renderer {
 
     pub fn window(&self) -> &Window {
         &self.window
+    }
+
+    pub fn create_depth_texture(&self) -> wgpu::TextureView {
+        let size = wgpu::Extent3d {
+            width: self.size.width,
+            height: self.size.height,
+            depth_or_array_layers: 1,
+        };
+
+        let texture = self.device().create_texture(&wgpu::TextureDescriptor {
+            label: Some("depth texture"),
+            size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Depth32Float,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING
+                | wgpu::TextureUsages::RENDER_ATTACHMENT
+                | wgpu::TextureUsages::COPY_DST,
+        });
+
+        texture.create_view(&wgpu::TextureViewDescriptor::default())
     }
 }
 

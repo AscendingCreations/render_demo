@@ -1,7 +1,6 @@
 use crate::graphics::*;
 use cosmic_text::{CacheKey, FontSystem};
 use std::collections::HashMap;
-use wgpu_profiler::{wgpu_profiler, GpuProfiler};
 
 pub struct State<Controls>
 where
@@ -48,12 +47,7 @@ where
     pub text_pipeline: TextRenderPipeline,
     pub text_atlas: AtlasGroup<CacheKey>,
     pub emoji_atlas: AtlasGroup<CacheKey>,
-    pub profiler: GpuProfiler,
     pub buffer_object: StaticBufferObject,
-    pub buffer_object1: StaticBufferObject,
-    pub buffer_object2: StaticBufferObject,
-    pub buffer_object3: StaticBufferObject,
-    pub buffer_object4: StaticBufferObject,
 }
 
 impl<Controls> Pass for State<Controls>
@@ -64,7 +58,7 @@ where
         &mut self,
         encoder: &mut wgpu::CommandEncoder,
         views: &HashMap<String, wgpu::TextureView>,
-        renderer: &crate::Renderer,
+        _renderer: &crate::Renderer,
     ) {
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("render pass"),
@@ -102,7 +96,11 @@ where
             ),
         });
 
+        // Lets set the System's Shader information here, mostly Camera, Size and Time
         pass.set_bind_group(0, self.system.bind_group(), &[]);
+
+        // Lets set the Reusable Vertices and Indicies here.
+        // This is used for each Renderer, Should be more performant since it is shared.
         pass.set_vertex_buffer(0, self.buffer_object.vertices());
         pass.set_index_buffer(
             self.buffer_object.indices(),
@@ -116,33 +114,18 @@ where
             &self.map_pipeline,
         );
 
-        pass.set_vertex_buffer(0, self.buffer_object1.vertices());
-        pass.set_index_buffer(
-            self.buffer_object1.indices(),
-            wgpu::IndexFormat::Uint16,
-        );
         pass.render_sprite(
             &self.sprite_buffer,
             &self.sprite_atlas,
             &self.sprite_pipeline,
         );
 
-        pass.set_vertex_buffer(0, self.buffer_object3.vertices());
-        pass.set_index_buffer(
-            self.buffer_object3.indices(),
-            wgpu::IndexFormat::Uint16,
-        );
         pass.render_sprite(
             &self.animation_buffer,
             &self.animation_atlas,
             &self.sprite_pipeline,
         );
 
-        pass.set_vertex_buffer(0, self.buffer_object.vertices());
-        pass.set_index_buffer(
-            self.buffer_object.indices(),
-            wgpu::IndexFormat::Uint16,
-        );
         pass.render_maps(
             &self.mapupper_buffer,
             &self.map_atlas,
@@ -150,26 +133,13 @@ where
             &self.map_pipeline,
         );
 
-        pass.set_vertex_buffer(0, self.buffer_object2.vertices());
-        pass.set_index_buffer(
-            self.buffer_object.indices(),
-            wgpu::IndexFormat::Uint16,
-        );
-        self.profiler
-            .begin_scope("Text", &mut pass, &renderer.device());
         pass.render_text(
             &self.text_buffer,
             &self.text_atlas,
             &self.emoji_atlas,
             &self.text_pipeline,
         );
-        self.profiler.end_scope(&mut pass);
 
-        pass.set_vertex_buffer(0, self.buffer_object4.vertices());
-        pass.set_index_buffer(
-            self.buffer_object4.indices(),
-            wgpu::IndexFormat::Uint16,
-        );
         pass.render_shape(&self.shapes_buffer, &self.shapes_pipeline);
     }
 }

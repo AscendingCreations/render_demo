@@ -102,9 +102,9 @@ impl Shapes {
                     radius: *radius,
                 },
                 Shape::Line {
-                    positions,
-                    thickness,
-                    color,
+                    positions: _,
+                    thickness: _,
+                    color: _,
                 } => continue,
                 Shape::None => continue,
             };

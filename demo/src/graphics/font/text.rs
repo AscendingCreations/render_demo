@@ -35,8 +35,8 @@ impl Text {
         &mut self,
         pos: [i32; 3],
         buffer: &mut Buffer<'static>,
-        text_atlas: &mut AtlasGroup<CacheKey>,
-        emoji_atlas: &mut AtlasGroup<CacheKey>,
+        text_atlas: &mut AtlasGroup<CacheKey, (i32, i32)>,
+        emoji_atlas: &mut AtlasGroup<CacheKey, (i32, i32)>,
         queue: &wgpu::Queue,
         device: &wgpu::Device,
     ) -> Result<(), AscendingError> {
@@ -73,6 +73,10 @@ impl Text {
                                 queue,
                             )
                             .ok_or(AscendingError::AtlasFull)?;
+                        emoji_atlas.upload_data(
+                            glyph.cache_key,
+                            (image.placement.left, image.placement.top),
+                        );
                     } else {
                         let _ = text_atlas
                             .atlas
@@ -85,6 +89,10 @@ impl Text {
                                 queue,
                             )
                             .ok_or(AscendingError::AtlasFull)?;
+                        text_atlas.upload_data(
+                            glyph.cache_key,
+                            (image.placement.left, image.placement.top),
+                        );
                     }
                 }
             }
@@ -96,14 +104,19 @@ impl Text {
             let line_y = run.line_y;
 
             for glyph in run.glyphs.iter() {
-                let (allocation, is_color) = if let Some(allocation) =
+                let (allocation, is_color, position) = if let Some(allocation) =
                     text_atlas.atlas.get(&glyph.cache_key)
                 {
-                    (allocation, false)
+                    let position =
+                        text_atlas.get_data(&glyph.cache_key).unwrap_or((0, 0));
+                    (allocation, false, position)
                 } else if let Some(allocation) =
                     emoji_atlas.atlas.get(&glyph.cache_key)
                 {
-                    (allocation, true)
+                    let position = emoji_atlas
+                        .get_data(&glyph.cache_key)
+                        .unwrap_or((0, 0));
+                    (allocation, true, position)
                 } else {
                     continue;
                 };
@@ -113,7 +126,7 @@ impl Text {
                     (u as i32, v as i32, width as f32, height as f32);
 
                 let (x, y) = (
-                    (pos[0] + glyph.x_int) as f32,
+                    (pos[0] + glyph.x_int + position.0) as f32,
                     (pos[1] + line_y + glyph.y_int) as f32,
                 );
 
@@ -167,8 +180,8 @@ impl Text {
         device: &wgpu::Device,
         pos: [i32; 3],
         buffer: &mut Buffer<'static>,
-        text_atlas: &mut AtlasGroup<CacheKey>,
-        emoji_atlas: &mut AtlasGroup<CacheKey>,
+        text_atlas: &mut AtlasGroup<CacheKey, (i32, i32)>,
+        emoji_atlas: &mut AtlasGroup<CacheKey, (i32, i32)>,
     ) -> bool {
         if buffer.redraw() || self.cleared {
             let _ = self.create_quad(

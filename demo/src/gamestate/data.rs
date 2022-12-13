@@ -45,8 +45,8 @@ where
     pub text: Text,
     pub text_buffer: InstanceBuffer<TextVertex>,
     pub text_pipeline: TextRenderPipeline,
-    pub text_atlas: AtlasGroup<CacheKey>,
-    pub emoji_atlas: AtlasGroup<CacheKey>,
+    pub text_atlas: AtlasGroup<CacheKey, (i32, i32)>,
+    pub emoji_atlas: AtlasGroup<CacheKey, (i32, i32)>,
     pub buffer_object: StaticBufferObject,
 }
 

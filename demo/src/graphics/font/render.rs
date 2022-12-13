@@ -11,8 +11,8 @@ where
     fn render_text(
         &mut self,
         buffer: &'b InstanceBuffer<TextVertex>,
-        text_atlas_group: &'b AtlasGroup<CacheKey>,
-        emoji_atlas_group: &'b AtlasGroup<CacheKey>,
+        text_atlas_group: &'b AtlasGroup<CacheKey, (i32, i32)>,
+        emoji_atlas_group: &'b AtlasGroup<CacheKey, (i32, i32)>,
         pipeline: &'b TextRenderPipeline,
     );
 }
@@ -24,8 +24,8 @@ where
     fn render_text(
         &mut self,
         buffer: &'b InstanceBuffer<TextVertex>,
-        text_atlas_group: &'b AtlasGroup<CacheKey>,
-        emoji_atlas_group: &'b AtlasGroup<CacheKey>,
+        text_atlas_group: &'b AtlasGroup<CacheKey, (i32, i32)>,
+        emoji_atlas_group: &'b AtlasGroup<CacheKey, (i32, i32)>,
         pipeline: &'b TextRenderPipeline,
     ) {
         if buffer.count() > 0 {

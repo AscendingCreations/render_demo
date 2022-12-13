@@ -34,7 +34,7 @@ impl<K: InstanceLayout> InstanceBuffer<K> {
             buffer: device.create_buffer_init(
                 &wgpu::util::BufferInitDescriptor {
                     label: Some("Instance Buffer"),
-                    contents: &data,
+                    contents: data,
                     usage: wgpu::BufferUsages::VERTEX
                         | wgpu::BufferUsages::COPY_DST,
                 },

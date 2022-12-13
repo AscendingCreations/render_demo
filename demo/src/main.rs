@@ -208,7 +208,7 @@ async fn main() -> Result<(), AscendingError> {
     );
 
     for i in 0..3 {
-        let _ = Texture::from_file(format!("images/tiles/{}.png", i))?
+        let _ = Texture::from_file(format!("images/tiles/{i}.png"))?
             .group_upload(&mut map_atlas, renderer.device(), renderer.queue())
             .ok_or_else(|| OtherError::new("failed to upload image"))?;
     }
@@ -355,12 +355,11 @@ async fn main() -> Result<(), AscendingError> {
                 ref event,
                 window_id,
                 ..
-            } if window_id == renderer.window().id() => match *event {
-                WindowEvent::CloseRequested => {
+            } if window_id == renderer.window().id() => {
+                if let WindowEvent::CloseRequested = *event {
                     *control_flow = ControlFlow::Exit;
                 }
-                _ => {}
-            },
+            }
             _ => {}
         }
 
@@ -509,10 +508,9 @@ async fn main() -> Result<(), AscendingError> {
 
         if time < seconds {
             textbuffer.set_text(
-                &format!("生活,삶,जिंदगी 😀 FPS: {}", fps),
+                &format!("生活,삶,जिंदगी 😀 FPS: {fps}"),
                 cosmic_text::Attrs::new(),
             );
-
             textbuffer.set_redraw(true);
             fps = 0u32;
             time = seconds + 1.0;

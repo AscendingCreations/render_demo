@@ -300,7 +300,7 @@ async fn main() -> Result<(), AscendingError> {
     let scale = renderer.window().current_monitor().unwrap().scale_factor();
 
     let mut textbuffer =
-        Buffer::new(&FONT_SYSTEM, Metrics::new(16, 24).scale(scale as i32));
+        Buffer::new(&FONT_SYSTEM, Metrics::new(16, 16).scale(scale as i32));
 
     textbuffer.set_size(size.width as i32, size.height as i32);
 
@@ -440,7 +440,7 @@ async fn main() -> Result<(), AscendingError> {
         let update = state.text.update(
             renderer.queue(),
             renderer.device(),
-            [0, 0, 1],
+            [0, 32, 1],
             &mut textbuffer,
             &mut state.text_atlas,
             &mut state.emoji_atlas,
@@ -508,7 +508,7 @@ async fn main() -> Result<(), AscendingError> {
 
         if time < seconds {
             textbuffer.set_text(
-                &format!("生活,삶,जिंदगी 😀 FPS: {fps}"),
+                &format!("生活,삶,जिंदगी 😀 FPS: {fps} \n hello"),
                 cosmic_text::Attrs::new(),
             );
             textbuffer.set_redraw(true);

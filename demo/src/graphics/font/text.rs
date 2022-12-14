@@ -54,7 +54,7 @@ impl Text {
                 let is_color = match image.content {
                     SwashContent::Color => true,
                     SwashContent::Mask => false,
-                    SwashContent::SubpixelMask => continue,
+                    SwashContent::SubpixelMask => false,
                 };
 
                 let width = image.placement.width;
@@ -127,7 +127,7 @@ impl Text {
 
                 let (x, y) = (
                     (pos[0] + glyph.x_int + position.0) as f32,
-                    (pos[1] + line_y + glyph.y_int) as f32,
+                    (pos[1] + glyph.y_int - line_y) as f32,
                 );
 
                 let (u1, v1) = (u as f32, v as f32);

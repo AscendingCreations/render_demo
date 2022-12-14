@@ -20,6 +20,8 @@ use std::{
 };
 use swash::scale::{image::Content, ScaleContext};
 
+// This is a text layer buffer for rendering text to the screen.
+// Can be used multiple times for multiple layers of text.
 pub struct Text {
     pub cache: SwashCache<'static>,
     /// Vertex array in bytes. This Holds regular glyphs

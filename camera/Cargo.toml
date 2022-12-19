@@ -1,5 +1,5 @@
 [package]
-name = "camera"
+name = "ascending_camera"
 version = "0.1.0"
 authors = ["S.J.R. van Schaik <stephan@synkhronix.com>"]
 edition = "2021"

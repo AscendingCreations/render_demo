@@ -1,5 +1,5 @@
 [package]
-name = "demo"
+name = "ascending_graphics"
 version = "0.1.0"
 authors = ["Andrew Wheeler <genusistimelord@gmail.com>"]
 edition = "2021"
@@ -22,7 +22,6 @@ guillotiere.workspace = true
 serde.workspace = true
 camera.workspace = true
 input.workspace = true
-graphics.workspace = true
 log.workspace = true
 backtrace.workspace = true
 once_cell.workspace = true

@@ -7,6 +7,7 @@ use camera::{
 use cosmic_text::{
     Action as TextAction, Buffer, FontSystem, Metrics, Style, SwashCache,
 };
+use graphics::*;
 use input::{Bindings, FrameTime, InputHandler};
 use log::{error, info, warn, Level, LevelFilter, Metadata, Record};
 use naga::{front::wgsl, valid::Validator};
@@ -19,21 +20,15 @@ use std::{
     panic,
     path::PathBuf,
 };
-use wgpu_profiler::{wgpu_profiler, GpuProfiler, GpuTimerScopeResult};
 use winit::{
     dpi::PhysicalSize,
     event::*,
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
-
-mod error;
 mod gamestate;
-mod graphics;
 
-use error::*;
 use gamestate::*;
-use graphics::*;
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
 enum Action {

@@ -9,6 +9,7 @@ pub struct Text {
     pub text_bytes: Vec<u8>,
     ///default color.
     pub color: Color,
+    pub use_camera: bool,
     /// will rerender everything and needs to be reset to false.
     cleared: bool,
 }
@@ -130,6 +131,7 @@ impl Text {
                     tex_coord: [u1, v1],
                     layer: allocation.layer as u32,
                     color: color.0,
+                    use_camera: u32::from(self.use_camera),
                     is_color: is_color as u32,
                 };
 
@@ -146,6 +148,7 @@ impl Text {
             cache: SwashCache::new(font_system),
             text_bytes: Vec::new(),
             color: color.unwrap_or(Color::rgba(0, 0, 0, 255)),
+            use_camera: false,
             cleared: false,
         }
     }

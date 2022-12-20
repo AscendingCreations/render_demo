@@ -1,29 +1,29 @@
 use crate::{
-    AtlasGroup, InstanceBuffer, SpriteRenderPipeline, SpriteVertex,
+    AtlasGroup, ImageRenderPipeline, ImageVertex, InstanceBuffer,
     StaticBufferObject,
 };
 
-pub trait RenderSprite<'a, 'b>
+pub trait RenderImage<'a, 'b>
 where
     'b: 'a,
 {
-    fn render_sprite(
+    fn render_image(
         &mut self,
-        buffer: &'b InstanceBuffer<SpriteVertex>,
+        buffer: &'b InstanceBuffer<ImageVertex>,
         atlas_group: &'b AtlasGroup,
-        pipeline: &'b SpriteRenderPipeline,
+        pipeline: &'b ImageRenderPipeline,
     );
 }
 
-impl<'a, 'b> RenderSprite<'a, 'b> for wgpu::RenderPass<'a>
+impl<'a, 'b> RenderImage<'a, 'b> for wgpu::RenderPass<'a>
 where
     'b: 'a,
 {
-    fn render_sprite(
+    fn render_image(
         &mut self,
-        buffer: &'b InstanceBuffer<SpriteVertex>,
+        buffer: &'b InstanceBuffer<ImageVertex>,
         atlas_group: &'b AtlasGroup,
-        pipeline: &'b SpriteRenderPipeline,
+        pipeline: &'b ImageRenderPipeline,
     ) {
         if buffer.count() > 0 {
             self.set_bind_group(1, &atlas_group.texture.bind_group, &[]);

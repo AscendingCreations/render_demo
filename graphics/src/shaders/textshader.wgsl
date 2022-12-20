@@ -33,7 +33,8 @@ struct VertexInput {
     @location(3) uv: vec2<f32>,
     @location(4) layer: u32,
     @location(5) color: u32,
-    @location(6) is_color: u32,
+    @location(6) use_camera: u32,
+    @location(7) is_color: u32,
 };
 
 struct VertexOutput {
@@ -103,7 +104,12 @@ fn vertex(
         }
     }
 
-    result.position = camera.proj * vec4<f32>(pos.xyz, 1.0);
+    if (vertex.use_camera == 1u) {
+        result.position = (camera.proj * camera.view) * vec4<f32>(pos.xyz, 1.0);
+    } else {
+        result.position = camera.proj * vec4<f32>(pos.xyz, 1.0);
+    }
+
     result.color = unpack_color(vertex.color);
     result.layer = i32(vertex.layer);
     result.is_color = vertex.is_color;

@@ -34,8 +34,9 @@ struct VertexInput {
     @location(4) color: u32,
     @location(5) frames: u32,
     @location(6) animate: u32,
-    @location(7) time: u32,
-    @location(8) layer: i32,
+    @location(7) use_camera: u32,
+    @location(8) time: u32,
+    @location(9) layer: i32,
 };
 
 struct VertexOutput {
@@ -101,7 +102,12 @@ fn vertex(
         }
     }
 
-    result.clip_position = (camera.proj * camera.view) * vec4<f32>(pos, 1.0);
+    if (vertex.use_camera == 1u) {
+        result.clip_position = (camera.proj * camera.view) * vec4<f32>(pos, 1.0);
+    } else {
+        result.clip_position = camera.proj * vec4<f32>(pos, 1.0);
+    }
+
     result.tex_data = tex_data;
     result.layer = vertex.layer;
     result.col = unpack_color(vertex.color);

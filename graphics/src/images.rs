@@ -1,9 +1,9 @@
+mod image;
 mod pipeline;
 mod render;
-mod sprite;
 mod vertex;
 
+pub use self::image::*;
 pub use pipeline::*;
 pub use render::*;
-pub use sprite::*;
 pub use vertex::*;

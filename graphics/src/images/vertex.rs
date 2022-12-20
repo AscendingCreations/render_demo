@@ -3,18 +3,19 @@ use std::iter;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct SpriteVertex {
+pub struct ImageVertex {
     pub position: [f32; 3],
     pub hw: [f32; 2],
     pub tex_data: [u16; 4],
     pub color: u32,
     pub frames: [u16; 2],
     pub animate: u32,
+    pub use_camera: u32,
     pub time: u32,
     pub layer: i32,
 }
 
-impl Default for SpriteVertex {
+impl Default for ImageVertex {
     fn default() -> Self {
         Self {
             position: [0.0; 3],
@@ -23,15 +24,16 @@ impl Default for SpriteVertex {
             color: 0,
             frames: [0; 2],
             animate: 0,
+            use_camera: 1,
             time: 0,
             layer: 0,
         }
     }
 }
 
-impl InstanceLayout for SpriteVertex {
+impl InstanceLayout for ImageVertex {
     fn attributes() -> Vec<wgpu::VertexAttribute> {
-        wgpu::vertex_attr_array![1 => Float32x3, 2 => Float32x2, 3 => Uint32x2, 4 => Uint32, 5 => Uint32, 6 => Uint32, 7 => Uint32, 8 => Sint32 ]
+        wgpu::vertex_attr_array![1 => Float32x3, 2 => Float32x2, 3 => Uint32x2, 4 => Uint32, 5 => Uint32, 6 => Uint32, 7 => Uint32,8 => Uint32, 9 => Sint32 ]
             .to_vec()
     }
 
@@ -41,8 +43,8 @@ impl InstanceLayout for SpriteVertex {
     }
 
     fn with_capacity(capacity: usize) -> Vec<u8> {
-        let instance_arr: Vec<SpriteVertex> =
-            iter::repeat(SpriteVertex::default())
+        let instance_arr: Vec<ImageVertex> =
+            iter::repeat(ImageVertex::default())
                 .take(capacity)
                 .collect();
 
@@ -50,6 +52,6 @@ impl InstanceLayout for SpriteVertex {
     }
 
     fn instance_stride() -> usize {
-        std::mem::size_of::<[f32; 12]>()
+        std::mem::size_of::<[f32; 13]>()
     }
 }

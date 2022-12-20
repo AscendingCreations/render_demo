@@ -1,13 +1,13 @@
 use crate::{
-    AscendingError, InstanceLayout, LayoutStorage, ShapeVertex,
+    AscendingError, InstanceLayout, LayoutStorage, RectVertex,
     StaticBufferObject, SystemLayout,
 };
 
-pub struct ShapeRenderPipeline {
+pub struct RectsRenderPipeline {
     render_pipeline: wgpu::RenderPipeline,
 }
 
-impl ShapeRenderPipeline {
+impl RectsRenderPipeline {
     pub fn new(
         device: &wgpu::Device,
         surface_format: wgpu::TextureFormat,
@@ -46,9 +46,9 @@ impl ShapeRenderPipeline {
                             ],
                         },
                         wgpu::VertexBufferLayout {
-                            array_stride: ShapeVertex::instance_stride() as u64,
+                            array_stride: RectVertex::instance_stride() as u64,
                             step_mode: wgpu::VertexStepMode::Instance,
-                            attributes: &ShapeVertex::attributes(),
+                            attributes: &RectVertex::attributes(),
                         },
                     ],
                 },

@@ -1,13 +1,13 @@
 use crate::{
-    AscendingError, InstanceLayout, LayoutStorage, SpriteVertex,
+    AscendingError, ImageVertex, InstanceLayout, LayoutStorage,
     StaticBufferObject, SystemLayout, TextureLayout,
 };
 
-pub struct SpriteRenderPipeline {
+pub struct ImageRenderPipeline {
     render_pipeline: wgpu::RenderPipeline,
 }
 
-impl SpriteRenderPipeline {
+impl ImageRenderPipeline {
     pub fn new(
         device: &wgpu::Device,
         surface_format: wgpu::TextureFormat,
@@ -17,7 +17,7 @@ impl SpriteRenderPipeline {
             device.create_shader_module(wgpu::ShaderModuleDescriptor {
                 label: Some("Shader"),
                 source: wgpu::ShaderSource::Wgsl(
-                    include_str!("../shaders/spriteshader.wgsl").into(),
+                    include_str!("../shaders/imageshader.wgsl").into(),
                 ),
             });
 
@@ -28,7 +28,7 @@ impl SpriteRenderPipeline {
         // Create the render pipeline.
         let render_pipeline =
             device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: Some("Sprite render pipeline"),
+                label: Some("Image render pipeline"),
                 layout: Some(&device.create_pipeline_layout(
                     &wgpu::PipelineLayoutDescriptor {
                         label: Some("render_pipeline_layout"),
@@ -48,10 +48,9 @@ impl SpriteRenderPipeline {
                             ],
                         },
                         wgpu::VertexBufferLayout {
-                            array_stride: SpriteVertex::instance_stride()
-                                as u64,
+                            array_stride: ImageVertex::instance_stride() as u64,
                             step_mode: wgpu::VertexStepMode::Instance,
-                            attributes: &SpriteVertex::attributes(),
+                            attributes: &ImageVertex::attributes(),
                         },
                     ],
                 },

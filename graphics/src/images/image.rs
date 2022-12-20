@@ -1,9 +1,8 @@
-use crate::{Allocation, Color, SpriteVertex};
+use crate::{Allocation, Color, ImageVertex};
 use std::cmp;
 
-/// rendering data for all sprites.
-/// not to be confused with Actual NPC or Player data.
-pub struct Sprite {
+/// rendering data for all images.
+pub struct Image {
     pub pos: [i32; 3],
     pub hw: [u16; 2],
     // used for static offsets or animation Start positions
@@ -17,6 +16,7 @@ pub struct Sprite {
     pub switch_time: u32,
     /// turn on animation if set.
     pub animate: bool,
+    pub use_camera: bool,
     /// Texture area location in Atlas.
     pub texture: Option<Allocation>,
     pub bytes: Vec<u8>,
@@ -24,7 +24,7 @@ pub struct Sprite {
     pub changed: bool,
 }
 
-impl Default for Sprite {
+impl Default for Image {
     fn default() -> Self {
         Self {
             pos: [0; 3],
@@ -33,6 +33,7 @@ impl Default for Sprite {
             frames: [0; 2],
             switch_time: 0,
             animate: false,
+            use_camera: true,
             color: Color::rgba(255, 255, 255, 255),
             texture: None,
             bytes: Vec::new(),
@@ -41,7 +42,7 @@ impl Default for Sprite {
     }
 }
 
-impl Sprite {
+impl Image {
     pub fn create_quad(&mut self) {
         let (x, y, w, h) = (
             self.pos[0] as f32,
@@ -63,15 +64,14 @@ impl Sprite {
             cmp::min(self.uv[3], height as u16),
         );
 
-        let animate = u32::from(self.animate);
-
-        let instance = vec![SpriteVertex {
+        let instance = vec![ImageVertex {
             position: [x, y, self.pos[2] as f32],
             hw: [w, h],
             tex_data: [u, v, width, height],
             color: self.color.0,
             frames: self.frames,
-            animate,
+            animate: u32::from(self.animate),
+            use_camera: u32::from(self.use_camera),
             time: self.switch_time,
             layer: allocation.layer as i32,
         }];

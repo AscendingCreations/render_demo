@@ -1,26 +1,26 @@
 use crate::{
-    InstanceBuffer, ShapeRenderPipeline, ShapeVertex, StaticBufferObject,
+    InstanceBuffer, RectVertex, RectsRenderPipeline, StaticBufferObject,
 };
 
-pub trait RenderShape<'a, 'b>
+pub trait RenderRects<'a, 'b>
 where
     'b: 'a,
 {
-    fn render_shape(
+    fn render_rects(
         &mut self,
-        buffer: &'b InstanceBuffer<ShapeVertex>,
-        pipeline: &'b ShapeRenderPipeline,
+        buffer: &'b InstanceBuffer<RectVertex>,
+        pipeline: &'b RectsRenderPipeline,
     );
 }
 
-impl<'a, 'b> RenderShape<'a, 'b> for wgpu::RenderPass<'a>
+impl<'a, 'b> RenderRects<'a, 'b> for wgpu::RenderPass<'a>
 where
     'b: 'a,
 {
-    fn render_shape(
+    fn render_rects(
         &mut self,
-        buffer: &'b InstanceBuffer<ShapeVertex>,
-        pipeline: &'b ShapeRenderPipeline,
+        buffer: &'b InstanceBuffer<RectVertex>,
+        pipeline: &'b RectsRenderPipeline,
     ) {
         if buffer.count() > 0 {
             self.set_vertex_buffer(1, buffer.instances(None));

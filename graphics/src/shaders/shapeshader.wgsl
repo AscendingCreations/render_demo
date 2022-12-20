@@ -34,6 +34,7 @@ struct VertexInput {
     @location(4) color: u32,
     @location(5) border_color: u32,
     @location(6) radius: f32,
+    @location(7) use_camera: u32,
 };
 
 struct VertexOutput {
@@ -82,8 +83,16 @@ fn vertex(
     }
 
     result.clip_position = camera.proj * camera.view * vec4<f32>(pos, vertex.position.z, 1.0);
-    result.size = vertex.size * camera.scale;
-    result.position = vertex.position.xy * camera.scale;
+    if (vertex.use_camera == 1u) {
+        result.clip_position = camera.proj * camera.view * vec4<f32>(pos, vertex.position.z, 1.0);
+        result.size = vertex.size * camera.scale;
+        result.position = vertex.position.xy * camera.scale;
+    } else {
+        result.clip_position = camera.proj * vec4<f32>(pos, vertex.position.z, 1.0);
+        result.size = vertex.size;
+        result.position = vertex.position.xy;
+    }
+
     result.radius = vertex.radius;
     return result;
 }

@@ -142,7 +142,7 @@ async fn main() -> Result<(), AscendingError> {
             x = 0;
         }
 
-        let mut sprite = Sprite::new(allocation);
+        let mut sprite = Image::new(allocation);
         sprite.pos = [x, y, 5];
         sprite.hw = [48, 48];
         sprite.uv = [48, 96, 48, 48];
@@ -151,7 +151,7 @@ async fn main() -> Result<(), AscendingError> {
         x += 12;
     }
 
-    let sprite_pipeline = SpriteRenderPipeline::new(
+    let sprite_pipeline = ImageRenderPipeline::new(
         renderer.device(),
         renderer.surface_format(),
         &mut layout_storage,
@@ -238,7 +238,7 @@ async fn main() -> Result<(), AscendingError> {
 
     let animation_buffer = InstanceBuffer::new(renderer.device());
 
-    let mut animation = Sprite::new(allocation);
+    let mut animation = Image::new(allocation);
 
     animation.pos = [96, 96, 5];
     animation.hw = [64, 64];
@@ -248,23 +248,24 @@ async fn main() -> Result<(), AscendingError> {
     animation.switch_time = 300;
     animation.animate = true;
 
-    let shapes_pipeline = ShapeRenderPipeline::new(
+    let rects_pipeline = RectsRenderPipeline::new(
         renderer.device(),
         renderer.surface_format(),
         &mut layout_storage,
     )?;
 
-    let shapes_buffer = InstanceBuffer::new(renderer.device());
+    let rects_buffer = InstanceBuffer::new(renderer.device());
 
-    let mut shapes = Shapes::new();
+    let mut rects = Rectangles::new();
 
-    shapes.push_shape(Shape::Rect {
+    rects.push_rect(Rect {
         position: [150, 150, 1],
         size: [100, 100],
         border_width: 1,
         border_color: Color::rgba(255, 255, 255, 255),
         color: Color::rgba(255, 0, 0, 255),
         radius: 10.0,
+        use_camera: false,
     });
 
     let text_atlas = AtlasGroup::new(
@@ -318,9 +319,9 @@ async fn main() -> Result<(), AscendingError> {
         animation,
         animation_buffer,
         animation_atlas,
-        shapes,
-        shapes_buffer,
-        shapes_pipeline,
+        rects,
+        rects_buffer,
+        rects_pipeline,
         text,
         text_atlas,
         emoji_atlas,
@@ -478,13 +479,13 @@ async fn main() -> Result<(), AscendingError> {
             );
         }
 
-        let update = state.shapes.update();
+        let update = state.rects.update();
 
         if update {
-            state.shapes_buffer.set_from(
+            state.rects_buffer.set_from(
                 renderer.device(),
                 renderer.queue(),
-                &state.shapes.buffers,
+                &state.rects.buffers,
             );
         }
 

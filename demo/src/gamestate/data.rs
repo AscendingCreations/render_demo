@@ -11,11 +11,11 @@ where
     /// World Camera Controls and time. Deturmines how the world is looked at.
     pub system: System<Controls>,
     /// Sprite data TODO: Make an array,
-    pub sprites: Vec<Sprite>,
+    pub sprites: Vec<Image>,
     /// Render pipe line for Sprites
-    pub sprite_pipeline: SpriteRenderPipeline,
+    pub sprite_pipeline: ImageRenderPipeline,
     /// Vertex buffer group for Sprites
-    pub sprite_buffer: InstanceBuffer<SpriteVertex>,
+    pub sprite_buffer: InstanceBuffer<ImageVertex>,
     /// AtlasGroup to hold Sprite Images
     pub sprite_atlas: AtlasGroup,
     /// maps TODO: make this an array.
@@ -32,14 +32,14 @@ where
     /// contains the Tile images.
     pub map_atlas: AtlasGroup,
     /// animation test stuff.
-    pub animation: Sprite,
-    pub animation_buffer: InstanceBuffer<SpriteVertex>,
+    pub animation: Image,
+    pub animation_buffer: InstanceBuffer<ImageVertex>,
     pub animation_atlas: AtlasGroup,
 
     /// Basic shape rendering.
-    pub shapes: Shapes,
-    pub shapes_buffer: InstanceBuffer<ShapeVertex>,
-    pub shapes_pipeline: ShapeRenderPipeline,
+    pub rects: Rectangles,
+    pub rects_buffer: InstanceBuffer<RectVertex>,
+    pub rects_pipeline: RectsRenderPipeline,
 
     /// Text test stuff.
     pub text: Text,
@@ -114,13 +114,13 @@ where
             &self.map_pipeline,
         );
 
-        pass.render_sprite(
+        pass.render_image(
             &self.sprite_buffer,
             &self.sprite_atlas,
             &self.sprite_pipeline,
         );
 
-        pass.render_sprite(
+        pass.render_image(
             &self.animation_buffer,
             &self.animation_atlas,
             &self.sprite_pipeline,
@@ -140,6 +140,6 @@ where
             &self.text_pipeline,
         );
 
-        pass.render_shape(&self.shapes_buffer, &self.shapes_pipeline);
+        pass.render_rects(&self.rects_buffer, &self.rects_pipeline);
     }
 }

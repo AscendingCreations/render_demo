@@ -40,7 +40,7 @@ where
     pub rects: Rectangles,
     pub rects_buffer: InstanceBuffer<RectVertex>,
     pub rects_pipeline: RectsRenderPipeline,
-
+    pub rects_atlas: AtlasGroup,
     /// Text test stuff.
     pub text: Text,
     pub text_buffer: InstanceBuffer<TextVertex>,
@@ -140,6 +140,10 @@ where
             &self.text_pipeline,
         );
 
-        pass.render_rects(&self.rects_buffer, &self.rects_pipeline);
+        pass.render_rects(
+            &self.rects_buffer,
+            &self.rects_atlas,
+            &self.rects_pipeline,
+        );
     }
 }

@@ -1,6 +1,6 @@
 use crate::{
     AscendingError, InstanceLayout, LayoutStorage, RectVertex,
-    StaticBufferObject, SystemLayout,
+    StaticBufferObject, SystemLayout, TextureLayout,
 };
 
 pub struct RectsRenderPipeline {
@@ -22,6 +22,8 @@ impl RectsRenderPipeline {
             });
 
         let system_layout = layout_storage.create_layout(device, SystemLayout);
+        let texture_layout =
+            layout_storage.create_layout(device, TextureLayout);
 
         // Create the render pipeline.
         let render_pipeline =
@@ -30,7 +32,7 @@ impl RectsRenderPipeline {
                 layout: Some(&device.create_pipeline_layout(
                     &wgpu::PipelineLayoutDescriptor {
                         label: Some("render_pipeline_layout"),
-                        bind_group_layouts: &[&system_layout],
+                        bind_group_layouts: &[&system_layout, &texture_layout],
                         push_constant_ranges: &[],
                     },
                 )),

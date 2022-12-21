@@ -67,6 +67,15 @@ fn unpack_color(color: u32) -> vec4<f32> {
     ) / 255.0;
 }
 
+fn unpack_tex_data(data: vec2<u32>) -> vec4<u32> {
+    return vec4<u32>(
+        u32(vertex.tex_data[0] & 0xffffu), 
+        u32((vertex.tex_data[0] & 0xffff0000u) >> 16u),
+        u32(vertex.tex_data[1] & 0xffffu),
+        u32((vertex.tex_data[1] & 0xffff0000u) >> 16u)
+    );
+}
+
 @vertex
 fn vertex(
     vertex: VertexInput,
@@ -75,14 +84,9 @@ fn vertex(
     let v = vertex.vertex_idx % 4u;
     let size = textureDimensions(tex);
     let fsize = vec2<f32> (f32(size.x), f32(size.y));
-    let tex_data = vec4<u32>(
-        u32(vertex.tex_data[0] & 0xffffu), 
-        u32((vertex.tex_data[0] & 0xffff0000u) >> 16u),
-        u32(vertex.tex_data[1] & 0xffffu),
-        u32((vertex.tex_data[1] & 0xffff0000u) >> 16u) 
-    );
+    let tex_data = unpack_tex_data(vertex.tex_data);
     var pos = vertex.position;
-    
+
     switch v {
         case 1u: {
             result.tex_coords = vec2<f32>(f32(tex_data[2]), f32(tex_data[3]));

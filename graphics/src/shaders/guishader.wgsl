@@ -31,28 +31,32 @@ struct VertexInput {
     @location(1) position: vec3<f32>,
     @location(2) size: vec2<f32>,
     @location(3) border_width: f32,
-    @location(4) color: u32,
-    @location(5) border_color: u32,
-    @location(6) radius: f32,
+    @location(4) container_data: vec2<u32>,
+    @location(5) border_data: vec2<u32>,
+    @location(6) layer: u32,
+    @location(7) border_layer: u32,
+    @location(8) radius: f32,
 };
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) position: vec2<f32>,
-    @location(1) color: vec4<f32>,
-    @location(2) border_color: vec4<f32>,
+    @location(1) container_uv: vec4<f32>,
+    @location(2) border_uv: vec4<f32>,
     @location(3) size: vec2<f32>,
     @location(4) border_width: f32,
     @location(5) radius: f32,
+    @location(5) layer: u32,
+    @location(5) border_layer: u32,
 };
 
-fn unpack_color(color: u32) -> vec4<f32> {
-    return vec4<f32>(
-        f32((color & 0xff0000u) >> 16u),
-        f32((color & 0xff00u) >> 8u),
-        f32((color & 0xffu)),
-        f32((color & 0xff000000u) >> 24u),
-    ) / 255.0;
+fn unpack_tex_data(data: vec2<u32>) -> vec4<u32> {
+    return vec4<u32>(
+        u32(vertex.tex_data[0] & 0xffffu), 
+        u32((vertex.tex_data[0] & 0xffff0000u) >> 16u),
+        u32(vertex.tex_data[1] & 0xffffu),
+        u32((vertex.tex_data[1] & 0xffff0000u) >> 16u)
+    );
 }
 
 @vertex
@@ -61,10 +65,10 @@ fn vertex(
 ) -> VertexOutput {
     var result: VertexOutput;
     let v = vertex.vertex_idx % 4u;
+    let tex_data = unpack_tex_data(vertex.container_data);
+    let bor_data = unpack_tex_data(vertex.border_data);
 
-    result.color = unpack_color(vertex.color);
-    result.border_color = unpack_color(vertex.border_color);
-    result.border_width = vertex.border_width;
+    
 
     var pos = vertex.position.xy;
     switch v {
@@ -82,6 +86,7 @@ fn vertex(
     }
 
     result.clip_position = camera.proj * vec4<f32>(pos, vertex.position.z, 1.0);
+    result.border_width = vertex.border_width;
     result.size = vertex.size;
     result.position = vertex.position.xy;
     result.radius = vertex.radius;

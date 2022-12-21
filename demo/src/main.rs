@@ -256,16 +256,38 @@ async fn main() -> Result<(), AscendingError> {
 
     let rects_buffer = InstanceBuffer::new(renderer.device());
 
+    let mut rects_atlas = AtlasGroup::new(
+        renderer.device(),
+        2048,
+        wgpu::TextureFormat::Rgba8UnormSrgb,
+        &mut layout_storage,
+        GroupType::Textures,
+    );
+
     let mut rects = Rectangles::new();
 
-    rects.push_rect(Rect {
+    let mut rect = Rect {
         position: [150, 150, 1],
         size: [100, 100],
         border_width: 1,
-        border_color: Color::rgba(255, 255, 255, 255),
-        color: Color::rgba(255, 0, 0, 255),
         radius: 10.0,
-    });
+        ..Default::default()
+    };
+
+    rect.set_color(
+        renderer.device(),
+        renderer.queue(),
+        &mut rects_atlas,
+        Color::rgba(255, 255, 255, 255),
+    )
+    .set_border_color(
+        renderer.device(),
+        renderer.queue(),
+        &mut rects_atlas,
+        Color::rgba(0, 0, 0, 255),
+    );
+
+    rects.push_rect(rect);
 
     let text_atlas = AtlasGroup::new(
         renderer.device(),
@@ -321,6 +343,7 @@ async fn main() -> Result<(), AscendingError> {
         rects,
         rects_buffer,
         rects_pipeline,
+        rects_atlas,
         text,
         text_atlas,
         emoji_atlas,

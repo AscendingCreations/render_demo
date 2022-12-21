@@ -68,8 +68,6 @@ fn vertex(
     let tex_data = unpack_tex_data(vertex.container_data);
     let bor_data = unpack_tex_data(vertex.border_data);
 
-    
-
     var pos = vertex.position.xy;
     switch v {
         case 1u: {

@@ -17,7 +17,6 @@ pub struct Rect {
     pub color: Color,
     pub border_color: Color,
     pub radius: f32,
-    pub use_camera: bool,
 }
 
 impl Default for Rectangles {
@@ -66,7 +65,6 @@ impl Rectangles {
                 border_width: shape.border_width as f32,
                 border_color: shape.border_color.0,
                 radius: shape.radius,
-                use_camera: u32::from(shape.use_camera),
             };
 
             rects.push(buffer);

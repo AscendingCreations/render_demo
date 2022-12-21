@@ -10,7 +10,6 @@ pub struct RectVertex {
     pub color: u32,
     pub border_color: u32,
     pub radius: f32,
-    pub use_camera: u32,
 }
 
 impl Default for RectVertex {
@@ -22,14 +21,13 @@ impl Default for RectVertex {
             color: 0,
             border_color: 0,
             radius: 1.0,
-            use_camera: 1,
         }
     }
 }
 
 impl InstanceLayout for RectVertex {
     fn attributes() -> Vec<wgpu::VertexAttribute> {
-        wgpu::vertex_attr_array![1 => Float32x3, 2 => Float32x2, 3 => Float32, 4 => Uint32, 5 => Uint32, 6 => Float32, 7 => Uint32]
+        wgpu::vertex_attr_array![1 => Float32x3, 2 => Float32x2, 3 => Float32, 4 => Uint32, 5 => Uint32, 6 => Float32]
             .to_vec()
     }
 
@@ -46,6 +44,6 @@ impl InstanceLayout for RectVertex {
     }
 
     fn instance_stride() -> usize {
-        std::mem::size_of::<[f32; 10]>()
+        std::mem::size_of::<[f32; 9]>()
     }
 }

@@ -17,7 +17,7 @@ impl RectsRenderPipeline {
             device.create_shader_module(wgpu::ShaderModuleDescriptor {
                 label: Some("Shader"),
                 source: wgpu::ShaderSource::Wgsl(
-                    include_str!("../shaders/shapeshader.wgsl").into(),
+                    include_str!("../shaders/guishader.wgsl").into(),
                 ),
             });
 

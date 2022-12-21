@@ -265,7 +265,6 @@ async fn main() -> Result<(), AscendingError> {
         border_color: Color::rgba(255, 255, 255, 255),
         color: Color::rgba(255, 0, 0, 255),
         radius: 10.0,
-        use_camera: false,
     });
 
     let text_atlas = AtlasGroup::new(

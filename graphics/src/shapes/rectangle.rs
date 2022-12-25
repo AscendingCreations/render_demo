@@ -1,4 +1,6 @@
-use crate::{Allocation, AtlasGroup, RectVertex};
+use crate::{
+    Allocation, AscendingError, AtlasGroup, OtherError, RectVertex, Texture,
+};
 use cosmic_text::Color;
 use image::{self, ImageBuffer};
 use std::cmp;
@@ -63,6 +65,35 @@ impl Rect {
         self
     }
 
+    pub fn set_texture(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        atlas: &mut AtlasGroup,
+        path: String,
+    ) -> Result<&mut Self, AscendingError> {
+        let allocation = Texture::from_file(path)?
+            .group_upload(atlas, device, queue)
+            .ok_or_else(|| OtherError::new("failed to upload image"))?;
+        self.container = Some(allocation);
+        Ok(self)
+    }
+
+    pub fn set_border_texture(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        atlas: &mut AtlasGroup,
+        path: String,
+    ) -> Result<&mut Self, AscendingError> {
+        let allocation = Texture::from_file(path)?
+            .group_upload(atlas, device, queue)
+            .ok_or_else(|| OtherError::new("failed to upload image"))?;
+        self.border = Some(allocation);
+        Ok(self)
+    }
+
+    //Set the Rendering Offset of the container.
     pub fn set_container_uv(
         &mut self,
         x: u16,
@@ -74,6 +105,7 @@ impl Rect {
         self
     }
 
+    //Set the Rendering Offset of the border.
     pub fn set_border_uv(
         &mut self,
         x: u16,

@@ -268,24 +268,25 @@ async fn main() -> Result<(), AscendingError> {
 
     let mut rect = Rect {
         position: [150, 150, 1],
-        size: [100, 100],
+        size: [168, 32],
         border_width: 1,
-        radius: 10.0,
+        radius: 5.0,
         ..Default::default()
     };
 
-    rect.set_color(
+    rect.set_texture(
         renderer.device(),
         renderer.queue(),
         &mut rects_atlas,
-        Color::rgba(255, 255, 255, 255),
-    )
+        "images/accept.png".to_owned(),
+    )?
     .set_border_color(
         renderer.device(),
         renderer.queue(),
         &mut rects_atlas,
         Color::rgba(0, 0, 0, 255),
-    );
+    )
+    .set_container_uv(0, 0, 168, 32);
 
     rects.push_rect(rect);
 

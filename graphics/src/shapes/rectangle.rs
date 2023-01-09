@@ -5,16 +5,6 @@ use cosmic_text::Color;
 use image::{self, ImageBuffer};
 use std::cmp;
 
-/// rendering data for all sprites.
-/// not to be confused with Actual NPC or Player data.
-pub struct Rectangles {
-    pub rects: Vec<Rect>,
-    pub buffers: Vec<u8>,
-    pub indices_count: usize,
-    /// if anything got updated we need to update the buffers too.
-    pub changed: bool,
-}
-
 #[derive(Default)]
 pub struct Rect {
     pub position: [u32; 3],
@@ -25,6 +15,26 @@ pub struct Rect {
     pub border: Option<Allocation>,
     pub border_uv: [u16; 4],
     pub radius: f32,
+    pub bytes: Vec<u8>,
+    /// if anything got updated we need to update the buffers too.
+    pub changed: bool,
+}
+
+impl Default for Image {
+    fn default() -> Self {
+        Self {
+            pos: [0; 3],
+            size: [0; 2],
+            border_width: 0,
+            container: None,
+            container_uv: [0; 4],
+            border: None,
+            border_uv: [0; 4],
+            radius: 0,
+            bytes: Vec::new(),
+            changed: true,
+        }
+    }
 }
 
 impl Rect {
@@ -51,6 +61,7 @@ impl Rect {
         color: Color,
     ) -> &mut Self {
         self.container = Self::add_color(device, queue, atlas, color);
+        self.changed = true;
         self
     }
 
@@ -62,6 +73,7 @@ impl Rect {
         color: Color,
     ) -> &mut Self {
         self.border = Self::add_color(device, queue, atlas, color);
+        self.changed = true;
         self
     }
 
@@ -76,6 +88,7 @@ impl Rect {
             .group_upload(atlas, device, queue)
             .ok_or_else(|| OtherError::new("failed to upload image"))?;
         self.container = Some(allocation);
+        self.changed = true;
         Ok(self)
     }
 
@@ -90,6 +103,7 @@ impl Rect {
             .group_upload(atlas, device, queue)
             .ok_or_else(|| OtherError::new("failed to upload image"))?;
         self.border = Some(allocation);
+        self.changed = true;
         Ok(self)
     }
 
@@ -102,6 +116,7 @@ impl Rect {
         h: u16,
     ) -> &mut Self {
         self.container_uv = [x, y, w, h];
+        self.changed = true;
         self
     }
 
@@ -114,96 +129,64 @@ impl Rect {
         h: u16,
     ) -> &mut Self {
         self.border_uv = [x, y, w, h];
+        self.changed = true;
         self
     }
-}
 
-impl Default for Rectangles {
-    fn default() -> Self {
-        Self {
-            rects: Vec::new(),
-            buffers: Vec::new(),
-            indices_count: 0,
-            changed: true,
-        }
-    }
-}
-
-impl Rectangles {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn push_rect(&mut self, shape: Rect) {
-        self.rects.push(shape);
-        self.changed = true;
-    }
-
-    pub fn clear_rects(&mut self) {
-        self.rects.clear();
-        self.changed = true;
-    }
-
-    pub fn get_mut_rects(&mut self) -> &mut Vec<Rect> {
-        self.changed = true;
-        &mut self.rects
-    }
-    pub fn fill(&mut self) {
+    pub fn create_quad(&mut self) {
         let mut rects = Vec::new();
 
-        for shape in &self.rects {
-            let containter_tex = match shape.container {
-                Some(allocation) => allocation,
-                None => continue,
-            };
+        let containter_tex = match self.container {
+            Some(allocation) => allocation,
+            None => return,
+        };
 
-            let border_tex = match shape.border {
-                Some(allocation) => allocation,
-                None => continue,
-            };
+        let border_tex = match self.border {
+            Some(allocation) => allocation,
+            None => return,
+        };
 
-            let (u, v, width, height) = containter_tex.rect();
-            let container_data = [
-                shape.container_uv[0].saturating_add(u as u16),
-                shape.container_uv[1].saturating_add(v as u16),
-                cmp::min(shape.container_uv[2], width as u16),
-                cmp::min(shape.container_uv[3], height as u16),
-            ];
+        let (u, v, width, height) = containter_tex.rect();
+        let container_data = [
+            self.container_uv[0].saturating_add(u as u16),
+            self.container_uv[1].saturating_add(v as u16),
+            cmp::min(self.container_uv[2], width as u16),
+            cmp::min(self.container_uv[3], height as u16),
+        ];
 
-            let (u, v, width, height) = border_tex.rect();
-            let border_data = [
-                shape.border_uv[0].saturating_add(u as u16),
-                shape.border_uv[1].saturating_add(v as u16),
-                cmp::min(shape.border_uv[2], width as u16),
-                cmp::min(shape.border_uv[3], height as u16),
-            ];
+        let (u, v, width, height) = border_tex.rect();
+        let border_data = [
+            self.border_uv[0].saturating_add(u as u16),
+            self.border_uv[1].saturating_add(v as u16),
+            cmp::min(self.border_uv[2], width as u16),
+            cmp::min(self.border_uv[3], height as u16),
+        ];
 
-            let buffer = RectVertex {
-                position: [
-                    shape.position[0] as f32,
-                    shape.position[1] as f32,
-                    shape.position[2] as f32,
-                ],
-                size: [shape.size[0] as f32, shape.size[1] as f32],
-                border_width: shape.border_width as f32,
-                radius: shape.radius,
-                container_data,
-                border_data,
-                layer: containter_tex.layer as u32,
-                border_layer: border_tex.layer as u32,
-            };
+        let buffer = RectVertex {
+            position: [
+                self.position[0] as f32,
+                self.position[1] as f32,
+                self.position[2] as f32,
+            ],
+            size: [self.size[0] as f32, self.size[1] as f32],
+            border_width: self.border_width as f32,
+            radius: self.radius,
+            container_data,
+            border_data,
+            layer: containter_tex.layer as u32,
+            border_layer: border_tex.layer as u32,
+        };
 
-            rects.push(buffer);
-        }
+        rects.push(buffer);
 
-        self.buffers = bytemuck::cast_slice(&rects).to_vec();
+        self.bytes = bytemuck::cast_slice(&rects).to_vec();
     }
 
     /// used to check and update the ShapeVertex array.
     pub fn update(&mut self) -> bool {
         // if points added or any data changed recalculate paths.
         if self.changed {
-            self.fill();
+            self.create_quad();
 
             self.changed = false;
             true

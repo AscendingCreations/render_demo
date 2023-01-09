@@ -264,31 +264,29 @@ async fn main() -> Result<(), AscendingError> {
         GroupType::Textures,
     );
 
-    let mut rects = Rectangles::new();
-
-    let mut rect = Rect {
+    let mut rects = Rect {
         position: [150, 150, 1],
         size: [168, 32],
         border_width: 2,
         radius: 5.0,
+        changed: true,
         ..Default::default()
     };
 
-    rect.set_color(
-        renderer.device(),
-        renderer.queue(),
-        &mut rects_atlas,
-        Color::rgba(255, 255, 0, 255),
-    )
-    .set_border_color(
-        renderer.device(),
-        renderer.queue(),
-        &mut rects_atlas,
-        Color::rgba(0, 0, 0, 255),
-    )
-    .set_container_uv(0, 0, 168, 32);
-
-    rects.push_rect(rect);
+    rects
+        .set_color(
+            renderer.device(),
+            renderer.queue(),
+            &mut rects_atlas,
+            Color::rgba(255, 255, 0, 255),
+        )
+        .set_border_color(
+            renderer.device(),
+            renderer.queue(),
+            &mut rects_atlas,
+            Color::rgba(0, 0, 0, 255),
+        )
+        .set_container_uv(0, 0, 168, 32);
 
     let text_atlas = AtlasGroup::new(
         renderer.device(),
@@ -508,7 +506,7 @@ async fn main() -> Result<(), AscendingError> {
             state.rects_buffer.set_from(
                 renderer.device(),
                 renderer.queue(),
-                &state.rects.buffers,
+                &state.rects.bytes,
             );
         }
 

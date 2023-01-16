@@ -30,5 +30,4 @@ futures.workspace = true
 cosmic-text.workspace = true
 naga.workspace = true
 wgpu.workspace = true
-swash.workspace = true
 chrono.workspace = true

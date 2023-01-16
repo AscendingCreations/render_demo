@@ -31,28 +31,42 @@ struct VertexInput {
     @location(1) position: vec3<f32>,
     @location(2) size: vec2<f32>,
     @location(3) border_width: f32,
-    @location(4) color: u32,
-    @location(5) border_color: u32,
-    @location(6) radius: f32,
+    @location(4) container_data: vec2<u32>,
+    @location(5) border_data: vec2<u32>,
+    @location(6) layer: u32,
+    @location(7) border_layer: u32,
+    @location(8) radius: f32,
 };
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) position: vec2<f32>,
-    @location(1) color: vec4<f32>,
-    @location(2) border_color: vec4<f32>,
-    @location(3) size: vec2<f32>,
-    @location(4) border_width: f32,
-    @location(5) radius: f32,
+    @location(1) container_uv: vec2<f32>,
+    @location(2) border_uv: vec2<f32>,
+    @location(3) container_data: vec4<u32>,
+    @location(4) border_data: vec4<u32>,
+    @location(5) size: vec2<f32>,
+    @location(6) border_width: f32,
+    @location(7) radius: f32,
+    @location(8) layer: i32,
+    @location(9) border_layer: i32,
+    @location(10) tex_size: vec2<f32>,
 };
 
-fn unpack_color(color: u32) -> vec4<f32> {
-    return vec4<f32>(
-        f32((color & 0xff0000u) >> 16u),
-        f32((color & 0xff00u) >> 8u),
-        f32((color & 0xffu)),
-        f32((color & 0xff000000u) >> 24u),
-    ) / 255.0;
+@group(1)
+@binding(0)
+var tex: texture_2d_array<f32>;
+@group(1)
+@binding(1)
+var tex_sample: sampler;
+
+fn unpack_tex_data(data: vec2<u32>) -> vec4<u32> {
+    return vec4<u32>(
+        u32(data[0] & 0xffffu), 
+        u32((data[0] & 0xffff0000u) >> 16u),
+        u32(data[1] & 0xffffu),
+        u32((data[1] & 0xffff0000u) >> 16u)
+    );
 }
 
 @vertex
@@ -61,30 +75,45 @@ fn vertex(
 ) -> VertexOutput {
     var result: VertexOutput;
     let v = vertex.vertex_idx % 4u;
+    let tex_data = unpack_tex_data(vertex.container_data);
+    let bor_data = unpack_tex_data(vertex.border_data);
+    let size = textureDimensions(tex);
+    let fsize = vec2<f32> (f32(size.x), f32(size.y));
+    var pos = vertex.position;
 
-    result.color = unpack_color(vertex.color);
-    result.border_color = unpack_color(vertex.border_color);
-    result.border_width = vertex.border_width;
-
-    var pos = vertex.position.xy;
-    switch v {
+     switch v {
         case 1u: {
+            result.container_uv = vec2<f32>(f32(tex_data[2]), f32(tex_data[3]));
+            result.border_uv = vec2<f32>(f32(bor_data[2]), f32(bor_data[3]));
             pos.x += vertex.size.x;
         }
         case 2u: {
-            pos += vertex.size;
+            result.container_uv = vec2<f32>(f32(tex_data[2]), 0.0);
+            result.border_uv = vec2<f32>(f32(bor_data[2]), 0.0);
+            pos.x += vertex.size.x;
+            pos.y += vertex.size.y;
         }
         case 3u: {
+            result.container_uv = vec2<f32>(0.0, 0.0);
+            result.border_uv = vec2<f32>(0.0, 0.0);
             pos.y += vertex.size.y;
         }
         default: {
+            result.container_uv = vec2<f32>(0.0, f32(tex_data[3]));
+            result.border_uv = vec2<f32>(0.0, f32(bor_data[3]));
         }
     }
 
-    result.clip_position = camera.proj * vec4<f32>(pos, vertex.position.z, 1.0);
+    result.clip_position = camera.proj * vec4<f32>(pos, 1.0);
+    result.container_data = tex_data;
+    result.border_data = bor_data;
+    result.border_width = vertex.border_width;
     result.size = vertex.size;
     result.position = vertex.position.xy;
     result.radius = vertex.radius;
+    result.tex_size = fsize;
+    result.border_layer = i32(vertex.border_layer);
+    result.layer = i32(vertex.layer);
     return result;
 }
 
@@ -113,8 +142,21 @@ fn distance_alg(
 // Fragment shader thanks to ICED/hector.
 @fragment
 fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
-    var mixed_color: vec4<f32> = vertex.color;
-    let radius = 5.0;
+    let container_coords = vec2<f32>(
+        (f32(vertex.container_data[0]) + vertex.container_uv.x) / vertex.tex_size.x,
+        (f32(vertex.container_data[1]) + vertex.container_uv.y) / vertex.tex_size.y
+    );
+        
+    let border_coords = vec2<f32>(
+        (f32(vertex.border_data[0]) + vertex.border_uv.x) / vertex.tex_size.x,
+        (f32(vertex.border_data[1]) + vertex.border_uv.y) / vertex.tex_size.y
+    );
+
+    let border_color = textureSampleLevel(tex, tex_sample, border_coords, vertex.border_layer, 1.0);
+    let container_color = textureSampleLevel(tex, tex_sample, container_coords, vertex.layer, 1.0);
+
+    var mixed_color: vec4<f32> = container_color;
+    let radius = vertex.radius;
     let clippy = vec2<f32>(vertex.clip_position.x, screen.size.y - vertex.clip_position.y);
 
     if (vertex.border_width > 0.0) {
@@ -133,7 +175,7 @@ fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
             distance
         );
 
-        mixed_color = mix(vertex.color, vertex.border_color, vec4<f32>(border_mix));
+        mixed_color = mix(container_color, border_color, vec4<f32>(border_mix));
     }
 
     let dist: f32 = distance_alg(

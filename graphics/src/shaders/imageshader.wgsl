@@ -67,6 +67,15 @@ fn unpack_color(color: u32) -> vec4<f32> {
     ) / 255.0;
 }
 
+fn unpack_tex_data(data: vec2<u32>) -> vec4<u32> {
+    return vec4<u32>(
+        u32(data[0] & 0xffffu), 
+        u32((data[0] & 0xffff0000u) >> 16u),
+        u32(data[1] & 0xffffu),
+        u32((data[1] & 0xffff0000u) >> 16u)
+    );
+}
+
 @vertex
 fn vertex(
     vertex: VertexInput,
@@ -75,14 +84,9 @@ fn vertex(
     let v = vertex.vertex_idx % 4u;
     let size = textureDimensions(tex);
     let fsize = vec2<f32> (f32(size.x), f32(size.y));
-    let tex_data = vec4<u32>(
-        u32(vertex.tex_data[0] & 0xffffu), 
-        u32((vertex.tex_data[0] & 0xffff0000u) >> 16u),
-        u32(vertex.tex_data[1] & 0xffffu),
-        u32((vertex.tex_data[1] & 0xffff0000u) >> 16u) 
-    );
+    let tex_data = unpack_tex_data(vertex.tex_data);
     var pos = vertex.position;
-    
+
     switch v {
         case 1u: {
             result.tex_coords = vec2<f32>(f32(tex_data[2]), f32(tex_data[3]));
@@ -150,10 +154,10 @@ fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
     let corner = floor(tex_pixel) + 1.0;
     let frac = min((corner - tex_pixel) * vec2<f32>(2.0, 2.0), vec2<f32>(1.0, 1.0));
 
-    var c1 = textureSample(tex, tex_sample, (floor(tex_pixel + vec2<f32>(0.0, 0.0)) + 0.5) / vertex.size, vertex.layer);
-    var c2 = textureSample(tex, tex_sample, (floor(tex_pixel + vec2<f32>(step.x, 0.0)) + 0.5) / vertex.size, vertex.layer);
-    var c3 = textureSample(tex, tex_sample, (floor(tex_pixel + vec2<f32>(0.0, step.y)) + 0.5) / vertex.size, vertex.layer);
-    var c4 = textureSample(tex, tex_sample, (floor(tex_pixel + step.xy) + 0.5) / vertex.size, vertex.layer);
+    var c1 = textureSampleLevel(tex, tex_sample, (floor(tex_pixel + vec2<f32>(0.0, 0.0)) + 0.5) / vertex.size, vertex.layer, 1.0);
+    var c2 = textureSampleLevel(tex, tex_sample, (floor(tex_pixel + vec2<f32>(step.x, 0.0)) + 0.5) / vertex.size, vertex.layer, 1.0);
+    var c3 = textureSampleLevel(tex, tex_sample, (floor(tex_pixel + vec2<f32>(0.0, step.y)) + 0.5) / vertex.size, vertex.layer, 1.0);
+    var c4 = textureSampleLevel(tex, tex_sample, (floor(tex_pixel + step.xy) + 0.5) / vertex.size, vertex.layer, 1.0);
 
     c1 = c1 * (frac.x * frac.y);
     c2 = c2 *((1.0 - frac.x) * frac.y);

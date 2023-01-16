@@ -30,7 +30,7 @@ pub struct GuiRender {
     pub animation_atlas: AtlasGroup,
 
     /// Basic shape rendering.
-    pub rects: Rectangles,
+    pub rects: Rect,
     pub rects_buffer: InstanceBuffer<RectVertex>,
     pub rects_pipeline: RectsRenderPipeline,
 

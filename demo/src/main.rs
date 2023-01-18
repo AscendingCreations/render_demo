@@ -266,9 +266,9 @@ async fn main() -> Result<(), AscendingError> {
 
     let mut rects = Rect {
         position: [150, 150, 1],
-        size: [168, 32],
+        size: [132, 32],
         border_width: 2,
-        radius: 5.0,
+        radius: None,
         changed: true,
         ..Default::default()
     };
@@ -365,6 +365,8 @@ async fn main() -> Result<(), AscendingError> {
     let mut frame_time = FrameTime::new();
     let mut time = 0.0f32;
     let mut fps = 0u32;
+    let mut mouse_pos: [i32; 2] = [0; 2];
+    let mut id = 0;
 
     event_loop.run(move |event, _, control_flow| {
         match event {
@@ -375,9 +377,24 @@ async fn main() -> Result<(), AscendingError> {
             } if window_id == renderer.window().id() => {
                 if let WindowEvent::CloseRequested = *event {
                     *control_flow = ControlFlow::Exit;
+                } else if let WindowEvent::CursorMoved {
+                    device_id: _,
+                    position,
+                    modifiers: _,
+                } = *event
+                {
+                    mouse_pos = [
+                        position.x as i32,
+                        size.height as i32 - position.y as i32,
+                    ];
                 }
             }
             _ => {}
+        }
+
+        if state.rects.check_mouse_bounds(mouse_pos) {
+            println!("Within the Shape: {id}");
+            id += 1;
         }
 
         let new_size = renderer.size();

@@ -73,7 +73,7 @@ pub struct TimeUniform {
 
 pub struct System<Controls: camera::controls::Controls> {
     camera: camera::Camera<Controls>,
-    screen_size: [f32; 2],
+    pub screen_size: [f32; 2],
     camera_buffer: wgpu::Buffer,
     time_buffer: wgpu::Buffer,
     screen_buffer: wgpu::Buffer,

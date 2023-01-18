@@ -5,7 +5,6 @@ use cosmic_text::Color;
 use image::{self, ImageBuffer};
 use std::cmp;
 
-#[derive(Default)]
 pub struct Rect {
     pub position: [u32; 3],
     pub size: [u32; 2],
@@ -14,23 +13,23 @@ pub struct Rect {
     pub container_uv: [u16; 4],
     pub border: Option<Allocation>,
     pub border_uv: [u16; 4],
-    pub radius: f32,
+    pub radius: Option<f32>,
     pub bytes: Vec<u8>,
     /// if anything got updated we need to update the buffers too.
     pub changed: bool,
 }
 
-impl Default for Image {
+impl Default for Rect {
     fn default() -> Self {
         Self {
-            pos: [0; 3],
+            position: [0; 3],
             size: [0; 2],
             border_width: 0,
             container: None,
             container_uv: [0; 4],
             border: None,
             border_uv: [0; 4],
-            radius: 0,
+            radius: None,
             bytes: Vec::new(),
             changed: true,
         }
@@ -170,7 +169,7 @@ impl Rect {
             ],
             size: [self.size[0] as f32, self.size[1] as f32],
             border_width: self.border_width as f32,
-            radius: self.radius,
+            radius: self.radius.unwrap_or_default(),
             container_data,
             border_data,
             layer: containter_tex.layer as u32,
@@ -193,5 +192,37 @@ impl Rect {
         } else {
             false
         }
+    }
+
+    pub fn check_mouse_bounds(&self, mouse_pos: [i32; 2]) -> bool {
+        let pos = [self.position[0] as f32, self.position[1] as f32];
+        let inner_size = [
+            self.size[0] as f32 - self.radius.unwrap_or_default() * 2.0,
+            self.size[1] as f32 - self.radius.unwrap_or_default() * 2.0,
+        ];
+        let top_left = [
+            pos[0] + self.radius.unwrap_or_default(),
+            pos[1] + self.radius.unwrap_or_default(),
+        ];
+        let bottom_right =
+            [top_left[0] + inner_size[0], top_left[1] + inner_size[1]];
+
+        let top_left_distance = [
+            top_left[0] - mouse_pos[0] as f32,
+            top_left[1] - mouse_pos[1] as f32,
+        ];
+        let bottom_right_distance = [
+            mouse_pos[0] as f32 - bottom_right[0],
+            mouse_pos[1] as f32 - bottom_right[1],
+        ];
+
+        let dist = [
+            top_left_distance[0].max(bottom_right_distance[0]).max(0.0),
+            top_left_distance[1].max(bottom_right_distance[1]).max(0.0),
+        ];
+
+        let dist = (dist[0] * dist[0] + dist[1] * dist[1]).sqrt();
+
+        dist < self.radius.unwrap_or(1.0)
     }
 }

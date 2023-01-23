@@ -378,17 +378,6 @@ async fn main() -> Result<(), AscendingError> {
             } if window_id == renderer.window().id() => {
                 if let WindowEvent::CloseRequested = *event {
                     *control_flow = ControlFlow::Exit;
-                } else if let WindowEvent::CursorMoved {
-                    device_id: _,
-                    position,
-
-                    modifiers: _,
-                } = *event
-                {
-                    mouse_pos = [
-                        position.x as i32,
-                        size.height as i32 - position.y as i32,
-                    ];
                 }
             }
             _ => {}
@@ -411,6 +400,11 @@ async fn main() -> Result<(), AscendingError> {
         }
 
         input_handler.update(renderer.window(), &event, 1.0);
+
+        mouse_pos = {
+            let pos = input_handler.mouse_position().unwrap_or((0.0, 0.0));
+            [pos.0 as i32, size.height as i32 - pos.1 as i32]
+        };
 
         let frame = match renderer.update(&event).unwrap() {
             Some(frame) => frame,

@@ -268,7 +268,7 @@ async fn main() -> Result<(), AscendingError> {
         position: [150, 150, 1],
         size: [132, 32],
         border_width: 2,
-        radius: None,
+        radius: Some(5.0),
         changed: true,
         ..Default::default()
     };
@@ -471,6 +471,8 @@ async fn main() -> Result<(), AscendingError> {
             );
         }
 
+        state.text.clear();
+
         let update = state.text.update(
             renderer.queue(),
             renderer.device(),
@@ -480,7 +482,7 @@ async fn main() -> Result<(), AscendingError> {
             &mut state.emoji_atlas,
         );
 
-        state.text.reset_cleared();
+        state.text.set_cleared(false);
 
         if update {
             state.text_buffer.set_from(

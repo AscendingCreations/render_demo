@@ -139,7 +139,8 @@ impl Text {
             }
         }
 
-        self.text_bytes = bytemuck::cast_slice(&text_buf).to_vec();
+        self.text_bytes
+            .append(&mut bytemuck::cast_slice(&text_buf).to_vec());
         Ok(())
     }
 
@@ -154,8 +155,13 @@ impl Text {
     }
 
     /// Sets cleared to false.
-    pub fn reset_cleared(&mut self) {
-        self.cleared = false;
+    pub fn set_cleared(&mut self, cleared: bool) {
+        self.cleared = cleared;
+    }
+
+    /// resets the Text vec to empty
+    pub fn clear(&mut self) {
+        self.text_bytes.clear()
     }
 
     /// used to check and update the vertex array.

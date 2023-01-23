@@ -368,6 +368,7 @@ async fn main() -> Result<(), AscendingError> {
     let mut mouse_pos: [i32; 2] = [0; 2];
     let mut id = 0;
 
+    #[allow(deprecated)]
     event_loop.run(move |event, _, control_flow| {
         match event {
             Event::WindowEvent {
@@ -380,6 +381,7 @@ async fn main() -> Result<(), AscendingError> {
                 } else if let WindowEvent::CursorMoved {
                     device_id: _,
                     position,
+
                     modifiers: _,
                 } = *event
                 {

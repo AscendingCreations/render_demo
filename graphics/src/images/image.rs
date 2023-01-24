@@ -64,7 +64,7 @@ impl Image {
             cmp::min(self.uv[3], height as u16),
         );
 
-        let instance = vec![ImageVertex {
+        let instance = ImageVertex {
             position: [x, y, self.pos[2] as f32],
             hw: [w, h],
             tex_data: [u, v, width, height],
@@ -74,9 +74,9 @@ impl Image {
             use_camera: u32::from(self.use_camera),
             time: self.switch_time,
             layer: allocation.layer as i32,
-        }];
+        };
 
-        self.bytes = bytemuck::cast_slice(&instance).to_vec();
+        self.bytes = bytemuck::bytes_of(&instance).to_vec();
         self.changed = false;
     }
 

@@ -133,8 +133,6 @@ impl Rect {
     }
 
     pub fn create_quad(&mut self) {
-        let mut rects = Vec::new();
-
         let containter_tex = match self.container {
             Some(allocation) => allocation,
             None => return,
@@ -176,9 +174,7 @@ impl Rect {
             border_layer: border_tex.layer as u32,
         };
 
-        rects.push(buffer);
-
-        self.bytes = bytemuck::cast_slice(&rects).to_vec();
+        self.bytes = bytemuck::bytes_of(&buffer).to_vec();
     }
 
     /// used to check and update the ShapeVertex array.

@@ -14,11 +14,13 @@ use naga::{front::wgsl, valid::Validator};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::{
+    cell::RefCell,
     collections::HashMap,
     fs::{self, File},
     io::{prelude::*, Read, Write},
     panic,
     path::PathBuf,
+    rc::Rc,
 };
 use winit::{
     dpi::PhysicalSize,
@@ -27,8 +29,10 @@ use winit::{
     window::WindowBuilder,
 };
 mod gamestate;
+mod gui;
 
 use gamestate::*;
+use gui::*;
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
 enum Action {
@@ -310,15 +314,18 @@ async fn main() -> Result<(), AscendingError> {
         &mut layout_storage,
     )?;
     let text_buffer = InstanceBuffer::new(renderer.device());
-
-    let text = Text::new(&FONT_SYSTEM, None);
-
+    let mut font_cache: SwashCache<'static> = SwashCache::new(&FONT_SYSTEM);
+    let text_render = TextRender::new();
     let scale = renderer.window().current_monitor().unwrap().scale_factor();
 
-    let mut textbuffer =
-        Buffer::new(&FONT_SYSTEM, Metrics::new(16, 16).scale(scale as i32));
+    let mut text = Text::new(
+        &FONT_SYSTEM,
+        Some(Metrics::new(16, 16).scale(scale as i32)),
+        [0, 32, 1],
+        [256, 256],
+    );
 
-    textbuffer.set_size(size.width as i32, size.height as i32);
+    text.set_buffer_size(size.width as i32, size.height as i32);
 
     let buffer_object = StaticBufferObject::new(renderer.device());
 
@@ -343,7 +350,7 @@ async fn main() -> Result<(), AscendingError> {
         rects_buffer,
         rects_pipeline,
         rects_atlas,
-        text,
+        text_render,
         text_atlas,
         emoji_atlas,
         text_pipeline,
@@ -467,24 +474,25 @@ async fn main() -> Result<(), AscendingError> {
             );
         }
 
-        state.text.clear();
+        //state.text.clear();
 
-        let update = state.text.update(
-            renderer.queue(),
-            renderer.device(),
-            [0, 32, 1],
-            &mut textbuffer,
-            &mut state.text_atlas,
-            &mut state.emoji_atlas,
-        );
-
-        state.text.set_cleared(false);
+        let update = text
+            .update(
+                &mut font_cache,
+                &mut state.text_atlas,
+                &mut state.emoji_atlas,
+                renderer.queue(),
+                renderer.device(),
+            )
+            .unwrap();
 
         if update {
+            state.text_render.clear();
+            state.text_render.push(&text);
             state.text_buffer.set_from(
                 renderer.device(),
                 renderer.queue(),
-                &state.text.text_bytes,
+                &state.text_render.text_bytes,
             );
         }
 
@@ -539,11 +547,10 @@ async fn main() -> Result<(), AscendingError> {
         renderer.queue().submit(std::iter::once(encoder.finish()));
 
         if time < seconds {
-            textbuffer.set_text(
+            text.set_text(
                 &format!("生活,삶,जिंदगी 😀 FPS: {fps} \n hello"),
                 cosmic_text::Attrs::new(),
             );
-            textbuffer.set_redraw(true);
             fps = 0u32;
             time = seconds + 1.0;
         }

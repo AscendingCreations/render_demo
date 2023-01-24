@@ -9,7 +9,7 @@ pub struct GuiRender {
     pub ui_pipeline: RectsRenderPipeline,
     pub ui_atlas: AtlasGroup,
     /// Text test stuff.
-    pub text: Text,
+    pub text_render: TextRender,
     pub text_buffer: InstanceBuffer<TextVertex>,
     pub text_pipeline: TextRenderPipeline,
     pub text_atlas: AtlasGroup<CacheKey, (i32, i32)>,

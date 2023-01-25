@@ -25,13 +25,26 @@ bitfield! {
 }
 
 pub trait UI {
-    fn draw(&mut self, frame_time: FrameTime, renders: &mut GuiRender);
+    fn draw(
+        &mut self,
+        name: &str,
+        info: &mut WidgetType,
+        frame_time: FrameTime,
+        renders: &mut GuiRender,
+    );
+}
+
+pub enum WidgetType {
+    Text(Text),
+    Rect(Rect),
 }
 
 pub struct Widget {
     pub name: String,
-    pub data: Option<Box<dyn UI>>,
+    pub ui: Option<Box<dyn UI>>,
     pub parent: Option<Rc<RefCell<Widget>>>,
     pub children: VecDeque<Rc<RefCell<Widget>>>,
     pub hidden: Vec<Rc<RefCell<Widget>>>,
+    pub info: WidgetType,
+    pub actions: UiField,
 }

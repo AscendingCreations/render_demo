@@ -191,34 +191,47 @@ impl Rect {
     }
 
     pub fn check_mouse_bounds(&self, mouse_pos: [i32; 2]) -> bool {
-        let pos = [self.position[0] as f32, self.position[1] as f32];
-        let inner_size = [
-            self.size[0] as f32 - self.radius.unwrap_or_default() * 2.0,
-            self.size[1] as f32 - self.radius.unwrap_or_default() * 2.0,
-        ];
-        let top_left = [
-            pos[0] + self.radius.unwrap_or_default(),
-            pos[1] + self.radius.unwrap_or_default(),
-        ];
-        let bottom_right =
-            [top_left[0] + inner_size[0], top_left[1] + inner_size[1]];
+        if let Some(radius) = self.radius {
+            let pos = [self.position[0] as f32, self.position[1] as f32];
 
-        let top_left_distance = [
-            top_left[0] - mouse_pos[0] as f32,
-            top_left[1] - mouse_pos[1] as f32,
-        ];
-        let bottom_right_distance = [
-            mouse_pos[0] as f32 - bottom_right[0],
-            mouse_pos[1] as f32 - bottom_right[1],
-        ];
+            let inner_size = [
+                self.size[0] as f32 - radius * 2.0,
+                self.size[1] as f32 - radius * 2.0,
+            ];
+            let top_left = [
+                pos[0] + radius,
+                pos[1] + radius,
+            ];
+            let bottom_right =
+                [top_left[0] + inner_size[0], top_left[1] + inner_size[1]];
 
-        let dist = [
-            top_left_distance[0].max(bottom_right_distance[0]).max(0.0),
-            top_left_distance[1].max(bottom_right_distance[1]).max(0.0),
-        ];
+            let top_left_distance = [
+                top_left[0] - mouse_pos[0] as f32,
+                top_left[1] - mouse_pos[1] as f32,
+            ];
+            let bottom_right_distance = [
+                mouse_pos[0] as f32 - bottom_right[0],
+                mouse_pos[1] as f32 - bottom_right[1],
+            ];
 
-        let dist = (dist[0] * dist[0] + dist[1] * dist[1]).sqrt();
+            let dist = [
+                top_left_distance[0].max(bottom_right_distance[0]).max(0.0),
+                top_left_distance[1].max(bottom_right_distance[1]).max(0.0),
+            ];
 
-        dist < self.radius.unwrap_or(1.0)
+            let dist = (dist[0] * dist[0] + dist[1] * dist[1]).sqrt();
+
+            dist < radius
+        } else {
+            if mouse_pos[0] > self.position[0] as i32
+                && mouse_pos[0] < self.position[0] as i32 + self.size[0] as i32
+                && mouse_pos[1] > self.position[1] as i32
+                && mouse_pos[1] < self.position[1] as i32 + self.size[1] as i32
+            {
+                true
+            } else {
+                false
+            }
+        }
     }
 }

@@ -86,6 +86,7 @@ impl<U: Hash + Eq + Clone> Atlas<U> {
             usage: wgpu::TextureUsages::TEXTURE_BINDING
                 | wgpu::TextureUsages::COPY_DST
                 | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[wgpu::TextureFormat::Bgra8Unorm],
         });
 
         let amount_to_copy = self.layers.len() - amount;
@@ -161,6 +162,7 @@ impl<U: Hash + Eq + Clone> Atlas<U> {
             usage: wgpu::TextureUsages::TEXTURE_BINDING
                 | wgpu::TextureUsages::COPY_DST
                 | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[format],
         });
 
         let texture_view = texture.create_view(&wgpu::TextureViewDescriptor {

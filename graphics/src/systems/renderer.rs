@@ -1,6 +1,7 @@
 use crate::AscendingError;
 use async_trait::async_trait;
 use std::path::Path;
+use wgpu::TextureFormat;
 use winit::{
     dpi::PhysicalSize,
     event::{Event, WindowEvent},
@@ -40,8 +41,7 @@ impl Renderer {
         &mut self,
         size: PhysicalSize<u32>,
     ) -> Result<(), AscendingError> {
-        let surface_format =
-            self.surface.get_supported_formats(&self.adapter)[0];
+        let surface_format = wgpu::TextureFormat::Rgba8UnormSrgb;
 
         if size.width == 0 || size.height == 0 {
             return Ok(());
@@ -56,6 +56,7 @@ impl Renderer {
                 height: size.height,
                 present_mode: self.present_mode,
                 alpha_mode: wgpu::CompositeAlphaMode::Auto,
+                view_formats: vec![wgpu::TextureFormat::Rgba8UnormSrgb],
             },
         );
 
@@ -136,6 +137,7 @@ impl Renderer {
             usage: wgpu::TextureUsages::TEXTURE_BINDING
                 | wgpu::TextureUsages::RENDER_ATTACHMENT
                 | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[TextureFormat::Depth32Float],
         });
 
         texture.create_view(&wgpu::TextureViewDescriptor::default())
@@ -169,8 +171,14 @@ impl AdapterExt for wgpu::Adapter {
         let (device, queue) =
             self.request_device(device_descriptor, trace_path).await?;
 
-        let surface = unsafe { instance.create_surface(&window) };
-        let surface_format = surface.get_supported_formats(&self)[0];
+        let surface = unsafe { instance.create_surface(&window).unwrap() };
+        let caps = surface.get_capabilities(&self);
+
+        if !caps.formats.contains(&TextureFormat::Rgba8UnormSrgb) {
+            panic!("Your Rendering Device does not support Rgba8UnormSrgb")
+        }
+
+        let surface_format = wgpu::TextureFormat::Rgba8UnormSrgb; // caps.formats[1];
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
@@ -178,6 +186,7 @@ impl AdapterExt for wgpu::Adapter {
             height: size.height,
             present_mode,
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
+            view_formats: vec![wgpu::TextureFormat::Rgba8UnormSrgb],
         };
 
         surface.configure(&device, &surface_config);

@@ -28,6 +28,7 @@ impl MapTextures {
             usage: wgpu::TextureUsages::TEXTURE_BINDING
                 | wgpu::TextureUsages::COPY_DST
                 | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[wgpu::TextureFormat::Rgba32Uint],
         });
 
         let texture_view = texture.create_view(&wgpu::TextureViewDescriptor {

@@ -97,9 +97,7 @@ async fn main() -> Result<(), AscendingError> {
         .with_inner_size(PhysicalSize::new(800, 600))
         .build(&event_loop)
         .unwrap();
-
-    let backends = wgpu::Backends::PRIMARY;
-    let instance = wgpu::Instance::new(backends);
+    let instance = wgpu::Instance::default();
 
     let mut renderer = instance
         .create_renderer(

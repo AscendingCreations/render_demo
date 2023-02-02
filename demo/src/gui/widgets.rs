@@ -1,4 +1,6 @@
-use crate::{CallBacks, GuiRender, InternalCallBacks, Widget, UiFlags};
+use crate::{
+    CallBacks, GuiRender, InternalCallBacks, UiFlags, Widget, WidgetRef,
+};
 use graphics::*;
 use std::{
     any::Any,
@@ -17,14 +19,14 @@ pub struct Widgets<T> {
     callbacks: HashMap<String, InternalCallBacks>,
     user_callbacks: HashMap<String, CallBacks<T>>,
     ///Contains All Visible widgets in rendering order
-    zlist: VecDeque<Rc<RefCell<Widget>>>,
+    zlist: VecDeque<WidgetRef>,
     ///The Visible Top children.
-    children: VecDeque<Rc<RefCell<Widget>>>,
+    children: VecDeque<WidgetRef>,
     ///The loaded but hidden Top children.
-    hidden: Vec<Rc<RefCell<Widget>>>,
-    focused: Option<Rc<RefCell<Widget>>>,
-    over: Option<Rc<RefCell<Widget>>>,
-    clicked: Option<Rc<RefCell<Widget>>>,
+    hidden: Vec<WidgetRef>,
+    focused: Option<WidgetRef>,
+    over: Option<WidgetRef>,
+    clicked: Option<WidgetRef>,
     mouse_clicked: [i32; 2],
     mouse_pos: [i32; 2],
     new_mouse_pos: [i32; 2],
@@ -75,33 +77,33 @@ impl<T> Widgets<T> {
         } else {
             if let Some(focused) = self.focused.clone() {
                 if focused.borrow().actions.get(UiFlags::Moving) {
-                let pos = [
-                    position[0] - self.mouse_pos[0],
-                    position[1] - self.mouse_pos[1],
-                ];
-                let widget = focused.borrow();
-                let mut bounds = widget.ui.get_bounds();
+                    let pos = [
+                        position[0] - self.mouse_pos[0],
+                        position[1] - self.mouse_pos[1],
+                    ];
+                    let widget = focused.borrow();
+                    let mut bounds = widget.ui.get_bounds();
 
-                if bounds.0 + pos[0] <= 0
-                    || bounds.1 + pos[1] <= 0
-                    || bounds.0 + bounds.2 + pos[0] >= self.screensize[0]
-                    || bounds.1 + bounds.3 + pos[1] >= self.screensize[1]
-                {
-                    return;
+                    if bounds.0 + pos[0] <= 0
+                        || bounds.1 + pos[1] <= 0
+                        || bounds.0 + bounds.2 + pos[0] >= self.screensize[0]
+                        || bounds.1 + bounds.3 + pos[1] >= self.screensize[1]
+                    {
+                        return;
+                    }
+
+                    bounds.0 += pos[0];
+                    bounds.1 += pos[1];
+
+                    focused.borrow_mut().ui.set_position([bounds.0, bounds.1]);
+                    self.widget_position_update(
+                        &mut focused.borrow_mut(),
+                        user_data,
+                    );
                 }
-
-                bounds.0 += pos[0];
-                bounds.1 += pos[1];
-
-                focused.borrow_mut().ui.set_position([bounds.0, bounds.1]);
-                self.widget_position_update(
-                    &mut focused.borrow_mut(),
-                    user_data,
-                );
             }
-            } 
-            
-                //TODO handle Widget mouse over here.
+
+            //TODO handle Widget mouse over here.
         }
 
         self.mouse_pos = position;

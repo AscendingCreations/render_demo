@@ -7,6 +7,8 @@ use std::{cell::RefCell, collections::VecDeque, rc::Rc, vec::Vec};
 use ubits::bitfield;
 use winit::event::{KeyboardInput, ModifiersState};
 
+pub type WidgetRef = Rc<RefCell<Widget>>;
+
 bitfield! {
     pub u16 UiField
     UiFlags {
@@ -41,10 +43,10 @@ pub struct Widget {
     /// The UI holder for the Specific Widget.
     pub ui: Box<dyn UI>,
     ///If none then it is the Top most in the widget Tree.
-    pub parent: Option<Rc<RefCell<Widget>>>,
+    pub parent: Option<WidgetRef>,
     ///The visible children in the Tree.
-    pub children: VecDeque<Rc<RefCell<Widget>>>,
+    pub children: VecDeque<WidgetRef>,
     ///The loaded but hidden children in the Tree.
-    pub hidden: Vec<Rc<RefCell<Widget>>>,
+    pub hidden: Vec<WidgetRef>,
     pub actions: UiField,
 }

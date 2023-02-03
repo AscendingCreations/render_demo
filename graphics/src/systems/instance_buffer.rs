@@ -1,6 +1,20 @@
 use std::{marker::PhantomData, ops::Range};
 use wgpu::util::DeviceExt;
 
+#[derive(Copy, Clone, Debug, Default)]
+pub struct Bounds {
+    pub x: u32,
+    pub y: u32,
+    pub w: u32,
+    pub h: u32,
+}
+
+impl Bounds {
+    pub fn new(x: u32, y: u32, w: u32, h: u32) -> Self {
+        Self { x, y, w, h }
+    }
+}
+
 pub trait InstanceLayout {
     ///WGPU's Shader Attributes
     fn attributes() -> Vec<wgpu::VertexAttribute>;
@@ -19,6 +33,7 @@ pub trait InstanceLayout {
 //This Holds onto all the instances Compressed into a byte array.
 pub struct InstanceBuffer<K: InstanceLayout> {
     pub buffer: wgpu::Buffer,
+    pub bounds: Vec<Option<Bounds>>,
     count: usize,
     len: usize,
     max: usize,
@@ -39,6 +54,7 @@ impl<K: InstanceLayout> InstanceBuffer<K> {
                         | wgpu::BufferUsages::COPY_DST,
                 },
             ),
+            bounds: Vec::new(),
             count: 0,
             len: 0,
             max: data.len(),
@@ -69,12 +85,14 @@ impl<K: InstanceLayout> InstanceBuffer<K> {
 
     /// Sets the buffer from byte array of instances.
     /// Sets the count to array length / instance_stride.
+    /// Sets the bounds 1 Per Counted Object for Scissoring.
     /// Will resize both vertex_buffer and index_buffer if bytes length is larger than vertex_max.
     pub fn set_from(
         &mut self,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         bytes: &[u8],
+        bounds: &[Option<Bounds>],
     ) {
         let size = bytes.len();
 
@@ -84,6 +102,7 @@ impl<K: InstanceLayout> InstanceBuffer<K> {
 
         self.count = size / K::instance_stride();
         self.len = size;
+        self.bounds = bounds.to_vec();
 
         queue.write_buffer(&self.buffer, 0, bytes);
     }

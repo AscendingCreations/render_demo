@@ -15,6 +15,7 @@ pub struct Rect {
     pub border_uv: [u16; 4],
     pub radius: Option<f32>,
     pub bytes: Vec<u8>,
+    pub bounds: [u32; 4],
     /// if anything got updated we need to update the buffers too.
     pub changed: bool,
 }
@@ -31,6 +32,7 @@ impl Default for Rect {
             border_uv: [0; 4],
             radius: None,
             bytes: Vec::new(),
+            bounds: [0; 4],
             changed: true,
         }
     }
@@ -132,6 +134,13 @@ impl Rect {
         self
     }
 
+    ///This sets how a object should be Clip manipulated. Width and/or Height as 0 means unlimited.
+    pub fn set_bounds(&mut self, x: u32, y: u32, w: u32, h: u32) -> &mut Self {
+        self.bounds = [x, y, w, h];
+        self.changed = true;
+        self
+    }
+
     pub fn create_quad(&mut self) {
         let containter_tex = match self.container {
             Some(allocation) => allocation,
@@ -198,10 +207,7 @@ impl Rect {
                 self.size[0] as f32 - radius * 2.0,
                 self.size[1] as f32 - radius * 2.0,
             ];
-            let top_left = [
-                pos[0] + radius,
-                pos[1] + radius,
-            ];
+            let top_left = [pos[0] + radius, pos[1] + radius];
             let bottom_right =
                 [top_left[0] + inner_size[0], top_left[1] + inner_size[1]];
 

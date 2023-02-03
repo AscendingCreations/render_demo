@@ -14,7 +14,7 @@ pub struct CallBackKey {
 }
 
 impl CallBackKey {
-    pub fn new(identity: &Identity, callback: CallBack) -> Self {
+    pub(crate) fn new(identity: &Identity, callback: CallBack) -> Self {
         Self {
             identity: identity.to_owned(),
             callback,
@@ -23,7 +23,7 @@ impl CallBackKey {
 }
 
 #[derive(Eq, PartialEq, Hash, Clone)]
-pub enum CallBack {
+pub(crate) enum CallBack {
     Draw,
     MousePresent,
     MouseScroll,

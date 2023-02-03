@@ -469,6 +469,7 @@ async fn main() -> Result<(), AscendingError> {
                 renderer.device(),
                 renderer.queue(),
                 &bytes,
+                &[],
             );
         }
 
@@ -491,6 +492,7 @@ async fn main() -> Result<(), AscendingError> {
                 renderer.device(),
                 renderer.queue(),
                 &state.text_render.text_bytes,
+                &[],
             );
         }
 
@@ -502,12 +504,14 @@ async fn main() -> Result<(), AscendingError> {
                 renderer.device(),
                 renderer.queue(),
                 &state.map.lowerbytes,
+                &[],
             );
 
             state.mapupper_buffer.set_from(
                 renderer.device(),
                 renderer.queue(),
                 &state.map.upperbytes,
+                &[],
             );
         }
 
@@ -518,6 +522,7 @@ async fn main() -> Result<(), AscendingError> {
                 renderer.device(),
                 renderer.queue(),
                 &state.animation.bytes,
+                &[],
             );
         }
 
@@ -528,6 +533,12 @@ async fn main() -> Result<(), AscendingError> {
                 renderer.device(),
                 renderer.queue(),
                 &state.rects.bytes,
+                &[Some(Bounds::new(
+                    0,
+                    (size.height - (150 + 32)) + 15,
+                    size.width,
+                    15,
+                ))],
             );
         }
 

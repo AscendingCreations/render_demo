@@ -29,11 +29,20 @@ where
             self.set_bind_group(1, &atlas_group.texture.bind_group, &[]);
             self.set_vertex_buffer(1, buffer.instances(None));
             self.set_pipeline(pipeline.render_pipeline());
-            self.draw_indexed(
-                0..StaticBufferObject::index_count(),
-                0,
-                0..buffer.count(),
-            );
+
+            for i in 0..buffer.count() {
+                if let Some(Some(bounds)) = buffer.bounds.get(i as usize) {
+                    self.set_scissor_rect(
+                        bounds.x, bounds.y, bounds.w, bounds.h,
+                    );
+                }
+
+                self.draw_indexed(
+                    0..StaticBufferObject::index_count(),
+                    0,
+                    i..i+1,
+                );
+            }
         }
     }
 }

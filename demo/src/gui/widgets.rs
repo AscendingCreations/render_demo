@@ -1,5 +1,6 @@
 use crate::{
-    CallBacks, GuiRender, Handle, InternalCallBacks, UiFlags, Widget, WidgetRef,
+    CallBack, CallBackKey, CallBacks, GuiRender, Handle, Identity,
+    InternalCallBacks, UiFlags, Widget, WidgetRef,
 };
 use graphics::*;
 use slab::Slab;
@@ -17,9 +18,9 @@ use winit::window::Window;
 #[derive(Default)]
 pub struct Widgets<T> {
     /// Callback mapper. Hashes must be different.
-    callbacks: HashMap<String, InternalCallBacks>,
-    user_callbacks: HashMap<String, CallBacks<T>>,
-    name_map: HashMap<String, Handle>,
+    callbacks: HashMap<CallBackKey, InternalCallBacks>,
+    user_callbacks: HashMap<CallBackKey, CallBacks<T>>,
+    name_map: HashMap<Identity, Handle>,
     widgets: Slab<WidgetRef>,
     ///Contains All Visible widgets in rendering order
     zlist: VecDeque<Handle>,
@@ -63,6 +64,13 @@ impl<T> Widgets<T> {
         widgets
     }
 
+    fn get_widget(&self, handle: Handle) -> WidgetRef {
+        self.widgets
+            .get(handle.get_key())
+            .expect("ID Existed but widget does not exist?")
+            .clone()
+    }
+
     pub fn event_mouse_position(
         &mut self,
         window: &mut Window,
@@ -81,10 +89,7 @@ impl<T> Widgets<T> {
             }
         } else {
             if let Some(handle) = self.focused {
-                let focused = self
-                    .widgets
-                    .get(handle.get_key())
-                    .expect("ID Existed but widget does not exist?");
+                let focused = self.get_widget(handle);
 
                 if focused.borrow().actions.get(UiFlags::Moving) {
                     let pos = [
@@ -136,11 +141,7 @@ impl<T> Widgets<T> {
         parent: &mut Widget,
         user_data: &mut T,
     ) {
-        let key = format!(
-            "{}_{}_pos_update",
-            &parent.ui.get_name(),
-            parent.ui.get_id(),
-        );
+        let key = parent.callback_key(CallBack::PositionChange);
 
         if let Some(InternalCallBacks::PositionChange(internal_update_pos)) =
             self.callbacks.get(&key)
@@ -154,11 +155,8 @@ impl<T> Widgets<T> {
             user_update_pos(parent, user_data);
         }
 
-        for handle in parent.children {
-            let widget = self
-                .widgets
-                .get(handle.get_key())
-                .expect("ID Existed but widget does not exist?");
+        for handle in &parent.children {
+            let widget = self.get_widget(*handle);
 
             if !widget.borrow().children.is_empty() {
                 self.widget_position_update(
@@ -166,23 +164,21 @@ impl<T> Widgets<T> {
                     user_data,
                 );
             } else {
-                let key = format!(
-                    "{}_{}_pos_update",
-                    &widget.borrow().ui.get_name(),
-                    widget.borrow().ui.get_id(),
-                );
+                let key =
+                    widget.borrow().callback_key(CallBack::PositionChange);
+                let mut mut_wdgt = widget.borrow_mut();
 
                 if let Some(InternalCallBacks::PositionChange(
                     internal_update_pos,
                 )) = self.callbacks.get(&key)
                 {
-                    internal_update_pos(&mut widget.borrow_mut());
+                    internal_update_pos(&mut mut_wdgt);
                 }
 
                 if let Some(CallBacks::PositionChange(user_update_pos)) =
                     self.user_callbacks.get(&key)
                 {
-                    user_update_pos(&mut widget.borrow_mut(), user_data);
+                    user_update_pos(&mut mut_wdgt, user_data);
                 }
             }
         }

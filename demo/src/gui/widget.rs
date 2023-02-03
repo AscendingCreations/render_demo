@@ -1,4 +1,4 @@
-use crate::GuiRender;
+use crate::{CallBack, GuiRender};
 use graphics::*;
 use input::FrameTime;
 use std::any::Any;
@@ -7,14 +7,31 @@ use std::{cell::RefCell, collections::VecDeque, rc::Rc, vec::Vec};
 use ubits::bitfield;
 use winit::event::{KeyboardInput, ModifiersState};
 
-pub type WidgetRef = RefCell<Widget>;
+use super::CallBackKey;
 
-#[derive(Eq, PartialEq, Hash, Copy)]
+pub type WidgetRef = Rc<RefCell<Widget>>;
+
+#[derive(Eq, PartialEq, Hash, Copy, Clone)]
 pub struct Handle(usize);
 
 impl Handle {
     pub fn get_key(&self) -> usize {
         self.0
+    }
+}
+
+#[derive(Eq, PartialEq, Hash, Clone)]
+pub struct Identity {
+    pub name: String,
+    pub id: u64,
+}
+
+impl Identity {
+    pub fn new(name: &str, id: u64) -> Self {
+        Self {
+            name: name.to_owned(),
+            id,
+        }
     }
 }
 
@@ -41,15 +58,13 @@ bitfield! {
 pub trait UI {
     fn check_mouse_bounds(&self, mouse_pos: [i32; 2]) -> bool;
     fn get_mut_actions(&mut self) -> &mut UiField;
-    fn get_name(&self) -> String;
-    //This is an Id given by the end user to help identify it for events.
-    fn get_id(&self) -> u64;
     fn get_bounds(&self) -> (i32, i32, i32, i32);
     fn set_position(&mut self, position: [i32; 2]);
 }
 
 pub struct Widget {
     pub id: Handle,
+    pub identity: Identity,
     /// The UI holder for the Specific Widget.
     pub ui: Box<dyn UI>,
     ///If none then it is the Top most in the widget Tree.
@@ -66,5 +81,9 @@ impl Widget {
         self.parent = None;
         self.children.clear();
         self.hidden.clear();
+    }
+
+    pub(crate) fn callback_key(&self, callback: CallBack) -> CallBackKey {
+        CallBackKey::new(&self.identity, callback)
     }
 }

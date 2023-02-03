@@ -1,4 +1,4 @@
-use crate::{GuiRender, Widget, Widgets};
+use crate::{GuiRender, Identity, Widget, Widgets};
 use graphics::*;
 use input::FrameTime;
 use std::any::Any;
@@ -6,6 +6,31 @@ use std::marker::PhantomData;
 use std::{cell::RefCell, collections::VecDeque, rc::Rc, vec::Vec};
 use ubits::bitfield;
 use winit::event::{KeyboardInput, ModifiersState};
+
+#[derive(Eq, PartialEq, Hash, Clone)]
+pub struct CallBackKey {
+    identity: Identity,
+    callback: CallBack,
+}
+
+impl CallBackKey {
+    pub fn new(identity: &Identity, callback: CallBack) -> Self {
+        Self {
+            identity: identity.to_owned(),
+            callback,
+        }
+    }
+}
+
+#[derive(Eq, PartialEq, Hash, Clone)]
+pub enum CallBack {
+    Draw,
+    MousePresent,
+    MouseScroll,
+    MousePress,
+    KeyPress,
+    PositionChange,
+}
 
 pub enum InternalCallBacks {
     Draw(Box<dyn Fn(&mut Widget, FrameTime, &mut GuiRender, &mut Renderer)>),

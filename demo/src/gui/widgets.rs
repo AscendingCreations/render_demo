@@ -34,14 +34,13 @@ pub struct Widgets<T> {
     mouse_clicked: [i32; 2],
     mouse_pos: [i32; 2],
     new_mouse_pos: [i32; 2],
-    screensize: [i32; 2],
     moving: bool,
     button: i32,
 }
 
 impl<T> Widgets<T> {
-    pub fn new(screensize: [i32; 2]) -> Self {
-        let mut widgets = Widgets {
+    pub fn new() -> Self {
+        Widgets {
             callbacks: HashMap::with_capacity(100),
             user_callbacks: HashMap::with_capacity(100),
             name_map: HashMap::with_capacity(100),
@@ -55,13 +54,9 @@ impl<T> Widgets<T> {
             mouse_clicked: [0; 2],
             mouse_pos: [0; 2],
             new_mouse_pos: [0; 2],
-            screensize,
             moving: false,
             button: 0,
-        };
-
-        widgets.screensize = screensize;
-        widgets
+        }
     }
 
     fn get_widget(&self, handle: Handle) -> WidgetRef {
@@ -75,6 +70,7 @@ impl<T> Widgets<T> {
         &mut self,
         window: &mut Window,
         position: [i32; 2],
+        screensize: [i32; 2],
         user_data: &mut T,
     ) {
         self.new_mouse_pos = position;
@@ -100,8 +96,8 @@ impl<T> Widgets<T> {
 
                     if bounds.0 + pos[0] <= 0
                         || bounds.1 + pos[1] <= 0
-                        || bounds.0 + bounds.2 + pos[0] >= self.screensize[0]
-                        || bounds.1 + bounds.3 + pos[1] >= self.screensize[1]
+                        || bounds.0 + bounds.2 + pos[0] >= screensize[0]
+                        || bounds.1 + bounds.3 + pos[1] >= screensize[1]
                     {
                         return;
                     }

@@ -34,3 +34,5 @@ pub enum CallBacks<T> {
     KeyPress(Box<dyn Fn(&mut Widget, KeyboardInput, ModifiersState, &mut T)>),
     PositionChange(Box<dyn Fn(&mut Widget, &mut T)>),
 }
+
+//TODO Create commands for Callback handled returns.

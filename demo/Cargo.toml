@@ -32,3 +32,4 @@ naga.workspace = true
 wgpu.workspace = true
 chrono.workspace = true
 ubits.workspace = true
+slab.workspace = true

@@ -7,7 +7,16 @@ use std::{cell::RefCell, collections::VecDeque, rc::Rc, vec::Vec};
 use ubits::bitfield;
 use winit::event::{KeyboardInput, ModifiersState};
 
-pub type WidgetRef = Rc<RefCell<Widget>>;
+pub type WidgetRef = RefCell<Widget>;
+
+#[derive(Eq, PartialEq, Hash, Copy)]
+pub struct Handle(usize);
+
+impl Handle {
+    pub fn get_key(&self) -> usize {
+        self.0
+    }
+}
 
 bitfield! {
     pub u16 UiField
@@ -40,13 +49,22 @@ pub trait UI {
 }
 
 pub struct Widget {
+    pub id: Handle,
     /// The UI holder for the Specific Widget.
     pub ui: Box<dyn UI>,
     ///If none then it is the Top most in the widget Tree.
-    pub parent: Option<WidgetRef>,
+    pub parent: Option<Handle>,
     ///The visible children in the Tree.
-    pub children: VecDeque<WidgetRef>,
+    pub children: VecDeque<Handle>,
     ///The loaded but hidden children in the Tree.
-    pub hidden: Vec<WidgetRef>,
+    pub hidden: Vec<Handle>,
     pub actions: UiField,
+}
+
+impl Widget {
+    pub fn clear(&mut self) {
+        self.parent = None;
+        self.children.clear();
+        self.hidden.clear();
+    }
 }

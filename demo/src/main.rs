@@ -316,7 +316,7 @@ async fn main() -> Result<(), AscendingError> {
         Some(Metrics::new(16, 16).scale(scale as i32)),
         [0, 32, 1],
         [256, 256],
-        Some(TextBounds::new(8, 26, 150, 2)),
+        Some(TextBounds::new(8, 32, 190, 0)),
     );
 
     text.set_buffer_size(size.width as i32, size.height as i32);
@@ -547,7 +547,7 @@ async fn main() -> Result<(), AscendingError> {
 
         if time < seconds {
             text.set_text(
-                &format!("生活,삶,जिंदगी 😀 FPS: {fps} \n hello"),
+                &format!("生活,삶,जिंदगी 😀 FPS: {fps} \nhello"),
                 cosmic_text::Attrs::new(),
             );
             fps = 0u32;

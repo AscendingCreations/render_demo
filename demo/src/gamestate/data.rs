@@ -144,6 +144,7 @@ where
             &self.rects_buffer,
             &self.rects_atlas,
             &self.rects_pipeline,
+            &self.system,
         );
     }
 }

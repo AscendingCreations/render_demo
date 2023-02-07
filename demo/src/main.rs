@@ -136,14 +136,9 @@ async fn main() -> Result<(), AscendingError> {
     let mut sprites = Vec::with_capacity(2001);
 
     let mut x = 0;
-    let mut y = 0;
+    let y = 0;
 
-    for i in 0..2 {
-        if i % 50 == 0 {
-            y += 12;
-            x = 0;
-        }
-
+    for _i in 0..2 {
         let mut sprite = Image::new(allocation);
         sprite.pos = [x, y, 5];
         sprite.hw = [48, 48];
@@ -533,12 +528,7 @@ async fn main() -> Result<(), AscendingError> {
                 renderer.device(),
                 renderer.queue(),
                 &state.rects.bytes,
-                &[Some(Bounds::new(
-                    0,
-                    (size.height - (150 + 32)) + 15,
-                    size.width,
-                    15,
-                ))],
+                &[Some(Bounds::new(151.0, 150.0, 132.0, 32.0, 132.0, 32.0))],
             );
         }
 

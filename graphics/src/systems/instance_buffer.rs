@@ -3,15 +3,24 @@ use wgpu::util::DeviceExt;
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Bounds {
-    pub x: u32,
-    pub y: u32,
-    pub w: u32,
-    pub h: u32,
+    pub x: f32,
+    pub y: f32,
+    pub w: f32,
+    pub h: f32,
+    pub obj_w: f32,
+    pub obj_h: f32,
 }
 
 impl Bounds {
-    pub fn new(x: u32, y: u32, w: u32, h: u32) -> Self {
-        Self { x, y, w, h }
+    pub fn new(x: f32, y: f32, w: f32, h: f32, obj_w: f32, obj_h: f32) -> Self {
+        Self {
+            x,
+            y,
+            w,
+            h,
+            obj_w,
+            obj_h,
+        }
     }
 }
 

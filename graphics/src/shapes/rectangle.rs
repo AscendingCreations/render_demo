@@ -1,5 +1,6 @@
 use crate::{
-    Allocation, AscendingError, AtlasGroup, OtherError, RectVertex, Texture,
+    Allocation, AscendingError, AtlasGroup, Bounds, OtherError, RectVertex,
+    Texture,
 };
 use cosmic_text::Color;
 use image::{self, ImageBuffer};
@@ -15,7 +16,7 @@ pub struct Rect {
     pub border_uv: [u16; 4],
     pub radius: Option<f32>,
     pub bytes: Vec<u8>,
-    pub bounds: [u32; 4],
+    pub bounds: Bounds,
     /// if anything got updated we need to update the buffers too.
     pub changed: bool,
 }
@@ -32,7 +33,7 @@ impl Default for Rect {
             border_uv: [0; 4],
             radius: None,
             bytes: Vec::new(),
-            bounds: [0; 4],
+            bounds: Bounds::default(),
             changed: true,
         }
     }
@@ -135,8 +136,8 @@ impl Rect {
     }
 
     ///This sets how a object should be Clip manipulated. Width and/or Height as 0 means unlimited.
-    pub fn set_bounds(&mut self, x: u32, y: u32, w: u32, h: u32) -> &mut Self {
-        self.bounds = [x, y, w, h];
+    pub fn set_bounds(&mut self, bounds: Bounds) -> &mut Self {
+        self.bounds = bounds;
         self.changed = true;
         self
     }

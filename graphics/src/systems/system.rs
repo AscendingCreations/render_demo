@@ -1,8 +1,9 @@
-use crate::{Layout, LayoutStorage, Renderer};
+use crate::{Bounds, Layout, LayoutStorage, Renderer};
 use bytemuck::{Pod, Zeroable};
 use camera::Projection;
 use crevice::std140::AsStd140;
 use input::FrameTime;
+use ultraviolet::{Mat4, Vec2, Vec4};
 use wgpu::util::DeviceExt;
 
 #[repr(C)]
@@ -260,5 +261,67 @@ where
 
     pub fn view(&self) -> mint::ColumnMatrix4<f32> {
         self.camera.view()
+    }
+
+    ///Y does not calculate correctly here...
+    pub fn projected_world_to_screen(
+        &self,
+        scale: bool,
+        bounds: &Bounds,
+    ) -> Bounds {
+        let projection = Mat4::from(self.camera.projection());
+        let model = Mat4::identity();
+        let view = if scale {
+            ultraviolet::Mat4::from(self.camera.view())
+        } else {
+            Mat4::identity()
+        };
+        let clip_coords =
+            projection * view * model * Vec4::new(bounds.x, bounds.y, 1.0, 1.0);
+        let coords = clip_coords.xyz() / clip_coords.w;
+
+        let xy = Vec2::new(
+            (coords.x + 1.0) * 0.5 * self.screen_size[0],
+            (1.0 - coords.y) * 0.5 * self.screen_size[1],
+        );
+
+        let (bw, bh, objw, objh) = if scale {
+            (
+                bounds.w * self.camera.scale(),
+                bounds.h * self.camera.scale(),
+                bounds.obj_w * self.camera.scale(),
+                bounds.obj_h * self.camera.scale(),
+            )
+        } else {
+            (bounds.w, bounds.h, bounds.obj_w, bounds.obj_h)
+        };
+
+        Bounds::new(xy.x, xy.y - objh, bw, bh, objw, objh)
+    }
+
+    pub fn world_to_screen(&self, scale: bool, bounds: &Bounds) -> Bounds {
+        let projection = Mat4::from(self.camera.projection());
+        let model = Mat4::identity();
+        let clip_coords =
+            projection * model * Vec4::new(bounds.x, bounds.y, 1.0, 1.0);
+        let coords = clip_coords.xyz() / clip_coords.w;
+
+        let xy = Vec2::new(
+            (coords.x + 1.0) * 0.5 * self.screen_size[0],
+            (1.0 - coords.y) * 0.5 * self.screen_size[1],
+        );
+
+        let (bw, bh, objw, objh) = if scale {
+            (
+                bounds.w * self.camera.scale(),
+                bounds.h * self.camera.scale(),
+                bounds.obj_w * self.camera.scale(),
+                bounds.obj_h * self.camera.scale(),
+            )
+        } else {
+            (bounds.w, bounds.h, bounds.obj_w, bounds.obj_h)
+        };
+
+        Bounds::new(xy.x, xy.y - objh, bw, bh, objw, objh)
     }
 }

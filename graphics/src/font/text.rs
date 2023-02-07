@@ -42,7 +42,6 @@ impl Default for TextBounds {
 
 pub struct Text {
     pub buffer: Buffer<'static>,
-    pub string_hash: u64,
     pub pos: [i32; 3],
     pub size: [u32; 2],
     pub default_color: Color,
@@ -245,7 +244,6 @@ impl Text {
             ),
             pos,
             size,
-            string_hash: 0,
             bounds: bounds.unwrap_or_default(),
             bytes: Vec::new(),
             changed: true,
@@ -257,13 +255,7 @@ impl Text {
     /// resets the TextRender bytes to empty for new bytes
     pub fn set_text(&mut self, text: &str, attrs: Attrs<'static>) {
         self.buffer.set_text(text, attrs);
-        let mut hasher = DefaultHasher::new();
-        text.hash(&mut hasher);
-        let hash = hasher.finish();
-        if hash != self.string_hash {
-            self.changed = true;
-            self.string_hash = hash;
-        }
+        self.changed = true;
     }
 
     pub fn set_buffer_size(&mut self, width: i32, height: i32) {

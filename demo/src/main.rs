@@ -316,6 +316,7 @@ async fn main() -> Result<(), AscendingError> {
         Some(Metrics::new(16, 16).scale(scale as i32)),
         [0, 32, 1],
         [256, 256],
+        Some(TextBounds::new(8, 26, 150, 2)),
     );
 
     text.set_buffer_size(size.width as i32, size.height as i32);
@@ -468,8 +469,6 @@ async fn main() -> Result<(), AscendingError> {
             );
         }
 
-        //state.text.clear();
-
         let update = text
             .update(
                 &mut font_cache,
@@ -477,6 +476,7 @@ async fn main() -> Result<(), AscendingError> {
                 &mut state.emoji_atlas,
                 renderer.queue(),
                 renderer.device(),
+                &state.system,
             )
             .unwrap();
 

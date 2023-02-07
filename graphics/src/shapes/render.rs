@@ -59,6 +59,14 @@ where
                     i..i + 1,
                 );
             }
+
+            //Gotta set it back otherwise it will clip everything after it...
+            self.set_scissor_rect(
+                0,
+                0,
+                system.screen_size[0] as u32,
+                system.screen_size[1] as u32,
+            );
         }
     }
 }

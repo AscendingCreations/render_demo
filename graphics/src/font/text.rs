@@ -1,13 +1,50 @@
-use crate::{AscendingError, AtlasGroup, Color, TextVertex};
+use crate::{AscendingError, AtlasGroup, Color, System, TextVertex};
 use cosmic_text::{
     Attrs, Buffer, CacheKey, FontSystem, Metrics, SwashCache, SwashContent,
 };
+
+/// Controls the visible area of the text. Any text outside of the visible area will be clipped.
+/// This is given by glyphon.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct TextBounds {
+    /// The position of the left edge of the visible area.
+    pub left: i32,
+    /// The position of the top edge of the visible area.
+    pub top: i32,
+    /// The position of the right edge of the visible area.
+    pub right: i32,
+    /// The position of the bottom edge of the visible area.
+    pub bottom: i32,
+}
+
+impl TextBounds {
+    pub fn new(left: i32, top: i32, right: i32, bottom: i32) -> Self {
+        Self {
+            left,
+            top,
+            right,
+            bottom,
+        }
+    }
+}
+
+impl Default for TextBounds {
+    fn default() -> Self {
+        Self {
+            left: i32::MIN,
+            top: i32::MIN,
+            right: i32::MAX,
+            bottom: i32::MAX,
+        }
+    }
+}
 
 pub struct Text {
     pub buffer: Buffer<'static>,
     pub pos: [i32; 3],
     pub size: [u32; 2],
     pub default_color: Color,
+    pub bounds: TextBounds,
     pub bytes: Vec<u8>,
     /// if the shader should render with the camera's view.
     pub use_camera: bool,
@@ -16,14 +53,18 @@ pub struct Text {
 }
 
 impl Text {
-    pub fn create_quad(
+    pub fn create_quad<Controls>(
         &mut self,
         cache: &mut SwashCache,
         text_atlas: &mut AtlasGroup<CacheKey, (i32, i32)>,
         emoji_atlas: &mut AtlasGroup<CacheKey, (i32, i32)>,
         queue: &wgpu::Queue,
         device: &wgpu::Device,
-    ) -> Result<bool, AscendingError> {
+        system: &System<Controls>,
+    ) -> Result<bool, AscendingError>
+    where
+        Controls: camera::controls::Controls,
+    {
         for run in self.buffer.layout_runs() {
             for glyph in run.glyphs.iter() {
                 if text_atlas.atlas.get(&glyph.cache_key).is_some()
@@ -105,15 +146,13 @@ impl Text {
                 };
 
                 let (u, v, width, height) = allocation.rect();
-                let (u, v, width, height) =
-                    (u as i32, v as i32, width as f32, height as f32);
+                let (mut u, mut v, mut width, mut height) =
+                    (u as i32, v as i32, width as i32, height as i32);
 
-                let (x, y) = (
-                    (self.pos[0] + glyph.x_int + position.0) as f32,
-                    (self.pos[1] + glyph.y_int - line_y) as f32,
+                let (mut x, mut y) = (
+                    (self.pos[0] + glyph.x_int + position.0) as i32,
+                    (self.pos[1] + glyph.y_int - line_y) as i32,
                 );
-
-                let (u1, v1) = (u as f32, v as f32);
 
                 let color = if is_color {
                     Color::rgba(255, 255, 255, 255)
@@ -124,10 +163,58 @@ impl Text {
                     }
                 };
 
+                //Bounds used from Glyphon
+                let bounds_min_x = self.bounds.left.max(0);
+                let bounds_min_y = self.bounds.bottom.max(0);
+                let bounds_max_x =
+                    self.bounds.right.min(system.screen_size[0] as i32);
+                let bounds_max_y =
+                    self.bounds.top.min(system.screen_size[1] as i32);
+
+                // Starts beyond right edge or ends beyond left edge
+                let max_x = x + width;
+                if x > bounds_max_x || max_x < bounds_min_x {
+                    continue;
+                }
+
+                // Starts beyond bottom edge or ends beyond top edge
+                let max_y = y + height;
+                if y > bounds_max_y || max_y < bounds_min_y {
+                    continue;
+                }
+
+                // Clip left edge
+                if x < bounds_min_x {
+                    let right_shift = bounds_min_x - x;
+
+                    x = bounds_min_x;
+                    width = max_x - bounds_min_x;
+                    u += right_shift;
+                }
+
+                // Clip right edge
+                if x + width > bounds_max_x {
+                    width = bounds_max_x - x;
+                }
+
+                // Clip top edge
+                if y < bounds_min_y {
+                    height -= bounds_min_y;
+                    y = bounds_min_y;
+                }
+
+                // Clip top edge
+                if y + height > bounds_max_y {
+                    let bottom_shift = (y + height) - bounds_max_y;
+
+                    v += bottom_shift;
+                    height -= bottom_shift;
+                }
+
                 let default = TextVertex {
-                    position: [x, y, self.pos[2] as f32],
-                    hw: [width, height],
-                    tex_coord: [u1, v1],
+                    position: [x as f32, y as f32, self.pos[2] as f32],
+                    hw: [width as f32, height as f32],
+                    tex_coord: [u as f32, v as f32],
                     layer: allocation.layer as u32,
                     color: color.0,
                     use_camera: u32::from(self.use_camera),
@@ -147,6 +234,7 @@ impl Text {
         metrics: Option<Metrics>,
         pos: [i32; 3],
         size: [u32; 2],
+        bounds: Option<TextBounds>,
     ) -> Self {
         Self {
             buffer: Buffer::new(
@@ -155,6 +243,7 @@ impl Text {
             ),
             pos,
             size,
+            bounds: bounds.unwrap_or_default(),
             bytes: Vec::new(),
             changed: true,
             default_color: Color::rgba(0, 0, 0, 255),
@@ -181,14 +270,18 @@ impl Text {
 
     /// used to check and update the vertex array.
     /// must call build_layout before you can Call this.
-    pub fn update(
+    pub fn update<Controls>(
         &mut self,
         cache: &mut SwashCache,
         text_atlas: &mut AtlasGroup<CacheKey, (i32, i32)>,
         emoji_atlas: &mut AtlasGroup<CacheKey, (i32, i32)>,
         queue: &wgpu::Queue,
         device: &wgpu::Device,
-    ) -> Result<bool, AscendingError> {
+        system: &System<Controls>,
+    ) -> Result<bool, AscendingError>
+    where
+        Controls: camera::controls::Controls,
+    {
         if self.changed {
             if self.create_quad(
                 cache,
@@ -196,6 +289,7 @@ impl Text {
                 emoji_atlas,
                 queue,
                 device,
+                system,
             )? {
                 self.changed = false;
                 return Ok(true);

@@ -528,7 +528,7 @@ async fn main() -> Result<(), AscendingError> {
                 renderer.device(),
                 renderer.queue(),
                 &state.rects.bytes,
-                &[Some(Bounds::new(151.0, 150.0, 132.0, 32.0, 132.0, 32.0))],
+                &[Some(Bounds::new(150.0, 150.0, 132.0, 32.0, 32.0))],
             );
         }
 

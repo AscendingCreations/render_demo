@@ -7,20 +7,15 @@ pub struct Bounds {
     pub y: f32,
     pub w: f32,
     pub h: f32,
-    pub obj_w: f32,
+    /// The height of the object being bounded.
+    /// this is required for Y calculations since
+    /// screen Y is fliped from World Y.
     pub obj_h: f32,
 }
 
 impl Bounds {
-    pub fn new(x: f32, y: f32, w: f32, h: f32, obj_w: f32, obj_h: f32) -> Self {
-        Self {
-            x,
-            y,
-            w,
-            h,
-            obj_w,
-            obj_h,
-        }
+    pub fn new(x: f32, y: f32, w: f32, h: f32, obj_h: f32) -> Self {
+        Self { x, y, w, h, obj_h }
     }
 }
 

@@ -60,4 +60,10 @@ pub enum CallBacks<T> {
     PositionChange(Box<dyn Fn(&mut Widget, &mut T)>),
 }
 
-//TODO Create commands for Callback handled returns.
+//TODO Check what other commands may be needed!
+pub enum Commands {
+    RemoveByHandle(Handle),
+    RemoveById(Identity),
+    AddWidgetToParentId { widget: Widget, id: Identity },
+    AddWidgetToParentHandle { widget: Widget, handle: Handle },
+}

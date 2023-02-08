@@ -62,9 +62,15 @@ pub trait UI {
     fn set_position(&mut self, position: [i32; 2]);
 }
 
+/// TODO: Make Bounds Updater that will Update all the internal Bounds based on
+/// Parents Bounds if they got changed or if the childrens positions changed.
 pub struct Widget {
+    /// System Granted ID.
     pub id: Handle,
+    /// Widgets Name and user given ID.
     pub identity: Identity,
+    /// Used to Calculate and set the internal bounds of the widgets Data.
+    pub bounds: Bounds,
     /// The UI holder for the Specific Widget.
     pub ui: Box<dyn UI>,
     ///If none then it is the Top most in the widget Tree.
@@ -73,6 +79,7 @@ pub struct Widget {
     pub children: VecDeque<Handle>,
     ///The loaded but hidden children in the Tree.
     pub hidden: Vec<Handle>,
+    /// Boolean Field of Actions Widgets can use.
     pub actions: UiField,
 }
 

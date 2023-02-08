@@ -145,12 +145,6 @@ impl<T> Widgets<T> {
             internal_update_pos(parent);
         }
 
-        if let Some(CallBacks::PositionChange(user_update_pos)) =
-            self.user_callbacks.get(&key)
-        {
-            user_update_pos(parent, user_data);
-        }
-
         for handle in &parent.children {
             let widget = self.get_widget(*handle);
 
@@ -169,12 +163,6 @@ impl<T> Widgets<T> {
                 )) = self.callbacks.get(&key)
                 {
                     internal_update_pos(&mut mut_wdgt);
-                }
-
-                if let Some(CallBacks::PositionChange(user_update_pos)) =
-                    self.user_callbacks.get(&key)
-                {
-                    user_update_pos(&mut mut_wdgt, user_data);
                 }
             }
         }

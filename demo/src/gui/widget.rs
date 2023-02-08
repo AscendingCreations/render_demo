@@ -2,7 +2,6 @@ use crate::{CallBack, GuiRender};
 use graphics::*;
 use input::FrameTime;
 use std::any::Any;
-use std::marker::PhantomData;
 use std::{cell::RefCell, collections::VecDeque, rc::Rc, vec::Vec};
 use ubits::bitfield;
 use winit::event::{KeyboardInput, ModifiersState};
@@ -62,6 +61,16 @@ pub trait UI {
     fn set_position(&mut self, position: [i32; 2]);
 }
 
+pub trait AnyData: UI {
+    fn as_any(&self) -> &dyn Any;
+}
+
+impl<T: Any + UI> AnyData for T {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
 /// TODO: Make Bounds Updater that will Update all the internal Bounds based on
 /// Parents Bounds if they got changed or if the childrens positions changed.
 pub struct Widget {
@@ -72,7 +81,7 @@ pub struct Widget {
     /// Used to Calculate and set the internal bounds of the widgets Data.
     pub bounds: Bounds,
     /// The UI holder for the Specific Widget.
-    pub ui: Box<dyn UI>,
+    pub ui: Box<dyn AnyData>,
     ///If none then it is the Top most in the widget Tree.
     pub parent: Option<Handle>,
     ///The visible children in the Tree.

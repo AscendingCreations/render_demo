@@ -285,18 +285,17 @@ where
             (1.0 - coords.y) * 0.5 * self.screen_size[1],
         );
 
-        let (bw, bh, objw, objh) = if scale {
+        let (bw, bh, objh) = if scale {
             (
                 bounds.w * self.camera.scale(),
                 bounds.h * self.camera.scale(),
-                bounds.obj_w * self.camera.scale(),
                 bounds.obj_h * self.camera.scale(),
             )
         } else {
-            (bounds.w, bounds.h, bounds.obj_w, bounds.obj_h)
+            (bounds.w, bounds.h, bounds.obj_h)
         };
 
-        Bounds::new(xy.x, xy.y - objh, bw, bh, objw, objh)
+        Bounds::new(xy.x, xy.y - objh, bw, bh, objh)
     }
 
     pub fn world_to_screen(&self, scale: bool, bounds: &Bounds) -> Bounds {
@@ -311,17 +310,16 @@ where
             (1.0 - coords.y) * 0.5 * self.screen_size[1],
         );
 
-        let (bw, bh, objw, objh) = if scale {
+        let (bw, bh, objh) = if scale {
             (
                 bounds.w * self.camera.scale(),
                 bounds.h * self.camera.scale(),
-                bounds.obj_w * self.camera.scale(),
                 bounds.obj_h * self.camera.scale(),
             )
         } else {
-            (bounds.w, bounds.h, bounds.obj_w, bounds.obj_h)
+            (bounds.w, bounds.h, bounds.obj_h)
         };
 
-        Bounds::new(xy.x, xy.y - objh, bw, bh, objw, objh)
+        Bounds::new(xy.x, xy.y - objh, bw, bh, objh)
     }
 }

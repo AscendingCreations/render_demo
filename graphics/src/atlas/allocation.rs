@@ -1,10 +1,12 @@
 #[derive(Copy, Clone)]
-pub struct Allocation {
+pub struct Allocation<Data: Copy + Default = i32> {
     pub allocation: guillotiere::Allocation,
     pub layer: usize,
+    //Store any Extra data per Allocation.
+    pub data: Data,
 }
 
-impl Allocation {
+impl<Data: Copy + Default> Allocation<Data> {
     pub fn position(&self) -> (u32, u32) {
         let rectangle = &self.allocation.rectangle;
 

@@ -2,8 +2,7 @@ use crate::{AscendingError, AtlasGroup, Color, System, TextVertex};
 use cosmic_text::{
     Attrs, Buffer, CacheKey, FontSystem, Metrics, SwashCache, SwashContent,
 };
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
+
 /// Controls the visible area of the text. Any text outside of the visible area will be clipped.
 /// This is given by glyphon.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -94,14 +93,11 @@ impl Text {
                                 &bitmap,
                                 width,
                                 height,
+                                (image.placement.left, image.placement.top),
                                 device,
                                 queue,
                             )
                             .ok_or(AscendingError::AtlasFull)?;
-                        emoji_atlas.upload_data(
-                            glyph.cache_key,
-                            (image.placement.left, image.placement.top),
-                        );
                     } else {
                         let _ = text_atlas
                             .atlas
@@ -110,14 +106,11 @@ impl Text {
                                 &bitmap,
                                 width,
                                 height,
+                                (image.placement.left, image.placement.top),
                                 device,
                                 queue,
                             )
                             .ok_or(AscendingError::AtlasFull)?;
-                        text_atlas.upload_data(
-                            glyph.cache_key,
-                            (image.placement.left, image.placement.top),
-                        );
                     }
                 }
             }
@@ -129,23 +122,19 @@ impl Text {
             let line_y = run.line_y;
 
             for glyph in run.glyphs.iter() {
-                let (allocation, is_color, position) = if let Some(allocation) =
+                let (allocation, is_color) = if let Some(allocation) =
                     text_atlas.atlas.get(&glyph.cache_key)
                 {
-                    let position =
-                        text_atlas.get_data(&glyph.cache_key).unwrap_or((0, 0));
-                    (allocation, false, position)
+                    (allocation, false)
                 } else if let Some(allocation) =
                     emoji_atlas.atlas.get(&glyph.cache_key)
                 {
-                    let position = emoji_atlas
-                        .get_data(&glyph.cache_key)
-                        .unwrap_or((0, 0));
-                    (allocation, true, position)
+                    (allocation, true)
                 } else {
                     continue;
                 };
 
+                let position = allocation.data;
                 let (u, v, width, height) = allocation.rect();
                 let (mut u, mut v, mut width, mut height) =
                     (u as i32, v as i32, width as i32, height as i32);

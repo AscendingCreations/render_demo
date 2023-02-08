@@ -52,7 +52,7 @@ impl Rect {
             ImageBuffer::new(1, 1);
         let pixel = image.get_pixel_mut(0, 0);
         *pixel = image::Rgba([color.r(), color.g(), color.b(), color.a()]);
-        atlas.upload(col, image.as_raw(), 1, 1, device, queue)
+        atlas.upload(col, image.as_raw(), 1, 1, 0, device, queue)
     }
 
     pub fn set_color(

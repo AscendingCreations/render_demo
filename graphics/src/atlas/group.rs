@@ -1,17 +1,15 @@
 use crate::{
     Allocation, Atlas, GroupType, LayoutStorage, TextureGroup, TextureLayout,
 };
-use std::{collections::HashMap, hash::Hash};
+use std::hash::Hash;
 
 /// Group of a Atlas Details
 pub struct AtlasGroup<U: Hash + Eq + Clone = String, Data: Copy + Default = i32>
 {
     /// Atlas to hold Image locations
-    pub atlas: Atlas<U>,
+    pub atlas: Atlas<U, Data>,
     /// Texture Bind group for Atlas
     pub texture: TextureGroup,
-    //Store any Extra data per Allocation.
-    pub data: HashMap<U, Data>,
 }
 
 impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
@@ -22,7 +20,7 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
         layout_storage: &mut LayoutStorage,
         group_type: GroupType,
     ) -> Self {
-        let atlas = Atlas::<U>::new(device, size, format);
+        let atlas = Atlas::<U, Data>::new(device, size, format);
 
         let texture = TextureGroup::from_view(
             device,
@@ -32,11 +30,7 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
             group_type,
         );
 
-        Self {
-            atlas,
-            texture,
-            data: HashMap::new(),
-        }
+        Self { atlas, texture }
     }
 
     pub fn upload(
@@ -45,17 +39,11 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
         bytes: &[u8],
         width: u32,
         height: u32,
+        data: Data,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
-    ) -> Option<Allocation> {
-        self.atlas.upload(hash, bytes, width, height, device, queue)
-    }
-
-    pub fn upload_data(&mut self, hash: U, data: Data) {
-        self.data.insert(hash, data);
-    }
-
-    pub fn get_data(&mut self, hash: &U) -> Option<Data> {
-        self.data.get(hash).copied()
+    ) -> Option<Allocation<Data>> {
+        self.atlas
+            .upload(hash, bytes, width, height, data, device, queue)
     }
 }

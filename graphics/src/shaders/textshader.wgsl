@@ -119,23 +119,24 @@ fn vertex(
 // Fragment shader
 @fragment
 fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
-    var object_color = vec4<f32>(0.0);
- 
-    if vertex.is_color == 1u {
-        let object_color = textureSampleLevel(emoji_tex, emoji_tex_sample, vertex.uv.xy, vertex.layer, 1.0);
+     switch vertex.is_color {
+        case 1u: {
+            let object_color = textureSampleLevel(emoji_tex, emoji_tex_sample, vertex.uv.xy, vertex.layer, 1.0);
 
-        if object_color.a <= 0.0 {
-            discard;
+            if object_color.a <= 0.0 {
+                discard;
+            }
+        
+            return vertex.color.rgba * object_color;
         }
+        default: {
+            let object_color = textureSampleLevel(tex, tex_sample, vertex.uv.xy, vertex.layer, 1.0);
 
-        return vertex.color.rgba * object_color;
-    } else {
-        let object_color = textureSampleLevel(tex, tex_sample, vertex.uv.xy, vertex.layer, 1.0);
+            if object_color.r <= 0.0 {
+                discard;
+            }
 
-        if object_color.r <= 0.0 {
-            discard;
+            return vertex.color.rgba * object_color.r;
         }
-
-        return vertex.color.rgba * object_color.r;
     }
 }

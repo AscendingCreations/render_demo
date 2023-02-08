@@ -33,6 +33,7 @@ where
             self.set_bind_group(1, &atlas_group.texture.bind_group, &[]);
             self.set_vertex_buffer(1, buffer.instances(None));
             self.set_pipeline(pipeline.render_pipeline());
+            let mut scissor_is_default = true;
 
             for i in 0..buffer.count() {
                 if let Some(Some(bounds)) = buffer.bounds.get(i as usize) {
@@ -44,13 +45,15 @@ where
                         bounds.w as u32,
                         bounds.h as u32,
                     );
-                } else {
+                    scissor_is_default = false;
+                } else if !scissor_is_default {
                     self.set_scissor_rect(
                         0,
                         0,
                         system.screen_size[0] as u32,
                         system.screen_size[1] as u32,
                     );
+                    scissor_is_default = true;
                 };
 
                 self.draw_indexed(
@@ -61,12 +64,14 @@ where
             }
 
             //Gotta set it back otherwise it will clip everything after it...
-            self.set_scissor_rect(
-                0,
-                0,
-                system.screen_size[0] as u32,
-                system.screen_size[1] as u32,
-            );
+            if !scissor_is_default {
+                self.set_scissor_rect(
+                    0,
+                    0,
+                    system.screen_size[0] as u32,
+                    system.screen_size[1] as u32,
+                );
+            }
         }
     }
 }

@@ -1,7 +1,7 @@
 use crate::{Allocation, Layer};
 use std::{collections::HashMap, hash::Hash, num::NonZeroU32};
 
-pub struct Atlas<U: Hash + Eq + Clone = String> {
+pub struct Atlas<U: Hash + Eq + Clone = String, Data: Copy + Default = i32> {
     /// Texture in GRAM
     pub texture: wgpu::Texture,
     /// Texture View for WGPU
@@ -11,12 +11,17 @@ pub struct Atlas<U: Hash + Eq + Clone = String> {
     /// Holds the Original Texture Size and layer information.
     pub extent: wgpu::Extent3d,
     /// File Paths or names to prevent duplicates.
-    pub names: HashMap<U, Allocation>,
+    pub names: HashMap<U, Allocation<Data>>,
     pub format: wgpu::TextureFormat,
 }
 
-impl<U: Hash + Eq + Clone> Atlas<U> {
-    fn allocate(&mut self, width: u32, height: u32) -> Option<Allocation> {
+impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
+    fn allocate(
+        &mut self,
+        width: u32,
+        height: u32,
+        data: Data,
+    ) -> Option<Allocation<Data>> {
         /* Check if the allocation would fit. */
         if width > self.extent.width || height > self.extent.height {
             return None;
@@ -28,6 +33,7 @@ impl<U: Hash + Eq + Clone> Atlas<U> {
                 return Some(Allocation {
                     allocation,
                     layer: i,
+                    data,
                 });
             }
         }
@@ -41,6 +47,7 @@ impl<U: Hash + Eq + Clone> Atlas<U> {
             return Some(Allocation {
                 allocation,
                 layer: self.layers.len() - 1,
+                data,
             });
         }
 
@@ -56,7 +63,7 @@ impl<U: Hash + Eq + Clone> Atlas<U> {
         self.names.clear();
     }
 
-    pub fn get(&mut self, name: &U) -> Option<Allocation> {
+    pub fn get(&mut self, name: &U) -> Option<Allocation<Data>> {
         self.names.get(name).cloned()
     }
 
@@ -192,15 +199,16 @@ impl<U: Hash + Eq + Clone> Atlas<U> {
         bytes: &[u8],
         width: u32,
         height: u32,
+        data: Data,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
-    ) -> Option<Allocation> {
+    ) -> Option<Allocation<Data>> {
         if let Some(allocation) = self.names.get(&hash) {
             Some(*allocation)
         } else {
             let allocation = {
                 let nlayers = self.layers.len();
-                let allocation = self.allocate(width, height)?;
+                let allocation = self.allocate(width, height, data)?;
                 self.grow(self.layers.len() - nlayers, device, queue);
 
                 allocation
@@ -215,7 +223,7 @@ impl<U: Hash + Eq + Clone> Atlas<U> {
     fn upload_allocation(
         &mut self,
         buffer: &[u8],
-        allocation: &Allocation,
+        allocation: &Allocation<Data>,
         queue: &wgpu::Queue,
     ) {
         let (x, y) = allocation.position();

@@ -70,6 +70,7 @@ impl Texture {
             &self.bytes,
             width,
             height,
+            0,
             device,
             queue,
         )
@@ -87,6 +88,7 @@ impl Texture {
             &self.bytes,
             width,
             height,
+            0,
             device,
             queue,
         )

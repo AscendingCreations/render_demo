@@ -230,15 +230,10 @@ impl Rect {
 
             dist < radius
         } else {
-            if mouse_pos[0] > self.position[0] as i32
+            mouse_pos[0] > self.position[0] as i32
                 && mouse_pos[0] < self.position[0] as i32 + self.size[0] as i32
                 && mouse_pos[1] > self.position[1] as i32
                 && mouse_pos[1] < self.position[1] as i32 + self.size[1] as i32
-            {
-                true
-            } else {
-                false
-            }
         }
     }
 }

@@ -37,7 +37,7 @@ where
 
             for i in 0..buffer.count() {
                 if let Some(Some(bounds)) = buffer.bounds.get(i as usize) {
-                    let bounds = system.world_to_screen(false, &bounds);
+                    let bounds = system.world_to_screen(false, bounds);
 
                     self.set_scissor_rect(
                         bounds.x as u32,

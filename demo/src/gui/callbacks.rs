@@ -32,36 +32,55 @@ pub(crate) enum CallBack {
     PositionChange,
 }
 
+pub type InternalDrawRef =
+    Box<dyn Fn(&mut Widget, FrameTime, &mut GuiRender, &mut Renderer)>;
+pub type InternalMousePresentRef = Box<dyn Fn(&mut Widget, bool)>;
+pub type InternalMouseScrollRef =
+    Box<dyn Fn(&mut Widget, (f32, f32), ModifiersState)>;
+pub type InternalMousePressRef =
+    Box<dyn Fn(&mut Widget, u32, bool, ModifiersState)>;
+pub type InternalKeyPressRef =
+    Box<dyn Fn(&mut Widget, KeyboardInput, ModifiersState)>;
+
 pub enum InternalCallBacks {
-    Draw(Box<dyn Fn(&mut Widget, FrameTime, &mut GuiRender, &mut Renderer)>),
-    MousePresent(Box<dyn Fn(&mut Widget, bool)>),
-    MouseScroll(Box<dyn Fn(&mut Widget, (f32, f32), ModifiersState)>),
-    MousePress(Box<dyn Fn(&mut Widget, u32, bool, ModifiersState)>),
-    KeyPress(Box<dyn Fn(&mut Widget, KeyboardInput, ModifiersState)>),
+    Draw(InternalDrawRef),
+    MousePresent(InternalMousePresentRef),
+    MouseScroll(InternalMouseScrollRef),
+    MousePress(InternalMousePressRef),
+    KeyPress(InternalKeyPressRef),
     PositionChange(Box<dyn Fn(&mut Widget)>),
     BoundsChange(Box<dyn Fn(&mut Widget)>),
 }
 
-pub enum CallBacks<T> {
-    Draw(
-        Box<
-            dyn Fn(
-                &mut Widget,
-                FrameTime,
-                &mut GuiRender,
-                &mut Renderer,
-                &mut Commands,
-                &mut T,
-            ),
-        >,
+pub type DrawRef<T> = Box<
+    dyn Fn(
+        &mut Widget,
+        FrameTime,
+        &mut GuiRender,
+        &mut Renderer,
+        &mut Commands,
+        &mut T,
     ),
-    MousePresent(Box<dyn Fn(&mut Widget, bool, &mut Commands, &mut T)>),
-    MouseScroll(Box<dyn Fn(&mut Widget, (f32, f32), ModifiersState, &mut Commands, &mut T)>),
-    MousePress(Box<dyn Fn(&mut Widget, u32, bool, ModifiersState, &mut Commands, &mut T)>),
-    KeyPress(Box<dyn Fn(&mut Widget, KeyboardInput, ModifiersState, &mut Commands, &mut T)>),
+>;
+pub type MousePresentRef<T> =
+    Box<dyn Fn(&mut Widget, bool, &mut Commands, &mut T)>;
+pub type MouseScrollRef<T> =
+    Box<dyn Fn(&mut Widget, (f32, f32), ModifiersState, &mut Commands, &mut T)>;
+pub type MousePressRef<T> =
+    Box<dyn Fn(&mut Widget, u32, bool, ModifiersState, &mut Commands, &mut T)>;
+pub type KeyPressRef<T> = Box<
+    dyn Fn(&mut Widget, KeyboardInput, ModifiersState, &mut Commands, &mut T),
+>;
+
+pub enum CallBacks<T> {
+    Draw(DrawRef<T>),
+    MousePresent(MousePresentRef<T>),
+    MouseScroll(MouseScrollRef<T>),
+    MousePress(MousePressRef<T>),
+    KeyPress(KeyPressRef<T>),
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Default)]
 pub struct Commands {
     pub commands: Vec<Command>,
 }

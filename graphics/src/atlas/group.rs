@@ -1,7 +1,7 @@
 use crate::{
     Allocation, Atlas, GroupType, LayoutStorage, TextureGroup, TextureLayout,
 };
-use std::hash::Hash;
+use std::{hash::Hash, time::Duration};
 
 /// Group of a Atlas Details
 pub struct AtlasGroup<U: Hash + Eq + Clone = String, Data: Copy + Default = i32>
@@ -19,8 +19,16 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
         format: wgpu::TextureFormat,
         layout_storage: &mut LayoutStorage,
         group_type: GroupType,
+        cache_start: usize,
+        cache_duration: Duration,
     ) -> Self {
-        let atlas = Atlas::<U, Data>::new(device, size, format);
+        let atlas = Atlas::<U, Data>::new(
+            device,
+            size,
+            format,
+            cache_start,
+            cache_duration,
+        );
 
         let texture = TextureGroup::from_view(
             device,
@@ -33,6 +41,7 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
         Self { atlas, texture }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn upload(
         &mut self,
         hash: U,

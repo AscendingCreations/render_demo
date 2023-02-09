@@ -1,5 +1,7 @@
 use crate::{Allocation, Layer};
-use std::{collections::HashMap, hash::Hash, num::NonZeroU32};
+use lru::LruCache;
+use std::time::{Duration, Instant};
+use std::{hash::Hash, num::NonZeroU32};
 
 pub struct Atlas<U: Hash + Eq + Clone = String, Data: Copy + Default = i32> {
     /// Texture in GRAM
@@ -11,8 +13,14 @@ pub struct Atlas<U: Hash + Eq + Clone = String, Data: Copy + Default = i32> {
     /// Holds the Original Texture Size and layer information.
     pub extent: wgpu::Extent3d,
     /// File Paths or names to prevent duplicates.
-    pub names: HashMap<U, Allocation<Data>>,
+    pub cache: LruCache<U, Allocation<Data>>,
+    /// Format the Texture uses.
     pub format: wgpu::TextureFormat,
+    /// When layer at when to start recycling old allocations before making new layers.
+    /// if set to zero it will never clear this automatically.
+    pub cache_start: usize,
+    /// Duration deturmined if an item is unused and can be removed from the cache.
+    pub cache_duration: Duration,
 }
 
 impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
@@ -34,11 +42,67 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
                     allocation,
                     layer: i,
                     data,
+                    used_last: Instant::now(),
                 });
             }
         }
 
-        /* Add a new layer, as we found no layer to allocate from. */
+        // Lets try to handle caching here if enabled. We will check the oldest allocation
+        // By doing so we will see if it really has not been used based on Duration.
+        // If it has not been accessed in a while we will unload it and try to see
+        // if the new items fits within it. If this fails we will make a new layer.
+        // This is mostly used for things that dont hold onto the allocations.
+        // If they do hold the allocation cache_start needs to be 0.
+        if self.cache_start > 0 && self.layers.len() >= self.cache_start {
+            let mut removed = false;
+            // we will clean up all old allocations first.
+            loop {
+                if let Some((key, old_allocation)) = self.cache.pop_lru() {
+                    if old_allocation.used_last.elapsed() < self.cache_duration
+                    {
+                        if old_allocation.size() == (width, height) {
+                            return Some(Allocation {
+                                allocation: old_allocation.allocation,
+                                layer: old_allocation.layer,
+                                data,
+                                used_last: Instant::now(),
+                            });
+                        } else {
+                            self.layers
+                                .get_mut(old_allocation.layer)
+                                .unwrap()
+                                .allocator
+                                .deallocate(old_allocation.allocation);
+                            removed = true;
+                            continue;
+                        }
+                    } else {
+                        self.cache.push(key.clone(), old_allocation);
+                        self.cache.demote(&key);
+                    }
+                }
+
+                break;
+            }
+
+            if removed {
+                for (i, layer) in self.layers.iter_mut().enumerate() {
+                    if let Some(allocation) =
+                        layer.allocator.allocate(width, height)
+                    {
+                        return Some(Allocation {
+                            allocation,
+                            layer: i,
+                            data,
+                            used_last: Instant::now(),
+                        });
+                    }
+                }
+            }
+        }
+
+        /* Add a new layer, as we found no layer to allocate from and could
+        not retrieve any old allocations to use. */
         let mut layer = Layer::new(self.extent.width);
 
         if let Some(allocation) = layer.allocator.allocate(width, height) {
@@ -48,6 +112,7 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
                 allocation,
                 layer: self.layers.len() - 1,
                 data,
+                used_last: Instant::now(),
             });
         }
 
@@ -60,11 +125,38 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
             layer.allocator.clear();
         }
 
-        self.names.clear();
+        self.cache.clear();
     }
 
-    pub fn get(&mut self, name: &U) -> Option<Allocation<Data>> {
-        self.names.get(name).cloned()
+    // Gets the data and updates its cache position and time.
+    pub fn get(&mut self, key: &U) -> Option<Allocation<Data>> {
+        if let Some(mut allocation) = self.cache.get_mut(key) {
+            allocation.used_last = Instant::now();
+            return Some(*allocation);
+        }
+
+        None
+    }
+
+    // Gets the data without updating its cache or time.
+    pub fn peek(&mut self, key: &U) -> Option<Allocation<Data>> {
+        if let Some(allocation) = self.cache.peek(key) {
+            return Some(*allocation);
+        }
+
+        None
+    }
+
+    // Checks if the Data Exists or not.
+    pub fn contains(&mut self, key: &U) -> bool {
+        self.cache.contains(key)
+    }
+
+    // Changes allocations time and its position in cache.
+    pub fn promote(&mut self, key: &U) {
+        if let Some(mut allocation) = self.cache.get_mut(key) {
+            allocation.used_last = Instant::now();
+        }
     }
 
     fn grow(
@@ -152,6 +244,8 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
         device: &wgpu::Device,
         size: u32,
         format: wgpu::TextureFormat,
+        cache_start: usize,
+        cache_duration: Duration,
     ) -> Self {
         let extent = wgpu::Extent3d {
             width: size,
@@ -188,11 +282,14 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
             texture_view,
             layers: vec![Layer::new(size)],
             extent,
-            names: HashMap::new(),
+            cache: LruCache::unbounded(),
             format,
+            cache_start,
+            cache_duration,
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn upload(
         &mut self,
         hash: U,
@@ -203,7 +300,7 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
     ) -> Option<Allocation<Data>> {
-        if let Some(allocation) = self.names.get(&hash) {
+        if let Some(allocation) = self.cache.get(&hash) {
             Some(*allocation)
         } else {
             let allocation = {
@@ -215,7 +312,7 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
             };
 
             self.upload_allocation(bytes, &allocation, queue);
-            self.names.insert(hash, allocation);
+            self.cache.push(hash, allocation);
             Some(allocation)
         }
     }

@@ -123,11 +123,11 @@ impl Text {
 
             for glyph in run.glyphs.iter() {
                 let (allocation, is_color) = if let Some(allocation) =
-                    text_atlas.atlas.get(&glyph.cache_key)
+                    text_atlas.atlas.peek(&glyph.cache_key)
                 {
                     (allocation, false)
                 } else if let Some(allocation) =
-                    emoji_atlas.atlas.get(&glyph.cache_key)
+                    emoji_atlas.atlas.peek(&glyph.cache_key)
                 {
                     (allocation, true)
                 } else {
@@ -140,8 +140,8 @@ impl Text {
                     (u as i32, v as i32, width as i32, height as i32);
 
                 let (mut x, mut y) = (
-                    (self.pos[0] + glyph.x_int + position.0) as i32,
-                    (self.pos[1] + glyph.y_int - line_y) as i32,
+                    (self.pos[0] + glyph.x_int + position.0),
+                    (self.pos[1] + glyph.y_int - line_y),
                 );
 
                 let color = if is_color {
@@ -272,18 +272,18 @@ impl Text {
     where
         Controls: camera::controls::Controls,
     {
-        if self.changed {
-            if self.create_quad(
+        if self.changed
+            && self.create_quad(
                 cache,
                 text_atlas,
                 emoji_atlas,
                 queue,
                 device,
                 system,
-            )? {
-                self.changed = false;
-                return Ok(true);
-            }
+            )?
+        {
+            self.changed = false;
+            return Ok(true);
         }
 
         Ok(false)
@@ -321,5 +321,11 @@ impl TextRender {
         for text in arr {
             self.text_bytes.append(&mut text.bytes.clone());
         }
+    }
+}
+
+impl Default for TextRender {
+    fn default() -> Self {
+        Self::new()
     }
 }

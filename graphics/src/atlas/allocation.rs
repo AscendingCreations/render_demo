@@ -1,12 +1,9 @@
-use std::time::Instant;
-
 #[derive(Copy, Clone)]
 pub struct Allocation<Data: Copy + Default = i32> {
     pub allocation: guillotiere::Allocation,
     pub layer: usize,
     //Store any Extra data per Allocation.
     pub data: Data,
-    pub used_last: Instant,
 }
 
 impl<Data: Copy + Default> Allocation<Data> {

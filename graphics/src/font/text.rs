@@ -123,11 +123,11 @@ impl Text {
 
             for glyph in run.glyphs.iter() {
                 let (allocation, is_color) = if let Some(allocation) =
-                    text_atlas.atlas.peek(&glyph.cache_key)
+                    text_atlas.atlas.get(&glyph.cache_key)
                 {
                     (allocation, false)
                 } else if let Some(allocation) =
-                    emoji_atlas.atlas.peek(&glyph.cache_key)
+                    emoji_atlas.atlas.get(&glyph.cache_key)
                 {
                     (allocation, true)
                 } else {

@@ -1,7 +1,7 @@
 use crate::{
     Allocation, Atlas, GroupType, LayoutStorage, TextureGroup, TextureLayout,
 };
-use std::{hash::Hash, time::Duration};
+use std::hash::Hash;
 
 /// Group of a Atlas Details
 pub struct AtlasGroup<U: Hash + Eq + Clone = String, Data: Copy + Default = i32>
@@ -19,15 +19,15 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
         format: wgpu::TextureFormat,
         layout_storage: &mut LayoutStorage,
         group_type: GroupType,
-        cache_start: usize,
-        cache_duration: Duration,
+        pressure_min: usize,
+        pressure_max: usize,
     ) -> Self {
         let atlas = Atlas::<U, Data>::new(
             device,
             size,
             format,
-            cache_start,
-            cache_duration,
+            pressure_min,
+            pressure_max,
         );
 
         let texture = TextureGroup::from_view(
@@ -54,5 +54,9 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
     ) -> Option<Allocation<Data>> {
         self.atlas
             .upload(hash, bytes, width, height, data, device, queue)
+    }
+
+    pub fn clean(&mut self) {
+        self.atlas.clean();
     }
 }

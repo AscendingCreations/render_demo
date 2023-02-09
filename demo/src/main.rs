@@ -128,8 +128,8 @@ async fn main() -> Result<(), AscendingError> {
         wgpu::TextureFormat::Rgba8UnormSrgb,
         &mut layout_storage,
         GroupType::Textures,
-        0,
-        Duration::default(),
+        256,
+        256,
     );
 
     let allocation = Texture::from_file("images/Female_1.png")?
@@ -200,8 +200,8 @@ async fn main() -> Result<(), AscendingError> {
         wgpu::TextureFormat::Rgba8UnormSrgb,
         &mut layout_storage,
         GroupType::Textures,
-        0,
-        Duration::default(),
+        256,
+        256,
     );
 
     for i in 0..3 {
@@ -232,8 +232,8 @@ async fn main() -> Result<(), AscendingError> {
         wgpu::TextureFormat::Rgba8UnormSrgb,
         &mut layout_storage,
         GroupType::Textures,
-        0,
-        Duration::default(),
+        256,
+        256,
     );
 
     let allocation = Texture::from_file("images/anim/0.png")?
@@ -266,8 +266,8 @@ async fn main() -> Result<(), AscendingError> {
         wgpu::TextureFormat::Rgba8UnormSrgb,
         &mut layout_storage,
         GroupType::Textures,
-        0,
-        Duration::default(),
+        256,
+        256,
     );
 
     let mut rects = Rect {
@@ -301,7 +301,7 @@ async fn main() -> Result<(), AscendingError> {
         &mut layout_storage,
         GroupType::Fonts,
         2,
-        Duration::new(1, 0),
+        256,
     );
 
     let emoji_atlas = AtlasGroup::new(
@@ -311,7 +311,7 @@ async fn main() -> Result<(), AscendingError> {
         &mut layout_storage,
         GroupType::Textures,
         2,
-        Duration::new(1, 0),
+        256,
     );
 
     let text_pipeline = TextRenderPipeline::new(
@@ -574,5 +574,12 @@ async fn main() -> Result<(), AscendingError> {
         input_handler.end_frame();
         frame_time.update();
         frame.present();
+
+        state.animation_atlas.clean();
+        state.rects_atlas.clean();
+        state.map_atlas.clean();
+        state.sprite_atlas.clean();
+        state.text_atlas.clean();
+        state.emoji_atlas.clean();
     })
 }

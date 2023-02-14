@@ -1,4 +1,4 @@
-use crate::{GuiRender, Handle, Identity, Widget, Widgets};
+use crate::{GuiRender, Handle, Identity, ReturnValue, Widget, Widgets};
 use graphics::*;
 use input::FrameTime;
 use std::any::Any;
@@ -34,7 +34,7 @@ pub(crate) enum CallBack {
 
 pub type InternalDrawRef =
     Box<dyn Fn(&mut Widget, FrameTime, &mut GuiRender, &mut Renderer)>;
-pub type InternalMousePresentRef = Box<dyn Fn(&mut Widget, bool)>;
+pub type InternalBooleanRef = Box<dyn Fn(&mut Widget, bool)>;
 pub type InternalMouseScrollRef =
     Box<dyn Fn(&mut Widget, (f32, f32), ModifiersState)>;
 pub type InternalMousePressRef =
@@ -44,12 +44,13 @@ pub type InternalKeyPressRef =
 
 pub enum InternalCallBacks {
     Draw(InternalDrawRef),
-    MousePresent(InternalMousePresentRef),
+    MousePresent(InternalBooleanRef),
     MouseScroll(InternalMouseScrollRef),
     MousePress(InternalMousePressRef),
     KeyPress(InternalKeyPressRef),
     PositionChange(Box<dyn Fn(&mut Widget)>),
     BoundsChange(Box<dyn Fn(&mut Widget)>),
+    FocusChange(InternalBooleanRef),
 }
 
 pub type DrawRef<T> = Box<
@@ -71,6 +72,8 @@ pub type MousePressRef<T> =
 pub type KeyPressRef<T> = Box<
     dyn Fn(&mut Widget, KeyboardInput, ModifiersState, &mut Commands, &mut T),
 >;
+pub type ValueChangedRef<T> =
+    Box<dyn Fn(&mut Widget, ReturnValue, &mut Commands, &mut T)>;
 
 pub enum CallBacks<T> {
     Draw(DrawRef<T>),
@@ -78,6 +81,7 @@ pub enum CallBacks<T> {
     MouseScroll(MouseScrollRef<T>),
     MousePress(MousePressRef<T>),
     KeyPress(KeyPressRef<T>),
+    ValueChanged(ValueChangedRef<T>),
 }
 
 #[derive(Default)]
@@ -100,12 +104,30 @@ pub enum Command {
     // Remove a widget by its known handle.
     RemoveByHandle(Handle),
 
-    //remove the widget by its known name and id
+    // Remove the widget by its known name and id
     RemoveById(Identity),
 
-    //use when adding new widgets that also have new parents.
-    AddWidgetToParentId { widget: Widget, id: Identity },
+    // Use when adding new widgets that also have new parents.
+    AddWidgetToParentId {
+        widget: Widget,
+        id: Identity,
+    },
 
-    //add widgets to existing parents.
-    AddWidgetToParentHandle { widget: Widget, handle: Handle },
+    // Add widgets to existing parents.
+    AddWidgetToParentHandle {
+        widget: Widget,
+        handle: Handle,
+    },
+
+    // Tells the System the Value was changed So it can Call the User Function to update the user.
+    ValueChangedById {
+        id: Identity,
+        value: values::ReturnValue,
+    },
+
+    // Tells the System the Value was changed So it can Call the User Function to update the user.
+    ValueChangedByHandle {
+        handle: Handle,
+        value: values::ReturnValue,
+    },
 }

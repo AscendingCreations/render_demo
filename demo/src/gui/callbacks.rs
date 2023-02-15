@@ -108,26 +108,14 @@ pub enum Command {
     RemoveById(Identity),
 
     // Use when adding new widgets that also have new parents.
-    AddWidgetToParentId {
-        widget: Widget,
-        id: Identity,
-    },
+    AddWidgetToParentId { widget: Widget, id: Identity },
 
     // Add widgets to existing parents.
-    AddWidgetToParentHandle {
-        widget: Widget,
-        handle: Handle,
-    },
+    AddWidgetToParentHandle { widget: Widget, handle: Handle },
 
     // Tells the System the Value was changed So it can Call the User Function to update the user.
-    ValueChangedById {
-        id: Identity,
-        value: values::ReturnValue,
-    },
+    ValueChangedById { id: Identity, value: ReturnValue },
 
     // Tells the System the Value was changed So it can Call the User Function to update the user.
-    ValueChangedByHandle {
-        handle: Handle,
-        value: values::ReturnValue,
-    },
+    ValueChangedByHandle { handle: Handle, value: ReturnValue },
 }

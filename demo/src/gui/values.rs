@@ -1,7 +1,7 @@
 pub enum ReturnValue {
     Float32(f32),
     Float64(f64),
-    Unsigned_Integer(usize),
+    UnsignedInteger(usize),
     Integer(isize),
     String(String),
 }

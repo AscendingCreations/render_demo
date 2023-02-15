@@ -3,7 +3,6 @@ use std::iter;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-/// 4 of these per each layer.
 pub struct TextVertex {
     pub position: [f32; 3],
     pub hw: [f32; 2],

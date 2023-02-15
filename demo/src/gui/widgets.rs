@@ -123,15 +123,17 @@ impl<T> Widgets<T> {
                 self.zlist.push_back(handle);
             }
 
+            self.widget_show_children(control);
+
             if let Some(parent_handle) = control.borrow().parent {
                 let wdgt = self.get_widget(parent_handle);
                 let mut parent = wdgt.borrow_mut();
 
                 if let Some(pos) =
-                    parent.children.iter().position(|x| *x == handle)
+                    parent.visible.iter().position(|x| *x == handle)
                 {
-                    parent.children.remove(pos);
-                    parent.children.push_back(handle);
+                    parent.visible.remove(pos);
+                    parent.visible.push_back(handle);
                 }
             }
 
@@ -145,6 +147,121 @@ impl<T> Widgets<T> {
             control.borrow_mut().actions.set(UiFlags::IsFocused);
             self.focused = Some(handle);
             self.widget_focused_callback(control, true);
+        }
+    }
+
+    fn widget_clear_visible(&mut self, control: &WidgetRef) {
+        for child_handle in &control.borrow().visible {
+            let child = self.get_widget(*child_handle);
+
+            if let Some(pos) =
+                self.zlist.iter().position(|x| *x == *child_handle)
+            {
+                self.zlist.remove(pos);
+            }
+
+            /* if child.borrow().parent.is_none() {
+                if let Some(pos) =
+                    self.visible.iter().position(|x| *x == *child_handle)
+                {
+                    self.zlist.remove(pos);
+                }
+
+                if let Some(pos) =
+                    self.hidden.iter().position(|x| *x == *child_handle)
+                {
+                    self.zlist.remove(pos);
+                }
+            }*/
+
+            if self.focused == Some(*child_handle) {
+                self.focused = None;
+            }
+
+            if self.clicked == Some(*child_handle) {
+                self.clicked = None;
+            }
+
+            if self.over == Some(*child_handle) {
+                self.over = None;
+            }
+
+            let identity = child.borrow().identity.clone();
+            if let Some(identity) = self.name_map.remove(&identity) {
+                self.widgets.remove(identity.get_key());
+            }
+
+            self.widget_clear_visible(&child);
+            self.widget_clear_hidden(&child);
+        }
+
+        control.borrow_mut().hidden.clear();
+        control.borrow_mut().visible.clear();
+    }
+
+    fn widget_clear_hidden(&mut self, control: &WidgetRef) {
+        for child_handle in &control.borrow().hidden {
+            let child = self.get_widget(*child_handle);
+
+            let identity = child.borrow().identity.clone();
+            if let Some(identity) = self.name_map.remove(&identity) {
+                self.widgets.remove(identity.get_key());
+            }
+
+            self.widget_clear_visible(&child);
+            self.widget_clear_hidden(&child);
+        }
+
+        control.borrow_mut().hidden.clear();
+        control.borrow_mut().visible.clear();
+    }
+
+    // This will remove the children from the Zlist, focused, over and clicked.
+    // This does not move the children into the controls hidden Vec.
+    // This is because we want to be able to reshow All the visible children
+    // when we unhide the control.
+    fn widget_hide_children(&mut self, control: &WidgetRef) {
+        for child_handle in &control.borrow().visible {
+            let child = self.get_widget(*child_handle);
+
+            if let Some(pos) =
+                self.zlist.iter().position(|x| *x == *child_handle)
+            {
+                self.zlist.remove(pos);
+            }
+
+            self.widget_hide_children(&child);
+
+            if self.focused == Some(*child_handle) {
+                self.focused = None;
+            }
+
+            if self.clicked == Some(*child_handle) {
+                self.clicked = None;
+            }
+
+            if self.over == Some(*child_handle) {
+                self.over = None;
+            }
+        }
+    }
+
+    //This will Advance the children into the Back of the Zlist allowing them to
+    //render again.
+    fn widget_show_children(&mut self, control: &WidgetRef) {
+        for child_handle in &control.borrow().visible {
+            let child = self.get_widget(*child_handle);
+
+            if let Some(pos) =
+                self.zlist.iter().position(|x| *x == *child_handle)
+            {
+                self.zlist.remove(pos);
+                self.zlist.push_back(*child_handle);
+            } else {
+                self.zlist.push_back(*child_handle);
+            }
+
+            self.widget_show_children(&child);
         }
     }
 
@@ -254,15 +371,17 @@ impl<T> Widgets<T> {
             self.zlist.remove(pos);
             self.zlist.push_back(handle);
         }
+        //This will basically append the children after the parent since they render first.
+        self.widget_show_children(control);
 
         if let Some(parent_handle) = control.borrow().parent {
             let wdgt = self.get_widget(parent_handle);
             let mut parent = wdgt.borrow_mut();
 
-            if let Some(pos) = parent.children.iter().position(|x| *x == handle)
+            if let Some(pos) = parent.visible.iter().position(|x| *x == handle)
             {
-                parent.children.remove(pos);
-                parent.children.push_back(handle);
+                parent.visible.remove(pos);
+                parent.visible.push_back(handle);
             }
         }
 
@@ -270,8 +389,6 @@ impl<T> Widgets<T> {
             let focused = self.get_widget(focused_handle);
             self.widget_focused_callback(&focused, false);
         }
-
-        // Show Children()
 
         self.widget_focused_callback(control, true);
         self.widget_set_clicked(control, user_data);
@@ -403,10 +520,10 @@ impl<T> Widgets<T> {
             internal_update_pos(parent);
         }
 
-        for handle in &parent.children {
+        for handle in &parent.visible {
             let widget = self.get_widget(*handle);
 
-            if !widget.borrow().children.is_empty() {
+            if !widget.borrow().visible.is_empty() {
                 self.widget_position_update(&mut widget.borrow_mut());
             } else {
                 let key =

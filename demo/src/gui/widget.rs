@@ -85,7 +85,7 @@ pub struct Widget {
     ///If none then it is the Top most in the widget Tree.
     pub parent: Option<Handle>,
     ///The visible children in the Tree.
-    pub children: VecDeque<Handle>,
+    pub visible: VecDeque<Handle>,
     ///The loaded but hidden children in the Tree.
     pub hidden: Vec<Handle>,
     /// Boolean Field of Actions Widgets can use.
@@ -95,7 +95,7 @@ pub struct Widget {
 impl Widget {
     pub fn clear(&mut self) {
         self.parent = None;
-        self.children.clear();
+        self.visible.clear();
         self.hidden.clear();
     }
 

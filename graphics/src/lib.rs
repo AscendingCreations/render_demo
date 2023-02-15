@@ -1,3 +1,4 @@
+#![allow(clippy::extra_unused_type_parameters)]
 mod atlas;
 mod error;
 mod font;

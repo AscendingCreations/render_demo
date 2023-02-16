@@ -1,21 +1,13 @@
+use crate::Vec4;
 use std::{marker::PhantomData, ops::Range};
 use wgpu::util::DeviceExt;
 
 #[derive(Copy, Clone, Debug, Default)]
-pub struct Bounds {
-    pub x: f32,
-    pub y: f32,
-    pub w: f32,
-    pub h: f32,
-    /// The height of the object being bounded.
-    /// this is required for Y calculations since
-    /// screen Y is fliped from World Y.
-    pub obj_h: f32,
-}
+pub struct Bounds(pub Vec4, pub f32);
 
 impl Bounds {
-    pub fn new(x: f32, y: f32, w: f32, h: f32, obj_h: f32) -> Self {
-        Self { x, y, w, h, obj_h }
+    pub fn new(bounds: Vec4, obj_h: f32) -> Self {
+        Self(bounds, obj_h)
     }
 }
 

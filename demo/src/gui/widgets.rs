@@ -150,49 +150,56 @@ impl<T> Widgets<T> {
         }
     }
 
+    pub fn remove_widget_by_handle(&mut self, handle: Handle) {
+        self.widget_clear_self(&self.get_widget(handle));
+    }
+
+    pub fn remove_widget_by_id(&mut self, id: Identity) {
+        let handle = self.name_map.get(&id).unwrap();
+        self.widget_clear_self(&self.get_widget(*handle));
+    }
+
+    fn widget_clear_self(&mut self, control: &WidgetRef) {
+        let handle = control.borrow().id;
+
+        if control.borrow().parent.is_none() {
+            if let Some(pos) = self.visible.iter().position(|x| *x == handle) {
+                self.visible.remove(pos);
+            }
+
+            if let Some(pos) = self.hidden.iter().position(|x| *x == handle) {
+                self.hidden.remove(pos);
+            }
+        }
+
+        if self.focused == Some(handle) {
+            self.focused = None;
+        }
+
+        if self.clicked == Some(handle) {
+            self.clicked = None;
+        }
+
+        if self.over == Some(handle) {
+            self.over = None;
+        }
+
+        if let Some(pos) = self.zlist.iter().position(|x| *x == handle) {
+            self.zlist.remove(pos);
+        }
+
+        let identity = control.borrow().identity.clone();
+        if let Some(identity) = self.name_map.remove(&identity) {
+            self.widgets.remove(identity.get_key());
+        }
+
+        self.widget_clear_visible(control);
+        self.widget_clear_hidden(control);
+    }
+
     fn widget_clear_visible(&mut self, control: &WidgetRef) {
         for child_handle in &control.borrow().visible {
-            let child = self.get_widget(*child_handle);
-
-            if let Some(pos) =
-                self.zlist.iter().position(|x| *x == *child_handle)
-            {
-                self.zlist.remove(pos);
-            }
-
-            /* if child.borrow().parent.is_none() {
-                if let Some(pos) =
-                    self.visible.iter().position(|x| *x == *child_handle)
-                {
-                    self.zlist.remove(pos);
-                }
-
-                if let Some(pos) =
-                    self.hidden.iter().position(|x| *x == *child_handle)
-                {
-                    self.zlist.remove(pos);
-                }
-            }*/
-
-            if self.focused == Some(*child_handle) {
-                self.focused = None;
-            }
-
-            if self.clicked == Some(*child_handle) {
-                self.clicked = None;
-            }
-
-            if self.over == Some(*child_handle) {
-                self.over = None;
-            }
-
-            let identity = child.borrow().identity.clone();
-            if let Some(identity) = self.name_map.remove(&identity) {
-                self.widgets.remove(identity.get_key());
-            }
-
-            self.widget_clear_visible(&child);
-            self.widget_clear_hidden(&child);
+            self.widget_clear_self(&self.get_widget(*child_handle));
         }
 
         control.borrow_mut().hidden.clear();
@@ -201,15 +208,7 @@ impl<T> Widgets<T> {
 
     fn widget_clear_hidden(&mut self, control: &WidgetRef) {
         for child_handle in &control.borrow().hidden {
-            let child = self.get_widget(*child_handle);
-
-            let identity = child.borrow().identity.clone();
-            if let Some(identity) = self.name_map.remove(&identity) {
-                self.widgets.remove(identity.get_key());
-            }
-
-            self.widget_clear_visible(&child);
-            self.widget_clear_hidden(&child);
+            self.widget_clear_self(&self.get_widget(*child_handle));
         }
 
         control.borrow_mut().hidden.clear();

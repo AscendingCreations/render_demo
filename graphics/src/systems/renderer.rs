@@ -41,8 +41,6 @@ impl Renderer {
         &mut self,
         size: PhysicalSize<u32>,
     ) -> Result<(), AscendingError> {
-        let surface_format = wgpu::TextureFormat::Bgra8UnormSrgb;
-
         if size.width == 0 || size.height == 0 {
             return Ok(());
         }
@@ -51,7 +49,7 @@ impl Renderer {
             &self.device,
             &wgpu::SurfaceConfiguration {
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                format: surface_format,
+                format: wgpu::TextureFormat::Bgra8UnormSrgb,
                 width: size.width,
                 height: size.height,
                 present_mode: self.present_mode,
@@ -60,7 +58,7 @@ impl Renderer {
             },
         );
 
-        self.surface_format = surface_format;
+        self.surface_format = wgpu::TextureFormat::Bgra8UnormSrgb;
         self.size = size;
 
         Ok(())
@@ -179,10 +177,9 @@ impl AdapterExt for wgpu::Adapter {
             panic!("Your Rendering Device does not support Bgra8UnormSrgb")
         }
 
-        let surface_format = wgpu::TextureFormat::Bgra8UnormSrgb; // caps.formats[1];
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: surface_format,
+            format: wgpu::TextureFormat::Bgra8UnormSrgb,
             width: size.width,
             height: size.height,
             present_mode,
@@ -198,7 +195,7 @@ impl AdapterExt for wgpu::Adapter {
             queue,
             surface,
             window,
-            surface_format,
+            surface_format: wgpu::TextureFormat::Bgra8UnormSrgb,
             size,
             present_mode,
             surface_config,

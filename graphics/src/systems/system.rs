@@ -276,8 +276,10 @@ where
         } else {
             Mat4::identity()
         };
-        let clip_coords =
-            projection * view * model * Vec4::new(bounds.x, bounds.y, 1.0, 1.0);
+        let clip_coords = projection
+            * view
+            * model
+            * Vec4::new(bounds.0.x, bounds.0.y, 1.0, 1.0);
         let coords = clip_coords.xyz() / clip_coords.w;
 
         let xy = Vec2::new(
@@ -287,22 +289,22 @@ where
 
         let (bw, bh, objh) = if scale {
             (
-                bounds.w * self.camera.scale(),
-                bounds.h * self.camera.scale(),
-                bounds.obj_h * self.camera.scale(),
+                bounds.0.z * self.camera.scale(),
+                bounds.0.w * self.camera.scale(),
+                bounds.1 * self.camera.scale(),
             )
         } else {
-            (bounds.w, bounds.h, bounds.obj_h)
+            (bounds.0.z, bounds.0.w, bounds.1)
         };
 
-        Bounds::new(xy.x, xy.y - objh, bw, bh, objh)
+        Bounds::new(Vec4::new(xy.x, xy.y - objh, bw, bh), objh)
     }
 
     pub fn world_to_screen(&self, scale: bool, bounds: &Bounds) -> Bounds {
         let projection = Mat4::from(self.camera.projection());
         let model = Mat4::identity();
         let clip_coords =
-            projection * model * Vec4::new(bounds.x, bounds.y, 1.0, 1.0);
+            projection * model * Vec4::new(bounds.0.x, bounds.0.y, 1.0, 1.0);
         let coords = clip_coords.xyz() / clip_coords.w;
 
         let xy = Vec2::new(
@@ -312,14 +314,14 @@ where
 
         let (bw, bh, objh) = if scale {
             (
-                bounds.w * self.camera.scale(),
-                bounds.h * self.camera.scale(),
-                bounds.obj_h * self.camera.scale(),
+                bounds.0.z * self.camera.scale(),
+                bounds.0.w * self.camera.scale(),
+                bounds.1 * self.camera.scale(),
             )
         } else {
-            (bounds.w, bounds.h, bounds.obj_h)
+            (bounds.0.z, bounds.0.w, bounds.1)
         };
 
-        Bounds::new(xy.x, xy.y - objh, bw, bh, objh)
+        Bounds::new(Vec4::new(xy.x, xy.y - objh, bw, bh), objh)
     }
 }

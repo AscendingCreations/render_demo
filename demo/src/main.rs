@@ -187,7 +187,7 @@ async fn main() -> Result<(), AscendingError> {
     map.set_tile((1, 31, 1), 2, 0, 255);
     map.set_tile((1, 30, 6), 2, 0, 180);
     map.set_tile((0, 0, 1), 2, 0, 255);
-    map.pos = [0, 0];
+    map.pos = Vec2::new(0.0, 0.0);
     let map_pipeline = MapRenderPipeline::new(
         renderer.device(),
         renderer.surface_format(),

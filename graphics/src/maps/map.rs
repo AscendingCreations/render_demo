@@ -1,4 +1,4 @@
-use crate::{MapTextures, MapVertex};
+use crate::{MapTextures, MapVertex, Vec2};
 use image::{self, ImageBuffer};
 
 #[allow(dead_code)]
@@ -48,9 +48,10 @@ impl MapLayers {
 
 pub struct Map {
     /// X, Y, GroupID for loaded map.
-    pub world_pos: [i32; 3],
+    /// Add this to the higher up Map struct.
+    ///pub world_pos: Vec3,
     /// its render position. within the screen.
-    pub pos: [i32; 2],
+    pub pos: Vec2,
     /// image is for modifying the Buffer R = Texture location, G = Texture layer, B = Hue, A = Alpha
     pub image: ImageBuffer<image::Rgba<u32>, Vec<u32>>,
     /// set to know the image array ID within the shader.
@@ -69,8 +70,6 @@ pub struct Map {
 
 impl Map {
     pub fn create_quad(&mut self) {
-        let (x, y) = (self.pos[0] as f32, self.pos[1] as f32);
-
         let mut lowerbuffer = Vec::new();
         let mut upperbuffer = Vec::new();
 
@@ -82,7 +81,7 @@ impl Map {
             }
 
             let map_vertex = MapVertex {
-                position: [x, y, z], //2,3
+                position: [self.pos.x, self.pos.y, z], //2,3
                 hw: [512.0, 512.0],
                 layer: self.layer as i32,
             };
@@ -111,8 +110,7 @@ impl Map {
         let image = ImageBuffer::new(32, 256);
 
         Self {
-            world_pos: [0; 3],
-            pos: [0; 2],
+            pos: Vec2::default(),
             layer: 0,
             lowerbytes: Vec::new(),
             upperbytes: Vec::new(),

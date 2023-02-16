@@ -1,6 +1,6 @@
 use crate::{
     AtlasGroup, InstanceBuffer, StaticBufferObject, TextRenderPipeline,
-    TextVertex,
+    TextVertex, Vec2,
 };
 use cosmic_text::CacheKey;
 
@@ -11,8 +11,8 @@ where
     fn render_text(
         &mut self,
         buffer: &'b InstanceBuffer<TextVertex>,
-        text_atlas_group: &'b AtlasGroup<CacheKey, (i32, i32)>,
-        emoji_atlas_group: &'b AtlasGroup<CacheKey, (i32, i32)>,
+        text_atlas_group: &'b AtlasGroup<CacheKey, Vec2>,
+        emoji_atlas_group: &'b AtlasGroup<CacheKey, Vec2>,
         pipeline: &'b TextRenderPipeline,
     );
 }
@@ -24,8 +24,8 @@ where
     fn render_text(
         &mut self,
         buffer: &'b InstanceBuffer<TextVertex>,
-        text_atlas_group: &'b AtlasGroup<CacheKey, (i32, i32)>,
-        emoji_atlas_group: &'b AtlasGroup<CacheKey, (i32, i32)>,
+        text_atlas_group: &'b AtlasGroup<CacheKey, Vec2>,
+        emoji_atlas_group: &'b AtlasGroup<CacheKey, Vec2>,
         pipeline: &'b TextRenderPipeline,
     ) {
         if buffer.count() > 0 {

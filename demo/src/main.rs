@@ -138,17 +138,17 @@ async fn main() -> Result<(), AscendingError> {
 
     let mut sprites = Vec::with_capacity(2001);
 
-    let mut x = 0;
-    let y = 0;
+    let mut x = 0.0;
+    let y = 0.0;
 
     for _i in 0..2 {
         let mut sprite = Image::new(allocation);
-        sprite.pos = [x, y, 5];
-        sprite.hw = [48, 48];
-        sprite.uv = [48, 96, 48, 48];
+        sprite.pos = Vec3::new(x, y, 5.0);
+        sprite.hw = Vec2::new(48.0, 48.0);
+        sprite.uv = Vec4::new(48.0, 96.0, 48.0, 48.0);
         sprite.color = Color::rgba(255, 255, 255, 255);
         sprites.push(sprite);
-        x += 12;
+        x += 12.0;
     }
 
     let sprite_pipeline = ImageRenderPipeline::new(
@@ -244,11 +244,11 @@ async fn main() -> Result<(), AscendingError> {
 
     let mut animation = Image::new(allocation);
 
-    animation.pos = [96, 96, 5];
-    animation.hw = [64, 64];
-    animation.uv = [0, 0, 64, 64];
+    animation.pos = Vec3::new(96.0, 96.0, 5.0);
+    animation.hw = Vec2::new(64.0, 64.0);
+    animation.uv = Vec4::new(0.0, 0.0, 64.0, 64.0);
     animation.color = Color::rgba(255, 255, 255, 255);
-    animation.frames = [8, 4];
+    animation.frames = Vec2::new(8.0, 4.0);
     animation.switch_time = 300;
     animation.animate = true;
 
@@ -271,8 +271,8 @@ async fn main() -> Result<(), AscendingError> {
     );
 
     let mut rects = Rect {
-        position: [150, 150, 1],
-        size: [132, 32],
+        position: Vec3::new(150.0, 150.0, 1.0),
+        size: Vec2::new(132.0, 32.0),
         border_width: 2,
         radius: Some(5.0),
         changed: true,
@@ -292,7 +292,7 @@ async fn main() -> Result<(), AscendingError> {
             &mut rects_atlas,
             Color::rgba(0, 0, 0, 255),
         )
-        .set_container_uv(0, 0, 168, 32);
+        .set_container_uv(Vec4::new(0.0, 0.0, 168.0, 32.0));
 
     let text_atlas = AtlasGroup::new(
         renderer.device(),
@@ -327,9 +327,9 @@ async fn main() -> Result<(), AscendingError> {
     let mut text = Text::new(
         &FONT_SYSTEM,
         Some(Metrics::new(16, 16).scale(scale as i32)),
-        [0, 32, 1],
-        [256, 256],
-        Some(TextBounds::new(8, 32, 190, 0)),
+        Vec3::new(0.0, 32.0, 1.0),
+        Vec2::new(256.0, 256.0),
+        Some(TextBounds::new(8.0, 32.0, 190.0, 0.0)),
     );
 
     text.set_buffer_size(size.width as i32, size.height as i32);

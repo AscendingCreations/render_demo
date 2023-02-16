@@ -31,8 +31,8 @@ struct VertexInput {
     @location(1) position: vec3<f32>,
     @location(2) size: vec2<f32>,
     @location(3) border_width: f32,
-    @location(4) container_data: vec2<u32>,
-    @location(5) border_data: vec2<u32>,
+    @location(4) container_data: vec4<f32>,
+    @location(5) border_data: vec4<f32>,
     @location(6) layer: u32,
     @location(7) border_layer: u32,
     @location(8) radius: f32,
@@ -43,8 +43,8 @@ struct VertexOutput {
     @location(0) position: vec2<f32>,
     @location(1) container_uv: vec2<f32>,
     @location(2) border_uv: vec2<f32>,
-    @location(3) container_data: vec4<u32>,
-    @location(4) border_data: vec4<u32>,
+    @location(3) container_data: vec4<f32>,
+    @location(4) border_data: vec4<f32>,
     @location(5) size: vec2<f32>,
     @location(6) border_width: f32,
     @location(7) radius: f32,
@@ -75,21 +75,21 @@ fn vertex(
 ) -> VertexOutput {
     var result: VertexOutput;
     let v = vertex.vertex_idx % 4u;
-    let tex_data = unpack_tex_data(vertex.container_data);
-    let bor_data = unpack_tex_data(vertex.border_data);
+    let tex_data = vertex.container_data;
+    let bor_data = vertex.border_data;
     let size = textureDimensions(tex);
     let fsize = vec2<f32> (f32(size.x), f32(size.y));
     var pos = vertex.position;
 
      switch v {
         case 1u: {
-            result.container_uv = vec2<f32>(f32(tex_data[2]), f32(tex_data[3]));
-            result.border_uv = vec2<f32>(f32(bor_data[2]), f32(bor_data[3]));
+            result.container_uv = vec2<f32>(tex_data[2], tex_data[3]);
+            result.border_uv = vec2<f32>(bor_data[2], bor_data[3]);
             pos.x += vertex.size.x;
         }
         case 2u: {
-            result.container_uv = vec2<f32>(f32(tex_data[2]), 0.0);
-            result.border_uv = vec2<f32>(f32(bor_data[2]), 0.0);
+            result.container_uv = vec2<f32>(tex_data[2], 0.0);
+            result.border_uv = vec2<f32>(bor_data[2], 0.0);
             pos.x += vertex.size.x;
             pos.y += vertex.size.y;
         }
@@ -99,8 +99,8 @@ fn vertex(
             pos.y += vertex.size.y;
         }
         default: {
-            result.container_uv = vec2<f32>(0.0, f32(tex_data[3]));
-            result.border_uv = vec2<f32>(0.0, f32(bor_data[3]));
+            result.container_uv = vec2<f32>(0.0, tex_data[3]);
+            result.border_uv = vec2<f32>(0.0, bor_data[3]);
         }
     }
 
@@ -143,13 +143,13 @@ fn distance_alg(
 @fragment
 fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
     let container_coords = vec2<f32>(
-        (f32(vertex.container_data[0]) + vertex.container_uv.x) / vertex.tex_size.x,
-        (f32(vertex.container_data[1]) + vertex.container_uv.y) / vertex.tex_size.y
+        (vertex.container_data[0] + vertex.container_uv.x) / vertex.tex_size.x,
+        (vertex.container_data[1] + vertex.container_uv.y) / vertex.tex_size.y
     );
         
     let border_coords = vec2<f32>(
-        (f32(vertex.border_data[0]) + vertex.border_uv.x) / vertex.tex_size.x,
-        (f32(vertex.border_data[1]) + vertex.border_uv.y) / vertex.tex_size.y
+        (vertex.border_data[0] + vertex.border_uv.x) / vertex.tex_size.x,
+        (vertex.border_data[1] + vertex.border_uv.y) / vertex.tex_size.y
     );
 
     let border_color = textureSampleLevel(tex, tex_sample, border_coords, vertex.border_layer, 1.0);

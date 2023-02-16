@@ -247,7 +247,7 @@ impl<T> Widgets<T> {
     }
 
     //This will Advance the children into the Back of the Zlist allowing them to
-    //render again.
+    //render on top.
     fn widget_show_children(&mut self, control: &WidgetRef) {
         for child_handle in &control.borrow().visible {
             let child = self.get_widget(*child_handle);

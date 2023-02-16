@@ -30,9 +30,9 @@ struct VertexInput {
     @location(0) v_pos: vec2<f32>,
     @location(1) position: vec3<f32>,
     @location(2) hw: vec2<f32>,
-    @location(3) tex_data: vec2<u32>,
+    @location(3) tex_data: vec4<f32>,
     @location(4) color: u32,
-    @location(5) frames: u32,
+    @location(5) frames: vec2<f32>,
     @location(6) animate: u32,
     @location(7) use_camera: u32,
     @location(8) time: u32,
@@ -42,7 +42,7 @@ struct VertexInput {
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) tex_coords: vec2<f32>,
-    @location(1) tex_data: vec4<u32>,
+    @location(1) tex_data: vec4<f32>,
     @location(2) col: vec4<f32>,
     @location(3) frames: vec2<u32>,
     @location(4) size: vec2<f32>,
@@ -84,16 +84,16 @@ fn vertex(
     let v = vertex.vertex_idx % 4u;
     let size = textureDimensions(tex);
     let fsize = vec2<f32> (f32(size.x), f32(size.y));
-    let tex_data = unpack_tex_data(vertex.tex_data);
+    let tex_data = vertex.tex_data;
     var pos = vertex.position;
 
     switch v {
         case 1u: {
-            result.tex_coords = vec2<f32>(f32(tex_data[2]), f32(tex_data[3]));
+            result.tex_coords = vec2<f32>(tex_data[2], tex_data[3]);
             pos.x += vertex.hw.x;
         }
         case 2u: {
-            result.tex_coords = vec2<f32>(f32(tex_data[2]), 0.0);
+            result.tex_coords = vec2<f32>(tex_data[2], 0.0);
             pos.x += vertex.hw.x;
             pos.y += vertex.hw.y;
         }
@@ -102,7 +102,7 @@ fn vertex(
             pos.y += vertex.hw.y;
         }
         default: {
-            result.tex_coords = vec2<f32>(0.0, f32(tex_data[3]));
+            result.tex_coords = vec2<f32>(0.0, tex_data[3]);
         }
     }
 
@@ -115,7 +115,7 @@ fn vertex(
     result.tex_data = tex_data;
     result.layer = vertex.layer;
     result.col = unpack_color(vertex.color);
-    result.frames = vec2<u32>(u32(vertex.frames & 0xffffu), u32((vertex.frames & 0xffff0000u) >> 16u));
+    result.frames = vec2<u32>(u32(vertex.frames[0]), u32(vertex.frames[1]));
     result.size = fsize;
     result.animate = vertex.animate;
     result.time = vertex.time;
@@ -138,13 +138,13 @@ fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
         }
 
         coords = vec2<f32>(
-            (f32(((frame % yframes) * vertex.tex_data[2]) + vertex.tex_data[0]) + vertex.tex_coords.x) / vertex.size.x,
-            (f32(((frame / yframes) * vertex.tex_data[3]) + vertex.tex_data[1]) + vertex.tex_coords.y) / vertex.size.y
+            (f32((f32(frame % yframes) * vertex.tex_data[2]) + vertex.tex_data[0]) + vertex.tex_coords.x) / vertex.size.x,
+            (f32((f32(frame / yframes) * vertex.tex_data[3]) + vertex.tex_data[1]) + vertex.tex_coords.y) / vertex.size.y
         );
     } else {
         coords = vec2<f32>(
-            (f32(vertex.tex_data[0]) + vertex.tex_coords.x) / vertex.size.x,
-            (f32(vertex.tex_data[1]) + vertex.tex_coords.y) / vertex.size.y
+            (vertex.tex_data[0] + vertex.tex_coords.x) / vertex.size.x,
+            (vertex.tex_data[1] + vertex.tex_coords.y) / vertex.size.y
         );
     }
 

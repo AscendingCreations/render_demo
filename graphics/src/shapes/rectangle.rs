@@ -1,19 +1,18 @@
 use crate::{
     Allocation, AscendingError, AtlasGroup, Bounds, OtherError, RectVertex,
-    Texture,
+    Texture, Vec2, Vec3, Vec4,
 };
 use cosmic_text::Color;
 use image::{self, ImageBuffer};
-use std::cmp;
 
 pub struct Rect {
-    pub position: [u32; 3],
-    pub size: [u32; 2],
+    pub position: Vec3,
+    pub size: Vec2,
     pub border_width: u32,
     pub container: Option<Allocation>,
-    pub container_uv: [u16; 4],
+    pub container_uv: Vec4,
     pub border: Option<Allocation>,
-    pub border_uv: [u16; 4],
+    pub border_uv: Vec4,
     pub radius: Option<f32>,
     pub bytes: Vec<u8>,
     pub bounds: Bounds,
@@ -24,13 +23,13 @@ pub struct Rect {
 impl Default for Rect {
     fn default() -> Self {
         Self {
-            position: [0; 3],
-            size: [0; 2],
+            position: Vec3::default(),
+            size: Vec2::default(),
             border_width: 0,
             container: None,
-            container_uv: [0; 4],
+            container_uv: Vec4::default(),
             border: None,
-            border_uv: [0; 4],
+            border_uv: Vec4::default(),
             radius: None,
             bytes: Vec::new(),
             bounds: Bounds::default(),
@@ -110,27 +109,15 @@ impl Rect {
     }
 
     //Set the Rendering Offset of the container.
-    pub fn set_container_uv(
-        &mut self,
-        x: u16,
-        y: u16,
-        w: u16,
-        h: u16,
-    ) -> &mut Self {
-        self.container_uv = [x, y, w, h];
+    pub fn set_container_uv(&mut self, uv: Vec4) -> &mut Self {
+        self.container_uv = uv;
         self.changed = true;
         self
     }
 
     //Set the Rendering Offset of the border.
-    pub fn set_border_uv(
-        &mut self,
-        x: u16,
-        y: u16,
-        w: u16,
-        h: u16,
-    ) -> &mut Self {
-        self.border_uv = [x, y, w, h];
+    pub fn set_border_uv(&mut self, uv: Vec4) -> &mut Self {
+        self.border_uv = uv;
         self.changed = true;
         self
     }
@@ -155,27 +142,23 @@ impl Rect {
 
         let (u, v, width, height) = containter_tex.rect();
         let container_data = [
-            self.container_uv[0].saturating_add(u as u16),
-            self.container_uv[1].saturating_add(v as u16),
-            cmp::min(self.container_uv[2], width as u16),
-            cmp::min(self.container_uv[3], height as u16),
+            self.container_uv.x + u as f32,
+            self.container_uv.y + v as f32,
+            self.container_uv.z.min(width as f32),
+            self.container_uv.w.min(height as f32),
         ];
 
         let (u, v, width, height) = border_tex.rect();
         let border_data = [
-            self.border_uv[0].saturating_add(u as u16),
-            self.border_uv[1].saturating_add(v as u16),
-            cmp::min(self.border_uv[2], width as u16),
-            cmp::min(self.border_uv[3], height as u16),
+            self.border_uv.x + u as f32,
+            self.border_uv.y + v as f32,
+            self.border_uv.z.min(width as f32),
+            self.border_uv.w.min(height as f32),
         ];
 
         let buffer = RectVertex {
-            position: [
-                self.position[0] as f32,
-                self.position[1] as f32,
-                self.position[2] as f32,
-            ],
-            size: [self.size[0] as f32, self.size[1] as f32],
+            position: *self.position.as_array(),
+            size: *self.size.as_array(),
             border_width: self.border_width as f32,
             radius: self.radius.unwrap_or_default(),
             container_data,
@@ -202,12 +185,10 @@ impl Rect {
 
     pub fn check_mouse_bounds(&self, mouse_pos: [i32; 2]) -> bool {
         if let Some(radius) = self.radius {
-            let pos = [self.position[0] as f32, self.position[1] as f32];
+            let pos = [self.position.x, self.position.y];
 
-            let inner_size = [
-                self.size[0] as f32 - radius * 2.0,
-                self.size[1] as f32 - radius * 2.0,
-            ];
+            let inner_size =
+                [self.size.x - radius * 2.0, self.size.y - radius * 2.0];
             let top_left = [pos[0] + radius, pos[1] + radius];
             let bottom_right =
                 [top_left[0] + inner_size[0], top_left[1] + inner_size[1]];

@@ -1,48 +1,31 @@
-use crate::{AscendingError, AtlasGroup, Color, System, TextVertex};
+use crate::{
+    AscendingError, AtlasGroup, Color, System, TextVertex, Vec2, Vec3, Vec4,
+};
 use cosmic_text::{
     Attrs, Buffer, CacheKey, FontSystem, Metrics, SwashCache, SwashContent,
 };
 
 /// Controls the visible area of the text. Any text outside of the visible area will be clipped.
 /// This is given by glyphon.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct TextBounds {
-    /// The position of the left edge of the visible area.
-    pub left: i32,
-    /// The position of the top edge of the visible area.
-    pub top: i32,
-    /// The position of the right edge of the visible area.
-    pub right: i32,
-    /// The position of the bottom edge of the visible area.
-    pub bottom: i32,
-}
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct TextBounds(pub Vec4);
 
 impl TextBounds {
-    pub fn new(left: i32, top: i32, right: i32, bottom: i32) -> Self {
-        Self {
-            left,
-            top,
-            right,
-            bottom,
-        }
+    pub fn new(left: f32, top: f32, right: f32, bottom: f32) -> Self {
+        Self(Vec4::new(left, top, right, bottom))
     }
 }
 
 impl Default for TextBounds {
     fn default() -> Self {
-        Self {
-            left: i32::MIN,
-            top: i32::MIN,
-            right: i32::MAX,
-            bottom: i32::MAX,
-        }
+        Self(Vec4::new(f32::MIN, f32::MIN, f32::MAX, f32::MAX))
     }
 }
 
 pub struct Text {
     pub buffer: Buffer<'static>,
-    pub pos: [i32; 3],
-    pub size: [u32; 2],
+    pub pos: Vec3,
+    pub size: Vec2,
     pub default_color: Color,
     pub bounds: TextBounds,
     pub bytes: Vec<u8>,
@@ -56,8 +39,8 @@ impl Text {
     pub fn create_quad<Controls>(
         &mut self,
         cache: &mut SwashCache,
-        text_atlas: &mut AtlasGroup<CacheKey, (i32, i32)>,
-        emoji_atlas: &mut AtlasGroup<CacheKey, (i32, i32)>,
+        text_atlas: &mut AtlasGroup<CacheKey, Vec2>,
+        emoji_atlas: &mut AtlasGroup<CacheKey, Vec2>,
         queue: &wgpu::Queue,
         device: &wgpu::Device,
         system: &System<Controls>,
@@ -93,7 +76,10 @@ impl Text {
                                 &bitmap,
                                 width,
                                 height,
-                                (image.placement.left, image.placement.top),
+                                Vec2::new(
+                                    image.placement.left as f32,
+                                    image.placement.top as f32,
+                                ),
                                 device,
                                 queue,
                             )
@@ -106,7 +92,10 @@ impl Text {
                                 &bitmap,
                                 width,
                                 height,
-                                (image.placement.left, image.placement.top),
+                                Vec2::new(
+                                    image.placement.left as f32,
+                                    image.placement.top as f32,
+                                ),
                                 device,
                                 queue,
                             )
@@ -119,7 +108,7 @@ impl Text {
         let mut text_buf = Vec::with_capacity(64 * 4);
 
         for run in self.buffer.layout_runs() {
-            let line_y = run.line_y;
+            let line_y = run.line_y as f32;
 
             for glyph in run.glyphs.iter() {
                 let (allocation, is_color) = if let Some(allocation) =
@@ -137,29 +126,25 @@ impl Text {
                 let position = allocation.data;
                 let (u, v, width, height) = allocation.rect();
                 let (mut u, mut v, mut width, mut height) =
-                    (u as i32, v as i32, width as i32, height as i32);
+                    (u as f32, v as f32, width as f32, height as f32);
 
                 let (mut x, mut y) = (
-                    (self.pos[0] + glyph.x_int + position.0),
-                    (self.pos[1] + glyph.y_int - line_y),
+                    (self.pos.x + glyph.x_int as f32 + position.x),
+                    (self.pos.y + glyph.y_int as f32 - line_y),
                 );
 
-                let color = if is_color {
-                    Color::rgba(255, 255, 255, 255)
-                } else {
-                    match glyph.color_opt {
+                let color = is_color
+                    .then(|| Color::rgba(255, 255, 255, 255))
+                    .unwrap_or(match glyph.color_opt {
                         Some(color) => color,
                         None => self.default_color,
-                    }
-                };
+                    });
 
                 //Bounds used from Glyphon
-                let bounds_min_x = self.bounds.left.max(0);
-                let bounds_min_y = self.bounds.bottom.max(0);
-                let bounds_max_x =
-                    self.bounds.right.min(system.screen_size[0] as i32);
-                let bounds_max_y =
-                    self.bounds.top.min(system.screen_size[1] as i32);
+                let bounds_min_x = self.bounds.0.x.max(0.0);
+                let bounds_min_y = self.bounds.0.w.max(0.0);
+                let bounds_max_x = self.bounds.0.z.min(system.screen_size[0]);
+                let bounds_max_y = self.bounds.0.y.min(system.screen_size[1]);
 
                 // Starts beyond right edge or ends beyond left edge
                 let max_x = x + width;
@@ -202,9 +187,9 @@ impl Text {
                 }
 
                 let default = TextVertex {
-                    position: [x as f32, y as f32, self.pos[2] as f32],
-                    hw: [width as f32, height as f32],
-                    tex_coord: [u as f32, v as f32],
+                    position: [x, y, self.pos.z],
+                    hw: [width, height],
+                    tex_coord: [u, v],
                     layer: allocation.layer as u32,
                     color: color.0,
                     use_camera: u32::from(self.use_camera),
@@ -222,8 +207,8 @@ impl Text {
     pub fn new(
         font_system: &'static FontSystem,
         metrics: Option<Metrics>,
-        pos: [i32; 3],
-        size: [u32; 2],
+        pos: Vec3,
+        size: Vec2,
         bounds: Option<TextBounds>,
     ) -> Self {
         Self {
@@ -263,8 +248,8 @@ impl Text {
     pub fn update<Controls>(
         &mut self,
         cache: &mut SwashCache,
-        text_atlas: &mut AtlasGroup<CacheKey, (i32, i32)>,
-        emoji_atlas: &mut AtlasGroup<CacheKey, (i32, i32)>,
+        text_atlas: &mut AtlasGroup<CacheKey, Vec2>,
+        emoji_atlas: &mut AtlasGroup<CacheKey, Vec2>,
         queue: &wgpu::Queue,
         device: &wgpu::Device,
         system: &System<Controls>,

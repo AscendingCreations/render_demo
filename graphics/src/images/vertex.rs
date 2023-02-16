@@ -6,9 +6,9 @@ use std::iter;
 pub struct ImageVertex {
     pub position: [f32; 3],
     pub hw: [f32; 2],
-    pub tex_data: [u16; 4],
+    pub tex_data: [f32; 4],
     pub color: u32,
-    pub frames: [u16; 2],
+    pub frames: [f32; 2],
     pub animate: u32,
     pub use_camera: u32,
     pub time: u32,
@@ -20,9 +20,9 @@ impl Default for ImageVertex {
         Self {
             position: [0.0; 3],
             hw: [0.0; 2],
-            tex_data: [0; 4],
+            tex_data: [0.0; 4],
             color: 0,
-            frames: [0; 2],
+            frames: [0.0; 2],
             animate: 0,
             use_camera: 1,
             time: 0,
@@ -33,7 +33,7 @@ impl Default for ImageVertex {
 
 impl InstanceLayout for ImageVertex {
     fn attributes() -> Vec<wgpu::VertexAttribute> {
-        wgpu::vertex_attr_array![1 => Float32x3, 2 => Float32x2, 3 => Uint32x2, 4 => Uint32, 5 => Uint32, 6 => Uint32, 7 => Uint32,8 => Uint32, 9 => Sint32 ]
+        wgpu::vertex_attr_array![1 => Float32x3, 2 => Float32x2, 3 => Float32x4, 4 => Uint32, 5 => Float32x2, 6 => Uint32, 7 => Uint32,8 => Uint32, 9 => Sint32 ]
             .to_vec()
     }
 
@@ -52,6 +52,6 @@ impl InstanceLayout for ImageVertex {
     }
 
     fn instance_stride() -> usize {
-        std::mem::size_of::<[f32; 13]>()
+        std::mem::size_of::<[f32; 16]>()
     }
 }

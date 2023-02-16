@@ -1,17 +1,16 @@
-use crate::{Allocation, Color, ImageVertex};
-use std::cmp;
+use crate::{Allocation, Color, ImageVertex, Vec2, Vec3, Vec4};
 
 /// rendering data for all images.
 pub struct Image {
-    pub pos: [i32; 3],
-    pub hw: [u16; 2],
+    pub pos: Vec3,
+    pub hw: Vec2,
     // used for static offsets or animation Start positions
-    pub uv: [u16; 4],
+    pub uv: Vec4,
     /// Color dah  number / 255.
     pub color: Color,
     // frames, frames_per_row: this will cycle thru
     // frames per rox at the uv start.
-    pub frames: [u16; 2],
+    pub frames: Vec2,
     /// in millsecs 1000 = 1sec
     pub switch_time: u32,
     /// turn on animation if set.
@@ -27,10 +26,10 @@ pub struct Image {
 impl Default for Image {
     fn default() -> Self {
         Self {
-            pos: [0; 3],
-            hw: [0; 2],
-            uv: [0; 4],
-            frames: [0; 2],
+            pos: Vec3::default(),
+            hw: Vec2::default(),
+            uv: Vec4::default(),
+            frames: Vec2::default(),
             switch_time: 0,
             animate: false,
             use_camera: true,
@@ -44,13 +43,6 @@ impl Default for Image {
 
 impl Image {
     pub fn create_quad(&mut self) {
-        let (x, y, w, h) = (
-            self.pos[0] as f32,
-            self.pos[1] as f32,
-            self.hw[0] as f32,
-            self.hw[1] as f32,
-        );
-
         let allocation = match &self.texture {
             Some(allocation) => allocation,
             None => return,
@@ -58,18 +50,18 @@ impl Image {
 
         let (u, v, width, height) = allocation.rect();
         let (u, v, width, height) = (
-            self.uv[0].saturating_add(u as u16),
-            self.uv[1].saturating_add(v as u16),
-            cmp::min(self.uv[2], width as u16),
-            cmp::min(self.uv[3], height as u16),
+            self.uv.x + u as f32,
+            self.uv.y + v as f32,
+            self.uv.z.min(width as f32),
+            self.uv.w.min(height as f32),
         );
 
         let instance = ImageVertex {
-            position: [x, y, self.pos[2] as f32],
-            hw: [w, h],
+            position: *self.pos.as_array(),
+            hw: *self.hw.as_array(),
             tex_data: [u, v, width, height],
             color: self.color.0,
-            frames: self.frames,
+            frames: *self.frames.as_array(),
             animate: u32::from(self.animate),
             use_camera: u32::from(self.use_camera),
             time: self.switch_time,

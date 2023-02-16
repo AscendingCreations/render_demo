@@ -1,4 +1,5 @@
 #![allow(dead_code, clippy::collapsible_match, unused_imports)]
+#![feature(option_result_contains)]
 use backtrace::Backtrace;
 use camera::{
     controls::{FlatControls, FlatSettings},

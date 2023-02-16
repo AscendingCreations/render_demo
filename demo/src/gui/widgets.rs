@@ -73,7 +73,7 @@ impl<T> Widgets<T> {
         window: &mut Window,
         position: [i32; 2],
         screensize: [i32; 2],
-        _user_data: &mut T,
+        user_data: &mut T,
     ) {
         self.new_mouse_pos = position;
 
@@ -85,33 +85,149 @@ impl<T> Widgets<T> {
             } else {
                 panic!("Not Supported. This will be a Soft warning via log later on.")
             }
-        } else if let Some(handle) = self.focused {
-            let focused = self.get_widget(handle);
+        } else {
+            if let Some(handle) = self.focused {
+                let focused = self.get_widget(handle);
 
-            if focused.borrow().actions.get(UiFlags::Moving) {
-                let pos = [
-                    position[0] - self.mouse_pos[0],
-                    position[1] - self.mouse_pos[1],
-                ];
-                let mut bounds = focused.borrow().ui.get_bounds();
+                if focused.borrow().actions.get(UiFlags::Moving) {
+                    let pos = [
+                        position[0] - self.mouse_pos[0],
+                        position[1] - self.mouse_pos[1],
+                    ];
+                    let mut bounds = focused.borrow().ui.get_bounds();
 
-                if bounds.0 + pos[0] <= 0
-                    || bounds.1 + pos[1] <= 0
-                    || bounds.0 + bounds.2 + pos[0] >= screensize[0]
-                    || bounds.1 + bounds.3 + pos[1] >= screensize[1]
-                {
-                    return;
+                    if bounds.0 + pos[0] <= 0
+                        || bounds.1 + pos[1] <= 0
+                        || bounds.0 + bounds.2 + pos[0] >= screensize[0]
+                        || bounds.1 + bounds.3 + pos[1] >= screensize[1]
+                    {
+                        return;
+                    }
+
+                    bounds.0 += pos[0];
+                    bounds.1 += pos[1];
+
+                    focused.borrow_mut().ui.set_position([bounds.0, bounds.1]);
+                    self.widget_position_update(&mut focused.borrow_mut());
                 }
-
-                bounds.0 += pos[0];
-                bounds.1 += pos[1];
-
-                focused.borrow_mut().ui.set_position([bounds.0, bounds.1]);
-                self.widget_position_update(&mut focused.borrow_mut());
             }
+
+            self.mouse_over_event(user_data);
         }
 
         self.mouse_pos = position;
+    }
+
+    fn mouse_over_event(&mut self, user_data: &mut T) {
+        for &handle in self.zlist.iter().rev() {
+            let control = self.get_widget(handle);
+
+            if control.borrow().ui.check_mouse_bounds(self.mouse_pos)
+                && self.widget_usable(&control)
+            {
+                if control.borrow().actions.get(UiFlags::CanClickBehind) {
+                    if let Some(parent_handle) = control.borrow().parent {
+                        let parent = self.get_widget(parent_handle);
+
+                        if !parent.borrow().actions.get(UiFlags::Moving) {
+                            self.widget_mouse_over(&parent, true, user_data);
+                        }
+
+                        return;
+                    }
+                } else {
+                    self.widget_mouse_over(&control, true, user_data);
+                    return;
+                }
+            } else if !control.borrow().actions.get(UiFlags::Moving) {
+                //exited control.
+            }
+        }
+    }
+
+    fn widget_mouse_over_callback(
+        &mut self,
+        control: &WidgetRef,
+        entered: bool,
+        user_data: &mut T,
+    ) {
+        let key = control.borrow().callback_key(CallBack::MousePresent);
+        let mut commands = Commands::default();
+
+        if let Some(InternalCallBacks::MousePresent(present)) =
+            self.callbacks.get(&key)
+        {
+            present(&mut control.borrow_mut(), entered);
+        }
+
+        if let Some(CallBacks::MousePresent(present)) =
+            self.user_callbacks.get(&key)
+        {
+            present(
+                &mut control.borrow_mut(),
+                entered,
+                &mut commands,
+                user_data,
+            );
+        }
+    }
+
+    fn widget_mouse_over(
+        &mut self,
+        control: &WidgetRef,
+        entered: bool,
+        user_data: &mut T,
+    ) {
+        if entered {
+            if self.over.is_some() && !self.over.contains(&control.borrow().id)
+            {
+                let over = self.get_widget(self.over.unwrap());
+
+                over.borrow_mut().actions.clear(UiFlags::MouseOver);
+                control.borrow_mut().actions.set(UiFlags::MouseOver);
+                self.widget_mouse_over_callback(&over, false, user_data);
+                self.over = Some(control.borrow().id);
+                self.widget_mouse_over_callback(control, true, user_data);
+            } else if self.over.is_none() {
+                self.over = Some(control.borrow().id);
+                control.borrow_mut().actions.set(UiFlags::MouseOver);
+                self.widget_mouse_over_callback(control, true, user_data);
+            }
+        } else if let Some(over_handle) = self.over {
+            let over = self.get_widget(over_handle);
+
+            if !over.borrow().ui.check_mouse_bounds(self.mouse_pos) {}
+            self.over = None;
+            control.borrow_mut().actions.clear(UiFlags::MouseOver);
+            self.widget_mouse_over_callback(control, false, user_data);
+        }
+    }
+
+    fn widget_usable(&self, control: &WidgetRef) -> bool {
+        if control.borrow().actions.get(UiFlags::AlwaysUseable) {
+            return true;
+        }
+
+        if !control.borrow().actions.get(UiFlags::IsFocused) {
+            let mut parent_handle = control.borrow().parent;
+
+            while let Some(handle) = parent_handle {
+                let parent = self.get_widget(handle);
+
+                if (parent.borrow().actions.get(UiFlags::CanFocus)
+                    && parent.borrow().actions.get(UiFlags::IsFocused))
+                    || parent.borrow().actions.get(UiFlags::AlwaysUseable)
+                {
+                    return true;
+                }
+
+                parent_handle = parent.borrow().parent;
+            }
+
+            false
+        } else {
+            true
+        }
     }
 
     fn widget_manual_focus(&mut self, control: &WidgetRef) {

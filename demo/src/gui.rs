@@ -1,11 +1,11 @@
-mod renderer;
-mod widgets;
 mod callbacks;
-mod widget;
+mod renderer;
 mod values;
+mod widget;
+mod widgets;
 
-pub use values::ReturnValue;
 pub use callbacks::*;
-pub use widget::*;
 pub use renderer::*;
+pub use values::ReturnValue;
+pub use widget::*;
 pub use widgets::*;

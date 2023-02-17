@@ -36,7 +36,7 @@ pub(crate) enum CallBack {
 }
 
 pub type InternalDrawRef =
-    Box<dyn Fn(&mut Widget, FrameTime, &mut GuiRender, &mut Renderer)>;
+    Box<dyn Fn(&mut Widget, &FrameTime, &mut GuiRender, &mut Renderer)>;
 pub type InternalBooleanRef = Box<dyn Fn(&mut Widget, bool)>;
 pub type InternalMouseScrollRef =
     Box<dyn Fn(&mut Widget, (f32, f32), ModifiersState)>;
@@ -59,7 +59,7 @@ pub enum InternalCallBacks {
 pub type DrawRef<T> = Box<
     dyn Fn(
         &mut Widget,
-        FrameTime,
+        &FrameTime,
         &mut GuiRender,
         &mut Renderer,
         &mut Commands,

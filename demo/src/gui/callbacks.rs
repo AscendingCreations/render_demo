@@ -30,6 +30,9 @@ pub(crate) enum CallBack {
     MousePress,
     KeyPress,
     PositionChange,
+    BoundsChange,
+    FocusChange,
+    ValueChanged,
 }
 
 pub type InternalDrawRef =

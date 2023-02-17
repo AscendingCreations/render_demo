@@ -31,6 +31,8 @@ pub struct Widgets<T> {
     focused: Option<Handle>,
     over: Option<Handle>,
     clicked: Option<Handle>,
+    widget_moving: Option<Handle>,
+    commands: Commands,
     mouse_clicked: [i32; 2],
     mouse_pos: [i32; 2],
     new_mouse_pos: [i32; 2],
@@ -52,6 +54,8 @@ impl<T> Widgets<T> {
             focused: Option::None,
             over: Option::None,
             clicked: Option::None,
+            widget_moving: Option::None,
+            commands: Commands::default(),
             mouse_clicked: [0; 2],
             mouse_pos: [0; 2],
             new_mouse_pos: [0; 2],
@@ -119,7 +123,7 @@ impl<T> Widgets<T> {
     }
 
     fn mouse_over_event(&mut self, user_data: &mut T) {
-        for &handle in self.zlist.iter().rev() {
+        for &handle in self.zlist.clone().iter().rev() {
             let control = self.get_widget(handle);
 
             if control.borrow().ui.check_mouse_bounds(self.mouse_pos)
@@ -140,7 +144,7 @@ impl<T> Widgets<T> {
                     return;
                 }
             } else if !control.borrow().actions.get(UiFlags::Moving) {
-                //exited control.
+                self.widget_mouse_over(&control, false, user_data);
             }
         }
     }
@@ -152,7 +156,6 @@ impl<T> Widgets<T> {
         user_data: &mut T,
     ) {
         let key = control.borrow().callback_key(CallBack::MousePresent);
-        let mut commands = Commands::default();
 
         if let Some(InternalCallBacks::MousePresent(present)) =
             self.callbacks.get(&key)
@@ -166,7 +169,7 @@ impl<T> Widgets<T> {
             present(
                 &mut control.borrow_mut(),
                 entered,
-                &mut commands,
+                &mut self.commands,
                 user_data,
             );
         }
@@ -179,7 +182,9 @@ impl<T> Widgets<T> {
         user_data: &mut T,
     ) {
         if entered {
-            if self.over.is_some() && !self.over.contains(&control.borrow().id)
+            if self.over.is_some()
+                && !self.over.contains(&control.borrow().id)
+                && self.widget_moving.is_none()
             {
                 let over = self.get_widget(self.over.unwrap());
 
@@ -196,10 +201,14 @@ impl<T> Widgets<T> {
         } else if let Some(over_handle) = self.over {
             let over = self.get_widget(over_handle);
 
-            if !over.borrow().ui.check_mouse_bounds(self.mouse_pos) {}
-            self.over = None;
-            control.borrow_mut().actions.clear(UiFlags::MouseOver);
-            self.widget_mouse_over_callback(control, false, user_data);
+            if !over.borrow().ui.check_mouse_bounds(self.mouse_pos)
+                && over.borrow().actions.get(UiFlags::MouseOver)
+                && self.widget_moving.is_none()
+            {
+                self.over = None;
+                control.borrow_mut().actions.clear(UiFlags::MouseOver);
+                self.widget_mouse_over_callback(control, false, user_data);
+            }
         }
     }
 
@@ -251,6 +260,11 @@ impl<T> Widgets<T> {
                     parent.visible.remove(pos);
                     parent.visible.push_back(handle);
                 }
+            } else if let Some(pos) =
+                self.visible.iter().position(|x| *x == handle)
+            {
+                self.visible.remove(pos);
+                self.visible.push_back(handle);
             }
 
             if let Some(focused_handle) = self.focused {
@@ -273,6 +287,162 @@ impl<T> Widgets<T> {
     pub fn remove_widget_by_id(&mut self, id: Identity) {
         let handle = self.name_map.get(&id).unwrap();
         self.widget_clear_self(&self.get_widget(*handle));
+    }
+
+    pub fn show_widget_by_handle(&mut self, handle: Handle) {
+        self.widget_show(&self.get_widget(handle));
+    }
+
+    pub fn show_widget_by_id(&mut self, id: Identity) {
+        let handle = self.name_map.get(&id).unwrap();
+        self.widget_show(&self.get_widget(*handle));
+    }
+
+    pub fn hide_widget_by_handle(&mut self, handle: Handle) {
+        self.widget_hide(&self.get_widget(handle));
+    }
+
+    pub fn hide_widget_by_id(&mut self, id: Identity) {
+        let handle = self.name_map.get(&id).unwrap();
+        self.widget_hide(&self.get_widget(*handle));
+    }
+
+    fn widget_show(&mut self, control: &WidgetRef) {
+        let handle = control.borrow().id;
+
+        if control.borrow().parent.is_none() {
+            self.visible.push_back(handle);
+
+            if let Some(pos) = self.hidden.iter().position(|x| *x == handle) {
+                self.hidden.remove(pos);
+            }
+        }
+
+        self.zlist.push_back(handle);
+        self.widget_show_children(control);
+
+        if !self.widget_is_focused(control) && self.focused.is_some() {
+            let focused = self.get_widget(self.focused.unwrap());
+
+            self.widget_manual_focus(&focused);
+        }
+    }
+
+    fn widget_hide(&mut self, control: &WidgetRef) {
+        let handle = control.borrow().id;
+
+        if control.borrow().parent.is_none() {
+            if let Some(pos) = self.visible.iter().position(|x| *x == handle) {
+                self.visible.remove(pos);
+            }
+
+            self.hidden.push(handle);
+        }
+
+        if let Some(pos) = self.zlist.iter().position(|x| *x == handle) {
+            self.zlist.remove(pos);
+        }
+
+        self.widget_hide_children(control);
+
+        if self.focused == Some(handle) {
+            self.focused = None;
+        }
+    }
+
+    pub fn add_widget_by_handle(
+        &mut self,
+        parent_handle: Option<Handle>,
+        control: WidgetRef,
+    ) {
+        if let Some(handle) = parent_handle {
+            self.widget_add(Some(&self.get_widget(handle)), control);
+        } else {
+            self.widget_add(None, control);
+        }
+    }
+
+    pub fn add_widget_by_id(
+        &mut self,
+        parent_id: Option<Identity>,
+        control: WidgetRef,
+    ) {
+        if let Some(id) = parent_id {
+            let handle = self.name_map.get(&id).unwrap();
+            self.widget_add(Some(&self.get_widget(*handle)), control);
+        } else {
+            self.widget_add(None, control);
+        }
+    }
+
+    pub fn add_hidden_widget_by_handle(
+        &mut self,
+        parent_handle: Option<Handle>,
+        control: WidgetRef,
+    ) {
+        if let Some(handle) = parent_handle {
+            self.widget_add_hidden(Some(&self.get_widget(handle)), control);
+        } else {
+            self.widget_add_hidden(None, control);
+        }
+    }
+
+    pub fn add_hidden_widget_by_id(
+        &mut self,
+        parent_id: Option<Identity>,
+        control: WidgetRef,
+    ) {
+        if let Some(id) = parent_id {
+            let handle = self.name_map.get(&id).unwrap();
+            self.widget_add_hidden(Some(&self.get_widget(*handle)), control);
+        } else {
+            self.widget_add_hidden(None, control);
+        }
+    }
+
+    fn widget_add(&mut self, parent: Option<&WidgetRef>, control: WidgetRef) {
+        if self.name_map.contains_key(&control.borrow().identity) {
+            panic!("You can not use the same Identity for multiple widgets");
+        }
+
+        let handle = Handle(self.widgets.insert(control));
+        let control = self.get_widget(handle);
+
+        control.borrow_mut().id = handle;
+        self.name_map
+            .insert(control.borrow().identity.clone(), handle);
+
+        if parent.is_none() {
+            self.visible.push_back(handle);
+            self.zlist.push_back(handle);
+            self.widget_show_children(&control)
+        } else if let Some(parent) = parent {
+            parent.borrow_mut().visible.push_back(handle);
+            self.widget_show_children(parent);
+        }
+    }
+
+    fn widget_add_hidden(
+        &mut self,
+        parent: Option<&WidgetRef>,
+        control: WidgetRef,
+    ) {
+        if self.name_map.contains_key(&control.borrow().identity) {
+            panic!("You can not use the same Identity for multiple widgets even if hidden");
+        }
+
+        let handle = Handle(self.widgets.insert(control));
+        let control = self.get_widget(handle);
+
+        control.borrow_mut().id = handle;
+        self.name_map
+            .insert(control.borrow().identity.clone(), handle);
+
+        if parent.is_none() {
+            self.hidden.push(handle);
+        } else if let Some(parent) = parent {
+            parent.borrow_mut().hidden.push(handle);
+        }
     }
 
     fn widget_clear_self(&mut self, control: &WidgetRef) {
@@ -307,6 +477,24 @@ impl<T> Widgets<T> {
         let identity = control.borrow().identity.clone();
         if let Some(identity) = self.name_map.remove(&identity) {
             self.widgets.remove(identity.get_key());
+        }
+
+        let callbacks = [
+            CallBack::MousePress,
+            CallBack::BoundsChange,
+            CallBack::Draw,
+            CallBack::FocusChange,
+            CallBack::KeyPress,
+            CallBack::MousePresent,
+            CallBack::MouseScroll,
+            CallBack::PositionChange,
+            CallBack::ValueChanged,
+        ];
+
+        for callback in callbacks {
+            let key = control.borrow().callback_key(callback);
+            self.callbacks.remove(&key);
+            self.user_callbacks.remove(&key);
         }
 
         self.widget_clear_visible(control);
@@ -418,7 +606,6 @@ impl<T> Widgets<T> {
     ) {
         let mut mut_wdgt = control.borrow_mut();
         let key = mut_wdgt.callback_key(CallBack::MousePress);
-        let mut commands = Commands::new();
 
         if let Some(InternalCallBacks::MousePress(mouse_press)) =
             self.callbacks.get(&key)
@@ -434,7 +621,7 @@ impl<T> Widgets<T> {
                 self.button,
                 pressed,
                 self.modifier,
-                &mut commands,
+                &mut self.commands,
                 user_data,
             );
         }
@@ -464,8 +651,6 @@ impl<T> Widgets<T> {
 
                     self.clicked = Some(parent_handle);
                     self.widget_mouse_press_callbacks(&parent, true, user_data);
-
-                    return;
                 }
 
                 return;
@@ -473,6 +658,7 @@ impl<T> Widgets<T> {
 
             if refctrl.actions.get(UiFlags::MoveAble) && in_bounds {
                 refctrl.actions.set(UiFlags::Moving);
+                self.widget_moving = Some(refctrl.id);
             }
         }
 
@@ -524,10 +710,10 @@ impl<T> Widgets<T> {
             let parent = self.get_widget(parent_handle);
 
             if parent.borrow().actions.get(UiFlags::CanFocus) {
-                if parent.borrow().actions.get(UiFlags::CanFocus) {
+                if parent.borrow().actions.get(UiFlags::IsFocused) {
                     return true;
                 } else {
-                    //setmanualfocus
+                    self.widget_manual_focus(&parent);
 
                     if parent.borrow().actions.get(UiFlags::FocusClick) {
                         self.widget_set_clicked(&parent, user_data);
@@ -540,6 +726,26 @@ impl<T> Widgets<T> {
                 && control.borrow().parent == Some(parent_handle)
                 && control.borrow().actions.get(UiFlags::CanClickBehind)
             {
+                return true;
+            }
+
+            parent_opt = parent.borrow().parent;
+        }
+
+        false
+    }
+
+    fn widget_is_focused(&mut self, control: &WidgetRef) -> bool {
+        if control.borrow().actions.get(UiFlags::IsFocused) {
+            return true;
+        }
+
+        let mut parent_opt = control.borrow().parent;
+
+        while let Some(parent_handle) = parent_opt {
+            let parent = self.get_widget(parent_handle);
+
+            if parent.borrow().actions.get(UiFlags::IsFocused) {
                 return true;
             }
 
@@ -562,7 +768,7 @@ impl<T> Widgets<T> {
     }
 
     fn mouse_press(&mut self, user_data: &mut T) {
-        for handle in self.zlist.iter().rev() {
+        for handle in self.zlist.clone().iter().rev() {
             let child = self.get_widget(*handle);
 
             if child.borrow().actions.get(UiFlags::ClickAble)
@@ -588,12 +794,15 @@ impl<T> Widgets<T> {
         if let Some(focused_handle) = self.focused {
             let focused = self.get_widget(focused_handle);
 
-            if focused.borrow().actions.get(UiFlags::Moving) {
+            if focused.borrow().actions.get(UiFlags::Moving)
+                && self.widget_moving == Some(focused_handle)
+            {
                 focused.borrow_mut().actions.clear(UiFlags::Moving);
+                self.widget_moving = None;
             }
         }
 
-        for handle in self.zlist.iter().rev() {
+        for handle in self.zlist.clone().iter().rev() {
             let control = self.get_widget(*handle);
 
             if control.borrow().actions.get(UiFlags::ClickAble)
@@ -601,6 +810,13 @@ impl<T> Widgets<T> {
             {
                 if control.borrow().actions.get(UiFlags::CanMoveWindow) {
                     self.moving = false;
+                }
+
+                if control.borrow().actions.get(UiFlags::Moving)
+                    && self.widget_moving == Some(*handle)
+                {
+                    control.borrow_mut().actions.clear(UiFlags::Moving);
+                    self.widget_moving = None;
                 }
 
                 self.widget_mouse_press_callbacks(&control, false, user_data);

@@ -11,7 +11,7 @@ use super::CallBackKey;
 pub type WidgetRef = Rc<RefCell<Widget>>;
 
 #[derive(Eq, PartialEq, Hash, Copy, Clone)]
-pub struct Handle(usize);
+pub struct Handle(pub(crate) usize);
 
 impl Handle {
     pub fn get_key(&self) -> usize {

@@ -39,7 +39,7 @@ struct VertexInput {
 };
 
 struct VertexOutput {
-    @builtin(position) clip_position: vec4<f32>,
+    @invariant @builtin(position) clip_position: vec4<f32>,
     @location(0) position: vec2<f32>,
     @location(1) container_uv: vec2<f32>,
     @location(2) border_uv: vec2<f32>,

@@ -35,48 +35,62 @@ pub(crate) enum CallBack {
     ValueChanged,
 }
 
-pub type InternalDrawRef =
-    Box<dyn Fn(&mut Widget, &FrameTime, &mut GuiRender, &mut Renderer)>;
-pub type InternalBooleanRef = Box<dyn Fn(&mut Widget, bool)>;
-pub type InternalMouseScrollRef =
-    Box<dyn Fn(&mut Widget, (f32, f32), ModifiersState)>;
-pub type InternalMousePressRef =
-    Box<dyn Fn(&mut Widget, u32, bool, ModifiersState)>;
-pub type InternalKeyPressRef =
-    Box<dyn Fn(&mut Widget, KeyboardInput, ModifiersState)>;
+pub type InternalDrawRef<T> = Box<
+    dyn Fn(
+        &mut Widget,
+        &mut Widgets<T>,
+        &FrameTime,
+        &mut GuiRender,
+        &mut Renderer,
+    ),
+>;
+pub type InternalBooleanRef<T> =
+    Box<dyn Fn(&mut Widget, &mut Widgets<T>, bool) -> bool>;
+pub type InternalMouseScrollRef<T> = Box<
+    dyn Fn(&mut Widget, &mut Widgets<T>, (f32, f32), ModifiersState) -> bool,
+>;
+pub type InternalMousePressRef<T> = Box<
+    dyn Fn(&mut Widget, &mut Widgets<T>, u32, bool, ModifiersState) -> bool,
+>;
+pub type InternalKeyPressRef<T> = Box<
+    dyn Fn(&mut Widget, &mut Widgets<T>, KeyboardInput, ModifiersState) -> bool,
+>;
+pub type InternalUpdate<T> = Box<dyn Fn(&mut Widget, &mut Widgets<T>)>;
 
-pub enum InternalCallBacks {
-    Draw(InternalDrawRef),
-    MousePresent(InternalBooleanRef),
-    MouseScroll(InternalMouseScrollRef),
-    MousePress(InternalMousePressRef),
-    KeyPress(InternalKeyPressRef),
-    PositionChange(Box<dyn Fn(&mut Widget)>),
-    BoundsChange(Box<dyn Fn(&mut Widget)>),
-    FocusChange(InternalBooleanRef),
+pub enum InternalCallBacks<T> {
+    Draw(InternalDrawRef<T>),
+    MousePresent(InternalBooleanRef<T>),
+    MouseScroll(InternalMouseScrollRef<T>),
+    MousePress(InternalMousePressRef<T>),
+    KeyPress(InternalKeyPressRef<T>),
+    PositionChange(InternalUpdate<T>),
+    BoundsChange(InternalUpdate<T>),
+    FocusChange(InternalBooleanRef<T>),
 }
 
 pub type DrawRef<T> = Box<
     dyn Fn(
         &mut Widget,
+        &mut Widgets<T>,
         &FrameTime,
         &mut GuiRender,
         &mut Renderer,
-        &mut Commands,
         &mut T,
     ),
 >;
 pub type MousePresentRef<T> =
-    Box<dyn Fn(&mut Widget, bool, &mut Commands, &mut T)>;
-pub type MouseScrollRef<T> =
-    Box<dyn Fn(&mut Widget, (f32, f32), ModifiersState, &mut Commands, &mut T)>;
-pub type MousePressRef<T> =
-    Box<dyn Fn(&mut Widget, u32, bool, ModifiersState, &mut Commands, &mut T)>;
+    Box<dyn Fn(&mut Widget, &mut Widgets<T>, bool, &mut T)>;
+pub type MouseScrollRef<T> = Box<
+    dyn Fn(&mut Widget, &mut Widgets<T>, (f32, f32), ModifiersState, &mut T),
+>;
+pub type MousePressRef<T> = Box<
+    dyn Fn(&mut Widget, &mut Widgets<T>, u32, bool, ModifiersState, &mut T),
+>;
 pub type KeyPressRef<T> = Box<
-    dyn Fn(&mut Widget, KeyboardInput, ModifiersState, &mut Commands, &mut T),
+    dyn Fn(&mut Widget, &mut Widgets<T>, KeyboardInput, ModifiersState, &mut T),
 >;
 pub type ValueChangedRef<T> =
-    Box<dyn Fn(&mut Widget, ReturnValue, &mut Commands, &mut T)>;
+    Box<dyn Fn(&mut Widget, &mut Widgets<T>, ReturnValue, &mut T)>;
 
 pub enum CallBacks<T> {
     Draw(DrawRef<T>),
@@ -85,40 +99,4 @@ pub enum CallBacks<T> {
     MousePress(MousePressRef<T>),
     KeyPress(KeyPressRef<T>),
     ValueChanged(ValueChangedRef<T>),
-}
-
-#[derive(Default)]
-pub struct Commands {
-    pub commands: Vec<Command>,
-}
-
-impl Commands {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn push(&mut self, command: Command) {
-        self.commands.push(command);
-    }
-}
-
-//TODO Check what other commands may be needed!
-pub enum Command {
-    // Remove a widget by its known handle.
-    RemoveByHandle(Handle),
-
-    // Remove the widget by its known name and id
-    RemoveById(Identity),
-
-    // Use when adding new widgets that also have new parents.
-    AddWidgetToParentId { widget: Widget, id: Identity },
-
-    // Add widgets to existing parents.
-    AddWidgetToParentHandle { widget: Widget, handle: Handle },
-
-    // Tells the System the Value was changed So it can Call the User Function to update the user.
-    ValueChangedById { id: Identity, value: ReturnValue },
-
-    // Tells the System the Value was changed So it can Call the User Function to update the user.
-    ValueChangedByHandle { handle: Handle, value: ReturnValue },
 }

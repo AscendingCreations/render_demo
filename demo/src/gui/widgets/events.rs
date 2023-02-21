@@ -1,6 +1,6 @@
 use crate::{
-    CallBack, CallBackKey, CallBacks, Commands, FrameTime, GuiRender, Handle,
-    Identity, InternalCallBacks, UiFlags, Widget, WidgetRef, Widgets,
+    CallBack, CallBackKey, CallBacks, FrameTime, GuiRender, Handle, Identity,
+    InternalCallBacks, UiFlags, Widget, WidgetRef, Widgets,
 };
 use graphics::*;
 use slab::Slab;
@@ -23,27 +23,35 @@ impl<T> Widgets<T> {
         system_renderer: &mut Renderer,
         user_data: &mut T,
     ) {
-        for handle in &self.zlist {
+        for handle in &self.zlist.clone() {
             let widget = self.get_widget(*handle);
 
             let key = widget.borrow().callback_key(CallBack::Draw);
             let mut mut_wdgt = widget.borrow_mut();
 
-            if let Some(InternalCallBacks::Draw(draw)) =
-                self.callbacks.get(&key)
-            {
-                draw(&mut mut_wdgt, &time, ui_renderer, system_renderer);
+            if let Some(callback) = self.get_inner_callback(&key) {
+                if let InternalCallBacks::Draw(draw) = callback.as_ref() {
+                    draw(
+                        &mut mut_wdgt,
+                        self,
+                        &time,
+                        ui_renderer,
+                        system_renderer,
+                    );
+                }
             }
 
-            if let Some(CallBacks::Draw(draw)) = self.user_callbacks.get(&key) {
-                draw(
-                    &mut mut_wdgt,
-                    &time,
-                    ui_renderer,
-                    system_renderer,
-                    &mut self.commands,
-                    user_data,
-                );
+            if let Some(callback) = self.get_user_callback(&key) {
+                if let CallBacks::Draw(draw) = callback.as_ref() {
+                    draw(
+                        &mut mut_wdgt,
+                        self,
+                        &time,
+                        ui_renderer,
+                        system_renderer,
+                        user_data,
+                    );
+                }
             }
         }
     }

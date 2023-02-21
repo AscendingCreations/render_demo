@@ -1,6 +1,6 @@
 use crate::{
-    CallBack, CallBackKey, CallBacks, Commands, FrameTime, GuiRender, Handle,
-    Identity, InternalCallBacks, UiFlags, Widget, WidgetRef,
+    CallBack, CallBackKey, CallBacks, FrameTime, GuiRender, Handle, Identity,
+    InternalCallBacks, UiFlags, Widget, WidgetRef,
 };
 use graphics::*;
 use slab::Slab;
@@ -21,8 +21,8 @@ pub mod internals;
 #[derive(Default)]
 pub struct Widgets<T> {
     /// Callback mapper. Hashes must be different.
-    callbacks: HashMap<CallBackKey, InternalCallBacks>,
-    user_callbacks: HashMap<CallBackKey, CallBacks<T>>,
+    callbacks: HashMap<CallBackKey, Rc<InternalCallBacks<T>>>,
+    user_callbacks: HashMap<CallBackKey, Rc<CallBacks<T>>>,
     name_map: HashMap<Identity, Handle>,
     widgets: Slab<WidgetRef>,
     ///Contains All Visible widgets in rendering order
@@ -35,7 +35,6 @@ pub struct Widgets<T> {
     over: Option<Handle>,
     clicked: Option<Handle>,
     widget_moving: Option<Handle>,
-    commands: Commands,
     ///Saved States.
     mouse_clicked: [i32; 2],
     mouse_pos: [i32; 2],
@@ -59,7 +58,6 @@ impl<T> Widgets<T> {
             over: Option::None,
             clicked: Option::None,
             widget_moving: Option::None,
-            commands: Commands::default(),
             mouse_clicked: [0; 2],
             mouse_pos: [0; 2],
             new_mouse_pos: [0; 2],

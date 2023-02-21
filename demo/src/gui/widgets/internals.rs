@@ -1,6 +1,6 @@
 use crate::{
-    CallBack, CallBackKey, CallBacks, Commands, FrameTime, GuiRender, Handle,
-    Identity, InternalCallBacks, UiFlags, Widget, WidgetRef, Widgets,
+    CallBack, CallBackKey, CallBacks, FrameTime, GuiRender, Handle, Identity,
+    InternalCallBacks, UiFlags, Widget, WidgetRef, Widgets,
 };
 use graphics::*;
 use slab::Slab;
@@ -21,6 +21,20 @@ impl<T> Widgets<T> {
             .get(handle.get_key())
             .expect("ID Existed but widget does not exist?")
             .clone()
+    }
+
+    pub(crate) fn get_user_callback(
+        &self,
+        key: &CallBackKey,
+    ) -> Option<Rc<CallBacks<T>>> {
+        self.user_callbacks.get(key).cloned()
+    }
+
+    pub(crate) fn get_inner_callback(
+        &self,
+        key: &CallBackKey,
+    ) -> Option<Rc<InternalCallBacks<T>>> {
+        self.callbacks.get(key).cloned()
     }
 
     pub(crate) fn mouse_over_event(&mut self, user_data: &mut T) {
@@ -58,21 +72,17 @@ impl<T> Widgets<T> {
     ) {
         let key = control.borrow().callback_key(CallBack::MousePresent);
 
-        if let Some(InternalCallBacks::MousePresent(present)) =
-            self.callbacks.get(&key)
-        {
-            present(&mut control.borrow_mut(), entered);
+        if let Some(callback) = self.get_inner_callback(&key) {
+            if let InternalCallBacks::MousePresent(present) = callback.as_ref()
+            {
+                present(&mut control.borrow_mut(), self, entered);
+            }
         }
 
-        if let Some(CallBacks::MousePresent(present)) =
-            self.user_callbacks.get(&key)
-        {
-            present(
-                &mut control.borrow_mut(),
-                entered,
-                &mut self.commands,
-                user_data,
-            );
+        if let Some(callback) = self.get_user_callback(&key) {
+            if let CallBacks::MousePresent(present) = callback.as_ref() {
+                present(&mut control.borrow_mut(), self, entered, user_data);
+            }
         }
     }
 
@@ -407,10 +417,12 @@ impl<T> Widgets<T> {
         mut_wdgt.actions.set(UiFlags::IsFocused);
         self.focused = Some(mut_wdgt.id);
 
-        if let Some(InternalCallBacks::FocusChange(focus_changed)) =
-            self.callbacks.get(&key)
-        {
-            focus_changed(&mut mut_wdgt, focused);
+        if let Some(callback) = self.get_inner_callback(&key) {
+            if let InternalCallBacks::FocusChange(focus_changed) =
+                callback.as_ref()
+            {
+                focus_changed(&mut mut_wdgt, self, focused);
+            }
         }
     }
 
@@ -423,23 +435,31 @@ impl<T> Widgets<T> {
         let mut mut_wdgt = control.borrow_mut();
         let key = mut_wdgt.callback_key(CallBack::MousePress);
 
-        if let Some(InternalCallBacks::MousePress(mouse_press)) =
-            self.callbacks.get(&key)
-        {
-            mouse_press(&mut mut_wdgt, self.button, pressed, self.modifier);
+        if let Some(callback) = self.get_inner_callback(&key) {
+            if let InternalCallBacks::MousePress(mouse_press) =
+                callback.as_ref()
+            {
+                mouse_press(
+                    &mut mut_wdgt,
+                    self,
+                    self.button,
+                    pressed,
+                    self.modifier,
+                );
+            }
         }
 
-        if let Some(CallBacks::MousePress(mouse_press)) =
-            self.user_callbacks.get(&key)
-        {
-            mouse_press(
-                &mut mut_wdgt,
-                self.button,
-                pressed,
-                self.modifier,
-                &mut self.commands,
-                user_data,
-            );
+        if let Some(callback) = self.get_user_callback(&key) {
+            if let CallBacks::MousePress(mouse_press) = callback.as_ref() {
+                mouse_press(
+                    &mut mut_wdgt,
+                    self,
+                    self.button,
+                    pressed,
+                    self.modifier,
+                    user_data,
+                );
+            }
         }
     }
 
@@ -656,10 +676,12 @@ impl<T> Widgets<T> {
     pub(crate) fn widget_position_update(&mut self, parent: &mut Widget) {
         let key = parent.callback_key(CallBack::PositionChange);
 
-        if let Some(InternalCallBacks::PositionChange(internal_update_pos)) =
-            self.callbacks.get(&key)
-        {
-            internal_update_pos(parent);
+        if let Some(callback) = self.get_inner_callback(&key) {
+            if let InternalCallBacks::PositionChange(internal_update_pos) =
+                callback.as_ref()
+            {
+                internal_update_pos(parent, self);
+            }
         }
 
         for handle in &parent.visible {
@@ -672,11 +694,13 @@ impl<T> Widgets<T> {
                     widget.borrow().callback_key(CallBack::PositionChange);
                 let mut mut_wdgt = widget.borrow_mut();
 
-                if let Some(InternalCallBacks::PositionChange(
-                    internal_update_pos,
-                )) = self.callbacks.get(&key)
-                {
-                    internal_update_pos(&mut mut_wdgt);
+                if let Some(callback) = self.get_inner_callback(&key) {
+                    if let InternalCallBacks::PositionChange(
+                        internal_update_pos,
+                    ) = callback.as_ref()
+                    {
+                        internal_update_pos(&mut mut_wdgt, self);
+                    }
                 }
             }
         }

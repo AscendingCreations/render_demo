@@ -322,7 +322,7 @@ async fn main() -> Result<(), AscendingError> {
     )?;
     let text_buffer = InstanceBuffer::new(renderer.device());
     let mut font_cache: SwashCache<'static> = SwashCache::new(&FONT_SYSTEM);
-    let text_render = TextRender::new();
+    //let text_render = TextRender::new();
     let scale = renderer.window().current_monitor().unwrap().scale_factor();
 
     let mut text = Text::new(
@@ -358,7 +358,7 @@ async fn main() -> Result<(), AscendingError> {
         rects_buffer,
         rects_pipeline,
         rects_atlas,
-        text_render,
+        // text_render,
         text_atlas,
         emoji_atlas,
         text_pipeline,
@@ -462,29 +462,15 @@ async fn main() -> Result<(), AscendingError> {
                 .create_view(&wgpu::TextureViewDescriptor::default()),
         );
 
-        let mut update = false;
+        state.sprites.iter_mut().for_each(|sprite| {
+            state.sprite_buffer.add_buffer_store(sprite.update())
+        });
+        state
+            .sprite_buffer
+            .finalize(renderer.device(), renderer.queue());
 
-        for sprite in &mut state.sprites {
-            update = sprite.update() || update;
-        }
-
-        if update {
-            let mut bytes = Vec::with_capacity(state.sprites.len() * 4);
-
-            for sprite in &state.sprites {
-                bytes.extend_from_slice(&sprite.bytes);
-            }
-
-            state.sprite_buffer.set_from(
-                renderer.device(),
-                renderer.queue(),
-                &bytes,
-                &[],
-            );
-        }
-
-        let update = text
-            .update(
+        state.text_buffer.add_buffer_store(
+            text.update(
                 &mut font_cache,
                 &mut state.text_atlas,
                 &mut state.emoji_atlas,
@@ -492,62 +478,34 @@ async fn main() -> Result<(), AscendingError> {
                 renderer.device(),
                 &state.system,
             )
-            .unwrap();
+            .unwrap(),
+        );
+        state
+            .text_buffer
+            .finalize(renderer.device(), renderer.queue());
 
-        if update {
-            state.text_render.clear();
-            state.text_render.push(&text);
-            state.text_buffer.set_from(
-                renderer.device(),
-                renderer.queue(),
-                &state.text_render.text_bytes,
-                &[],
-            );
-        }
-
-        let update =
+        let (lower, upper) =
             state.map.update(renderer.queue(), &mut state.map_textures);
+        state.maplower_buffer.add_buffer_store(lower);
+        state.mapupper_buffer.add_buffer_store(upper);
+        state
+            .maplower_buffer
+            .finalize(renderer.device(), renderer.queue());
+        state
+            .mapupper_buffer
+            .finalize(renderer.device(), renderer.queue());
 
-        if update {
-            state.maplower_buffer.set_from(
-                renderer.device(),
-                renderer.queue(),
-                &state.map.lowerbytes,
-                &[],
-            );
+        state
+            .animation_buffer
+            .add_buffer_store(state.animation.update());
+        state
+            .animation_buffer
+            .finalize(renderer.device(), renderer.queue());
 
-            state.mapupper_buffer.set_from(
-                renderer.device(),
-                renderer.queue(),
-                &state.map.upperbytes,
-                &[],
-            );
-        }
-
-        let update = state.animation.update();
-
-        if update {
-            state.animation_buffer.set_from(
-                renderer.device(),
-                renderer.queue(),
-                &state.animation.bytes,
-                &[],
-            );
-        }
-
-        let update = state.rects.update();
-
-        if update {
-            state.rects_buffer.set_from(
-                renderer.device(),
-                renderer.queue(),
-                &state.rects.bytes,
-                &[Some(Bounds::new(
-                    Vec4::new(150.0, 150.0, 132.0, 32.0),
-                    32.0,
-                ))],
-            );
-        }
+        state.rects_buffer.add_buffer_store(state.rects.update());
+        state
+            .rects_buffer
+            .finalize(renderer.device(), renderer.queue());
 
         // Start encoding commands.
         let mut encoder = renderer.device().create_command_encoder(

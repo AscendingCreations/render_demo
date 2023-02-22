@@ -54,18 +54,19 @@ bitfield! {
     }
 }
 
-pub trait UI {
+pub trait Control {
     fn check_mouse_bounds(&self, mouse_pos: [i32; 2]) -> bool;
     fn get_mut_actions(&mut self) -> &mut UiField;
     fn get_bounds(&self) -> (i32, i32, i32, i32);
+    fn get_size(&self) -> (i32, i32);
     fn set_position(&mut self, position: [i32; 2]);
 }
 
-pub trait AnyData: UI {
+pub trait AnyData: Control {
     fn as_any(&self) -> &dyn Any;
 }
 
-impl<T: Any + UI> AnyData for T {
+impl<T: Any + Control> AnyData for T {
     fn as_any(&self) -> &dyn Any {
         self
     }

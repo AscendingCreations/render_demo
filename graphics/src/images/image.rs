@@ -1,4 +1,4 @@
-use crate::{Allocation, Color, ImageVertex, Vec2, Vec3, Vec4};
+use crate::{Allocation, BufferStoreRef, Color, ImageVertex, Vec2, Vec3, Vec4};
 
 /// rendering data for all images.
 pub struct Image {
@@ -18,7 +18,7 @@ pub struct Image {
     pub use_camera: bool,
     /// Texture area location in Atlas.
     pub texture: Option<Allocation>,
-    pub bytes: Vec<u8>,
+    pub store: BufferStoreRef,
     /// if anything got updated we need to update the buffers too.
     pub changed: bool,
 }
@@ -35,7 +35,7 @@ impl Default for Image {
             use_camera: true,
             color: Color::rgba(255, 255, 255, 255),
             texture: None,
-            bytes: Vec::new(),
+            store: BufferStoreRef::default(),
             changed: true,
         }
     }
@@ -68,7 +68,8 @@ impl Image {
             layer: allocation.layer as i32,
         };
 
-        self.bytes = bytemuck::bytes_of(&instance).to_vec();
+        self.store.borrow_mut().store = bytemuck::bytes_of(&instance).to_vec();
+        self.store.borrow_mut().changed = true;
         self.changed = false;
     }
 
@@ -80,13 +81,12 @@ impl Image {
     }
 
     /// used to check and update the vertex array.
-    pub fn update(&mut self) -> bool {
+    pub fn update(&mut self) -> BufferStoreRef {
         // if pos or tex_pos or color changed.
         if self.changed {
             self.create_quad();
-            true
-        } else {
-            false
         }
+
+        self.store.clone()
     }
 }

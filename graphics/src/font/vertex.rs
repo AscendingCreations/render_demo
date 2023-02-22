@@ -28,6 +28,10 @@ impl Default for TextVertex {
 }
 
 impl InstanceLayout for TextVertex {
+    fn is_bounded() -> bool {
+        false
+    }
+
     fn attributes() -> Vec<wgpu::VertexAttribute> {
         wgpu::vertex_attr_array![1 => Float32x3, 2 => Float32x2, 3 => Float32x2, 4 => Uint32, 5 => Uint32, 6 => Uint32, 7 => Uint32]
             .to_vec()

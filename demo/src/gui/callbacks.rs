@@ -1,4 +1,4 @@
-use crate::{GuiRender, Handle, Identity, ReturnValue, Widget, Widgets};
+use crate::{GuiRender, Handle, Identity, ReturnValue, Widget, UI};
 use graphics::*;
 use input::FrameTime;
 use std::any::Any;
@@ -36,26 +36,17 @@ pub(crate) enum CallBack {
 }
 
 pub type InternalDrawRef<T> = Box<
-    dyn Fn(
-        &mut Widget,
-        &mut Widgets<T>,
-        &FrameTime,
-        &mut GuiRender,
-        &mut Renderer,
-    ),
+    dyn Fn(&mut Widget, &mut UI<T>, &FrameTime, &mut GuiRender, &mut Renderer),
 >;
 pub type InternalBooleanRef<T> =
-    Box<dyn Fn(&mut Widget, &mut Widgets<T>, bool) -> bool>;
-pub type InternalMouseScrollRef<T> = Box<
-    dyn Fn(&mut Widget, &mut Widgets<T>, (f32, f32), ModifiersState) -> bool,
->;
-pub type InternalMousePressRef<T> = Box<
-    dyn Fn(&mut Widget, &mut Widgets<T>, u32, bool, ModifiersState) -> bool,
->;
-pub type InternalKeyPressRef<T> = Box<
-    dyn Fn(&mut Widget, &mut Widgets<T>, KeyboardInput, ModifiersState) -> bool,
->;
-pub type InternalUpdate<T> = Box<dyn Fn(&mut Widget, &mut Widgets<T>)>;
+    Box<dyn Fn(&mut Widget, &mut UI<T>, bool) -> bool>;
+pub type InternalMouseScrollRef<T> =
+    Box<dyn Fn(&mut Widget, &mut UI<T>, (f32, f32), ModifiersState) -> bool>;
+pub type InternalMousePressRef<T> =
+    Box<dyn Fn(&mut Widget, &mut UI<T>, u32, bool, ModifiersState) -> bool>;
+pub type InternalKeyPressRef<T> =
+    Box<dyn Fn(&mut Widget, &mut UI<T>, KeyboardInput, ModifiersState) -> bool>;
+pub type InternalUpdate<T> = Box<dyn Fn(&mut Widget, &mut UI<T>)>;
 
 pub enum InternalCallBacks<T> {
     Draw(InternalDrawRef<T>),
@@ -71,7 +62,7 @@ pub enum InternalCallBacks<T> {
 pub type DrawRef<T> = Box<
     dyn Fn(
         &mut Widget,
-        &mut Widgets<T>,
+        &mut UI<T>,
         &FrameTime,
         &mut GuiRender,
         &mut Renderer,
@@ -79,18 +70,15 @@ pub type DrawRef<T> = Box<
     ),
 >;
 pub type MousePresentRef<T> =
-    Box<dyn Fn(&mut Widget, &mut Widgets<T>, bool, &mut T)>;
-pub type MouseScrollRef<T> = Box<
-    dyn Fn(&mut Widget, &mut Widgets<T>, (f32, f32), ModifiersState, &mut T),
->;
-pub type MousePressRef<T> = Box<
-    dyn Fn(&mut Widget, &mut Widgets<T>, u32, bool, ModifiersState, &mut T),
->;
-pub type KeyPressRef<T> = Box<
-    dyn Fn(&mut Widget, &mut Widgets<T>, KeyboardInput, ModifiersState, &mut T),
->;
+    Box<dyn Fn(&mut Widget, &mut UI<T>, bool, &mut T)>;
+pub type MouseScrollRef<T> =
+    Box<dyn Fn(&mut Widget, &mut UI<T>, (f32, f32), ModifiersState, &mut T)>;
+pub type MousePressRef<T> =
+    Box<dyn Fn(&mut Widget, &mut UI<T>, u32, bool, ModifiersState, &mut T)>;
+pub type KeyPressRef<T> =
+    Box<dyn Fn(&mut Widget, &mut UI<T>, KeyboardInput, ModifiersState, &mut T)>;
 pub type ValueChangedRef<T> =
-    Box<dyn Fn(&mut Widget, &mut Widgets<T>, ReturnValue, &mut T)>;
+    Box<dyn Fn(&mut Widget, &mut UI<T>, ReturnValue, &mut T)>;
 
 pub enum CallBacks<T> {
     Draw(DrawRef<T>),

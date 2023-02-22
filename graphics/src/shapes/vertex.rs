@@ -30,6 +30,10 @@ impl Default for RectVertex {
 }
 
 impl InstanceLayout for RectVertex {
+    fn is_bounded() -> bool {
+        true
+    }
+
     fn attributes() -> Vec<wgpu::VertexAttribute> {
         wgpu::vertex_attr_array![1 => Float32x3, 2 => Float32x2, 3 => Float32, 4 => Float32x4, 5 => Float32x4, 6 => Uint32, 7 => Uint32, 8 => Float32]
             .to_vec()

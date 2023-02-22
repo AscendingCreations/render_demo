@@ -1,5 +1,5 @@
 use crate::Vec4;
-use std::{marker::PhantomData, ops::Range};
+use std::{cell::RefCell, marker::PhantomData, ops::Range, rc::Rc};
 use wgpu::util::DeviceExt;
 
 #[derive(Copy, Clone, Debug, Default)]
@@ -11,7 +11,18 @@ impl Bounds {
     }
 }
 
+pub type BufferStoreRef = Rc<RefCell<BufferStore>>;
+
+#[derive(Default)]
+pub struct BufferStore {
+    pub store: Vec<u8>,
+    pub bounds: Option<Bounds>,
+    pub changed: bool,
+    pub pos: Range<usize>,
+}
+
 pub trait InstanceLayout {
+    fn is_bounded() -> bool;
     ///WGPU's Shader Attributes
     fn attributes() -> Vec<wgpu::VertexAttribute>;
 
@@ -28,11 +39,14 @@ pub trait InstanceLayout {
 
 //This Holds onto all the instances Compressed into a byte array.
 pub struct InstanceBuffer<K: InstanceLayout> {
+    pub buffers: Vec<BufferStoreRef>,
     pub buffer: wgpu::Buffer,
     pub bounds: Vec<Option<Bounds>>,
     count: usize,
     len: usize,
     max: usize,
+    // this is a calculation of the buffers size when being marked as ready to add into the buffer.
+    needed_size: usize,
     // Ghost Data that doesnt Actually exist. Used to set the Generic to a trait.
     // without needing to set it to a variable that is loaded.
     phantom_data: PhantomData<K>,
@@ -40,8 +54,10 @@ pub struct InstanceBuffer<K: InstanceLayout> {
 
 impl<K: InstanceLayout> InstanceBuffer<K> {
     /// Used to create GpuBuffer from a BufferPass.
+    /// Only use this for creating a reusable buffer.
     pub fn create_buffer(device: &wgpu::Device, data: &[u8]) -> Self {
         InstanceBuffer {
+            buffers: Vec::with_capacity(256),
             buffer: device.create_buffer_init(
                 &wgpu::util::BufferInitDescriptor {
                     label: Some("Instance Buffer"),
@@ -54,8 +70,49 @@ impl<K: InstanceLayout> InstanceBuffer<K> {
             count: 0,
             len: 0,
             max: data.len(),
+            needed_size: 0,
             phantom_data: PhantomData,
         }
+    }
+
+    pub fn add_buffer_store(&mut self, store: BufferStoreRef) {
+        let size = store.borrow().store.len();
+
+        self.buffers.push(store);
+        self.needed_size += size;
+    }
+
+    pub fn finalize(&mut self, device: &wgpu::Device, queue: &wgpu::Queue) {
+        let mut changed = false;
+        let mut pos = 0;
+
+        if self.needed_size > self.max {
+            self.resize(device, self.needed_size / K::instance_stride());
+            changed = true;
+        }
+
+        self.count = self.needed_size / K::instance_stride();
+        self.len = self.needed_size;
+
+        for buf in &self.buffers {
+            let mut buffer = buf.borrow_mut();
+            let range = pos..pos + buffer.store.len();
+
+            if buffer.pos != range || changed || buffer.changed {
+                if K::is_bounded() {
+                    self.bounds.push(buffer.bounds);
+                }
+
+                buffer.pos = range;
+                buffer.changed = false;
+                queue.write_buffer(&self.buffer, pos as u64, &buffer.store);
+            }
+
+            pos += buffer.store.len();
+        }
+
+        self.needed_size = 0;
+        self.buffers.clear();
     }
 
     //private but resizes the buffer on the GPU when needed.
@@ -83,6 +140,7 @@ impl<K: InstanceLayout> InstanceBuffer<K> {
     /// Sets the count to array length / instance_stride.
     /// Sets the bounds 1 Per Counted Object for Scissoring.
     /// Will resize both vertex_buffer and index_buffer if bytes length is larger than vertex_max.
+    /// This will bypass the buffer optimizations. Avoid usage unless you need it.
     pub fn set_from(
         &mut self,
         device: &wgpu::Device,

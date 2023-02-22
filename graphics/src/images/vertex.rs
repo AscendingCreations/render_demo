@@ -32,6 +32,10 @@ impl Default for ImageVertex {
 }
 
 impl InstanceLayout for ImageVertex {
+    fn is_bounded() -> bool {
+        true
+    }
+
     fn attributes() -> Vec<wgpu::VertexAttribute> {
         wgpu::vertex_attr_array![1 => Float32x3, 2 => Float32x2, 3 => Float32x4, 4 => Uint32, 5 => Float32x2, 6 => Uint32, 7 => Uint32,8 => Uint32, 9 => Sint32 ]
             .to_vec()

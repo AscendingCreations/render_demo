@@ -1,4 +1,4 @@
-use crate::{MapTextures, MapVertex, Vec2};
+use crate::{BufferStoreRef, MapTextures, MapVertex, Vec2};
 use image::{self, ImageBuffer};
 
 #[allow(dead_code)]
@@ -57,9 +57,9 @@ pub struct Map {
     /// set to know the image array ID within the shader.
     pub layer: u32,
     /// vertex array in bytes. Does not need to get changed exept on map switch and location change.
-    pub lowerbytes: Vec<u8>,
+    pub lowerstore: BufferStoreRef,
     /// vertex array in bytes for fringe layers.
-    pub upperbytes: Vec<u8>,
+    pub upperstore: BufferStoreRef,
     /// Count of how many Filled Tiles Exist. this is to optimize out empty maps in rendering.
     pub filled_tiles: [u8; MapLayers::Count as usize],
     /// if the image changed we need to reupload it to the texture.
@@ -93,8 +93,13 @@ impl Map {
             }
         }
 
-        self.lowerbytes = bytemuck::cast_slice(&lowerbuffer).to_vec();
-        self.upperbytes = bytemuck::cast_slice(&upperbuffer).to_vec();
+        self.lowerstore.borrow_mut().store =
+            bytemuck::cast_slice(&lowerbuffer).to_vec();
+        self.lowerstore.borrow_mut().changed = true;
+        self.upperstore.borrow_mut().store =
+            bytemuck::cast_slice(&upperbuffer).to_vec();
+        self.upperstore.borrow_mut().changed = true;
+        self.changed = false;
     }
 
     pub fn get_tile(&mut self, x: u32, y: u32) -> (u32, u32, u32, u32) {
@@ -112,8 +117,8 @@ impl Map {
         Self {
             pos: Vec2::default(),
             layer: 0,
-            lowerbytes: Vec::new(),
-            upperbytes: Vec::new(),
+            lowerstore: BufferStoreRef::default(),
+            upperstore: BufferStoreRef::default(),
             filled_tiles: [0; MapLayers::Count as usize],
             image,
             img_changed: true,
@@ -151,7 +156,7 @@ impl Map {
         &mut self,
         queue: &wgpu::Queue,
         map_textures: &mut MapTextures,
-    ) -> bool {
+    ) -> (BufferStoreRef, BufferStoreRef) {
         // if pos or tex_pos or color changed.
         if self.img_changed {
             map_textures.update(queue, self.layer, self.image.as_raw());
@@ -160,11 +165,9 @@ impl Map {
 
         if self.changed {
             self.create_quad();
-            self.changed = false;
-            true
-        } else {
-            false
         }
+
+        (self.lowerstore.clone(), self.upperstore.clone())
     }
 }
 

@@ -42,7 +42,7 @@ where
     pub rects_pipeline: RectsRenderPipeline,
     pub rects_atlas: AtlasGroup,
     /// Text test stuff.
-    pub text_render: TextRender,
+    //pub text_render: TextRender,
     pub text_buffer: InstanceBuffer<TextVertex>,
     pub text_pipeline: TextRenderPipeline,
     pub text_atlas: AtlasGroup<CacheKey, Vec2>,

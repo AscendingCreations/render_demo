@@ -1,6 +1,6 @@
 use crate::{
-    Allocation, AscendingError, AtlasGroup, Bounds, OtherError, RectVertex,
-    Texture, Vec2, Vec3, Vec4,
+    Allocation, AscendingError, AtlasGroup, Bounds, BufferStoreRef, OtherError,
+    RectVertex, Texture, Vec2, Vec3, Vec4,
 };
 use cosmic_text::Color;
 use image::{self, ImageBuffer};
@@ -14,8 +14,7 @@ pub struct Rect {
     pub border: Option<Allocation>,
     pub border_uv: Vec4,
     pub radius: Option<f32>,
-    pub bytes: Vec<u8>,
-    pub bounds: Bounds,
+    pub store: BufferStoreRef,
     /// if anything got updated we need to update the buffers too.
     pub changed: bool,
 }
@@ -31,8 +30,7 @@ impl Default for Rect {
             border: None,
             border_uv: Vec4::default(),
             radius: None,
-            bytes: Vec::new(),
-            bounds: Bounds::default(),
+            store: BufferStoreRef::default(),
             changed: true,
         }
     }
@@ -123,9 +121,9 @@ impl Rect {
     }
 
     ///This sets how a object should be Clip manipulated. Width and/or Height as 0 means unlimited.
-    pub fn set_bounds(&mut self, bounds: Bounds) -> &mut Self {
-        self.bounds = bounds;
-        self.changed = true;
+    pub fn set_bounds(&mut self, bounds: Option<Bounds>) -> &mut Self {
+        self.store.borrow_mut().bounds = bounds;
+        self.store.borrow_mut().changed = true;
         self
     }
 
@@ -167,20 +165,19 @@ impl Rect {
             border_layer: border_tex.layer as u32,
         };
 
-        self.bytes = bytemuck::bytes_of(&buffer).to_vec();
+        self.store.borrow_mut().store = bytemuck::bytes_of(&buffer).to_vec();
+        self.store.borrow_mut().changed = true;
     }
 
     /// used to check and update the ShapeVertex array.
-    pub fn update(&mut self) -> bool {
+    pub fn update(&mut self) -> BufferStoreRef {
         // if points added or any data changed recalculate paths.
         if self.changed {
             self.create_quad();
-
             self.changed = false;
-            true
-        } else {
-            false
         }
+
+        self.store.clone()
     }
 
     pub fn check_mouse_bounds(&self, mouse_pos: [i32; 2]) -> bool {

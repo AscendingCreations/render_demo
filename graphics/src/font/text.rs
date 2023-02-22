@@ -1,5 +1,6 @@
 use crate::{
-    AscendingError, AtlasGroup, Color, System, TextVertex, Vec2, Vec3, Vec4,
+    AscendingError, AtlasGroup, BufferStoreRef, Color, System, TextVertex,
+    Vec2, Vec3, Vec4,
 };
 use cosmic_text::{
     Attrs, Buffer, CacheKey, FontSystem, Metrics, SwashCache, SwashContent,
@@ -28,7 +29,7 @@ pub struct Text {
     pub size: Vec2,
     pub default_color: Color,
     pub bounds: TextBounds,
-    pub bytes: Vec<u8>,
+    pub store: BufferStoreRef,
     /// if the shader should render with the camera's view.
     pub use_camera: bool,
     /// if anything got updated we need to update the buffers too.
@@ -44,7 +45,7 @@ impl Text {
         queue: &wgpu::Queue,
         device: &wgpu::Device,
         system: &System<Controls>,
-    ) -> Result<bool, AscendingError>
+    ) -> Result<(), AscendingError>
     where
         Controls: camera::controls::Controls,
     {
@@ -200,8 +201,11 @@ impl Text {
             }
         }
 
-        self.bytes = bytemuck::cast_slice(&text_buf).to_vec();
-        Ok(true)
+        self.store.borrow_mut().store =
+            bytemuck::cast_slice(&text_buf).to_vec();
+        self.store.borrow_mut().changed = true;
+        self.changed = false;
+        Ok(())
     }
 
     pub fn new(
@@ -219,7 +223,7 @@ impl Text {
             pos,
             size,
             bounds: bounds.unwrap_or_default(),
-            bytes: Vec::new(),
+            store: BufferStoreRef::default(),
             changed: true,
             default_color: Color::rgba(0, 0, 0, 255),
             use_camera: false,
@@ -253,29 +257,26 @@ impl Text {
         queue: &wgpu::Queue,
         device: &wgpu::Device,
         system: &System<Controls>,
-    ) -> Result<bool, AscendingError>
+    ) -> Result<BufferStoreRef, AscendingError>
     where
         Controls: camera::controls::Controls,
     {
-        if self.changed
-            && self.create_quad(
+        if self.changed {
+            self.create_quad(
                 cache,
                 text_atlas,
                 emoji_atlas,
                 queue,
                 device,
                 system,
-            )?
-        {
-            self.changed = false;
-            return Ok(true);
+            )?;
         }
 
-        Ok(false)
+        Ok(self.store.clone())
     }
 }
 
-// This is a text layer buffer for rendering text to the screen.
+/*// This is a text layer buffer for rendering text to the screen.
 // Can be used multiple times for multiple layers of text.
 pub struct TextRender {
     /// Vertex array in bytes. This Holds regular glyphs
@@ -313,4 +314,4 @@ impl Default for TextRender {
     fn default() -> Self {
         Self::new()
     }
-}
+}*/

@@ -1,3 +1,4 @@
+use crate::GpuDevice;
 use bytemuck::{Pod, Zeroable};
 use std::mem;
 use wgpu::util::DeviceExt;
@@ -37,18 +38,22 @@ pub struct StaticBufferObject {
 
 impl StaticBufferObject {
     /// Used to create vbo/ibo from the static context.
-    pub fn create_buffer(device: &wgpu::Device) -> Self {
+    pub fn create_buffer(gpu_device: &GpuDevice) -> Self {
         Self {
-            vbo: device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("static vertex buffer"),
-                contents: bytemuck::cast_slice(&VERTS),
-                usage: wgpu::BufferUsages::VERTEX,
-            }),
-            ibo: device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("static index buffer"),
-                contents: bytemuck::cast_slice(&INDICES),
-                usage: wgpu::BufferUsages::INDEX,
-            }),
+            vbo: gpu_device.device().create_buffer_init(
+                &wgpu::util::BufferInitDescriptor {
+                    label: Some("static vertex buffer"),
+                    contents: bytemuck::cast_slice(&VERTS),
+                    usage: wgpu::BufferUsages::VERTEX,
+                },
+            ),
+            ibo: gpu_device.device().create_buffer_init(
+                &wgpu::util::BufferInitDescriptor {
+                    label: Some("static index buffer"),
+                    contents: bytemuck::cast_slice(&INDICES),
+                    usage: wgpu::BufferUsages::INDEX,
+                },
+            ),
         }
     }
 
@@ -76,8 +81,8 @@ impl StaticBufferObject {
     }
 
     /// creates a the static vbo/ibo.
-    pub fn new(device: &wgpu::Device) -> Self {
-        Self::create_buffer(device)
+    pub fn new(gpu_device: &GpuDevice) -> Self {
+        Self::create_buffer(gpu_device)
     }
 
     /// Returns wgpu::BufferSlice of vertices.

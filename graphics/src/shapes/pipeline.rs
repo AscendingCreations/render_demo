@@ -1,5 +1,5 @@
 use crate::{
-    AscendingError, InstanceLayout, LayoutStorage, RectVertex,
+    AscendingError, GpuDevice, InstanceLayout, LayoutStorage, RectVertex,
     StaticBufferObject, SystemLayout, TextureLayout,
 };
 
@@ -9,27 +9,29 @@ pub struct RectsRenderPipeline {
 
 impl RectsRenderPipeline {
     pub fn new(
-        device: &wgpu::Device,
+        gpu_device: &GpuDevice,
         surface_format: wgpu::TextureFormat,
         layout_storage: &mut LayoutStorage,
     ) -> Result<Self, AscendingError> {
-        let shader =
-            device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        let shader = gpu_device.device().create_shader_module(
+            wgpu::ShaderModuleDescriptor {
                 label: Some("Shader"),
                 source: wgpu::ShaderSource::Wgsl(
                     include_str!("../shaders/guishader.wgsl").into(),
                 ),
-            });
+            },
+        );
 
-        let system_layout = layout_storage.create_layout(device, SystemLayout);
+        let system_layout =
+            layout_storage.create_layout(gpu_device, SystemLayout);
         let texture_layout =
-            layout_storage.create_layout(device, TextureLayout);
+            layout_storage.create_layout(gpu_device, TextureLayout);
 
         // Create the render pipeline.
-        let render_pipeline =
-            device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let render_pipeline = gpu_device.device().create_render_pipeline(
+            &wgpu::RenderPipelineDescriptor {
                 label: Some("Shape render pipeline"),
-                layout: Some(&device.create_pipeline_layout(
+                layout: Some(&gpu_device.device().create_pipeline_layout(
                     &wgpu::PipelineLayoutDescriptor {
                         label: Some("render_pipeline_layout"),
                         bind_group_layouts: &[&system_layout, &texture_layout],
@@ -81,7 +83,8 @@ impl RectsRenderPipeline {
                     })],
                 }),
                 multiview: None,
-            });
+            },
+        );
 
         Ok(Self { render_pipeline })
     }

@@ -1,6 +1,6 @@
 use crate::{
-    AscendingError, AtlasGroup, BufferStoreRef, Color, System, TextVertex,
-    Vec2, Vec3, Vec4,
+    AscendingError, AtlasGroup, BufferStoreRef, Color, GpuDevice, System,
+    TextVertex, Vec2, Vec3, Vec4,
 };
 use cosmic_text::{
     Attrs, Buffer, CacheKey, FontSystem, Metrics, SwashCache, SwashContent,
@@ -42,8 +42,7 @@ impl Text {
         cache: &mut SwashCache,
         text_atlas: &mut AtlasGroup<CacheKey, Vec2>,
         emoji_atlas: &mut AtlasGroup<CacheKey, Vec2>,
-        queue: &wgpu::Queue,
-        device: &wgpu::Device,
+        gpu_device: &GpuDevice,
         system: &System<Controls>,
     ) -> Result<(), AscendingError>
     where
@@ -81,8 +80,7 @@ impl Text {
                                     image.placement.left as f32,
                                     image.placement.top as f32,
                                 ),
-                                device,
-                                queue,
+                                gpu_device,
                             )
                             .ok_or(AscendingError::AtlasFull)?;
                     } else {
@@ -97,8 +95,7 @@ impl Text {
                                     image.placement.left as f32,
                                     image.placement.top as f32,
                                 ),
-                                device,
-                                queue,
+                                gpu_device,
                             )
                             .ok_or(AscendingError::AtlasFull)?;
                     }
@@ -254,8 +251,7 @@ impl Text {
         cache: &mut SwashCache,
         text_atlas: &mut AtlasGroup<CacheKey, Vec2>,
         emoji_atlas: &mut AtlasGroup<CacheKey, Vec2>,
-        queue: &wgpu::Queue,
-        device: &wgpu::Device,
+        gpu_device: &GpuDevice,
         system: &System<Controls>,
     ) -> Result<BufferStoreRef, AscendingError>
     where
@@ -266,8 +262,7 @@ impl Text {
                 cache,
                 text_atlas,
                 emoji_atlas,
-                queue,
-                device,
+                gpu_device,
                 system,
             )?;
         }
@@ -275,43 +270,3 @@ impl Text {
         Ok(self.store.clone())
     }
 }
-
-/*// This is a text layer buffer for rendering text to the screen.
-// Can be used multiple times for multiple layers of text.
-pub struct TextRender {
-    /// Vertex array in bytes. This Holds regular glyphs
-    pub text_bytes: Vec<u8>,
-}
-
-impl TextRender {
-    pub fn new() -> Self {
-        Self {
-            //set this to be the same as the size held in the GPU buffer.
-            text_bytes: Vec::with_capacity(16_384),
-        }
-    }
-
-    /// resets the TextRender bytes to empty for new bytes generally at each redraw
-    pub fn clear(&mut self) {
-        self.text_bytes.clear()
-    }
-
-    /// Pushes to the end by cloning whats in text.
-    pub fn push(&mut self, text: &Text) {
-        self.text_bytes.append(&mut text.bytes.clone());
-    }
-
-    /// Appends to the end by cloning whats in text. We dont move them from one to the other
-    /// Since moving would invalidate text and we need it per Render loop since its a cache.
-    pub fn append(&mut self, arr: &[Text]) {
-        for text in arr {
-            self.text_bytes.append(&mut text.bytes.clone());
-        }
-    }
-}
-
-impl Default for TextRender {
-    fn default() -> Self {
-        Self::new()
-    }
-}*/

@@ -1,4 +1,4 @@
-use crate::{BufferStoreRef, MapTextures, MapVertex, Vec2};
+use crate::{BufferStoreRef, GpuDevice, MapTextures, MapVertex, Vec2};
 use image::{self, ImageBuffer};
 
 #[allow(dead_code)]
@@ -154,12 +154,12 @@ impl Map {
     /// used to check and update the vertex array or Texture witht he image buffer.
     pub fn update(
         &mut self,
-        queue: &wgpu::Queue,
+        gpu_device: &GpuDevice,
         map_textures: &mut MapTextures,
     ) -> (BufferStoreRef, BufferStoreRef) {
         // if pos or tex_pos or color changed.
         if self.img_changed {
-            map_textures.update(queue, self.layer, self.image.as_raw());
+            map_textures.update(gpu_device, self.layer, self.image.as_raw());
             self.img_changed = false;
         }
 

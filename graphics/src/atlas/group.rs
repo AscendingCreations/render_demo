@@ -1,5 +1,6 @@
 use crate::{
-    Allocation, Atlas, GroupType, LayoutStorage, TextureGroup, TextureLayout,
+    Allocation, Atlas, GpuDevice, GroupType, LayoutStorage, TextureGroup,
+    TextureLayout,
 };
 use std::hash::Hash;
 
@@ -14,7 +15,7 @@ pub struct AtlasGroup<U: Hash + Eq + Clone = String, Data: Copy + Default = i32>
 
 impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
     pub fn new(
-        device: &wgpu::Device,
+        gpu_device: &GpuDevice,
         size: u32,
         format: wgpu::TextureFormat,
         layout_storage: &mut LayoutStorage,
@@ -23,7 +24,7 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
         pressure_max: usize,
     ) -> Self {
         let atlas = Atlas::<U, Data>::new(
-            device,
+            gpu_device,
             size,
             format,
             pressure_min,
@@ -31,7 +32,7 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
         );
 
         let texture = TextureGroup::from_view(
-            device,
+            gpu_device,
             layout_storage,
             &atlas.texture_view,
             TextureLayout,
@@ -49,11 +50,10 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
         width: u32,
         height: u32,
         data: Data,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
+        gpu_device: &GpuDevice,
     ) -> Option<Allocation<Data>> {
         self.atlas
-            .upload(hash, bytes, width, height, data, device, queue)
+            .upload(hash, bytes, width, height, data, gpu_device)
     }
 
     pub fn clean(&mut self) {

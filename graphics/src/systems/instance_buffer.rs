@@ -1,4 +1,4 @@
-use crate::Vec4;
+use crate::{GpuDevice, Vec4};
 use std::{cell::RefCell, marker::PhantomData, ops::Range, rc::Rc};
 use wgpu::util::DeviceExt;
 
@@ -55,10 +55,10 @@ pub struct InstanceBuffer<K: InstanceLayout> {
 impl<K: InstanceLayout> InstanceBuffer<K> {
     /// Used to create GpuBuffer from a BufferPass.
     /// Only use this for creating a reusable buffer.
-    pub fn create_buffer(device: &wgpu::Device, data: &[u8]) -> Self {
+    pub fn create_buffer(gpu_device: &GpuDevice, data: &[u8]) -> Self {
         InstanceBuffer {
             buffers: Vec::with_capacity(256),
-            buffer: device.create_buffer_init(
+            buffer: gpu_device.device().create_buffer_init(
                 &wgpu::util::BufferInitDescriptor {
                     label: Some("Instance Buffer"),
                     contents: data,
@@ -82,12 +82,12 @@ impl<K: InstanceLayout> InstanceBuffer<K> {
         self.needed_size += size;
     }
 
-    pub fn finalize(&mut self, device: &wgpu::Device, queue: &wgpu::Queue) {
+    pub fn finalize(&mut self, gpu_device: &GpuDevice) {
         let mut changed = false;
         let mut pos = 0;
 
         if self.needed_size > self.max {
-            self.resize(device, self.needed_size / K::instance_stride());
+            self.resize(gpu_device, self.needed_size / K::instance_stride());
             changed = true;
         }
 
@@ -105,7 +105,11 @@ impl<K: InstanceLayout> InstanceBuffer<K> {
 
                 buffer.pos = range;
                 buffer.changed = false;
-                queue.write_buffer(&self.buffer, pos as u64, &buffer.store);
+                gpu_device.queue().write_buffer(
+                    &self.buffer,
+                    pos as u64,
+                    &buffer.store,
+                );
             }
 
             pos += buffer.store.len();
@@ -116,24 +120,25 @@ impl<K: InstanceLayout> InstanceBuffer<K> {
     }
 
     //private but resizes the buffer on the GPU when needed.
-    fn resize(&mut self, device: &wgpu::Device, capacity: usize) {
+    fn resize(&mut self, gpu_device: &GpuDevice, capacity: usize) {
         let data = K::with_capacity(capacity);
 
-        self.buffer =
-            device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        self.buffer = gpu_device.device().create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
                 label: Some("Vertex Buffer"),
                 contents: &data,
                 usage: wgpu::BufferUsages::VERTEX
                     | wgpu::BufferUsages::COPY_DST,
-            });
+            },
+        );
         self.count = 0;
         self.max = data.len();
     }
 
     /// creates a new pre initlized InstanceBuffer with a default size.
     /// default size is based on the initial InstanceLayout::default_buffer length.
-    pub fn new(device: &wgpu::Device) -> Self {
-        Self::create_buffer(device, &K::default_buffer())
+    pub fn new(gpu_device: &GpuDevice) -> Self {
+        Self::create_buffer(gpu_device, &K::default_buffer())
     }
 
     /// Sets the buffer from byte array of instances.
@@ -143,22 +148,21 @@ impl<K: InstanceLayout> InstanceBuffer<K> {
     /// This will bypass the buffer optimizations. Avoid usage unless you need it.
     pub fn set_from(
         &mut self,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
+        gpu_device: &GpuDevice,
         bytes: &[u8],
         bounds: &[Option<Bounds>],
     ) {
         let size = bytes.len();
 
         if size > self.max {
-            self.resize(device, size / K::instance_stride());
+            self.resize(gpu_device, size / K::instance_stride());
         }
 
         self.count = size / K::instance_stride();
         self.len = size;
         self.bounds = bounds.to_vec();
 
-        queue.write_buffer(&self.buffer, 0, bytes);
+        gpu_device.queue().write_buffer(&self.buffer, 0, bytes);
     }
 
     /// Returns the elements count.
@@ -200,7 +204,7 @@ impl<K: InstanceLayout> InstanceBuffer<K> {
 
     /// Creates a Buffer based on capacity.
     /// Capacity is the amount of objects to initialize for.
-    pub fn with_capacity(device: &wgpu::Device, capacity: usize) -> Self {
-        Self::create_buffer(device, &K::with_capacity(capacity))
+    pub fn with_capacity(gpu_device: &GpuDevice, capacity: usize) -> Self {
+        Self::create_buffer(gpu_device, &K::with_capacity(capacity))
     }
 }

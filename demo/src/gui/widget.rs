@@ -1,4 +1,4 @@
-use crate::{CallBack, GuiRender};
+use crate::{CallBack, UIBuffer};
 use graphics::*;
 use input::FrameTime;
 use std::any::Any;

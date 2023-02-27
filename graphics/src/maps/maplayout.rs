@@ -1,4 +1,4 @@
-use crate::Layout;
+use crate::{GpuDevice, Layout};
 use bytemuck::{Pod, Zeroable};
 
 #[repr(C)]
@@ -6,7 +6,7 @@ use bytemuck::{Pod, Zeroable};
 pub struct MapLayout;
 
 impl Layout for MapLayout {
-    fn create_layout(&self, device: &wgpu::Device) -> wgpu::BindGroupLayout {
+    fn create_layout(&self, gpu_device: &GpuDevice) -> wgpu::BindGroupLayout {
         let entries = vec![
             wgpu::BindGroupLayoutEntry {
                 binding: 0,
@@ -28,9 +28,11 @@ impl Layout for MapLayout {
             },
         ];
 
-        device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Map_texture_bind_group_layout"),
-            entries: &entries,
-        })
+        gpu_device.device().create_bind_group_layout(
+            &wgpu::BindGroupLayoutDescriptor {
+                label: Some("Map_texture_bind_group_layout"),
+                entries: &entries,
+            },
+        )
     }
 }

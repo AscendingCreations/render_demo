@@ -1,6 +1,6 @@
 use crate::{
-    CallBack, CallBackKey, CallBacks, FrameTime, GuiRender, Handle, Identity,
-    InternalCallBacks, UiFlags, Widget, WidgetRef, UI,
+    CallBack, CallBackKey, CallBacks, FrameTime, Handle, Identity,
+    InternalCallBacks, UIBuffer, UiFlags, Widget, WidgetRef, UI,
 };
 use graphics::*;
 use slab::Slab;

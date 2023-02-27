@@ -1,6 +1,6 @@
 use crate::{
-    CallBack, CallBackKey, CallBacks, FrameTime, GuiRender, Handle, Identity,
-    InternalCallBacks, UiFlags, Widget, WidgetRef,
+    CallBack, CallBackKey, CallBacks, FrameTime, Handle, Identity,
+    InternalCallBacks, UIBuffer, UiFlags, Widget, WidgetRef,
 };
 use graphics::*;
 use slab::Slab;
@@ -19,7 +19,7 @@ pub mod events;
 pub mod internals;
 
 pub struct UI<T> {
-    renderer: GuiRender,
+    renderer: UIBuffer,
     /// Callback mapper. Hashes must be different.
     callbacks: HashMap<CallBackKey, Rc<InternalCallBacks<T>>>,
     user_callbacks: HashMap<CallBackKey, Rc<CallBacks<T>>>,
@@ -45,7 +45,7 @@ pub struct UI<T> {
 }
 
 impl<T> UI<T> {
-    pub fn new(renderer: GuiRender) -> Self {
+    pub fn new(renderer: UIBuffer) -> Self {
         UI {
             renderer,
             callbacks: HashMap::with_capacity(100),

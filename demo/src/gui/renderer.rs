@@ -2,9 +2,8 @@ use cosmic_text::{CacheKey, FontSystem};
 use graphics::*;
 use std::collections::HashMap;
 
-pub struct GuiRender {
+pub struct UIBuffer {
     /// Basic shape rendering.
-    pub ui: Rect,
     pub ui_buffer: InstanceBuffer<RectVertex>,
     pub ui_pipeline: RectsRenderPipeline,
     pub ui_atlas: AtlasGroup,

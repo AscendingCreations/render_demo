@@ -1,3 +1,5 @@
+use crate::GpuDevice;
+
 pub struct MapTextures {
     pub texture: wgpu::Texture,
     pub texture_view: wgpu::TextureView,
@@ -13,23 +15,26 @@ impl MapTextures {
         self.unused_ids.push(id);
     }
 
-    pub fn new(device: &wgpu::Device, count: u32) -> Self {
-        let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Map array Texture"),
-            size: wgpu::Extent3d {
-                width: 32,
-                height: 256,
-                depth_or_array_layers: count,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba32Uint,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING
-                | wgpu::TextureUsages::COPY_DST
-                | wgpu::TextureUsages::COPY_SRC,
-            view_formats: &[wgpu::TextureFormat::Rgba32Uint],
-        });
+    pub fn new(gpu_device: &GpuDevice, count: u32) -> Self {
+        let texture =
+            gpu_device
+                .device()
+                .create_texture(&wgpu::TextureDescriptor {
+                    label: Some("Map array Texture"),
+                    size: wgpu::Extent3d {
+                        width: 32,
+                        height: 256,
+                        depth_or_array_layers: count,
+                    },
+                    mip_level_count: 1,
+                    sample_count: 1,
+                    dimension: wgpu::TextureDimension::D2,
+                    format: wgpu::TextureFormat::Rgba32Uint,
+                    usage: wgpu::TextureUsages::TEXTURE_BINDING
+                        | wgpu::TextureUsages::COPY_DST
+                        | wgpu::TextureUsages::COPY_SRC,
+                    view_formats: &[wgpu::TextureFormat::Rgba32Uint],
+                });
 
         let texture_view = texture.create_view(&wgpu::TextureViewDescriptor {
             label: Some("Map array Texture"),
@@ -49,8 +54,8 @@ impl MapTextures {
         }
     }
 
-    pub fn update(&mut self, queue: &wgpu::Queue, id: u32, data: &[u32]) {
-        queue.write_texture(
+    pub fn update(&mut self, gpu_device: &GpuDevice, id: u32, data: &[u32]) {
+        gpu_device.queue().write_texture(
             wgpu::ImageCopyTexture {
                 texture: &self.texture,
                 mip_level: 0,

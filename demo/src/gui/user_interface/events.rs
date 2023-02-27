@@ -1,6 +1,6 @@
 use crate::{
-    CallBack, CallBackKey, CallBacks, FrameTime, GuiRender, Handle, Identity,
-    InternalCallBacks, UiFlags, Widget, WidgetRef, UI,
+    CallBack, CallBackKey, CallBacks, FrameTime, Handle, Identity,
+    InternalCallBacks, UIBuffer, UiFlags, Widget, WidgetRef, UI,
 };
 use graphics::*;
 use slab::Slab;
@@ -16,13 +16,7 @@ use winit::event::{KeyboardInput, ModifiersState};
 use winit::window::Window;
 
 impl<T> UI<T> {
-    pub fn event_render(
-        &mut self,
-        time: FrameTime,
-        ui_renderer: &mut GuiRender,
-        system_renderer: &mut Renderer,
-        user_data: &mut T,
-    ) {
+    pub fn event_render(&mut self, time: FrameTime, user_data: &mut T) {
         for handle in &self.zlist.clone() {
             let widget = self.get_widget(*handle);
 
@@ -31,26 +25,13 @@ impl<T> UI<T> {
 
             if let Some(callback) = self.get_inner_callback(&key) {
                 if let InternalCallBacks::Draw(draw) = callback.as_ref() {
-                    draw(
-                        &mut mut_wdgt,
-                        self,
-                        &time,
-                        ui_renderer,
-                        system_renderer,
-                    );
+                    draw(&mut mut_wdgt, self, &time);
                 }
             }
 
             if let Some(callback) = self.get_user_callback(&key) {
                 if let CallBacks::Draw(draw) = callback.as_ref() {
-                    draw(
-                        &mut mut_wdgt,
-                        self,
-                        &time,
-                        ui_renderer,
-                        system_renderer,
-                        user_data,
-                    );
+                    draw(&mut mut_wdgt, self, &time, user_data);
                 }
             }
         }

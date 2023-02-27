@@ -1,6 +1,6 @@
 use crate::{
-    AscendingError, InstanceLayout, LayoutStorage, MapLayout, MapVertex,
-    StaticBufferObject, SystemLayout, TextureLayout,
+    AscendingError, GpuDevice, InstanceLayout, LayoutStorage, MapLayout,
+    MapVertex, StaticBufferObject, SystemLayout, TextureLayout,
 };
 
 pub struct MapRenderPipeline {
@@ -9,28 +9,30 @@ pub struct MapRenderPipeline {
 
 impl MapRenderPipeline {
     pub fn new(
-        device: &wgpu::Device,
+        gpu_device: &GpuDevice,
         surface_format: wgpu::TextureFormat,
         layout_storage: &mut LayoutStorage,
     ) -> Result<Self, AscendingError> {
-        let shader =
-            device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        let shader = gpu_device.device().create_shader_module(
+            wgpu::ShaderModuleDescriptor {
                 label: Some("Shader"),
                 source: wgpu::ShaderSource::Wgsl(
                     include_str!("../shaders/mapshader.wgsl").into(),
                 ),
-            });
+            },
+        );
 
-        let system_layout = layout_storage.create_layout(device, SystemLayout);
+        let system_layout =
+            layout_storage.create_layout(gpu_device, SystemLayout);
         let texture_layout =
-            layout_storage.create_layout(device, TextureLayout);
-        let map_layout = layout_storage.create_layout(device, MapLayout);
+            layout_storage.create_layout(gpu_device, TextureLayout);
+        let map_layout = layout_storage.create_layout(gpu_device, MapLayout);
 
         // Create the render pipeline.
-        let render_pipeline =
-            device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let render_pipeline = gpu_device.device().create_render_pipeline(
+            &wgpu::RenderPipelineDescriptor {
                 label: Some("Map render pipeline"),
-                layout: Some(&device.create_pipeline_layout(
+                layout: Some(&gpu_device.device().create_pipeline_layout(
                     &wgpu::PipelineLayoutDescriptor {
                         label: Some("Map_render_pipeline_layout"),
                         bind_group_layouts: &[
@@ -86,7 +88,8 @@ impl MapRenderPipeline {
                     })],
                 }),
                 multiview: None,
-            });
+            },
+        );
 
         Ok(Self { render_pipeline })
     }

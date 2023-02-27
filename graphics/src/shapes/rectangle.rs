@@ -1,6 +1,6 @@
 use crate::{
-    Allocation, AscendingError, AtlasGroup, Bounds, BufferStoreRef, OtherError,
-    RectVertex, Texture, Vec2, Vec3, Vec4,
+    Allocation, AscendingError, AtlasGroup, Bounds, BufferStoreRef, GpuDevice,
+    OtherError, RectVertex, Texture, Vec2, Vec3, Vec4,
 };
 use cosmic_text::Color;
 use image::{self, ImageBuffer};
@@ -38,8 +38,7 @@ impl Default for Rect {
 
 impl Rect {
     fn add_color(
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
+        gpu_device: &GpuDevice,
         atlas: &mut AtlasGroup,
         color: Color,
     ) -> Option<Allocation> {
@@ -49,42 +48,39 @@ impl Rect {
             ImageBuffer::new(1, 1);
         let pixel = image.get_pixel_mut(0, 0);
         *pixel = image::Rgba([color.r(), color.g(), color.b(), color.a()]);
-        atlas.upload(col, image.as_raw(), 1, 1, 0, device, queue)
+        atlas.upload(col, image.as_raw(), 1, 1, 0, gpu_device)
     }
 
     pub fn set_color(
         &mut self,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
+        gpu_device: &GpuDevice,
         atlas: &mut AtlasGroup,
         color: Color,
     ) -> &mut Self {
-        self.container = Self::add_color(device, queue, atlas, color);
+        self.container = Self::add_color(gpu_device, atlas, color);
         self.changed = true;
         self
     }
 
     pub fn set_border_color(
         &mut self,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
+        gpu_device: &GpuDevice,
         atlas: &mut AtlasGroup,
         color: Color,
     ) -> &mut Self {
-        self.border = Self::add_color(device, queue, atlas, color);
+        self.border = Self::add_color(gpu_device, atlas, color);
         self.changed = true;
         self
     }
 
     pub fn set_texture(
         &mut self,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
+        gpu_device: &GpuDevice,
         atlas: &mut AtlasGroup,
         path: String,
     ) -> Result<&mut Self, AscendingError> {
         let allocation = Texture::from_file(path)?
-            .group_upload(atlas, device, queue)
+            .group_upload(atlas, gpu_device)
             .ok_or_else(|| OtherError::new("failed to upload image"))?;
         self.container = Some(allocation);
         self.changed = true;
@@ -93,13 +89,12 @@ impl Rect {
 
     pub fn set_border_texture(
         &mut self,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
+        gpu_device: &GpuDevice,
         atlas: &mut AtlasGroup,
         path: String,
     ) -> Result<&mut Self, AscendingError> {
         let allocation = Texture::from_file(path)?
-            .group_upload(atlas, device, queue)
+            .group_upload(atlas, gpu_device)
             .ok_or_else(|| OtherError::new("failed to upload image"))?;
         self.border = Some(allocation);
         self.changed = true;

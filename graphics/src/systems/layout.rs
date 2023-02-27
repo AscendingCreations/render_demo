@@ -1,3 +1,4 @@
+use crate::GpuDevice;
 use bytemuck::{Pod, Zeroable};
 use std::{
     any::{Any, TypeId},
@@ -6,7 +7,7 @@ use std::{
 };
 
 pub trait Layout: Pod + Zeroable {
-    fn create_layout(&self, device: &wgpu::Device) -> wgpu::BindGroupLayout;
+    fn create_layout(&self, gpu_device: &GpuDevice) -> wgpu::BindGroupLayout;
 
     fn layout_key(&self) -> (TypeId, Vec<u8>) {
         let type_id = self.type_id();
@@ -30,7 +31,7 @@ impl LayoutStorage {
 
     pub fn create_layout<K: Layout>(
         &mut self,
-        device: &wgpu::Device,
+        gpu_device: &GpuDevice,
         layout: K,
     ) -> Rc<wgpu::BindGroupLayout> {
         let key = layout.layout_key();
@@ -38,7 +39,7 @@ impl LayoutStorage {
         let layout = self
             .map
             .entry(key)
-            .or_insert_with(|| Rc::new(layout.create_layout(device)));
+            .or_insert_with(|| Rc::new(layout.create_layout(gpu_device)));
 
         Rc::clone(layout)
     }

@@ -1,4 +1,4 @@
-use crate::{GuiRender, Handle, Identity, ReturnValue, Widget, UI};
+use crate::{Handle, Identity, ReturnValue, UIBuffer, Widget, UI};
 use graphics::*;
 use input::FrameTime;
 use std::any::Any;
@@ -35,9 +35,7 @@ pub(crate) enum CallBack {
     ValueChanged,
 }
 
-pub type InternalDrawRef<T> = Box<
-    dyn Fn(&mut Widget, &mut UI<T>, &FrameTime, &mut GuiRender, &mut Renderer),
->;
+pub type InternalDrawRef<T> = Box<dyn Fn(&mut Widget, &mut UI<T>, &FrameTime)>;
 pub type InternalBooleanRef<T> =
     Box<dyn Fn(&mut Widget, &mut UI<T>, bool) -> bool>;
 pub type InternalMouseScrollRef<T> =
@@ -59,16 +57,7 @@ pub enum InternalCallBacks<T> {
     FocusChange(InternalBooleanRef<T>),
 }
 
-pub type DrawRef<T> = Box<
-    dyn Fn(
-        &mut Widget,
-        &mut UI<T>,
-        &FrameTime,
-        &mut GuiRender,
-        &mut Renderer,
-        &mut T,
-    ),
->;
+pub type DrawRef<T> = Box<dyn Fn(&mut Widget, &mut UI<T>, &FrameTime, &mut T)>;
 pub type MousePresentRef<T> =
     Box<dyn Fn(&mut Widget, &mut UI<T>, bool, &mut T)>;
 pub type MouseScrollRef<T> =

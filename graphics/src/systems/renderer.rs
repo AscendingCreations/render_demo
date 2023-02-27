@@ -1,6 +1,10 @@
 use crate::AscendingError;
 use async_trait::async_trait;
-use std::path::Path;
+use std::{
+    cell::{Ref, RefCell},
+    path::Path,
+    rc::Rc,
+};
 use wgpu::TextureFormat;
 use winit::{
     dpi::PhysicalSize,
@@ -8,10 +12,28 @@ use winit::{
     window::Window,
 };
 
+///Handles the Device and Queue returned from WGPU.
+/// This can be cloned to any other struct as it is
+/// internally Rc<RefCell<>>. Cloning should be very fast.
+#[derive(Clone)]
+pub struct GpuDevice {
+    pub(crate) device: Rc<RefCell<wgpu::Device>>,
+    pub(crate) queue: Rc<RefCell<wgpu::Queue>>,
+}
+
+impl GpuDevice {
+    pub fn device(&self) -> Ref<'_, wgpu::Device> {
+        self.device.borrow()
+    }
+
+    pub fn queue(&self) -> Ref<'_, wgpu::Queue> {
+        self.queue.borrow()
+    }
+}
+
 pub struct Renderer {
     adapter: wgpu::Adapter,
-    device: wgpu::Device,
-    queue: wgpu::Queue,
+    gpu_device: GpuDevice,
     surface: wgpu::Surface,
     window: Window,
     surface_format: wgpu::TextureFormat,
@@ -25,16 +47,12 @@ impl Renderer {
         &self.adapter
     }
 
-    pub fn device(&self) -> &wgpu::Device {
-        &self.device
-    }
-
     pub fn present_mode(&self) -> wgpu::PresentMode {
         self.present_mode
     }
 
-    pub fn queue(&self) -> &wgpu::Queue {
-        &self.queue
+    pub fn gpu_device(&self) -> &GpuDevice {
+        &self.gpu_device
     }
 
     pub fn resize(
@@ -46,7 +64,7 @@ impl Renderer {
         }
 
         self.surface.configure(
-            &self.device,
+            &self.gpu_device.device(),
             &wgpu::SurfaceConfiguration {
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
                 format: wgpu::TextureFormat::Bgra8UnormSrgb,
@@ -125,18 +143,21 @@ impl Renderer {
             depth_or_array_layers: 1,
         };
 
-        let texture = self.device().create_texture(&wgpu::TextureDescriptor {
-            label: Some("depth texture"),
-            size,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Depth32Float,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING
-                | wgpu::TextureUsages::RENDER_ATTACHMENT
-                | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[TextureFormat::Depth32Float],
-        });
+        let texture =
+            self.gpu_device
+                .device()
+                .create_texture(&wgpu::TextureDescriptor {
+                    label: Some("depth texture"),
+                    size,
+                    mip_level_count: 1,
+                    sample_count: 1,
+                    dimension: wgpu::TextureDimension::D2,
+                    format: wgpu::TextureFormat::Depth32Float,
+                    usage: wgpu::TextureUsages::TEXTURE_BINDING
+                        | wgpu::TextureUsages::RENDER_ATTACHMENT
+                        | wgpu::TextureUsages::COPY_DST,
+                    view_formats: &[TextureFormat::Depth32Float],
+                });
 
         texture.create_view(&wgpu::TextureViewDescriptor::default())
     }
@@ -191,8 +212,10 @@ impl AdapterExt for wgpu::Adapter {
 
         Ok(Renderer {
             adapter: self,
-            device,
-            queue,
+            gpu_device: GpuDevice {
+                device: Rc::new(RefCell::new(device)),
+                queue: Rc::new(RefCell::new(queue)),
+            },
             surface,
             window,
             surface_format: wgpu::TextureFormat::Bgra8UnormSrgb,

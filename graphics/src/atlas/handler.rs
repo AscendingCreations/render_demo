@@ -1,4 +1,4 @@
-use crate::{Allocation, Layer};
+use crate::{Allocation, GpuDevice, Layer};
 use lru::LruCache;
 use std::{cell::RefCell, hash::Hash, num::NonZeroU32};
 
@@ -124,12 +124,7 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
         }
     }
 
-    fn grow(
-        &mut self,
-        amount: usize,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-    ) {
+    fn grow(&mut self, amount: usize, gpu_device: &GpuDevice) {
         if amount == 0 {
             return;
         }
@@ -140,25 +135,29 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
             depth_or_array_layers: self.layers.len() as u32,
         };
 
-        let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Texture"),
-            size: extent,
-            mip_level_count: 0,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: self.format,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING
-                | wgpu::TextureUsages::COPY_DST
-                | wgpu::TextureUsages::COPY_SRC,
-            view_formats: &[wgpu::TextureFormat::Bgra8Unorm],
-        });
+        let texture =
+            gpu_device
+                .device()
+                .create_texture(&wgpu::TextureDescriptor {
+                    label: Some("Texture"),
+                    size: extent,
+                    mip_level_count: 0,
+                    sample_count: 1,
+                    dimension: wgpu::TextureDimension::D2,
+                    format: self.format,
+                    usage: wgpu::TextureUsages::TEXTURE_BINDING
+                        | wgpu::TextureUsages::COPY_DST
+                        | wgpu::TextureUsages::COPY_SRC,
+                    view_formats: &[wgpu::TextureFormat::Bgra8Unorm],
+                });
 
         let amount_to_copy = self.layers.len() - amount;
 
-        let mut encoder =
-            device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        let mut encoder = gpu_device.device().create_command_encoder(
+            &wgpu::CommandEncoderDescriptor {
                 label: Some("Texture command encoder"),
-            });
+            },
+        );
 
         for (i, _) in self.layers.iter_mut().take(amount_to_copy).enumerate() {
             encoder.copy_texture_to_texture(
@@ -202,11 +201,11 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
                 base_array_layer: 0,
                 array_layer_count: NonZeroU32::new(self.layers.len() as u32),
             });
-        queue.submit(std::iter::once(encoder.finish()));
+        gpu_device.queue().submit(std::iter::once(encoder.finish()));
     }
 
     pub fn new(
-        device: &wgpu::Device,
+        gpu_device: &GpuDevice,
         size: u32,
         format: wgpu::TextureFormat,
         pressure_min: usize,
@@ -218,18 +217,21 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
             depth_or_array_layers: 1,
         };
 
-        let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Texture"),
-            size: extent,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING
-                | wgpu::TextureUsages::COPY_DST
-                | wgpu::TextureUsages::COPY_SRC,
-            view_formats: &[format],
-        });
+        let texture =
+            gpu_device
+                .device()
+                .create_texture(&wgpu::TextureDescriptor {
+                    label: Some("Texture"),
+                    size: extent,
+                    mip_level_count: 1,
+                    sample_count: 1,
+                    dimension: wgpu::TextureDimension::D2,
+                    format,
+                    usage: wgpu::TextureUsages::TEXTURE_BINDING
+                        | wgpu::TextureUsages::COPY_DST
+                        | wgpu::TextureUsages::COPY_SRC,
+                    view_formats: &[format],
+                });
 
         let texture_view = texture.create_view(&wgpu::TextureViewDescriptor {
             label: Some("Texture Atlas"),
@@ -265,8 +267,7 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
         width: u32,
         height: u32,
         data: Data,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
+        gpu_device: &GpuDevice,
     ) -> Option<Allocation<Data>> {
         if self.cache.get(0).unwrap().borrow().contains(&hash) {
             if let Some(allocation) =
@@ -290,12 +291,12 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
         let allocation = {
             let nlayers = self.layers.len();
             let allocation = self.allocate(width, height, data)?;
-            self.grow(self.layers.len() - nlayers, device, queue);
+            self.grow(self.layers.len() - nlayers, gpu_device);
 
             allocation
         };
 
-        self.upload_allocation(bytes, &allocation, queue);
+        self.upload_allocation(bytes, &allocation, gpu_device);
         self.cache
             .get(1)
             .unwrap()
@@ -308,13 +309,13 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
         &mut self,
         buffer: &[u8],
         allocation: &Allocation<Data>,
-        queue: &wgpu::Queue,
+        gpu_device: &GpuDevice,
     ) {
         let (x, y) = allocation.position();
         let (width, height) = allocation.size();
         let layer = allocation.layer;
 
-        queue.write_texture(
+        gpu_device.queue().write_texture(
             wgpu::ImageCopyTexture {
                 texture: &self.texture,
                 mip_level: 0,

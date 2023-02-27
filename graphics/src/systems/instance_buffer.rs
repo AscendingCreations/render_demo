@@ -2,12 +2,18 @@ use crate::{GpuDevice, Vec4};
 use std::{cell::RefCell, marker::PhantomData, ops::Range, rc::Rc};
 use wgpu::util::DeviceExt;
 
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug)]
 pub struct Bounds(pub Vec4, pub f32);
 
 impl Bounds {
     pub fn new(bounds: Vec4, obj_h: f32) -> Self {
         Self(bounds, obj_h)
+    }
+}
+
+impl Default for Bounds {
+    fn default() -> Self {
+        Self(Vec4::new(0.0, 0.0, 2_147_483_600.0, 2_147_483_600.0), 0.0)
     }
 }
 

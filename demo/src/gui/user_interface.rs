@@ -1,12 +1,12 @@
 use crate::{
-    CallBack, CallBackKey, CallBacks, FrameTime, Handle, Identity,
+    CallBack, CallBackKey, CallBacks, FrameTime, GpuDevice, Handle, Identity,
     InternalCallBacks, UIBuffer, UiFlags, Widget, WidgetRef,
 };
 use graphics::*;
 use slab::Slab;
 use std::{
     any::Any,
-    cell::RefCell,
+    cell::{Ref, RefCell, RefMut},
     collections::{HashMap, VecDeque},
     marker::PhantomData,
     rc::Rc,
@@ -19,7 +19,8 @@ pub mod events;
 pub mod internals;
 
 pub struct UI<T> {
-    renderer: UIBuffer,
+    ui_buffer: RefCell<UIBuffer>,
+    gpu_device: RefCell<GpuDevice>,
     /// Callback mapper. Hashes must be different.
     callbacks: HashMap<CallBackKey, Rc<InternalCallBacks<T>>>,
     user_callbacks: HashMap<CallBackKey, Rc<CallBacks<T>>>,
@@ -36,18 +37,19 @@ pub struct UI<T> {
     clicked: Option<Handle>,
     widget_moving: Option<Handle>,
     ///Saved States.
-    mouse_clicked: [i32; 2],
-    mouse_pos: [i32; 2],
-    new_mouse_pos: [i32; 2],
+    mouse_clicked: Vec2,
+    mouse_pos: Vec2,
+    new_mouse_pos: Vec2,
     moving: bool,
     button: u32,
     modifier: ModifiersState,
 }
 
 impl<T> UI<T> {
-    pub fn new(renderer: UIBuffer) -> Self {
+    pub fn new(ui_buffer: UIBuffer, gpu_device: &GpuDevice) -> Self {
         UI {
-            renderer,
+            ui_buffer: RefCell::new(ui_buffer),
+            gpu_device: RefCell::new(gpu_device.clone()),
             callbacks: HashMap::with_capacity(100),
             user_callbacks: HashMap::with_capacity(100),
             name_map: HashMap::with_capacity(100),
@@ -59,13 +61,54 @@ impl<T> UI<T> {
             over: Option::None,
             clicked: Option::None,
             widget_moving: Option::None,
-            mouse_clicked: [0; 2],
-            mouse_pos: [0; 2],
-            new_mouse_pos: [0; 2],
+            mouse_clicked: Vec2::default(),
+            mouse_pos: Vec2::default(),
+            new_mouse_pos: Vec2::default(),
             moving: false,
             button: 0,
             modifier: ModifiersState::default(),
         }
+    }
+
+    pub fn ui_buffer(&self) -> Ref<'_, UIBuffer> {
+        self.ui_buffer.borrow()
+    }
+
+    pub fn ui_buffer_mut(&self) -> RefMut<'_, UIBuffer> {
+        self.ui_buffer.borrow_mut()
+    }
+
+    pub fn gpu_device(&self) -> Ref<'_, GpuDevice> {
+        self.gpu_device.borrow()
+    }
+
+    pub fn get_widget(&self, handle: Handle) -> WidgetRef {
+        self.widgets
+            .get(handle.get_key())
+            .expect("ID Existed but widget does not exist?")
+            .clone()
+    }
+
+    pub fn get_widget_by_id(&self, id: Identity) -> WidgetRef {
+        let handle = self.name_map.get(&id).unwrap();
+        self.widgets
+            .get(handle.get_key())
+            .expect("ID Existed but widget does not exist?")
+            .clone()
+    }
+
+    pub fn get_user_callback(
+        &self,
+        key: &CallBackKey,
+    ) -> Option<Rc<CallBacks<T>>> {
+        self.user_callbacks.get(key).cloned()
+    }
+
+    pub fn get_inner_callback(
+        &self,
+        key: &CallBackKey,
+    ) -> Option<Rc<InternalCallBacks<T>>> {
+        self.callbacks.get(key).cloned()
     }
 
     pub fn remove_widget_by_handle(&mut self, handle: Handle) {

@@ -122,6 +122,18 @@ impl Rect {
         self
     }
 
+    pub fn set_position(&mut self, position: Vec3) -> &mut Self {
+        self.position = position;
+        self.changed = true;
+        self
+    }
+
+    pub fn set_size(&mut self, size: Vec2) -> &mut Self {
+        self.size = size;
+        self.changed = true;
+        self
+    }
+    
     pub fn create_quad(&mut self) {
         let containter_tex = match self.container {
             Some(allocation) => allocation,
@@ -175,7 +187,7 @@ impl Rect {
         self.store.clone()
     }
 
-    pub fn check_mouse_bounds(&self, mouse_pos: [i32; 2]) -> bool {
+    pub fn check_mouse_bounds(&self, mouse_pos: Vec2) -> bool {
         if let Some(radius) = self.radius {
             let pos = [self.position.x, self.position.y];
 
@@ -185,14 +197,10 @@ impl Rect {
             let bottom_right =
                 [top_left[0] + inner_size[0], top_left[1] + inner_size[1]];
 
-            let top_left_distance = [
-                top_left[0] - mouse_pos[0] as f32,
-                top_left[1] - mouse_pos[1] as f32,
-            ];
-            let bottom_right_distance = [
-                mouse_pos[0] as f32 - bottom_right[0],
-                mouse_pos[1] as f32 - bottom_right[1],
-            ];
+            let top_left_distance =
+                [top_left[0] - mouse_pos.x, top_left[1] - mouse_pos.y];
+            let bottom_right_distance =
+                [mouse_pos.x - bottom_right[0], mouse_pos.y - bottom_right[1]];
 
             let dist = [
                 top_left_distance[0].max(bottom_right_distance[0]).max(0.0),
@@ -203,10 +211,10 @@ impl Rect {
 
             dist < radius
         } else {
-            mouse_pos[0] > self.position[0] as i32
-                && mouse_pos[0] < self.position[0] as i32 + self.size[0] as i32
-                && mouse_pos[1] > self.position[1] as i32
-                && mouse_pos[1] < self.position[1] as i32 + self.size[1] as i32
+            mouse_pos[0] > self.position.x
+                && mouse_pos[0] < self.position.x + self.size.x
+                && mouse_pos[1] > self.position.y
+                && mouse_pos[1] < self.position.y + self.size.y
         }
     }
 }

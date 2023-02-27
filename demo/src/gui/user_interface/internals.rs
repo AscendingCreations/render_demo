@@ -16,27 +16,6 @@ use winit::event::{KeyboardInput, ModifiersState};
 use winit::window::Window;
 
 impl<T> UI<T> {
-    pub(crate) fn get_widget(&self, handle: Handle) -> WidgetRef {
-        self.widgets
-            .get(handle.get_key())
-            .expect("ID Existed but widget does not exist?")
-            .clone()
-    }
-
-    pub(crate) fn get_user_callback(
-        &self,
-        key: &CallBackKey,
-    ) -> Option<Rc<CallBacks<T>>> {
-        self.user_callbacks.get(key).cloned()
-    }
-
-    pub(crate) fn get_inner_callback(
-        &self,
-        key: &CallBackKey,
-    ) -> Option<Rc<InternalCallBacks<T>>> {
-        self.callbacks.get(key).cloned()
-    }
-
     pub(crate) fn mouse_over_event(&mut self, user_data: &mut T) {
         for &handle in self.zlist.clone().iter().rev() {
             let control = self.get_widget(handle);

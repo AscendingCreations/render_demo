@@ -55,11 +55,11 @@ bitfield! {
 }
 
 pub trait Control {
-    fn check_mouse_bounds(&self, mouse_pos: [i32; 2]) -> bool;
-    fn get_mut_actions(&mut self) -> &mut UiField;
-    fn get_bounds(&self) -> (i32, i32, i32, i32);
-    fn get_size(&self) -> (i32, i32);
-    fn set_position(&mut self, position: [i32; 2]);
+    fn check_mouse_bounds(&self, mouse_pos: Vec2) -> bool;
+    fn get_bounds(&self) -> Vec4;
+    fn get_size(&self) -> Vec2;
+    fn get_position(&mut self) -> Vec3;
+    fn set_position(&mut self, position: Vec3);
 }
 
 pub trait AnyData: Control {
@@ -94,13 +94,36 @@ pub struct Widget {
 }
 
 impl Widget {
+    pub fn new(identity: Identity, control: (impl AnyData + 'static)) -> Self {
+        Self {
+            identity,
+            ui: Box::new(control),
+            bounds: Bounds::default(),
+            id: Handle(0),
+            parent: None,
+            visible: VecDeque::new(),
+            hidden: Vec::new(),
+            actions: UiField::new(0),
+        }
+    }
+
     pub fn clear(&mut self) {
         self.parent = None;
         self.visible.clear();
         self.hidden.clear();
     }
 
-    pub(crate) fn callback_key(&self, callback: CallBack) -> CallBackKey {
+    pub fn callback_key(&self, callback: CallBack) -> CallBackKey {
         CallBackKey::new(&self.identity, callback)
+    }
+
+    pub fn get_identity(&self) -> Identity {
+        self.identity.clone()
+    }
+}
+
+impl From<Widget> for WidgetRef {
+    fn from(widget: Widget) -> Self {
+        Rc::new(RefCell::new(widget))
     }
 }

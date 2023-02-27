@@ -12,8 +12,11 @@ use std::{
     rc::Rc,
     vec::Vec,
 };
-use winit::event::{KeyboardInput, ModifiersState};
 use winit::window::Window;
+use winit::{
+    dpi::PhysicalPosition,
+    event::{KeyboardInput, ModifiersState},
+};
 
 impl<T> UI<T> {
     pub fn event_render(&mut self, time: FrameTime, user_data: &mut T) {
@@ -40,17 +43,20 @@ impl<T> UI<T> {
     pub fn event_mouse_position(
         &mut self,
         window: &mut Window,
-        position: [i32; 2],
-        screensize: [i32; 2],
+        position: Vec2,
+        screensize: Vec2,
         user_data: &mut T,
     ) {
         self.new_mouse_pos = position;
 
         if self.moving {
-            if let Ok(mut win_pos) = window.outer_position() {
+            if let Ok(win_pos) = window.outer_position() {
+                let mut win_pos = Vec2::new(win_pos.x as f32, win_pos.y as f32);
                 win_pos.x = position[0] + win_pos.x - self.mouse_clicked[0];
                 win_pos.y = position[1] + win_pos.y - self.mouse_clicked[1];
-                window.set_outer_position(win_pos);
+                window.set_outer_position(PhysicalPosition::new(
+                    win_pos.x, win_pos.y,
+                ));
             } else {
                 panic!("Not Supported. This will be a Soft warning via log later on.")
             }
@@ -60,23 +66,27 @@ impl<T> UI<T> {
 
                 if focused.borrow().actions.get(UiFlags::Moving) {
                     let pos = [
-                        position[0] - self.mouse_pos[0],
-                        position[1] - self.mouse_pos[1],
+                        position.x - self.mouse_pos[0],
+                        position.y - self.mouse_pos[1],
                     ];
                     let mut bounds = focused.borrow().ui.get_bounds();
 
-                    if bounds.0 + pos[0] <= 0
-                        || bounds.1 + pos[1] <= 0
-                        || bounds.0 + bounds.2 + pos[0] >= screensize[0]
-                        || bounds.1 + bounds.3 + pos[1] >= screensize[1]
+                    if bounds.x + pos[0] <= 0.0
+                        || bounds.y + pos[1] <= 0.0
+                        || bounds.x + bounds.z + pos[0] >= screensize[0]
+                        || bounds.y + bounds.w + pos[1] >= screensize[1]
                     {
                         return;
                     }
 
-                    bounds.0 += pos[0];
-                    bounds.1 += pos[1];
-
-                    focused.borrow_mut().ui.set_position([bounds.0, bounds.1]);
+                    bounds.x += pos[0];
+                    bounds.y += pos[1];
+                    let control_pos = focused.borrow_mut().ui.get_position();
+                    focused.borrow_mut().ui.set_position(Vec3::new(
+                        bounds.x,
+                        bounds.y,
+                        control_pos.z,
+                    ));
                     self.widget_position_update(&mut focused.borrow_mut());
                 }
             }

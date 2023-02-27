@@ -23,7 +23,7 @@ impl CallBackKey {
 }
 
 #[derive(Eq, PartialEq, Hash, Clone)]
-pub(crate) enum CallBack {
+pub enum CallBack {
     Draw,
     MousePresent,
     MouseScroll,

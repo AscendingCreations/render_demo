@@ -380,7 +380,7 @@ async fn main() -> Result<(), AscendingError> {
     let mut frame_time = FrameTime::new();
     let mut time = 0.0f32;
     let mut fps = 0u32;
-    let mut mouse_pos: [i32; 2] = [0; 2];
+    let mut mouse_pos = Vec2::default();
     let mut id = 0;
 
     #[allow(deprecated)]
@@ -418,7 +418,7 @@ async fn main() -> Result<(), AscendingError> {
 
         mouse_pos = {
             let pos = input_handler.mouse_position().unwrap_or((0.0, 0.0));
-            [pos.0 as i32, size.height as i32 - pos.1 as i32]
+            Vec2::new(pos.0, size.height as f32 - pos.1)
         };
 
         let frame = match renderer.update(&event).unwrap() {

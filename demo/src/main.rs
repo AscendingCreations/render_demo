@@ -101,7 +101,7 @@ async fn main() -> Result<(), AscendingError> {
         .unwrap();
     let instance = wgpu::Instance::default();
 
-    let mut renderer = instance
+    let (mut gpu_window, gpu_device) = instance
         .create_renderer(
             window,
             &wgpu::RequestAdapterOptions {
@@ -120,11 +120,11 @@ async fn main() -> Result<(), AscendingError> {
         .await
         .unwrap();
 
-    println!("{:?}", renderer.adapter().get_info());
+    println!("{:?}", gpu_window.adapter().get_info());
     let mut layout_storage = LayoutStorage::new();
 
     let mut sprite_atlas = AtlasGroup::new(
-        renderer.gpu_device(),
+        &gpu_device,
         2048,
         wgpu::TextureFormat::Rgba8UnormSrgb,
         &mut layout_storage,
@@ -134,7 +134,7 @@ async fn main() -> Result<(), AscendingError> {
     );
 
     let allocation = Texture::from_file("images/Female_1.png")?
-        .group_upload(&mut sprite_atlas, renderer.gpu_device())
+        .group_upload(&mut sprite_atlas, &gpu_device)
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
 
     let mut sprites = Vec::with_capacity(2001);
@@ -153,15 +153,15 @@ async fn main() -> Result<(), AscendingError> {
     }
 
     let sprite_pipeline = ImageRenderPipeline::new(
-        renderer.gpu_device(),
-        renderer.surface_format(),
+        &gpu_device,
+        gpu_window.surface_format(),
         &mut layout_storage,
     )?;
 
-    let mut size = renderer.size();
+    let mut size = gpu_window.size();
 
     let system = System::new(
-        renderer.gpu_device(),
+        &gpu_device,
         &mut layout_storage,
         Projection::Orthographic {
             left: 0.0,
@@ -175,7 +175,7 @@ async fn main() -> Result<(), AscendingError> {
         [size.width as f32, size.height as f32],
     );
 
-    let sprite_buffer = InstanceBuffer::with_capacity(renderer.gpu_device(), 1);
+    let sprite_buffer = InstanceBuffer::with_capacity(&gpu_device, 1);
 
     let mut map = Map::new();
 
@@ -190,13 +190,13 @@ async fn main() -> Result<(), AscendingError> {
     map.set_tile((0, 0, 1), 2, 0, 255);
     map.pos = Vec2::new(0.0, 0.0);
     let map_pipeline = MapRenderPipeline::new(
-        renderer.gpu_device(),
-        renderer.surface_format(),
+        &gpu_device,
+        gpu_window.surface_format(),
         &mut layout_storage,
     )?;
 
     let mut map_atlas = AtlasGroup::new(
-        renderer.gpu_device(),
+        &gpu_device,
         2048,
         wgpu::TextureFormat::Rgba8UnormSrgb,
         &mut layout_storage,
@@ -207,30 +207,28 @@ async fn main() -> Result<(), AscendingError> {
 
     for i in 0..3 {
         let _ = Texture::from_file(format!("images/tiles/{i}.png"))?
-            .group_upload(&mut map_atlas, renderer.gpu_device())
+            .group_upload(&mut map_atlas, &gpu_device)
             .ok_or_else(|| OtherError::new("failed to upload image"))?;
     }
 
-    let mut map_textures = MapTextures::new(renderer.gpu_device(), 81);
+    let mut map_textures = MapTextures::new(&gpu_device, 81);
     let map_group = TextureGroup::from_view(
-        renderer.gpu_device(),
+        &gpu_device,
         &mut layout_storage,
         &map_textures.texture_view,
         MapLayout,
         GroupType::Textures,
     );
 
-    let maplower_buffer =
-        InstanceBuffer::with_capacity(renderer.gpu_device(), 540);
-    let mapupper_buffer =
-        InstanceBuffer::with_capacity(renderer.gpu_device(), 180);
+    let maplower_buffer = InstanceBuffer::with_capacity(&gpu_device, 540);
+    let mapupper_buffer = InstanceBuffer::with_capacity(&gpu_device, 180);
 
     map.layer = map_textures
         .get_unused_id()
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
 
     let mut animation_atlas = AtlasGroup::new(
-        renderer.gpu_device(),
+        &gpu_device,
         2048,
         wgpu::TextureFormat::Rgba8UnormSrgb,
         &mut layout_storage,
@@ -240,10 +238,10 @@ async fn main() -> Result<(), AscendingError> {
     );
 
     let allocation = Texture::from_file("images/anim/0.png")?
-        .group_upload(&mut animation_atlas, renderer.gpu_device())
+        .group_upload(&mut animation_atlas, &gpu_device)
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
 
-    let animation_buffer = InstanceBuffer::new(renderer.gpu_device());
+    let animation_buffer = InstanceBuffer::new(&gpu_device);
 
     let mut animation = Image::new(allocation);
 
@@ -256,15 +254,15 @@ async fn main() -> Result<(), AscendingError> {
     animation.animate = true;
 
     let rects_pipeline = RectsRenderPipeline::new(
-        renderer.gpu_device(),
-        renderer.surface_format(),
+        &gpu_device,
+        gpu_window.surface_format(),
         &mut layout_storage,
     )?;
 
-    let rects_buffer = InstanceBuffer::new(renderer.gpu_device());
+    let rects_buffer = InstanceBuffer::new(&gpu_device);
 
     let mut rects_atlas = AtlasGroup::new(
-        renderer.gpu_device(),
+        &gpu_device,
         2048,
         wgpu::TextureFormat::Rgba8UnormSrgb,
         &mut layout_storage,
@@ -283,20 +281,16 @@ async fn main() -> Result<(), AscendingError> {
     };
 
     rects
-        .set_color(
-            renderer.gpu_device(),
-            &mut rects_atlas,
-            Color::rgba(255, 255, 0, 255),
-        )
+        .set_color(&gpu_device, &mut rects_atlas, Color::rgba(255, 255, 0, 255))
         .set_border_color(
-            renderer.gpu_device(),
+            &gpu_device,
             &mut rects_atlas,
             Color::rgba(0, 0, 0, 255),
         )
         .set_container_uv(Vec4::new(0.0, 0.0, 168.0, 32.0));
 
     let text_atlas = AtlasGroup::new(
-        renderer.gpu_device(),
+        &gpu_device,
         2048,
         wgpu::TextureFormat::R8Unorm,
         &mut layout_storage,
@@ -306,7 +300,7 @@ async fn main() -> Result<(), AscendingError> {
     );
 
     let emoji_atlas = AtlasGroup::new(
-        renderer.gpu_device(),
+        &gpu_device,
         2048,
         wgpu::TextureFormat::Rgba8UnormSrgb,
         &mut layout_storage,
@@ -316,14 +310,18 @@ async fn main() -> Result<(), AscendingError> {
     );
 
     let text_pipeline = TextRenderPipeline::new(
-        renderer.gpu_device(),
-        renderer.surface_format(),
+        &gpu_device,
+        gpu_window.surface_format(),
         &mut layout_storage,
     )?;
-    let text_buffer = InstanceBuffer::new(renderer.gpu_device());
+    let text_buffer = InstanceBuffer::new(&gpu_device);
     let mut font_cache: SwashCache<'static> = SwashCache::new(&FONT_SYSTEM);
     //let text_render = TextRender::new();
-    let scale = renderer.window().current_monitor().unwrap().scale_factor();
+    let scale = gpu_window
+        .window()
+        .current_monitor()
+        .unwrap()
+        .scale_factor();
 
     let mut text = Text::new(
         &FONT_SYSTEM,
@@ -335,7 +333,7 @@ async fn main() -> Result<(), AscendingError> {
 
     text.set_buffer_size(size.width as i32, size.height as i32);
 
-    let buffer_object = StaticBufferObject::new(renderer.gpu_device());
+    let buffer_object = StaticBufferObject::new(&gpu_device);
 
     let mut state = State {
         layout_storage,
@@ -358,7 +356,6 @@ async fn main() -> Result<(), AscendingError> {
         rects_buffer,
         rects_pipeline,
         rects_atlas,
-        // text_render,
         text_atlas,
         emoji_atlas,
         text_pipeline,
@@ -368,7 +365,10 @@ async fn main() -> Result<(), AscendingError> {
 
     let mut views = HashMap::new();
 
-    views.insert("depthbuffer".to_string(), renderer.create_depth_texture());
+    views.insert(
+        "depthbuffer".to_string(),
+        gpu_window.create_depth_texture(&gpu_device),
+    );
 
     let mut bindings = Bindings::<Action, Axis>::new();
     bindings.insert_action(
@@ -390,7 +390,7 @@ async fn main() -> Result<(), AscendingError> {
                 ref event,
                 window_id,
                 ..
-            } if window_id == renderer.window().id() => {
+            } if window_id == gpu_window.window().id() => {
                 if let WindowEvent::CloseRequested = *event {
                     *control_flow = ControlFlow::Exit;
                 }
@@ -403,8 +403,8 @@ async fn main() -> Result<(), AscendingError> {
             id += 1;
         }
 
-        let new_size = renderer.size();
-        let inner_size = renderer.window().inner_size();
+        let new_size = gpu_window.size();
+        let inner_size = gpu_window.window().inner_size();
 
         if new_size.width == 0
             || new_size.height == 0
@@ -414,14 +414,14 @@ async fn main() -> Result<(), AscendingError> {
             return;
         }
 
-        input_handler.update(renderer.window(), &event, 1.0);
+        input_handler.update(gpu_window.window(), &event, 1.0);
 
         mouse_pos = {
             let pos = input_handler.mouse_position().unwrap_or((0.0, 0.0));
             Vec2::new(pos.0, size.height as f32 - pos.1)
         };
 
-        let frame = match renderer.update(&event).unwrap() {
+        let frame = match gpu_window.update(&gpu_device, &event).unwrap() {
             Some(frame) => frame,
             _ => return,
         };
@@ -440,7 +440,7 @@ async fn main() -> Result<(), AscendingError> {
 
             views.insert(
                 "depthbuffer".to_string(),
-                renderer.create_depth_texture(),
+                gpu_window.create_depth_texture(&gpu_device),
             );
         }
 
@@ -449,9 +449,9 @@ async fn main() -> Result<(), AscendingError> {
         }
 
         let seconds = frame_time.seconds();
-        state.system.update(renderer.gpu_device(), &frame_time);
+        state.system.update(&gpu_device, &frame_time);
         state.system.update_screen(
-            renderer.gpu_device(),
+            &gpu_device,
             [new_size.width as f32, new_size.height as f32],
         );
 
@@ -465,52 +465,47 @@ async fn main() -> Result<(), AscendingError> {
         state.sprites.iter_mut().for_each(|sprite| {
             state.sprite_buffer.add_buffer_store(sprite.update())
         });
-        state.sprite_buffer.finalize(renderer.gpu_device());
+        state.sprite_buffer.finalize(&gpu_device);
 
         state.text_buffer.add_buffer_store(
             text.update(
                 &mut font_cache,
                 &mut state.text_atlas,
                 &mut state.emoji_atlas,
-                renderer.gpu_device(),
+                &gpu_device,
                 &state.system,
             )
             .unwrap(),
         );
-        state.text_buffer.finalize(renderer.gpu_device());
+        state.text_buffer.finalize(&gpu_device);
 
-        let (lower, upper) = state
-            .map
-            .update(renderer.gpu_device(), &mut state.map_textures);
+        let (lower, upper) =
+            state.map.update(&gpu_device, &mut state.map_textures);
         state.maplower_buffer.add_buffer_store(lower);
         state.mapupper_buffer.add_buffer_store(upper);
-        state.maplower_buffer.finalize(renderer.gpu_device());
-        state.mapupper_buffer.finalize(renderer.gpu_device());
+        state.maplower_buffer.finalize(&gpu_device);
+        state.mapupper_buffer.finalize(&gpu_device);
 
         state
             .animation_buffer
             .add_buffer_store(state.animation.update());
-        state.animation_buffer.finalize(renderer.gpu_device());
+        state.animation_buffer.finalize(&gpu_device);
 
         state.rects_buffer.add_buffer_store(state.rects.update());
-        state.rects_buffer.finalize(renderer.gpu_device());
+        state.rects_buffer.finalize(&gpu_device);
 
         // Start encoding commands.
-        let mut encoder = renderer
-            .gpu_device()
-            .device()
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        let mut encoder = gpu_device.device().create_command_encoder(
+            &wgpu::CommandEncoderDescriptor {
                 label: Some("command encoder"),
-            });
+            },
+        );
 
         // Run the render pass.
-        state.render(&mut encoder, &views, &renderer);
+        state.render(&mut encoder, &views, &gpu_window);
 
         // Submit our command queue.
-        renderer
-            .gpu_device()
-            .queue()
-            .submit(std::iter::once(encoder.finish()));
+        gpu_device.queue().submit(std::iter::once(encoder.finish()));
 
         if time < seconds {
             text.set_text(

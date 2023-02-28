@@ -1,10 +1,6 @@
 use crate::AscendingError;
 use async_trait::async_trait;
-use std::{
-    cell::{Ref, RefCell},
-    path::Path,
-    rc::Rc,
-};
+use std::path::Path;
 use wgpu::TextureFormat;
 use winit::{
     dpi::PhysicalSize,
@@ -13,68 +9,50 @@ use winit::{
 };
 
 ///Handles the Device and Queue returned from WGPU.
-/// This can be cloned to any other struct as it is
-/// internally Rc<RefCell<>>. Cloning should be very fast.
-#[derive(Clone)]
 pub struct GpuDevice {
-    pub(crate) device: Rc<RefCell<wgpu::Device>>,
-    pub(crate) queue: Rc<RefCell<wgpu::Queue>>,
+    pub device: wgpu::Device,
+    pub queue: wgpu::Queue,
 }
 
 impl GpuDevice {
-    pub fn device(&self) -> Ref<'_, wgpu::Device> {
-        self.device.borrow()
+    pub fn device(&self) -> &wgpu::Device {
+        &self.device
     }
 
-    pub fn queue(&self) -> Ref<'_, wgpu::Queue> {
-        self.queue.borrow()
+    pub fn queue(&self) -> &wgpu::Queue {
+        &self.queue
     }
 }
 
-pub struct Renderer {
+///Handles the Window, Adapter and Surface information.
+pub struct GpuWindow {
     adapter: wgpu::Adapter,
-    gpu_device: GpuDevice,
     surface: wgpu::Surface,
     window: Window,
     surface_format: wgpu::TextureFormat,
     size: PhysicalSize<u32>,
-    present_mode: wgpu::PresentMode,
-    pub surface_config: wgpu::SurfaceConfiguration,
+    surface_config: wgpu::SurfaceConfiguration,
 }
 
-impl Renderer {
+impl GpuWindow {
     pub fn adapter(&self) -> &wgpu::Adapter {
         &self.adapter
     }
 
-    pub fn present_mode(&self) -> wgpu::PresentMode {
-        self.present_mode
-    }
-
-    pub fn gpu_device(&self) -> &GpuDevice {
-        &self.gpu_device
-    }
-
     pub fn resize(
         &mut self,
+        gpu_device: &GpuDevice,
         size: PhysicalSize<u32>,
     ) -> Result<(), AscendingError> {
         if size.width == 0 || size.height == 0 {
             return Ok(());
         }
 
-        self.surface.configure(
-            &self.gpu_device.device(),
-            &wgpu::SurfaceConfiguration {
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                format: wgpu::TextureFormat::Bgra8UnormSrgb,
-                width: size.width,
-                height: size.height,
-                present_mode: self.present_mode,
-                alpha_mode: wgpu::CompositeAlphaMode::Auto,
-                view_formats: vec![wgpu::TextureFormat::Bgra8UnormSrgb],
-            },
-        );
+        self.surface_config.height = size.height;
+        self.surface_config.width = size.width;
+
+        self.surface
+            .configure(gpu_device.device(), &self.surface_config);
 
         self.surface_format = wgpu::TextureFormat::Bgra8UnormSrgb;
         self.size = size;
@@ -96,6 +74,7 @@ impl Renderer {
 
     pub fn update(
         &mut self,
+        gpu_device: &GpuDevice,
         event: &Event<()>,
     ) -> Result<Option<wgpu::SurfaceTexture>, AscendingError> {
         match event {
@@ -104,10 +83,10 @@ impl Renderer {
                 window_id,
             } if *window_id == self.window.id() => match event {
                 WindowEvent::Resized(physical_size) => {
-                    self.resize(*physical_size)?;
+                    self.resize(gpu_device, *physical_size)?;
                 }
                 WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                    self.resize(**new_inner_size)?;
+                    self.resize(gpu_device, **new_inner_size)?;
                 }
                 _ => (),
             },
@@ -115,7 +94,7 @@ impl Renderer {
                 match self.surface.get_current_texture() {
                     Ok(frame) => return Ok(Some(frame)),
                     Err(wgpu::SurfaceError::Lost) => {
-                        self.resize(self.size)?;
+                        self.resize(gpu_device, self.size)?;
                     }
                     Err(wgpu::SurfaceError::Outdated) => {
                         return Ok(None);
@@ -136,7 +115,10 @@ impl Renderer {
         &self.window
     }
 
-    pub fn create_depth_texture(&self) -> wgpu::TextureView {
+    pub fn create_depth_texture(
+        &self,
+        gpu_device: &GpuDevice,
+    ) -> wgpu::TextureView {
         let size = wgpu::Extent3d {
             width: self.size.width,
             height: self.size.height,
@@ -144,7 +126,7 @@ impl Renderer {
         };
 
         let texture =
-            self.gpu_device
+            gpu_device
                 .device()
                 .create_texture(&wgpu::TextureDescriptor {
                     label: Some("depth texture"),
@@ -172,7 +154,7 @@ pub trait AdapterExt {
         device_descriptor: &wgpu::DeviceDescriptor,
         trace_path: Option<&Path>,
         present_mode: wgpu::PresentMode,
-    ) -> Result<Renderer, AscendingError>;
+    ) -> Result<(GpuWindow, GpuDevice), AscendingError>;
 }
 
 #[async_trait]
@@ -184,7 +166,7 @@ impl AdapterExt for wgpu::Adapter {
         device_descriptor: &wgpu::DeviceDescriptor,
         trace_path: Option<&Path>,
         present_mode: wgpu::PresentMode,
-    ) -> Result<Renderer, AscendingError> {
+    ) -> Result<(GpuWindow, GpuDevice), AscendingError> {
         let size = window.inner_size();
 
         let (device, queue) =
@@ -210,19 +192,17 @@ impl AdapterExt for wgpu::Adapter {
 
         surface.configure(&device, &surface_config);
 
-        Ok(Renderer {
-            adapter: self,
-            gpu_device: GpuDevice {
-                device: Rc::new(RefCell::new(device)),
-                queue: Rc::new(RefCell::new(queue)),
+        Ok((
+            GpuWindow {
+                adapter: self,
+                surface,
+                window,
+                surface_format: wgpu::TextureFormat::Bgra8UnormSrgb,
+                size,
+                surface_config,
             },
-            surface,
-            window,
-            surface_format: wgpu::TextureFormat::Bgra8UnormSrgb,
-            size,
-            present_mode,
-            surface_config,
-        })
+            GpuDevice { device, queue },
+        ))
     }
 }
 
@@ -235,7 +215,7 @@ pub trait InstanceExt {
         device_descriptor: &wgpu::DeviceDescriptor,
         trace_path: Option<&Path>,
         present_mode: wgpu::PresentMode,
-    ) -> Result<Renderer, AscendingError>;
+    ) -> Result<(GpuWindow, GpuDevice), AscendingError>;
 }
 
 #[async_trait]
@@ -247,7 +227,7 @@ impl InstanceExt for wgpu::Instance {
         device_descriptor: &wgpu::DeviceDescriptor,
         trace_path: Option<&Path>,
         present_mode: wgpu::PresentMode,
-    ) -> Result<Renderer, AscendingError> {
+    ) -> Result<(GpuWindow, GpuDevice), AscendingError> {
         let adapter =
             self.request_adapter(request_adapter_options).await.unwrap();
         adapter

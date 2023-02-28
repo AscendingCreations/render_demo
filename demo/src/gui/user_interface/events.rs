@@ -19,7 +19,12 @@ use winit::{
 };
 
 impl<T> UI<T> {
-    pub fn event_render(&mut self, time: FrameTime, user_data: &mut T) {
+    pub fn event_render(
+        &mut self,
+        device: &GpuDevice,
+        time: FrameTime,
+        user_data: &mut T,
+    ) {
         for handle in &self.zlist.clone() {
             let widget = self.get_widget(*handle);
 
@@ -28,13 +33,13 @@ impl<T> UI<T> {
 
             if let Some(callback) = self.get_inner_callback(&key) {
                 if let InternalCallBacks::Draw(draw) = callback.as_ref() {
-                    draw(&mut mut_wdgt, self, &time);
+                    draw(&mut mut_wdgt, self, device, &time);
                 }
             }
 
             if let Some(callback) = self.get_user_callback(&key) {
                 if let CallBacks::Draw(draw) = callback.as_ref() {
-                    draw(&mut mut_wdgt, self, &time, user_data);
+                    draw(&mut mut_wdgt, self, device, &time, user_data);
                 }
             }
         }
@@ -42,6 +47,7 @@ impl<T> UI<T> {
 
     pub fn event_mouse_position(
         &mut self,
+        device: &GpuDevice,
         window: &mut Window,
         position: Vec2,
         screensize: Vec2,
@@ -87,11 +93,14 @@ impl<T> UI<T> {
                         bounds.y,
                         control_pos.z,
                     ));
-                    self.widget_position_update(&mut focused.borrow_mut());
+                    self.widget_position_update(
+                        device,
+                        &mut focused.borrow_mut(),
+                    );
                 }
             }
 
-            self.mouse_over_event(user_data);
+            self.mouse_over_event(device, user_data);
         }
 
         self.mouse_pos = position;
@@ -99,6 +108,7 @@ impl<T> UI<T> {
 
     pub fn event_mouse_button(
         &mut self,
+        device: &GpuDevice,
         button: u32,
         pressed: bool,
         user_data: &mut T,
@@ -107,9 +117,9 @@ impl<T> UI<T> {
         self.mouse_clicked = self.mouse_pos;
 
         if pressed {
-            self.mouse_press(user_data);
+            self.mouse_press(device, user_data);
         } else {
-            self.mouse_release(user_data);
+            self.mouse_release(device, user_data);
         }
     }
 

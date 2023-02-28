@@ -14,6 +14,7 @@ pub struct Button {
 impl Button {
     fn button<T>(
         ui: &mut UI<T>,
+        device: &GpuDevice,
         id: Identity,
         position: Vec3,
         size: Vec2,
@@ -24,7 +25,7 @@ impl Button {
 
         shape
             .set_color(
-                &ui.gpu_device(),
+                device,
                 &mut ui.ui_buffer_mut().ui_atlas,
                 Color::rgba(20, 20, 20, 255),
             )

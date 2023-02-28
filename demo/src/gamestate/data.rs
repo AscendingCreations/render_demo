@@ -58,7 +58,7 @@ where
         &mut self,
         encoder: &mut wgpu::CommandEncoder,
         views: &HashMap<String, wgpu::TextureView>,
-        _renderer: &crate::Renderer,
+        _renderer: &crate::GpuWindow,
     ) {
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("render pass"),

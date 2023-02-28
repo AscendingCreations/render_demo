@@ -20,7 +20,6 @@ pub mod internals;
 
 pub struct UI<T> {
     ui_buffer: RefCell<UIBuffer>,
-    gpu_device: RefCell<GpuDevice>,
     /// Callback mapper. Hashes must be different.
     callbacks: HashMap<CallBackKey, Rc<InternalCallBacks<T>>>,
     user_callbacks: HashMap<CallBackKey, Rc<CallBacks<T>>>,
@@ -46,10 +45,9 @@ pub struct UI<T> {
 }
 
 impl<T> UI<T> {
-    pub fn new(ui_buffer: UIBuffer, gpu_device: &GpuDevice) -> Self {
+    pub fn new(ui_buffer: UIBuffer) -> Self {
         UI {
             ui_buffer: RefCell::new(ui_buffer),
-            gpu_device: RefCell::new(gpu_device.clone()),
             callbacks: HashMap::with_capacity(100),
             user_callbacks: HashMap::with_capacity(100),
             name_map: HashMap::with_capacity(100),
@@ -76,10 +74,6 @@ impl<T> UI<T> {
 
     pub fn ui_buffer_mut(&self) -> RefMut<'_, UIBuffer> {
         self.ui_buffer.borrow_mut()
-    }
-
-    pub fn gpu_device(&self) -> Ref<'_, GpuDevice> {
-        self.gpu_device.borrow()
     }
 
     pub fn get_widget(&self, handle: Handle) -> WidgetRef {
@@ -120,13 +114,17 @@ impl<T> UI<T> {
         self.widget_clear_self(&self.get_widget(*handle));
     }
 
-    pub fn show_widget_by_handle(&mut self, handle: Handle) {
-        self.widget_show(&self.get_widget(handle));
+    pub fn show_widget_by_handle(
+        &mut self,
+        device: &GpuDevice,
+        handle: Handle,
+    ) {
+        self.widget_show(device, &self.get_widget(handle));
     }
 
-    pub fn show_widget_by_id(&mut self, id: Identity) {
+    pub fn show_widget_by_id(&mut self, device: &GpuDevice, id: Identity) {
         let handle = self.name_map.get(&id).unwrap();
-        self.widget_show(&self.get_widget(*handle));
+        self.widget_show(device, &self.get_widget(*handle));
     }
 
     pub fn hide_widget_by_handle(&mut self, handle: Handle) {

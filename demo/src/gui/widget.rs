@@ -64,10 +64,15 @@ pub trait Control {
 
 pub trait AnyData: Control {
     fn as_any(&self) -> &dyn Any;
+    fn as_mut_any(&mut self) -> &mut dyn Any;
 }
 
 impl<T: Any + Control> AnyData for T {
     fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_mut_any(&mut self) -> &mut dyn Any {
         self
     }
 }

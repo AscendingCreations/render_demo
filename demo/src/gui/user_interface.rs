@@ -12,14 +12,14 @@ use std::{
     rc::Rc,
     vec::Vec,
 };
-use winit::event::{KeyboardInput, ModifiersState};
+use winit::event::{KeyboardInput, ModifiersState, MouseButton};
 use winit::window::Window;
 
 pub mod events;
 pub mod internals;
 
 pub struct UI<T> {
-    ui_buffer: RefCell<UIBuffer>,
+    ui_buffer: UIBuffer,
     /// Callback mapper. Hashes must be different.
     callbacks: HashMap<CallBackKey, Rc<InternalCallBacks<T>>>,
     user_callbacks: HashMap<CallBackKey, Rc<CallBacks<T>>>,
@@ -40,14 +40,14 @@ pub struct UI<T> {
     mouse_pos: Vec2,
     new_mouse_pos: Vec2,
     moving: bool,
-    button: u32,
+    button: MouseButton,
     modifier: ModifiersState,
 }
 
 impl<T> UI<T> {
     pub fn new(ui_buffer: UIBuffer) -> Self {
         UI {
-            ui_buffer: RefCell::new(ui_buffer),
+            ui_buffer,
             callbacks: HashMap::with_capacity(100),
             user_callbacks: HashMap::with_capacity(100),
             name_map: HashMap::with_capacity(100),
@@ -63,17 +63,17 @@ impl<T> UI<T> {
             mouse_pos: Vec2::default(),
             new_mouse_pos: Vec2::default(),
             moving: false,
-            button: 0,
+            button: MouseButton::Left,
             modifier: ModifiersState::default(),
         }
     }
 
-    pub fn ui_buffer(&self) -> Ref<'_, UIBuffer> {
-        self.ui_buffer.borrow()
+    pub fn ui_buffer(&self) -> &UIBuffer {
+        &self.ui_buffer
     }
 
-    pub fn ui_buffer_mut(&self) -> RefMut<'_, UIBuffer> {
-        self.ui_buffer.borrow_mut()
+    pub fn ui_buffer_mut(&mut self) -> &mut UIBuffer {
+        &mut self.ui_buffer
     }
 
     pub fn get_widget(&self, handle: Handle) -> WidgetRef {

@@ -2,7 +2,7 @@
 #![feature(option_result_contains)]
 use backtrace::Backtrace;
 use camera::{
-    controls::{FlatControls, FlatSettings},
+    controls::{Controls, FlatControls, FlatSettings},
     Projection,
 };
 use cosmic_text::{
@@ -97,6 +97,7 @@ async fn main() -> Result<(), AscendingError> {
     let window = WindowBuilder::new()
         .with_title("Demo")
         .with_inner_size(PhysicalSize::new(800, 600))
+        .with_visible(false)
         .build(&event_loop)
         .unwrap();
     let instance = wgpu::Instance::default();
@@ -331,9 +332,14 @@ async fn main() -> Result<(), AscendingError> {
         Some(TextBounds::new(8.0, 32.0, 190.0, 0.0)),
     );
 
+    let ui_buffer =
+        UIBuffer::new(&gpu_device, &gpu_window, &mut layout_storage)?;
+
     text.set_buffer_size(size.width as i32, size.height as i32);
 
     let buffer_object = StaticBufferObject::new(&gpu_device);
+    let ui = UI::<State<FlatControls>>::new(ui_buffer);
+    gpu_window.window().set_visible(true);
 
     let mut state = State {
         layout_storage,
@@ -502,7 +508,7 @@ async fn main() -> Result<(), AscendingError> {
         );
 
         // Run the render pass.
-        state.render(&mut encoder, &views, &gpu_window);
+        state.render(&mut encoder, &views, ui.ui_buffer());
 
         // Submit our command queue.
         gpu_device.queue().submit(std::iter::once(encoder.finish()));

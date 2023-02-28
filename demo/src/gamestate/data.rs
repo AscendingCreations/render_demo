@@ -2,6 +2,8 @@ use cosmic_text::{CacheKey, FontSystem};
 use graphics::*;
 use std::collections::HashMap;
 
+use crate::gui::RenderWidgets;
+
 pub struct State<Controls>
 where
     Controls: camera::controls::Controls,
@@ -50,7 +52,7 @@ where
     pub buffer_object: StaticBufferObject,
 }
 
-impl<Controls> Pass for State<Controls>
+impl<Controls> Pass<crate::UIBuffer> for State<Controls>
 where
     Controls: camera::controls::Controls,
 {
@@ -58,7 +60,7 @@ where
         &mut self,
         encoder: &mut wgpu::CommandEncoder,
         views: &HashMap<String, wgpu::TextureView>,
-        _renderer: &crate::GpuWindow,
+        ui_buffer: &crate::UIBuffer,
     ) {
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("render pass"),
@@ -146,5 +148,7 @@ where
             &self.rects_pipeline,
             &self.system,
         );
+
+        pass.render_widgets(ui_buffer, &self.system);
     }
 }

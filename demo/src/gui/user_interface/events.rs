@@ -15,11 +15,11 @@ use std::{
 use winit::window::Window;
 use winit::{
     dpi::PhysicalPosition,
-    event::{KeyboardInput, ModifiersState},
+    event::{KeyboardInput, ModifiersState, MouseButton},
 };
 
 impl<T> UI<T> {
-    pub fn event_render(
+    pub fn event_draw(
         &mut self,
         device: &GpuDevice,
         time: FrameTime,
@@ -109,7 +109,7 @@ impl<T> UI<T> {
     pub fn event_mouse_button(
         &mut self,
         device: &GpuDevice,
-        button: u32,
+        button: MouseButton,
         pressed: bool,
         user_data: &mut T,
     ) {

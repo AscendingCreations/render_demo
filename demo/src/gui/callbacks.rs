@@ -5,7 +5,7 @@ use std::any::Any;
 use std::marker::PhantomData;
 use std::{cell::RefCell, collections::VecDeque, rc::Rc, vec::Vec};
 use ubits::bitfield;
-use winit::event::{KeyboardInput, ModifiersState};
+use winit::event::{KeyboardInput, ModifiersState, MouseButton};
 
 #[derive(Eq, PartialEq, Hash, Clone)]
 pub struct CallBackKey {
@@ -38,7 +38,7 @@ pub enum CallBack {
 pub type InternalDrawRef<T> =
     Box<dyn Fn(&mut Widget, &mut UI<T>, &GpuDevice, &FrameTime)>;
 pub type InternalBooleanRef<T> =
-    Box<dyn Fn(&mut Widget, &mut UI<T>, &GpuDevice, bool) -> bool>;
+    Box<dyn Fn(&mut Widget, &mut UI<T>, &GpuDevice, bool)>;
 pub type InternalMouseScrollRef<T> = Box<
     dyn Fn(
         &mut Widget,
@@ -53,7 +53,7 @@ pub type InternalMousePressRef<T> = Box<
         &mut Widget,
         &mut UI<T>,
         &GpuDevice,
-        u32,
+        MouseButton,
         bool,
         ModifiersState,
     ) -> bool,
@@ -99,7 +99,7 @@ pub type MousePressRef<T> = Box<
         &mut Widget,
         &mut UI<T>,
         &GpuDevice,
-        u32,
+        MouseButton,
         bool,
         ModifiersState,
         &mut T,

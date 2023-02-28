@@ -1,4 +1,7 @@
-use crate::{Control, Identity, UIBuffer, Widget, WidgetRef, UI};
+use crate::{
+    Control, FrameTime, Identity, ModifiersState, MouseButton, UIBuffer,
+    UiFlags, Widget, WidgetRef, UI,
+};
 use graphics::*;
 
 pub struct Button {
@@ -9,6 +12,77 @@ pub struct Button {
     border_clicked_color: Color,
     border_color: Color,
     shape: Rect,
+}
+
+fn draw<T>(
+    control: &mut Widget,
+    ui: &mut UI<T>,
+    _device: &GpuDevice,
+    _time: &FrameTime,
+) {
+    if let Some(button) =
+        control.ui.as_mut().as_mut_any().downcast_mut::<Button>()
+    {
+        ui.ui_buffer_mut()
+            .ui_buffer
+            .add_buffer_store(button.shape.update())
+    }
+}
+
+fn mouse_over<T>(
+    control: &mut Widget,
+    ui: &mut UI<T>,
+    device: &GpuDevice,
+    is_over: bool,
+) {
+    if let Some(button) =
+        control.ui.as_mut().as_mut_any().downcast_mut::<Button>()
+    {
+        button.shape.set_color(
+            device,
+            &mut ui.ui_buffer_mut().ui_atlas,
+            if is_over {
+                button.color
+            } else {
+                button.border_over_color
+            },
+        );
+    }
+}
+
+fn mouse_button<T>(
+    control: &mut Widget,
+    ui: &mut UI<T>,
+    device: &GpuDevice,
+    mouse_btn: MouseButton,
+    is_pressed: bool,
+    _mods: ModifiersState,
+) {
+    let mouse_over = control.actions.get(crate::gui::UiFlags::MouseOver);
+
+    if let Some(button) =
+        control.ui.as_mut().as_mut_any().downcast_mut::<Button>()
+    {
+        if mouse_btn == MouseButton::Left {
+            if mouse_over {
+                button.shape.set_color(
+                    device,
+                    &mut ui.ui_buffer_mut().ui_atlas,
+                    if is_pressed {
+                        button.clicked_color
+                    } else {
+                        button.border_clicked_color
+                    },
+                );
+            } else {
+                button.shape.set_color(
+                    device,
+                    &mut ui.ui_buffer_mut().ui_atlas,
+                    button.color,
+                );
+            }
+        }
+    }
 }
 
 impl Button {

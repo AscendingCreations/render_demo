@@ -11,3 +11,4 @@ pub use user_interface::*;
 pub use values::ReturnValue;
 pub use widget::*;
 pub use widgets::*;
+pub use winit::event::{KeyboardInput, ModifiersState, MouseButton};

@@ -115,6 +115,10 @@ impl GpuWindow {
         &self.window
     }
 
+    pub fn window_mut(&mut self) -> &mut Window {
+        &mut self.window
+    }
+
     pub fn create_depth_texture(
         &self,
         gpu_device: &GpuDevice,

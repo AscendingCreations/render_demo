@@ -1,14 +1,15 @@
-use crate::{CallBack, UIBuffer};
+use crate::{CallBack, InternalCallBacks, UIBuffer};
 use graphics::*;
 use input::FrameTime;
 use std::any::Any;
 use std::{cell::RefCell, collections::VecDeque, rc::Rc, vec::Vec};
 use ubits::bitfield;
+use wgpu::StencilFaceState;
 use winit::event::{KeyboardInput, ModifiersState};
 
 use super::CallBackKey;
 
-pub type WidgetRef = Rc<RefCell<Widget>>;
+pub type WidgetRef<T> = Rc<RefCell<Widget<T>>>;
 
 #[derive(Eq, PartialEq, Hash, Copy, Clone)]
 pub struct Handle(pub(crate) usize);
@@ -54,20 +55,30 @@ bitfield! {
     }
 }
 
-pub trait Control {
+pub trait Control<T> {
     fn check_mouse_bounds(&self, mouse_pos: Vec2) -> bool;
     fn get_bounds(&self) -> Vec4;
     fn get_size(&self) -> Vec2;
     fn get_position(&mut self) -> Vec3;
     fn set_position(&mut self, position: Vec3);
+    fn into_widget(self, id: Identity) -> WidgetRef<T>
+    where
+        Self: std::marker::Sized + 'static,
+    {
+        Widget::new(id, self).into()
+    }
+    fn get_internal_callbacks(
+        &self,
+        id: &Identity,
+    ) -> Vec<(InternalCallBacks<T>, CallBackKey)>;
 }
 
-pub trait AnyData: Control {
+pub trait AnyData<T>: Control<T> {
     fn as_any(&self) -> &dyn Any;
     fn as_mut_any(&mut self) -> &mut dyn Any;
 }
 
-impl<T: Any + Control> AnyData for T {
+impl<T, U: Any + Control<T>> AnyData<T> for U {
     fn as_any(&self) -> &dyn Any {
         self
     }
@@ -79,7 +90,7 @@ impl<T: Any + Control> AnyData for T {
 
 /// TODO: Make Bounds Updater that will Update all the internal Bounds based on
 /// Parents Bounds if they got changed or if the childrens positions changed.
-pub struct Widget {
+pub struct Widget<T> {
     /// System Granted ID.
     pub id: Handle,
     /// Widgets Name and user given ID.
@@ -87,7 +98,7 @@ pub struct Widget {
     /// Used to Calculate and set the internal bounds of the widgets Data.
     pub bounds: Bounds,
     /// The UI holder for the Specific Widget.
-    pub ui: Box<dyn AnyData>,
+    pub ui: Box<dyn AnyData<T>>,
     ///If none then it is the Top most in the widget Tree.
     pub parent: Option<Handle>,
     ///The visible children in the Tree.
@@ -98,8 +109,11 @@ pub struct Widget {
     pub actions: UiField,
 }
 
-impl Widget {
-    pub fn new(identity: Identity, control: (impl AnyData + 'static)) -> Self {
+impl<T> Widget<T> {
+    pub fn new(
+        identity: Identity,
+        control: (impl AnyData<T> + 'static),
+    ) -> Self {
         Self {
             identity,
             ui: Box::new(control),
@@ -127,8 +141,8 @@ impl Widget {
     }
 }
 
-impl From<Widget> for WidgetRef {
-    fn from(widget: Widget) -> Self {
+impl<T> From<Widget<T>> for WidgetRef<T> {
+    fn from(widget: Widget<T>) -> Self {
         Rc::new(RefCell::new(widget))
     }
 }

@@ -1,6 +1,6 @@
 use crate::{
-    Control, FrameTime, Identity, ModifiersState, MouseButton, UIBuffer,
-    UiFlags, Widget, WidgetRef, UI,
+    CallBack, CallBackKey, Control, FrameTime, Identity, InternalCallBacks,
+    ModifiersState, MouseButton, UIBuffer, UiFlags, Widget, WidgetRef, UI,
 };
 use graphics::*;
 
@@ -15,7 +15,7 @@ pub struct Button {
 }
 
 fn draw<T>(
-    control: &mut Widget,
+    control: &mut Widget<T>,
     ui: &mut UI<T>,
     _device: &GpuDevice,
     _time: &FrameTime,
@@ -30,7 +30,7 @@ fn draw<T>(
 }
 
 fn mouse_over<T>(
-    control: &mut Widget,
+    control: &mut Widget<T>,
     ui: &mut UI<T>,
     device: &GpuDevice,
     is_over: bool,
@@ -38,20 +38,31 @@ fn mouse_over<T>(
     if let Some(button) =
         control.ui.as_mut().as_mut_any().downcast_mut::<Button>()
     {
-        button.shape.set_color(
-            device,
-            &mut ui.ui_buffer_mut().ui_atlas,
-            if is_over {
-                button.color
-            } else {
-                button.border_over_color
-            },
-        );
+        button
+            .shape
+            .set_color(
+                device,
+                &mut ui.ui_buffer_mut().ui_atlas,
+                if is_over {
+                    button.over_color
+                } else {
+                    button.color
+                },
+            )
+            .set_border_color(
+                device,
+                &mut ui.ui_buffer_mut().ui_atlas,
+                if is_over {
+                    button.border_over_color
+                } else {
+                    button.border_color
+                },
+            );
     }
 }
 
 fn mouse_button<T>(
-    control: &mut Widget,
+    control: &mut Widget<T>,
     ui: &mut UI<T>,
     device: &GpuDevice,
     mouse_btn: MouseButton,
@@ -86,27 +97,33 @@ fn mouse_button<T>(
 }
 
 impl Button {
-    fn button<T>(
-        ui: &mut UI<T>,
+    pub fn new(
+        ui_buffer: &mut UIBuffer,
         device: &GpuDevice,
-        id: Identity,
         position: Vec3,
         size: Vec2,
-        parent_id: Option<Identity>,
-        hidden: bool,
-    ) -> WidgetRef {
+        border_width: f32,
+        radius: Option<f32>,
+    ) -> Button {
         let mut shape = Rect::default();
 
         shape
             .set_color(
                 device,
-                &mut ui.ui_buffer_mut().ui_atlas,
+                &mut ui_buffer.ui_atlas,
                 Color::rgba(20, 20, 20, 255),
             )
+            .set_border_color(
+                device,
+                &mut ui_buffer.ui_atlas,
+                Color::rgba(0, 0, 0, 255),
+            )
+            .set_border_width(border_width)
+            .set_radius(radius)
             .set_position(position)
             .set_size(size);
 
-        let button = Self {
+        Self {
             over_color: Color::rgba(40, 40, 40, 255),
             clicked_color: Color::rgba(60, 60, 60, 255),
             color: Color::rgba(20, 20, 20, 255),
@@ -114,21 +131,11 @@ impl Button {
             border_clicked_color: Color::rgba(0, 0, 0, 255),
             border_color: Color::rgba(0, 0, 0, 255),
             shape,
-        };
-
-        let widget: WidgetRef = Widget::new(id, button).into();
-
-        if hidden {
-            ui.add_hidden_widget_by_id(parent_id, widget.clone());
-        } else {
-            ui.add_widget_by_id(parent_id, widget.clone());
         }
-
-        widget
     }
 }
 
-impl Control for Button {
+impl<T: 'static> Control<T> for Button {
     fn check_mouse_bounds(&self, mouse_pos: Vec2) -> bool {
         self.shape.check_mouse_bounds(mouse_pos)
     }
@@ -150,5 +157,21 @@ impl Control for Button {
 
     fn set_position(&mut self, position: Vec3) {
         self.shape.position = position;
+    }
+
+    fn get_internal_callbacks(
+        &self,
+        id: &Identity,
+    ) -> Vec<(InternalCallBacks<T>, CallBackKey)> {
+        vec![
+            (
+                InternalCallBacks::Draw(Box::new(draw)),
+                CallBackKey::new(id, CallBack::Draw),
+            ),
+            (
+                InternalCallBacks::MousePresent(Box::new(mouse_over)),
+                CallBackKey::new(id, CallBack::MousePresent),
+            ),
+        ]
     }
 }

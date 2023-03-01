@@ -24,7 +24,7 @@ pub struct UI<T> {
     callbacks: HashMap<CallBackKey, Rc<InternalCallBacks<T>>>,
     user_callbacks: HashMap<CallBackKey, Rc<CallBacks<T>>>,
     name_map: HashMap<Identity, Handle>,
-    widgets: Slab<WidgetRef>,
+    widgets: Slab<WidgetRef<T>>,
     ///Contains All Visible widgets in rendering order
     zlist: VecDeque<Handle>,
     ///The Visible Top widgets.
@@ -76,14 +76,14 @@ impl<T> UI<T> {
         &mut self.ui_buffer
     }
 
-    pub fn get_widget(&self, handle: Handle) -> WidgetRef {
+    pub fn get_widget(&self, handle: Handle) -> WidgetRef<T> {
         self.widgets
             .get(handle.get_key())
             .expect("ID Existed but widget does not exist?")
             .clone()
     }
 
-    pub fn get_widget_by_id(&self, id: Identity) -> WidgetRef {
+    pub fn get_widget_by_id(&self, id: Identity) -> WidgetRef<T> {
         let handle = self.name_map.get(&id).unwrap();
         self.widgets
             .get(handle.get_key())
@@ -103,6 +103,22 @@ impl<T> UI<T> {
         key: &CallBackKey,
     ) -> Option<Rc<InternalCallBacks<T>>> {
         self.callbacks.get(key).cloned()
+    }
+
+    pub fn add_inner_callback(
+        &mut self,
+        callback: InternalCallBacks<T>,
+        key: CallBackKey,
+    ) {
+        self.callbacks.insert(key, Rc::new(callback));
+    }
+
+    pub fn add_user_callback(
+        &mut self,
+        callback: CallBacks<T>,
+        key: CallBackKey,
+    ) {
+        self.user_callbacks.insert(key, Rc::new(callback));
     }
 
     pub fn remove_widget_by_handle(&mut self, handle: Handle) {
@@ -139,7 +155,7 @@ impl<T> UI<T> {
     pub fn add_widget_by_handle(
         &mut self,
         parent_handle: Option<Handle>,
-        control: WidgetRef,
+        control: WidgetRef<T>,
     ) {
         if let Some(handle) = parent_handle {
             self.widget_add(Some(&self.get_widget(handle)), control);
@@ -151,7 +167,7 @@ impl<T> UI<T> {
     pub fn add_widget_by_id(
         &mut self,
         parent_id: Option<Identity>,
-        control: WidgetRef,
+        control: WidgetRef<T>,
     ) {
         if let Some(id) = parent_id {
             let handle = self.name_map.get(&id).unwrap();
@@ -164,7 +180,7 @@ impl<T> UI<T> {
     pub fn add_hidden_widget_by_handle(
         &mut self,
         parent_handle: Option<Handle>,
-        control: WidgetRef,
+        control: WidgetRef<T>,
     ) {
         if let Some(handle) = parent_handle {
             self.widget_add_hidden(Some(&self.get_widget(handle)), control);
@@ -176,7 +192,7 @@ impl<T> UI<T> {
     pub fn add_hidden_widget_by_id(
         &mut self,
         parent_id: Option<Identity>,
-        control: WidgetRef,
+        control: WidgetRef<T>,
     ) {
         if let Some(id) = parent_id {
             let handle = self.name_map.get(&id).unwrap();

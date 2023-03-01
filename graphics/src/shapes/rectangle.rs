@@ -8,7 +8,7 @@ use image::{self, ImageBuffer};
 pub struct Rect {
     pub position: Vec3,
     pub size: Vec2,
-    pub border_width: u32,
+    pub border_width: f32,
     pub container: Option<Allocation>,
     pub container_uv: Vec4,
     pub border: Option<Allocation>,
@@ -24,7 +24,7 @@ impl Default for Rect {
         Self {
             position: Vec3::default(),
             size: Vec2::default(),
-            border_width: 0,
+            border_width: 0.0,
             container: None,
             container_uv: Vec4::default(),
             border: None,
@@ -57,8 +57,15 @@ impl Rect {
         atlas: &mut AtlasGroup,
         color: Color,
     ) -> &mut Self {
-        self.container = Self::add_color(gpu_device, atlas, color);
-        self.changed = true;
+        if let Some(allocation) = Self::add_color(gpu_device, atlas, color) {
+            let rect = allocation.rect();
+
+            self.container_uv =
+                Vec4::new(0.0, 0.0, rect.2 as f32, rect.3 as f32);
+            self.container = Some(allocation);
+            self.changed = true;
+        }
+
         self
     }
 
@@ -68,8 +75,14 @@ impl Rect {
         atlas: &mut AtlasGroup,
         color: Color,
     ) -> &mut Self {
-        self.border = Self::add_color(gpu_device, atlas, color);
-        self.changed = true;
+        if let Some(allocation) = Self::add_color(gpu_device, atlas, color) {
+            let rect = allocation.rect();
+
+            self.border_uv = Vec4::new(0.0, 0.0, rect.2 as f32, rect.3 as f32);
+            self.border = Some(allocation);
+            self.changed = true;
+        }
+
         self
     }
 
@@ -82,6 +95,10 @@ impl Rect {
         let allocation = Texture::from_file(path)?
             .group_upload(atlas, gpu_device)
             .ok_or_else(|| OtherError::new("failed to upload image"))?;
+
+        let rect = allocation.rect();
+
+        self.container_uv = Vec4::new(0.0, 0.0, rect.2 as f32, rect.3 as f32);
         self.container = Some(allocation);
         self.changed = true;
         Ok(self)
@@ -96,6 +113,14 @@ impl Rect {
         let allocation = Texture::from_file(path)?
             .group_upload(atlas, gpu_device)
             .ok_or_else(|| OtherError::new("failed to upload image"))?;
+        let rect = allocation.rect();
+
+        self.border_uv = Vec4::new(
+            rect.0 as f32,
+            rect.1 as f32,
+            rect.2 as f32,
+            rect.3 as f32,
+        );
         self.border = Some(allocation);
         self.changed = true;
         Ok(self)
@@ -133,7 +158,19 @@ impl Rect {
         self.changed = true;
         self
     }
-    
+
+    pub fn set_border_width(&mut self, size: f32) -> &mut Self {
+        self.border_width = size;
+        self.changed = true;
+        self
+    }
+
+    pub fn set_radius(&mut self, radius: Option<f32>) -> &mut Self {
+        self.radius = radius;
+        self.changed = true;
+        self
+    }
+
     pub fn create_quad(&mut self) {
         let containter_tex = match self.container {
             Some(allocation) => allocation,
@@ -164,7 +201,7 @@ impl Rect {
         let buffer = RectVertex {
             position: *self.position.as_array(),
             size: *self.size.as_array(),
-            border_width: self.border_width as f32,
+            border_width: self.border_width,
             radius: self.radius.unwrap_or_default(),
             container_data,
             border_data,

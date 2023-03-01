@@ -274,7 +274,7 @@ async fn main() -> Result<(), AscendingError> {
     let mut rects = Rect {
         position: Vec3::new(150.0, 150.0, 1.0),
         size: Vec2::new(132.0, 32.0),
-        border_width: 2,
+        border_width: 2.0,
         radius: Some(5.0),
         changed: true,
         ..Default::default()
@@ -286,8 +286,8 @@ async fn main() -> Result<(), AscendingError> {
             &gpu_device,
             &mut atlases[3],
             Color::rgba(0, 0, 0, 255),
-        )
-        .set_container_uv(Vec4::new(0.0, 0.0, 168.0, 32.0));
+        );
+    //.set_container_uv(Vec4::new(0.0, 0.0, 168.0, 32.0));
 
     let mut font_cache: SwashCache<'static> = SwashCache::new(&FONT_SYSTEM);
     //let text_render = TextRender::new();
@@ -312,6 +312,23 @@ async fn main() -> Result<(), AscendingError> {
 
     let buffer_object = StaticBufferObject::new(&gpu_device);
     let mut ui = UI::<State<FlatControls>>::new(ui_buffer);
+    let button = Button::new(
+        ui.ui_buffer_mut(),
+        &gpu_device,
+        Vec3::new(60.0, 300.0, 1.0),
+        Vec2::new(50.0, 50.0),
+        1.0,
+        Some(5.0),
+    );
+
+    let button: WidgetRef<State<FlatControls>> = button.into_widget(Identity {
+        name: "button".to_string(),
+        id: 1,
+    });
+
+    button.borrow_mut().actions.set(UiFlags::AlwaysUseable);
+    ui.add_widget_by_id(None, button);
+
     gpu_window.window().set_visible(true);
 
     let mut state = State {
@@ -394,6 +411,7 @@ async fn main() -> Result<(), AscendingError> {
         }
 
         input_handler.update(gpu_window.window(), &event, 1.0);
+        ui.handle_events(&mut gpu_window, &gpu_device, &event, 1.0, &mut state);
 
         mouse_pos = {
             let pos = input_handler.mouse_position().unwrap_or((0.0, 0.0));
@@ -473,6 +491,7 @@ async fn main() -> Result<(), AscendingError> {
         state.rects_buffer.add_buffer_store(state.rects.update());
         state.rects_buffer.finalize(&gpu_device);
 
+        ui.event_draw(&gpu_device, &frame_time, &mut state);
         // Start encoding commands.
         let mut encoder = gpu_device.device().create_command_encoder(
             &wgpu::CommandEncoderDescriptor {

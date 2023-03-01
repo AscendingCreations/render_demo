@@ -12,17 +12,20 @@ use std::{
     rc::Rc,
     vec::Vec,
 };
-use winit::window::Window;
 use winit::{
     dpi::PhysicalPosition,
-    event::{KeyboardInput, ModifiersState, MouseButton},
+    event::{
+        DeviceEvent, ElementState, Event, KeyboardInput, ModifiersState,
+        MouseButton, MouseScrollDelta, WindowEvent,
+    },
+    window::Window,
 };
 
 impl<T> UI<T> {
     pub fn event_draw(
         &mut self,
         device: &GpuDevice,
-        time: FrameTime,
+        time: &FrameTime,
         user_data: &mut T,
     ) {
         for handle in &self.zlist.clone() {
@@ -33,16 +36,19 @@ impl<T> UI<T> {
 
             if let Some(callback) = self.get_inner_callback(&key) {
                 if let InternalCallBacks::Draw(draw) = callback.as_ref() {
-                    draw(&mut mut_wdgt, self, device, &time);
+                    draw(&mut mut_wdgt, self, device, time);
                 }
             }
 
             if let Some(callback) = self.get_user_callback(&key) {
                 if let CallBacks::Draw(draw) = callback.as_ref() {
-                    draw(&mut mut_wdgt, self, device, &time, user_data);
+                    draw(&mut mut_wdgt, self, device, time, user_data);
                 }
             }
         }
+
+        self.ui_buffer_mut().ui_buffer.finalize(device);
+        self.ui_buffer_mut().text_buffer.finalize(device);
     }
 
     pub fn event_mouse_position(
@@ -125,5 +131,92 @@ impl<T> UI<T> {
 
     pub fn event_modifiers(&mut self, modifier: ModifiersState) {
         self.modifier = modifier;
+    }
+
+    pub fn handle_events(
+        &mut self,
+        window: &mut GpuWindow,
+        device: &GpuDevice,
+        event: &Event<()>,
+        hidpi: f32,
+        user_data: &mut T,
+    ) {
+        match *event {
+            Event::WindowEvent {
+                ref event,
+                window_id,
+            } if window_id == window.window().id() => match event {
+                WindowEvent::KeyboardInput {
+                    input:
+                        KeyboardInput {
+                            state: _,
+                            virtual_keycode: Some(_key_code),
+                            scancode: _,
+                            ..
+                        },
+                    ..
+                } => {}
+                WindowEvent::MouseInput {
+                    state: _,
+                    button: _,
+                    ..
+                } => {
+                    /*  if *state == ElementState::Pressed {
+                        self.mouse_buttons.insert(*button);
+                    } else {
+                        self.mouse_buttons.remove(button);
+                    }*/
+                }
+                WindowEvent::CursorMoved {
+                    position: PhysicalPosition { x, y },
+                    ..
+                } => {
+                    let size = window.size();
+                    let pos = Vec2::new(
+                        (*x as f32) * hidpi,
+                        size.height as f32 - ((*y as f32) * hidpi),
+                    );
+                    self.event_mouse_position(
+                        device,
+                        window.window_mut(),
+                        pos,
+                        Vec2::new(size.width as f32, size.height as f32),
+                        user_data,
+                    );
+                }
+                _ => (),
+            },
+            Event::DeviceEvent { ref event, .. } => match *event {
+                DeviceEvent::MouseMotion { delta: _ } => {}
+                DeviceEvent::MouseWheel {
+                    delta: MouseScrollDelta::LineDelta(_dx, _dy),
+                } => {
+                    /* if dx != 0.0 {
+                        self.mouse_wheel.0 = dx.signum();
+                    }
+
+                    if dy != 0.0 {
+                        self.mouse_wheel.1 = dy.signum();
+                    }*/
+                }
+                DeviceEvent::MouseWheel {
+                    delta:
+                        MouseScrollDelta::PixelDelta(PhysicalPosition {
+                            x: _,
+                            y: _,
+                        }),
+                } => {
+                    /*if x != 0.0 {
+                        self.mouse_wheel.0 = x.signum() as f32;
+                    }
+
+                    if y != 0.0 {
+                        self.mouse_wheel.1 = y.signum() as f32;
+                    }*/
+                }
+                _ => (),
+            },
+            _ => (),
+        }
     }
 }

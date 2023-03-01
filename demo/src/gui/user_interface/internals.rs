@@ -52,7 +52,7 @@ impl<T> UI<T> {
     pub(crate) fn widget_mouse_over_callback(
         &mut self,
         device: &GpuDevice,
-        control: &WidgetRef,
+        control: &WidgetRef<T>,
         entered: bool,
         user_data: &mut T,
     ) {
@@ -81,7 +81,7 @@ impl<T> UI<T> {
     pub(crate) fn widget_mouse_over(
         &mut self,
         device: &GpuDevice,
-        control: &WidgetRef,
+        control: &WidgetRef<T>,
         entered: bool,
         user_data: &mut T,
     ) {
@@ -124,7 +124,7 @@ impl<T> UI<T> {
         }
     }
 
-    pub(crate) fn widget_usable(&self, control: &WidgetRef) -> bool {
+    pub(crate) fn widget_usable(&self, control: &WidgetRef<T>) -> bool {
         if control.borrow().actions.get(UiFlags::AlwaysUseable) {
             return true;
         }
@@ -154,7 +154,7 @@ impl<T> UI<T> {
     pub(crate) fn widget_manual_focus(
         &mut self,
         device: &GpuDevice,
-        control: &WidgetRef,
+        control: &WidgetRef<T>,
     ) {
         let handle = control.borrow().id;
 
@@ -200,7 +200,7 @@ impl<T> UI<T> {
     pub(crate) fn widget_show(
         &mut self,
         device: &GpuDevice,
-        control: &WidgetRef,
+        control: &WidgetRef<T>,
     ) {
         let handle = control.borrow().id;
 
@@ -222,7 +222,7 @@ impl<T> UI<T> {
         }
     }
 
-    pub(crate) fn widget_hide(&mut self, control: &WidgetRef) {
+    pub(crate) fn widget_hide(&mut self, control: &WidgetRef<T>) {
         let handle = control.borrow().id;
 
         if control.borrow().parent.is_none() {
@@ -246,11 +246,20 @@ impl<T> UI<T> {
 
     pub(crate) fn widget_add(
         &mut self,
-        parent: Option<&WidgetRef>,
-        control: WidgetRef,
+        parent: Option<&WidgetRef<T>>,
+        control: WidgetRef<T>,
     ) {
         if self.name_map.contains_key(&control.borrow().identity) {
             panic!("You can not use the same Identity for multiple widgets");
+        }
+
+        let callbacks = control
+            .borrow()
+            .ui
+            .get_internal_callbacks(&control.borrow().identity);
+
+        for (callback, key) in callbacks {
+            self.add_inner_callback(callback, key);
         }
 
         let handle = Handle(self.widgets.insert(control));
@@ -272,13 +281,14 @@ impl<T> UI<T> {
 
     pub(crate) fn widget_add_hidden(
         &mut self,
-        parent: Option<&WidgetRef>,
-        control: WidgetRef,
+        parent: Option<&WidgetRef<T>>,
+        control: WidgetRef<T>,
     ) {
         if self.name_map.contains_key(&control.borrow().identity) {
             panic!("You can not use the same Identity for multiple widgets even if hidden");
         }
 
+        //let callbacks = control.borrow().ui
         let handle = Handle(self.widgets.insert(control));
         let control = self.get_widget(handle);
 
@@ -293,7 +303,7 @@ impl<T> UI<T> {
         }
     }
 
-    pub(crate) fn widget_clear_self(&mut self, control: &WidgetRef) {
+    pub(crate) fn widget_clear_self(&mut self, control: &WidgetRef<T>) {
         let handle = control.borrow().id;
 
         if control.borrow().parent.is_none() {
@@ -349,7 +359,7 @@ impl<T> UI<T> {
         self.widget_clear_hidden(control);
     }
 
-    pub(crate) fn widget_clear_visible(&mut self, control: &WidgetRef) {
+    pub(crate) fn widget_clear_visible(&mut self, control: &WidgetRef<T>) {
         for child_handle in &control.borrow().visible {
             self.widget_clear_self(&self.get_widget(*child_handle));
         }
@@ -358,7 +368,7 @@ impl<T> UI<T> {
         control.borrow_mut().visible.clear();
     }
 
-    pub(crate) fn widget_clear_hidden(&mut self, control: &WidgetRef) {
+    pub(crate) fn widget_clear_hidden(&mut self, control: &WidgetRef<T>) {
         for child_handle in &control.borrow().hidden {
             self.widget_clear_self(&self.get_widget(*child_handle));
         }
@@ -371,7 +381,7 @@ impl<T> UI<T> {
     // This does not move the children into the controls hidden Vec.
     // This is because we want to be able to reshow All the visible children
     // when we unhide the control.
-    pub(crate) fn widget_hide_children(&mut self, control: &WidgetRef) {
+    pub(crate) fn widget_hide_children(&mut self, control: &WidgetRef<T>) {
         for child_handle in &control.borrow().visible {
             let child = self.get_widget(*child_handle);
 
@@ -399,7 +409,7 @@ impl<T> UI<T> {
 
     //This will Advance the children into the Back of the Zlist allowing them to
     //render on top.
-    pub(crate) fn widget_show_children(&mut self, control: &WidgetRef) {
+    pub(crate) fn widget_show_children(&mut self, control: &WidgetRef<T>) {
         for child_handle in &control.borrow().visible {
             let child = self.get_widget(*child_handle);
 
@@ -419,7 +429,7 @@ impl<T> UI<T> {
     pub(crate) fn widget_focused_callback(
         &mut self,
         device: &GpuDevice,
-        control: &WidgetRef,
+        control: &WidgetRef<T>,
         focused: bool,
     ) {
         let mut mut_wdgt = control.borrow_mut();
@@ -440,7 +450,7 @@ impl<T> UI<T> {
     pub(crate) fn widget_mouse_press_callbacks(
         &mut self,
         device: &GpuDevice,
-        control: &WidgetRef,
+        control: &WidgetRef<T>,
         pressed: bool,
         user_data: &mut T,
     ) {
@@ -480,7 +490,7 @@ impl<T> UI<T> {
     pub(crate) fn widget_set_clicked(
         &mut self,
         device: &GpuDevice,
-        control: &WidgetRef,
+        control: &WidgetRef<T>,
         user_data: &mut T,
     ) {
         {
@@ -525,7 +535,7 @@ impl<T> UI<T> {
     pub(crate) fn widget_set_focus(
         &mut self,
         device: &GpuDevice,
-        control: &WidgetRef,
+        control: &WidgetRef<T>,
         user_data: &mut T,
     ) {
         let handle = control.borrow().id;
@@ -560,7 +570,7 @@ impl<T> UI<T> {
     pub(crate) fn is_parent_focused(
         &mut self,
         device: &GpuDevice,
-        control: &WidgetRef,
+        control: &WidgetRef<T>,
         user_data: &mut T,
     ) -> bool {
         if control.borrow().actions.get(UiFlags::AlwaysUseable) {
@@ -598,7 +608,7 @@ impl<T> UI<T> {
         false
     }
 
-    pub(crate) fn widget_is_focused(&mut self, control: &WidgetRef) -> bool {
+    pub(crate) fn widget_is_focused(&mut self, control: &WidgetRef<T>) -> bool {
         if control.borrow().actions.get(UiFlags::IsFocused) {
             return true;
         }
@@ -621,7 +631,7 @@ impl<T> UI<T> {
     pub(crate) fn mouse_press_event(
         &mut self,
         device: &GpuDevice,
-        control: &WidgetRef,
+        control: &WidgetRef<T>,
         user_data: &mut T,
     ) {
         if control.borrow().actions.get(UiFlags::CanFocus) {
@@ -706,7 +716,7 @@ impl<T> UI<T> {
     pub(crate) fn widget_position_update(
         &mut self,
         device: &GpuDevice,
-        parent: &mut Widget,
+        parent: &mut Widget<T>,
     ) {
         let key = parent.callback_key(CallBack::PositionChange);
 

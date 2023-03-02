@@ -156,16 +156,11 @@ impl<T> UI<T> {
                         },
                     ..
                 } => {}
-                WindowEvent::MouseInput {
-                    state: _,
-                    button: _,
-                    ..
-                } => {
-                    /*  if *state == ElementState::Pressed {
-                        self.mouse_buttons.insert(*button);
-                    } else {
-                        self.mouse_buttons.remove(button);
-                    }*/
+                WindowEvent::MouseInput { state, button, .. } => {
+                    let pressed = *state == ElementState::Pressed;
+                    self.event_mouse_button(
+                        device, *button, pressed, user_data,
+                    );
                 }
                 WindowEvent::CursorMoved {
                     position: PhysicalPosition { x, y },

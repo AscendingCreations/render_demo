@@ -76,21 +76,37 @@ fn mouse_button<T>(
     {
         if mouse_btn == MouseButton::Left {
             if mouse_over {
-                button.shape.set_color(
-                    device,
-                    &mut ui.ui_buffer_mut().ui_atlas,
-                    if is_pressed {
-                        button.clicked_color
-                    } else {
-                        button.border_clicked_color
-                    },
-                );
+                let colors = if is_pressed {
+                    (button.clicked_color, button.border_clicked_color)
+                } else {
+                    (button.over_color, button.border_over_color)
+                };
+
+                button
+                    .shape
+                    .set_color(
+                        device,
+                        &mut ui.ui_buffer_mut().ui_atlas,
+                        colors.0,
+                    )
+                    .set_border_color(
+                        device,
+                        &mut ui.ui_buffer_mut().ui_atlas,
+                        colors.1,
+                    );
             } else {
-                button.shape.set_color(
-                    device,
-                    &mut ui.ui_buffer_mut().ui_atlas,
-                    button.color,
-                );
+                button
+                    .shape
+                    .set_color(
+                        device,
+                        &mut ui.ui_buffer_mut().ui_atlas,
+                        button.color,
+                    )
+                    .set_border_color(
+                        device,
+                        &mut ui.ui_buffer_mut().ui_atlas,
+                        button.border_color,
+                    );
             }
         }
     }
@@ -172,6 +188,14 @@ impl<T: 'static> Control<T> for Button {
                 InternalCallBacks::MousePresent(Box::new(mouse_over)),
                 CallBackKey::new(id, CallBack::MousePresent),
             ),
+            (
+                InternalCallBacks::MousePress(Box::new(mouse_button)),
+                CallBackKey::new(id, CallBack::MousePress),
+            ),
         ]
+    }
+
+    fn default_actions(&self) -> Vec<UiFlags> {
+        vec![UiFlags::ClickAble]
     }
 }

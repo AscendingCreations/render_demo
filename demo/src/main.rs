@@ -80,6 +80,33 @@ impl log::Log for MyLogger {
     fn flush(&self) {}
 }
 
+fn mouse_button<T>(
+    control: &mut Widget<T>,
+    _ui: &mut UI<T>,
+    _device: &GpuDevice,
+    mouse_btn: MouseButton,
+    is_pressed: bool,
+    _mods: ModifiersState,
+    state: &mut State<FlatControls>,
+) {
+    if control
+        .ui
+        .as_mut()
+        .as_mut_any()
+        .downcast_mut::<Button>()
+        .is_some()
+    {
+        if mouse_btn == MouseButton::Left && is_pressed {
+            state.sprites[0].pos.x += 1.0;
+
+            if state.sprites[0].pos.x >= 300.0 {
+                state.sprites[0].pos.x = 0.0;
+            }
+            state.sprites[0].changed = true;
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), AscendingError> {
     log::set_logger(&MY_LOGGER).unwrap();
@@ -327,6 +354,12 @@ async fn main() -> Result<(), AscendingError> {
     });
 
     button.borrow_mut().actions.set(UiFlags::AlwaysUseable);
+
+    let callbackkey = button.borrow().callback_key(CallBack::MousePress);
+    ui.add_user_callback(
+        CallBacks::MousePress(Box::new(mouse_button)),
+        callbackkey,
+    );
     ui.add_widget_by_id(None, button);
 
     gpu_window.window().set_visible(true);

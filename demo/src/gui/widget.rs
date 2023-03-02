@@ -61,16 +61,26 @@ pub trait Control<T> {
     fn get_size(&self) -> Vec2;
     fn get_position(&mut self) -> Vec3;
     fn set_position(&mut self, position: Vec3);
+
     fn into_widget(self, id: Identity) -> WidgetRef<T>
     where
         Self: std::marker::Sized + 'static,
     {
-        Widget::new(id, self).into()
+        let actions = self.default_actions();
+        let mut widget = Widget::new(id, self);
+
+        for action in actions {
+            widget.actions.set(action);
+        }
+
+        widget.into()
     }
+
     fn get_internal_callbacks(
         &self,
         id: &Identity,
     ) -> Vec<(InternalCallBacks<T>, CallBackKey)>;
+    fn default_actions(&self) -> Vec<UiFlags>;
 }
 
 pub trait AnyData<T>: Control<T> {

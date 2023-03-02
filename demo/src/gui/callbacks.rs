@@ -40,13 +40,7 @@ pub type InternalDrawRef<T> =
 pub type InternalBooleanRef<T> =
     Box<dyn Fn(&mut Widget<T>, &mut UI<T>, &GpuDevice, bool)>;
 pub type InternalMouseScrollRef<T> = Box<
-    dyn Fn(
-        &mut Widget<T>,
-        &mut UI<T>,
-        &GpuDevice,
-        (f32, f32),
-        ModifiersState,
-    ) -> bool,
+    dyn Fn(&mut Widget<T>, &mut UI<T>, &GpuDevice, (f32, f32), ModifiersState),
 >;
 pub type InternalMousePressRef<T> = Box<
     dyn Fn(
@@ -56,7 +50,7 @@ pub type InternalMousePressRef<T> = Box<
         MouseButton,
         bool,
         ModifiersState,
-    ) -> bool,
+    ),
 >;
 pub type InternalKeyPressRef<T> = Box<
     dyn Fn(
@@ -65,7 +59,7 @@ pub type InternalKeyPressRef<T> = Box<
         &GpuDevice,
         KeyboardInput,
         ModifiersState,
-    ) -> bool,
+    ),
 >;
 pub type InternalUpdate<T> =
     Box<dyn Fn(&mut Widget<T>, &mut UI<T>, &GpuDevice)>;

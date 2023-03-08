@@ -1,6 +1,6 @@
 use crate::{
-    AscendingError, AtlasGroup, BufferStoreRef, Color, GpuDevice, System,
-    TextVertex, Vec2, Vec3, Vec4,
+    AscendingError, AtlasGroup, Color, GpuRenderer, Index, System, TextVertex,
+    Vec2, Vec3, Vec4,
 };
 use cosmic_text::{
     Attrs, Buffer, CacheKey, FontSystem, Metrics, SwashCache, SwashContent,
@@ -29,7 +29,7 @@ pub struct Text {
     pub size: Vec2,
     pub default_color: Color,
     pub bounds: TextBounds,
-    pub store: BufferStoreRef,
+    pub store_id: Index,
     /// if the shader should render with the camera's view.
     pub use_camera: bool,
     /// if anything got updated we need to update the buffers too.
@@ -42,7 +42,7 @@ impl Text {
         cache: &mut SwashCache,
         text_atlas: &mut AtlasGroup<CacheKey, Vec2>,
         emoji_atlas: &mut AtlasGroup<CacheKey, Vec2>,
-        gpu_device: &GpuDevice,
+        renderer: &mut GpuRenderer,
         system: &System<Controls>,
     ) -> Result<(), AscendingError>
     where
@@ -80,7 +80,7 @@ impl Text {
                                     image.placement.left as f32,
                                     image.placement.top as f32,
                                 ),
-                                gpu_device,
+                                renderer,
                             )
                             .ok_or(AscendingError::AtlasFull)?;
                     } else {
@@ -95,7 +95,7 @@ impl Text {
                                     image.placement.left as f32,
                                     image.placement.top as f32,
                                 ),
-                                gpu_device,
+                                renderer,
                             )
                             .ok_or(AscendingError::AtlasFull)?;
                     }
@@ -198,14 +198,17 @@ impl Text {
             }
         }
 
-        self.store.borrow_mut().store =
-            bytemuck::cast_slice(&text_buf).to_vec();
-        self.store.borrow_mut().changed = true;
+        if let Some(store) = renderer.get_buffer_mut(&self.store_id) {
+            store.store = bytemuck::cast_slice(&text_buf).to_vec();
+            store.changed = true;
+        }
+
         self.changed = false;
         Ok(())
     }
 
     pub fn new(
+        renderer: &mut GpuRenderer,
         font_system: &'static FontSystem,
         metrics: Option<Metrics>,
         pos: Vec3,
@@ -220,7 +223,7 @@ impl Text {
             pos,
             size,
             bounds: bounds.unwrap_or_default(),
-            store: BufferStoreRef::default(),
+            store_id: renderer.new_buffer(),
             changed: true,
             default_color: Color::rgba(0, 0, 0, 255),
             use_camera: false,
@@ -251,22 +254,16 @@ impl Text {
         cache: &mut SwashCache,
         text_atlas: &mut AtlasGroup<CacheKey, Vec2>,
         emoji_atlas: &mut AtlasGroup<CacheKey, Vec2>,
-        gpu_device: &GpuDevice,
+        renderer: &mut GpuRenderer,
         system: &System<Controls>,
-    ) -> Result<BufferStoreRef, AscendingError>
+    ) -> Result<Index, AscendingError>
     where
         Controls: camera::controls::Controls,
     {
         if self.changed {
-            self.create_quad(
-                cache,
-                text_atlas,
-                emoji_atlas,
-                gpu_device,
-                system,
-            )?;
+            self.create_quad(cache, text_atlas, emoji_atlas, renderer, system)?;
         }
 
-        Ok(self.store.clone())
+        Ok(self.store_id)
     }
 }

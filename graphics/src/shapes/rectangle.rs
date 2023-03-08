@@ -1,5 +1,5 @@
 use crate::{
-    Allocation, AscendingError, AtlasGroup, Bounds, BufferStoreRef, GpuDevice,
+    Allocation, AscendingError, AtlasGroup, Bounds, GpuRenderer, Index,
     OtherError, RectVertex, Texture, Vec2, Vec3, Vec4,
 };
 use cosmic_text::Color;
@@ -14,13 +14,13 @@ pub struct Rect {
     pub border: Option<Allocation>,
     pub border_uv: Vec4,
     pub radius: Option<f32>,
-    pub store: BufferStoreRef,
+    pub store_id: Index,
     /// if anything got updated we need to update the buffers too.
     pub changed: bool,
 }
 
-impl Default for Rect {
-    fn default() -> Self {
+impl Rect {
+    pub fn new(renderer: &mut GpuRenderer) -> Self {
         Self {
             position: Vec3::default(),
             size: Vec2::default(),
@@ -30,15 +30,13 @@ impl Default for Rect {
             border: None,
             border_uv: Vec4::default(),
             radius: None,
-            store: BufferStoreRef::default(),
+            store_id: renderer.new_buffer(),
             changed: true,
         }
     }
-}
 
-impl Rect {
     fn add_color(
-        gpu_device: &GpuDevice,
+        renderer: &GpuRenderer,
         atlas: &mut AtlasGroup,
         color: Color,
     ) -> Option<Allocation> {
@@ -48,16 +46,16 @@ impl Rect {
             ImageBuffer::new(1, 1);
         let pixel = image.get_pixel_mut(0, 0);
         *pixel = image::Rgba([color.r(), color.g(), color.b(), color.a()]);
-        atlas.upload(col, image.as_raw(), 1, 1, 0, gpu_device)
+        atlas.upload(col, image.as_raw(), 1, 1, 0, renderer)
     }
 
     pub fn set_color(
         &mut self,
-        gpu_device: &GpuDevice,
+        renderer: &GpuRenderer,
         atlas: &mut AtlasGroup,
         color: Color,
     ) -> &mut Self {
-        if let Some(allocation) = Self::add_color(gpu_device, atlas, color) {
+        if let Some(allocation) = Self::add_color(renderer, atlas, color) {
             let rect = allocation.rect();
 
             self.container_uv =
@@ -71,11 +69,11 @@ impl Rect {
 
     pub fn set_border_color(
         &mut self,
-        gpu_device: &GpuDevice,
+        renderer: &GpuRenderer,
         atlas: &mut AtlasGroup,
         color: Color,
     ) -> &mut Self {
-        if let Some(allocation) = Self::add_color(gpu_device, atlas, color) {
+        if let Some(allocation) = Self::add_color(renderer, atlas, color) {
             let rect = allocation.rect();
 
             self.border_uv = Vec4::new(0.0, 0.0, rect.2 as f32, rect.3 as f32);
@@ -88,12 +86,12 @@ impl Rect {
 
     pub fn set_texture(
         &mut self,
-        gpu_device: &GpuDevice,
+        renderer: &GpuRenderer,
         atlas: &mut AtlasGroup,
         path: String,
     ) -> Result<&mut Self, AscendingError> {
         let allocation = Texture::from_file(path)?
-            .group_upload(atlas, gpu_device)
+            .group_upload(atlas, renderer)
             .ok_or_else(|| OtherError::new("failed to upload image"))?;
 
         let rect = allocation.rect();
@@ -106,12 +104,12 @@ impl Rect {
 
     pub fn set_border_texture(
         &mut self,
-        gpu_device: &GpuDevice,
+        renderer: &GpuRenderer,
         atlas: &mut AtlasGroup,
         path: String,
     ) -> Result<&mut Self, AscendingError> {
         let allocation = Texture::from_file(path)?
-            .group_upload(atlas, gpu_device)
+            .group_upload(atlas, renderer)
             .ok_or_else(|| OtherError::new("failed to upload image"))?;
         let rect = allocation.rect();
 
@@ -141,9 +139,15 @@ impl Rect {
     }
 
     ///This sets how a object should be Clip manipulated. Width and/or Height as 0 means unlimited.
-    pub fn set_bounds(&mut self, bounds: Option<Bounds>) -> &mut Self {
-        self.store.borrow_mut().bounds = bounds;
-        self.store.borrow_mut().changed = true;
+    pub fn set_bounds(
+        &mut self,
+        renderer: &mut GpuRenderer,
+        bounds: Option<Bounds>,
+    ) -> &mut Self {
+        if let Some(store) = renderer.get_buffer_mut(&self.store_id) {
+            store.bounds = bounds;
+            store.changed = true;
+        }
         self
     }
 
@@ -171,7 +175,7 @@ impl Rect {
         self
     }
 
-    pub fn create_quad(&mut self) {
+    pub fn create_quad(&mut self, renderer: &mut GpuRenderer) {
         let containter_tex = match self.container {
             Some(allocation) => allocation,
             None => return,
@@ -209,19 +213,21 @@ impl Rect {
             border_layer: border_tex.layer as u32,
         };
 
-        self.store.borrow_mut().store = bytemuck::bytes_of(&buffer).to_vec();
-        self.store.borrow_mut().changed = true;
+        if let Some(store) = renderer.get_buffer_mut(&self.store_id) {
+            store.store = bytemuck::bytes_of(&buffer).to_vec();
+            store.changed = true;
+        }
     }
 
     /// used to check and update the ShapeVertex array.
-    pub fn update(&mut self) -> BufferStoreRef {
+    pub fn update(&mut self, renderer: &mut GpuRenderer) -> Index {
         // if points added or any data changed recalculate paths.
         if self.changed {
-            self.create_quad();
+            self.create_quad(renderer);
             self.changed = false;
         }
 
-        self.store.clone()
+        self.store_id
     }
 
     pub fn check_mouse_bounds(&self, mouse_pos: Vec2) -> bool {

@@ -1,6 +1,6 @@
 use crate::{
-    AtlasGroup, GpuDevice, GpuWindow, InstanceBuffer, LayoutStorage,
-    StaticBufferObject, TextRenderPipeline, TextVertex, Vec2,
+    AtlasGroup, GpuRenderer, InstanceBuffer, LayoutStorage, StaticBufferObject,
+    TextRenderPipeline, TextVertex, Vec2,
 };
 use cosmic_text::{CacheKey, FontSystem};
 use graphics::*;
@@ -19,47 +19,38 @@ pub struct UIBuffer {
 }
 
 impl UIBuffer {
-    pub fn new(
-        gpu_device: &GpuDevice,
-        gpu_window: &GpuWindow,
-        layout_storage: &mut LayoutStorage,
-    ) -> Result<Self, AscendingError> {
+    pub fn new(renderer: &mut GpuRenderer) -> Result<Self, AscendingError> {
         Ok(Self {
-            ui_buffer: InstanceBuffer::new(gpu_device),
+            ui_buffer: InstanceBuffer::new(renderer.gpu_device()),
             ui_pipeline: RectsRenderPipeline::new(
-                gpu_device,
-                gpu_window.surface_format(),
-                layout_storage,
+                renderer,
+                renderer.surface_format(),
             )?,
             ui_atlas: AtlasGroup::new(
-                gpu_device,
+                renderer,
                 2048,
                 wgpu::TextureFormat::Rgba8UnormSrgb,
-                layout_storage,
                 GroupType::Textures,
                 256,
                 256,
             ),
-            text_buffer: InstanceBuffer::new(gpu_device),
+            text_buffer: InstanceBuffer::new(renderer.gpu_device()),
             text_pipeline: TextRenderPipeline::new(
-                gpu_device,
-                gpu_window.surface_format(),
-                layout_storage,
+                renderer,
+                renderer.surface_format(),
             )?,
             text_atlas: AtlasGroup::new(
-                gpu_device,
+                renderer,
                 2048,
                 wgpu::TextureFormat::R8Unorm,
-                layout_storage,
                 GroupType::Fonts,
                 2,
                 256,
             ),
             emoji_atlas: AtlasGroup::new(
-                gpu_device,
+                renderer,
                 2048,
                 wgpu::TextureFormat::Rgba8UnormSrgb,
-                layout_storage,
                 GroupType::Textures,
                 2,
                 256,

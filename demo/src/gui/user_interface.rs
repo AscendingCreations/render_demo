@@ -132,15 +132,19 @@ impl<T> UI<T> {
 
     pub fn show_widget_by_handle(
         &mut self,
-        device: &GpuDevice,
+        renderer: &mut GpuRenderer,
         handle: Handle,
     ) {
-        self.widget_show(device, &self.get_widget(handle));
+        self.widget_show(renderer, &self.get_widget(handle));
     }
 
-    pub fn show_widget_by_id(&mut self, device: &GpuDevice, id: Identity) {
+    pub fn show_widget_by_id(
+        &mut self,
+        renderer: &mut GpuRenderer,
+        id: Identity,
+    ) {
         let handle = self.name_map.get(&id).unwrap();
-        self.widget_show(device, &self.get_widget(*handle));
+        self.widget_show(renderer, &self.get_widget(*handle));
     }
 
     pub fn hide_widget_by_handle(&mut self, handle: Handle) {

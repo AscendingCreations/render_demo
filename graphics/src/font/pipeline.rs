@@ -1,6 +1,6 @@
 use crate::{
-    AscendingError, GpuDevice, InstanceLayout, LayoutStorage,
-    StaticBufferObject, SystemLayout, TextVertex, TextureLayout,
+    AscendingError, GpuRenderer, InstanceLayout, StaticBufferObject,
+    SystemLayout, TextVertex, TextureLayout,
 };
 
 pub struct TextRenderPipeline {
@@ -9,11 +9,10 @@ pub struct TextRenderPipeline {
 
 impl TextRenderPipeline {
     pub fn new(
-        gpu_device: &GpuDevice,
+        renderer: &mut GpuRenderer,
         surface_format: wgpu::TextureFormat,
-        layout_storage: &mut LayoutStorage,
     ) -> Result<Self, AscendingError> {
-        let shader = gpu_device.device().create_shader_module(
+        let shader = renderer.device().create_shader_module(
             wgpu::ShaderModuleDescriptor {
                 label: Some("Shader"),
                 source: wgpu::ShaderSource::Wgsl(
@@ -22,16 +21,14 @@ impl TextRenderPipeline {
             },
         );
 
-        let system_layout =
-            layout_storage.create_layout(gpu_device, SystemLayout);
-        let texture_layout =
-            layout_storage.create_layout(gpu_device, TextureLayout);
+        let system_layout = renderer.create_layout(SystemLayout);
+        let texture_layout = renderer.create_layout(TextureLayout);
 
         // Create the render pipeline.
-        let render_pipeline = gpu_device.device().create_render_pipeline(
+        let render_pipeline = renderer.device().create_render_pipeline(
             &wgpu::RenderPipelineDescriptor {
                 label: Some("Text render pipeline"),
-                layout: Some(&gpu_device.device().create_pipeline_layout(
+                layout: Some(&renderer.device().create_pipeline_layout(
                     &wgpu::PipelineLayoutDescriptor {
                         label: Some("Text_render_pipeline_layout"),
                         bind_group_layouts: &[

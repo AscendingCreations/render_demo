@@ -8,8 +8,6 @@ pub struct State<Controls>
 where
     Controls: camera::controls::Controls,
 {
-    /// Storage container for layouts for faster initlization
-    pub layout_storage: LayoutStorage,
     /// World Camera Controls and time. Deturmines how the world is looked at.
     pub system: System<Controls>,
     /// Sprite data TODO: Make an array,
@@ -49,7 +47,6 @@ where
     pub text_pipeline: TextRenderPipeline,
     pub text_atlas: AtlasGroup<CacheKey, Vec2>,
     pub emoji_atlas: AtlasGroup<CacheKey, Vec2>,
-    pub buffer_object: StaticBufferObject,
 }
 
 impl<Controls> Pass<crate::UIBuffer> for State<Controls>
@@ -58,6 +55,7 @@ where
 {
     fn render(
         &mut self,
+        renderer: &GpuRenderer,
         encoder: &mut wgpu::CommandEncoder,
         views: &HashMap<String, wgpu::TextureView>,
         ui_buffer: &crate::UIBuffer,
@@ -103,9 +101,9 @@ where
 
         // Lets set the Reusable Vertices and Indicies here.
         // This is used for each Renderer, Should be more performant since it is shared.
-        pass.set_vertex_buffer(0, self.buffer_object.vertices());
+        pass.set_vertex_buffer(0, renderer.buffer_object.vertices());
         pass.set_index_buffer(
-            self.buffer_object.indices(),
+            renderer.buffer_object.indices(),
             wgpu::IndexFormat::Uint16,
         );
 

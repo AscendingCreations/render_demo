@@ -1,4 +1,6 @@
-use crate::{Allocation, BufferStoreRef, Color, ImageVertex, Vec2, Vec3, Vec4};
+use crate::{
+    Allocation, Color, GpuRenderer, ImageVertex, Index, Vec2, Vec3, Vec4,
+};
 
 /// rendering data for all images.
 pub struct Image {
@@ -18,13 +20,16 @@ pub struct Image {
     pub use_camera: bool,
     /// Texture area location in Atlas.
     pub texture: Option<Allocation>,
-    pub store: BufferStoreRef,
+    pub store_id: Index,
     /// if anything got updated we need to update the buffers too.
     pub changed: bool,
 }
 
-impl Default for Image {
-    fn default() -> Self {
+impl Image {
+    pub fn new(
+        texture: Option<Allocation>,
+        renderer: &mut GpuRenderer,
+    ) -> Self {
         Self {
             pos: Vec3::default(),
             hw: Vec2::default(),
@@ -34,15 +39,12 @@ impl Default for Image {
             animate: false,
             use_camera: true,
             color: Color::rgba(255, 255, 255, 255),
-            texture: None,
-            store: BufferStoreRef::default(),
+            texture,
+            store_id: renderer.new_buffer(),
             changed: true,
         }
     }
-}
-
-impl Image {
-    pub fn create_quad(&mut self) {
+    pub fn create_quad(&mut self, renderer: &mut GpuRenderer) {
         let allocation = match &self.texture {
             Some(allocation) => allocation,
             None => return,
@@ -68,25 +70,21 @@ impl Image {
             layer: allocation.layer as i32,
         };
 
-        self.store.borrow_mut().store = bytemuck::bytes_of(&instance).to_vec();
-        self.store.borrow_mut().changed = true;
+        if let Some(store) = renderer.get_buffer_mut(&self.store_id) {
+            store.store = bytemuck::bytes_of(&instance).to_vec();
+            store.changed = true;
+        }
+
         self.changed = false;
     }
 
-    pub fn new(texture: Allocation) -> Self {
-        Self {
-            texture: Some(texture),
-            ..Default::default()
-        }
-    }
-
     /// used to check and update the vertex array.
-    pub fn update(&mut self) -> BufferStoreRef {
+    pub fn update(&mut self, renderer: &mut GpuRenderer) -> Index {
         // if pos or tex_pos or color changed.
         if self.changed {
-            self.create_quad();
+            self.create_quad(renderer);
         }
 
-        self.store.clone()
+        self.store_id
     }
 }

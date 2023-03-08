@@ -1,3 +1,4 @@
+use crate::GpuDevice;
 use std::{marker::PhantomData, ops::Range};
 use wgpu::util::DeviceExt;
 
@@ -59,9 +60,9 @@ pub struct GpuBuffer<K: BufferLayout> {
 
 impl<K: BufferLayout> GpuBuffer<K> {
     /// Used to create GpuBuffer from a BufferPass.
-    pub fn create_buffer(device: &wgpu::Device, buffers: BufferPass) -> Self {
+    pub fn create_buffer(gpu_device: &GpuDevice, buffers: BufferPass) -> Self {
         GpuBuffer {
-            vertex_buffer: device.create_buffer_init(
+            vertex_buffer: gpu_device.device().create_buffer_init(
                 &wgpu::util::BufferInitDescriptor {
                     label: Some("Vertex Buffer"),
                     contents: &buffers.vertices,
@@ -71,7 +72,7 @@ impl<K: BufferLayout> GpuBuffer<K> {
             ),
             vertex_count: 0,
             vertex_max: buffers.vertices.len(),
-            index_buffer: device.create_buffer_init(
+            index_buffer: gpu_device.device().create_buffer_init(
                 &wgpu::util::BufferInitDescriptor {
                     label: Some("Index Buffer"),
                     contents: &buffers.indices,
@@ -86,23 +87,25 @@ impl<K: BufferLayout> GpuBuffer<K> {
     }
 
     //private but resizes the buffer on the GPU when needed.
-    fn resize(&mut self, device: &wgpu::Device, capacity: usize) {
+    fn resize(&mut self, gpu_device: &GpuDevice, capacity: usize) {
         let buffers = K::with_capacity(capacity);
 
-        self.vertex_buffer =
-            device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        self.vertex_buffer = gpu_device.device().create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
                 label: Some("Vertex Buffer"),
                 contents: &buffers.vertices,
                 usage: wgpu::BufferUsages::VERTEX
                     | wgpu::BufferUsages::COPY_DST,
-            });
+            },
+        );
         self.vertex_max = buffers.vertices.len();
-        self.index_buffer =
-            device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        self.index_buffer = gpu_device.device().create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
                 label: Some("Index Buffer"),
                 contents: &buffers.indices,
                 usage: wgpu::BufferUsages::INDEX,
-            });
+            },
+        );
         self.index_max = buffers.indices.len();
     }
 
@@ -136,8 +139,8 @@ impl<K: BufferLayout> GpuBuffer<K> {
 
     /// creates a new pre initlized VertexBuffer with a default size.
     /// default size is based on the initial BufferPass::vertices length.
-    pub fn new(device: &wgpu::Device) -> Self {
-        Self::create_buffer(device, K::default_buffer())
+    pub fn new(renderer: &GpuDevice) -> Self {
+        Self::create_buffer(renderer, K::default_buffer())
     }
 
     /// Set the Index based on how many Vertex's Exist
@@ -164,14 +167,14 @@ impl<K: BufferLayout> GpuBuffer<K> {
     /// Will resize both vertex_buffer and index_buffer if bytes length is larger than vertex_max.
     pub fn set_vertices_from(
         &mut self,
-        device: &wgpu::Device,
+        gpu_device: &GpuDevice,
         queue: &wgpu::Queue,
         bytes: &[u8],
     ) {
         let size = bytes.len();
 
         if size > self.vertex_max {
-            self.resize(device, size / K::vertex_stride());
+            self.resize(gpu_device, size / K::vertex_stride());
         }
 
         self.vertex_count = size / K::vertex_stride();
@@ -184,7 +187,7 @@ impl<K: BufferLayout> GpuBuffer<K> {
     /// Sets both buffers from another 'BufferPass'
     pub fn set_buffers_from(
         &mut self,
-        device: &wgpu::Device,
+        gpu_device: &GpuDevice,
         queue: &wgpu::Queue,
         buffers: &BufferPass,
     ) {
@@ -192,7 +195,7 @@ impl<K: BufferLayout> GpuBuffer<K> {
         let index_size = buffers.indices.len();
 
         if vertex_size > self.vertex_max {
-            self.resize(device, vertex_size / K::vertex_stride());
+            self.resize(gpu_device, vertex_size / K::vertex_stride());
         }
 
         if index_size > self.index_max {
@@ -241,7 +244,7 @@ impl<K: BufferLayout> GpuBuffer<K> {
 
     /// Creates a GpuBuffer based on capacity.
     /// Capacity is the amount of objects to initialize for.
-    pub fn with_capacity(device: &wgpu::Device, capacity: usize) -> Self {
-        Self::create_buffer(device, K::with_capacity(capacity))
+    pub fn with_capacity(gpu_device: &GpuDevice, capacity: usize) -> Self {
+        Self::create_buffer(gpu_device, K::with_capacity(capacity))
     }
 }

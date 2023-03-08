@@ -1,4 +1,4 @@
-use crate::{Bounds, GpuDevice, Layout, LayoutStorage};
+use crate::{Bounds, GpuDevice, GpuRenderer, Layout};
 use bytemuck::{Pod, Zeroable};
 use camera::Projection;
 use crevice::std140::AsStd140;
@@ -11,7 +11,10 @@ use wgpu::util::DeviceExt;
 pub struct SystemLayout;
 
 impl Layout for SystemLayout {
-    fn create_layout(&self, gpu_device: &GpuDevice) -> wgpu::BindGroupLayout {
+    fn create_layout(
+        &self,
+        gpu_device: &mut GpuDevice,
+    ) -> wgpu::BindGroupLayout {
         gpu_device.device().create_bind_group_layout(
             &wgpu::BindGroupLayoutDescriptor {
                 label: Some("system_bind_group_layout"),
@@ -104,8 +107,7 @@ where
     }
 
     pub fn new(
-        gpu_device: &GpuDevice,
-        layout_storage: &mut LayoutStorage,
+        renderer: &mut GpuRenderer,
         projection: Projection,
         controls: Controls,
         screen_size: [f32; 2],
@@ -134,7 +136,7 @@ where
         };
 
         // Create the uniform buffers.
-        let camera_buffer = gpu_device.device().create_buffer_init(
+        let camera_buffer = renderer.device().create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("camera buffer"),
                 contents: camera_info.as_std140().as_bytes(),
@@ -143,7 +145,7 @@ where
             },
         );
 
-        let time_buffer = gpu_device.device().create_buffer_init(
+        let time_buffer = renderer.device().create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("time buffer"),
                 contents: time_info.as_std140().as_bytes(),
@@ -152,7 +154,7 @@ where
             },
         );
 
-        let screen_buffer = gpu_device.device().create_buffer_init(
+        let screen_buffer = renderer.device().create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Screen buffer"),
                 contents: screen_info.as_std140().as_bytes(),
@@ -162,11 +164,11 @@ where
         );
 
         // Create the bind group layout for the camera.
-        let layout = layout_storage.create_layout(gpu_device, SystemLayout);
+        let layout = renderer.create_layout(SystemLayout);
 
         // Create the bind group.
         let bind_group =
-            gpu_device
+            renderer
                 .device()
                 .create_bind_group(&wgpu::BindGroupDescriptor {
                     layout: &layout,
@@ -209,7 +211,7 @@ where
         self.camera.set_projection(projection);
     }
 
-    pub fn update(&mut self, gpu_device: &GpuDevice, frame_time: &FrameTime) {
+    pub fn update(&mut self, renderer: &GpuRenderer, frame_time: &FrameTime) {
         if self.camera.update(frame_time.delta_seconds()) {
             let proj = self.camera.projection();
             let view = self.camera.view();
@@ -223,7 +225,7 @@ where
                 scale,
             };
 
-            gpu_device.queue().write_buffer(
+            renderer.queue().write_buffer(
                 &self.camera_buffer,
                 0,
                 camera_info.as_std140().as_bytes(),
@@ -234,7 +236,7 @@ where
             seconds: frame_time.seconds(),
         };
 
-        gpu_device.queue().write_buffer(
+        renderer.queue().write_buffer(
             &self.time_buffer,
             0,
             time_info.as_std140().as_bytes(),
@@ -243,7 +245,7 @@ where
 
     pub fn update_screen(
         &mut self,
-        gpu_device: &GpuDevice,
+        renderer: &GpuRenderer,
         screen_size: [f32; 2],
     ) {
         if self.screen_size != screen_size {
@@ -252,7 +254,7 @@ where
                 size: screen_size.into(),
             };
 
-            gpu_device.queue().write_buffer(
+            renderer.queue().write_buffer(
                 &self.screen_buffer,
                 0,
                 screen_info.as_std140().as_bytes(),

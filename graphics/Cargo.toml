@@ -31,3 +31,4 @@ naga.workspace = true
 wgpu.workspace = true
 chrono.workspace = true
 lru.workspace = true
+generational_array.workspace = true

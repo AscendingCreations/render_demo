@@ -7,7 +7,10 @@ use std::{
 };
 
 pub trait Layout: Pod + Zeroable {
-    fn create_layout(&self, gpu_device: &GpuDevice) -> wgpu::BindGroupLayout;
+    fn create_layout(
+        &self,
+        gpu_device: &mut GpuDevice,
+    ) -> wgpu::BindGroupLayout;
 
     fn layout_key(&self) -> (TypeId, Vec<u8>) {
         let type_id = self.type_id();
@@ -19,7 +22,7 @@ pub trait Layout: Pod + Zeroable {
 }
 
 pub struct LayoutStorage {
-    map: HashMap<(TypeId, Vec<u8>), Rc<wgpu::BindGroupLayout>>,
+    pub(crate) map: HashMap<(TypeId, Vec<u8>), Rc<wgpu::BindGroupLayout>>,
 }
 
 impl LayoutStorage {
@@ -31,7 +34,7 @@ impl LayoutStorage {
 
     pub fn create_layout<K: Layout>(
         &mut self,
-        gpu_device: &GpuDevice,
+        device: &mut GpuDevice,
         layout: K,
     ) -> Rc<wgpu::BindGroupLayout> {
         let key = layout.layout_key();
@@ -39,7 +42,7 @@ impl LayoutStorage {
         let layout = self
             .map
             .entry(key)
-            .or_insert_with(|| Rc::new(layout.create_layout(gpu_device)));
+            .or_insert_with(|| Rc::new(layout.create_layout(device)));
 
         Rc::clone(layout)
     }

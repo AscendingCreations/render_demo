@@ -1,4 +1,4 @@
-use crate::{BufferStoreRef, GpuDevice, MapTextures, MapVertex, Vec2};
+use crate::{GpuRenderer, Index, MapTextures, MapVertex, Vec2};
 use image::{self, ImageBuffer};
 
 #[allow(dead_code)]
@@ -57,9 +57,9 @@ pub struct Map {
     /// set to know the image array ID within the shader.
     pub layer: u32,
     /// vertex array in bytes. Does not need to get changed exept on map switch and location change.
-    pub lowerstore: BufferStoreRef,
+    pub lowerstore_id: Index,
     /// vertex array in bytes for fringe layers.
-    pub upperstore: BufferStoreRef,
+    pub upperstore_id: Index,
     /// Count of how many Filled Tiles Exist. this is to optimize out empty maps in rendering.
     pub filled_tiles: [u8; MapLayers::Count as usize],
     /// if the image changed we need to reupload it to the texture.
@@ -69,7 +69,7 @@ pub struct Map {
 }
 
 impl Map {
-    pub fn create_quad(&mut self) {
+    pub fn create_quad(&mut self, renderer: &mut GpuRenderer) {
         let mut lowerbuffer = Vec::new();
         let mut upperbuffer = Vec::new();
 
@@ -93,12 +93,16 @@ impl Map {
             }
         }
 
-        self.lowerstore.borrow_mut().store =
-            bytemuck::cast_slice(&lowerbuffer).to_vec();
-        self.lowerstore.borrow_mut().changed = true;
-        self.upperstore.borrow_mut().store =
-            bytemuck::cast_slice(&upperbuffer).to_vec();
-        self.upperstore.borrow_mut().changed = true;
+        if let Some(store) = renderer.get_buffer_mut(&self.lowerstore_id) {
+            store.store = bytemuck::cast_slice(&lowerbuffer).to_vec();
+            store.changed = true;
+        }
+
+        if let Some(store) = renderer.get_buffer_mut(&self.upperstore_id) {
+            store.store = bytemuck::cast_slice(&upperbuffer).to_vec();
+            store.changed = true;
+        }
+
         self.changed = false;
     }
 
@@ -111,14 +115,14 @@ impl Map {
         (data[0], data[1], data[2], data[3])
     }
 
-    pub fn new() -> Self {
+    pub fn new(renderer: &mut GpuRenderer) -> Self {
         let image = ImageBuffer::new(32, 256);
 
         Self {
             pos: Vec2::default(),
             layer: 0,
-            lowerstore: BufferStoreRef::default(),
-            upperstore: BufferStoreRef::default(),
+            lowerstore_id: renderer.new_buffer(),
+            upperstore_id: renderer.new_buffer(),
             filled_tiles: [0; MapLayers::Count as usize],
             image,
             img_changed: true,
@@ -154,25 +158,19 @@ impl Map {
     /// used to check and update the vertex array or Texture witht he image buffer.
     pub fn update(
         &mut self,
-        gpu_device: &GpuDevice,
+        renderer: &mut GpuRenderer,
         map_textures: &mut MapTextures,
-    ) -> (BufferStoreRef, BufferStoreRef) {
+    ) -> (Index, Index) {
         // if pos or tex_pos or color changed.
         if self.img_changed {
-            map_textures.update(gpu_device, self.layer, self.image.as_raw());
+            map_textures.update(renderer, self.layer, self.image.as_raw());
             self.img_changed = false;
         }
 
         if self.changed {
-            self.create_quad();
+            self.create_quad(renderer);
         }
 
-        (self.lowerstore.clone(), self.upperstore.clone())
-    }
-}
-
-impl Default for Map {
-    fn default() -> Self {
-        Self::new()
+        (self.lowerstore_id, self.upperstore_id)
     }
 }

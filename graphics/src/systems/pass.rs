@@ -8,6 +8,7 @@ pub trait Pass<T> {
     /// attachment. In the future it should also be possible to use these textures as inputs.
     fn render(
         &mut self,
+        renderer: &crate::GpuRenderer,
         encoder: &mut wgpu::CommandEncoder,
         views: &HashMap<String, wgpu::TextureView>,
         ui_buffer: &T,

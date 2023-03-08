@@ -1,4 +1,4 @@
-use crate::{GpuDevice, Vec4};
+use crate::{GpuDevice, GpuRenderer, Index, Vec4};
 use std::{cell::RefCell, marker::PhantomData, ops::Range, rc::Rc};
 use wgpu::util::DeviceExt;
 
@@ -45,7 +45,7 @@ pub trait InstanceLayout {
 
 //This Holds onto all the instances Compressed into a byte array.
 pub struct InstanceBuffer<K: InstanceLayout> {
-    pub buffers: Vec<BufferStoreRef>,
+    pub buffers: Vec<Index>,
     pub buffer: wgpu::Buffer,
     pub bounds: Vec<Option<Bounds>>,
     count: usize,
@@ -81,19 +81,28 @@ impl<K: InstanceLayout> InstanceBuffer<K> {
         }
     }
 
-    pub fn add_buffer_store(&mut self, store: BufferStoreRef) {
-        let size = store.borrow().store.len();
+    pub fn add_buffer_store(
+        &mut self,
+        renderer: &mut GpuRenderer,
+        index: Index,
+    ) {
+        if let Some(store) = renderer.get_buffer(&index) {
+            let size = store.store.len();
 
-        self.buffers.push(store);
-        self.needed_size += size;
+            self.buffers.push(index);
+            self.needed_size += size;
+        }
     }
 
-    pub fn finalize(&mut self, gpu_device: &GpuDevice) {
+    pub fn finalize(&mut self, renderer: &mut GpuRenderer) {
         let mut changed = false;
         let mut pos = 0;
 
         if self.needed_size > self.max {
-            self.resize(gpu_device, self.needed_size / K::instance_stride());
+            self.resize(
+                renderer.gpu_device(),
+                self.needed_size / K::instance_stride(),
+            );
             changed = true;
         }
 
@@ -101,24 +110,33 @@ impl<K: InstanceLayout> InstanceBuffer<K> {
         self.len = self.needed_size;
 
         for buf in &self.buffers {
-            let mut buffer = buf.borrow_mut();
-            let range = pos..pos + buffer.store.len();
+            let mut write_buffer = false;
 
-            if buffer.pos != range || changed || buffer.changed {
-                if K::is_bounded() {
-                    self.bounds.push(buffer.bounds);
+            if let Some(store) = renderer.get_buffer_mut(buf) {
+                let range = pos..pos + store.store.len();
+
+                if store.pos != range || changed || store.changed {
+                    if K::is_bounded() {
+                        self.bounds.push(store.bounds);
+                    }
+
+                    store.pos = range;
+                    store.changed = false;
+                    write_buffer = true
                 }
-
-                buffer.pos = range;
-                buffer.changed = false;
-                gpu_device.queue().write_buffer(
-                    &self.buffer,
-                    pos as u64,
-                    &buffer.store,
-                );
             }
 
-            pos += buffer.store.len();
+            if write_buffer {
+                if let Some(store) = renderer.get_buffer(buf) {
+                    renderer.device.queue.write_buffer(
+                        &self.buffer,
+                        pos as u64,
+                        &store.store,
+                    );
+
+                    pos += store.store.len();
+                }
+            }
         }
 
         self.needed_size = 0;

@@ -1,6 +1,6 @@
 use crate::{
-    AscendingError, GpuDevice, InstanceLayout, LayoutStorage, MapLayout,
-    MapVertex, StaticBufferObject, SystemLayout, TextureLayout,
+    AscendingError, GpuRenderer, InstanceLayout, MapLayout, MapVertex,
+    StaticBufferObject, SystemLayout, TextureLayout,
 };
 
 pub struct MapRenderPipeline {
@@ -9,11 +9,10 @@ pub struct MapRenderPipeline {
 
 impl MapRenderPipeline {
     pub fn new(
-        gpu_device: &GpuDevice,
+        renderer: &mut GpuRenderer,
         surface_format: wgpu::TextureFormat,
-        layout_storage: &mut LayoutStorage,
     ) -> Result<Self, AscendingError> {
-        let shader = gpu_device.device().create_shader_module(
+        let shader = renderer.device().create_shader_module(
             wgpu::ShaderModuleDescriptor {
                 label: Some("Shader"),
                 source: wgpu::ShaderSource::Wgsl(
@@ -22,17 +21,15 @@ impl MapRenderPipeline {
             },
         );
 
-        let system_layout =
-            layout_storage.create_layout(gpu_device, SystemLayout);
-        let texture_layout =
-            layout_storage.create_layout(gpu_device, TextureLayout);
-        let map_layout = layout_storage.create_layout(gpu_device, MapLayout);
+        let system_layout = renderer.create_layout(SystemLayout);
+        let texture_layout = renderer.create_layout(TextureLayout);
+        let map_layout = renderer.create_layout(MapLayout);
 
         // Create the render pipeline.
-        let render_pipeline = gpu_device.device().create_render_pipeline(
+        let render_pipeline = renderer.device().create_render_pipeline(
             &wgpu::RenderPipelineDescriptor {
                 label: Some("Map render pipeline"),
-                layout: Some(&gpu_device.device().create_pipeline_layout(
+                layout: Some(&renderer.device().create_pipeline_layout(
                     &wgpu::PipelineLayoutDescriptor {
                         label: Some("Map_render_pipeline_layout"),
                         bind_group_layouts: &[

@@ -1,5 +1,5 @@
 use crate::{GpuDevice, GpuRenderer, Index, Vec4};
-use std::{cell::RefCell, marker::PhantomData, ops::Range, rc::Rc};
+use std::{marker::PhantomData, ops::Range};
 use wgpu::util::DeviceExt;
 
 #[derive(Copy, Clone, Debug)]
@@ -16,8 +16,6 @@ impl Default for Bounds {
         Self(Vec4::new(0.0, 0.0, 2_147_483_600.0, 2_147_483_600.0), 0.0)
     }
 }
-
-pub type BufferStoreRef = Rc<RefCell<BufferStore>>;
 
 #[derive(Default)]
 pub struct BufferStore {

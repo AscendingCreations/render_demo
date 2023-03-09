@@ -1,6 +1,6 @@
 use crate::{
-    Allocation, AscendingError, AtlasGroup, Bounds, GpuRenderer, Index,
-    OtherError, RectVertex, Texture, Vec2, Vec3, Vec4,
+    Allocation, AscendingError, AtlasGroup, Bounds, DrawOrder, GpuRenderer,
+    Index, OrderedIndex, OtherError, RectVertex, Texture, Vec2, Vec3, Vec4,
 };
 use cosmic_text::Color;
 use image::{self, ImageBuffer};
@@ -15,6 +15,7 @@ pub struct Rect {
     pub border_uv: Vec4,
     pub radius: Option<f32>,
     pub store_id: Index,
+    pub order: DrawOrder,
     /// if anything got updated we need to update the buffers too.
     pub changed: bool,
 }
@@ -31,6 +32,7 @@ impl Rect {
             border_uv: Vec4::default(),
             radius: None,
             store_id: renderer.new_buffer(),
+            order: DrawOrder::default(),
             changed: true,
         }
     }
@@ -217,17 +219,19 @@ impl Rect {
             store.store = bytemuck::bytes_of(&buffer).to_vec();
             store.changed = true;
         }
+
+        self.order = DrawOrder::new(false, &self.position)
     }
 
     /// used to check and update the ShapeVertex array.
-    pub fn update(&mut self, renderer: &mut GpuRenderer) -> Index {
+    pub fn update(&mut self, renderer: &mut GpuRenderer) -> OrderedIndex {
         // if points added or any data changed recalculate paths.
         if self.changed {
             self.create_quad(renderer);
             self.changed = false;
         }
 
-        self.store_id
+        OrderedIndex::new(self.order, self.store_id)
     }
 
     pub fn check_mouse_bounds(&self, mouse_pos: Vec2) -> bool {

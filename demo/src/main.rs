@@ -194,13 +194,16 @@ async fn main() -> Result<(), AscendingError> {
 
     for _i in 0..2 {
         let mut sprite = Image::new(Some(allocation), &mut renderer);
-        sprite.pos = Vec3::new(x, y, 5.0);
+        sprite.pos = Vec3::new(x, y, 5.1);
         sprite.hw = Vec2::new(48.0, 48.0);
         sprite.uv = Vec4::new(48.0, 96.0, 48.0, 48.0);
         sprite.color = Color::rgba(255, 255, 255, 255);
         sprites.push(sprite);
         x += 12.0;
     }
+
+    sprites[0].pos.z = 5.0;
+    sprites[0].color = Color::rgba(255, 255, 255, 120);
 
     let surface_format = renderer.surface_format();
     let sprite_pipeline =
@@ -288,6 +291,7 @@ async fn main() -> Result<(), AscendingError> {
         container: None,
         container_uv: Vec4::default(),
         border: None,
+        order: DrawOrder::default(),
         border_uv: Vec4::default(),
         store_id: renderer.new_buffer(),
     };

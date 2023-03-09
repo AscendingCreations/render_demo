@@ -1,5 +1,6 @@
 use crate::{
-    Allocation, Color, GpuRenderer, ImageVertex, Index, Vec2, Vec3, Vec4,
+    Allocation, Color, DrawOrder, GpuRenderer, ImageVertex, Index,
+    OrderedIndex, Vec2, Vec3, Vec4,
 };
 
 /// rendering data for all images.
@@ -21,6 +22,7 @@ pub struct Image {
     /// Texture area location in Atlas.
     pub texture: Option<Allocation>,
     pub store_id: Index,
+    pub order: DrawOrder,
     /// if anything got updated we need to update the buffers too.
     pub changed: bool,
 }
@@ -41,6 +43,7 @@ impl Image {
             color: Color::rgba(255, 255, 255, 255),
             texture,
             store_id: renderer.new_buffer(),
+            order: DrawOrder::default(),
             changed: true,
         }
     }
@@ -75,16 +78,17 @@ impl Image {
             store.changed = true;
         }
 
+        self.order = DrawOrder::new(self.color.a() < 255, &self.pos);
         self.changed = false;
     }
 
     /// used to check and update the vertex array.
-    pub fn update(&mut self, renderer: &mut GpuRenderer) -> Index {
+    pub fn update(&mut self, renderer: &mut GpuRenderer) -> OrderedIndex {
         // if pos or tex_pos or color changed.
         if self.changed {
             self.create_quad(renderer);
         }
 
-        self.store_id
+        OrderedIndex::new(self.order, self.store_id)
     }
 }

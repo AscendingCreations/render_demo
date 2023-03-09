@@ -1,4 +1,7 @@
-use crate::{GpuRenderer, Index, MapTextures, MapVertex, Vec2};
+use crate::{
+    DrawOrder, GpuRenderer, Index, MapTextures, MapVertex, OrderedIndex, Vec2,
+    Vec3,
+};
 use image::{self, ImageBuffer};
 
 #[allow(dead_code)]
@@ -60,6 +63,7 @@ pub struct Map {
     pub lowerstore_id: Index,
     /// vertex array in bytes for fringe layers.
     pub upperstore_id: Index,
+    pub order: DrawOrder,
     /// Count of how many Filled Tiles Exist. this is to optimize out empty maps in rendering.
     pub filled_tiles: [u8; MapLayers::Count as usize],
     /// if the image changed we need to reupload it to the texture.
@@ -103,6 +107,8 @@ impl Map {
             store.changed = true;
         }
 
+        self.order =
+            DrawOrder::new(false, &Vec3::new(self.pos.x, self.pos.y, 1.0));
         self.changed = false;
     }
 
@@ -125,6 +131,7 @@ impl Map {
             upperstore_id: renderer.new_buffer(),
             filled_tiles: [0; MapLayers::Count as usize],
             image,
+            order: DrawOrder::default(),
             img_changed: true,
             changed: true,
         }
@@ -160,7 +167,7 @@ impl Map {
         &mut self,
         renderer: &mut GpuRenderer,
         map_textures: &mut MapTextures,
-    ) -> (Index, Index) {
+    ) -> (OrderedIndex, OrderedIndex) {
         // if pos or tex_pos or color changed.
         if self.img_changed {
             map_textures.update(renderer, self.layer, self.image.as_raw());
@@ -171,6 +178,9 @@ impl Map {
             self.create_quad(renderer);
         }
 
-        (self.lowerstore_id, self.upperstore_id)
+        (
+            OrderedIndex::new(self.order, self.lowerstore_id),
+            OrderedIndex::new(self.order, self.upperstore_id),
+        )
     }
 }

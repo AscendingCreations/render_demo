@@ -1,15 +1,47 @@
 use crate::{
-    AscendingError, BufferStore, GpuDevice, GpuWindow, Layout, LayoutStorage,
-    StaticBufferObject,
+    AscendingError, BufferStore, DrawOrder, GpuDevice, GpuWindow, Layout,
+    LayoutStorage, StaticBufferObject,
 };
 use generational_array::{
     GenerationalArray, GenerationalArrayResult, GenerationalArrayResultMut,
     GenerationalIndex,
 };
+use std::cmp::Ordering;
 use std::rc::Rc;
 use winit::{dpi::PhysicalSize, event::Event, window::Window};
 
 pub type Index = GenerationalIndex;
+
+pub struct OrderedIndex {
+    pub(crate) order: DrawOrder,
+    pub(crate) index: Index,
+}
+
+impl PartialOrd for OrderedIndex {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for OrderedIndex {
+    fn eq(&self, other: &Self) -> bool {
+        self.order == other.order
+    }
+}
+
+impl Eq for OrderedIndex {}
+
+impl Ord for OrderedIndex {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.order.cmp(&other.order)
+    }
+}
+
+impl OrderedIndex {
+    pub fn new(order: DrawOrder, index: Index) -> Self {
+        Self { order, index }
+    }
+}
 
 ///Handles the Window, Device and buffer stores.
 pub struct GpuRenderer {

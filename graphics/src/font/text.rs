@@ -1,6 +1,6 @@
 use crate::{
-    AscendingError, AtlasGroup, Color, GpuRenderer, Index, System, TextVertex,
-    Vec2, Vec3, Vec4,
+    AscendingError, AtlasGroup, Color, DrawOrder, GpuRenderer, Index,
+    OrderedIndex, System, TextVertex, Vec2, Vec3, Vec4,
 };
 use cosmic_text::{
     Attrs, Buffer, CacheKey, FontSystem, Metrics, SwashCache, SwashContent,
@@ -30,6 +30,7 @@ pub struct Text {
     pub default_color: Color,
     pub bounds: TextBounds,
     pub store_id: Index,
+    pub order: DrawOrder,
     /// if the shader should render with the camera's view.
     pub use_camera: bool,
     /// if anything got updated we need to update the buffers too.
@@ -203,6 +204,7 @@ impl Text {
             store.changed = true;
         }
 
+        self.order = DrawOrder::new(false, &self.pos);
         self.changed = false;
         Ok(())
     }
@@ -224,6 +226,7 @@ impl Text {
             size,
             bounds: bounds.unwrap_or_default(),
             store_id: renderer.new_buffer(),
+            order: DrawOrder::new(false, &pos),
             changed: true,
             default_color: Color::rgba(0, 0, 0, 255),
             use_camera: false,
@@ -256,7 +259,7 @@ impl Text {
         emoji_atlas: &mut AtlasGroup<CacheKey, Vec2>,
         renderer: &mut GpuRenderer,
         system: &System<Controls>,
-    ) -> Result<Index, AscendingError>
+    ) -> Result<OrderedIndex, AscendingError>
     where
         Controls: camera::controls::Controls,
     {
@@ -264,6 +267,6 @@ impl Text {
             self.create_quad(cache, text_atlas, emoji_atlas, renderer, system)?;
         }
 
-        Ok(self.store_id)
+        Ok(OrderedIndex::new(self.order, self.store_id))
     }
 }

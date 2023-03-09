@@ -111,6 +111,7 @@ impl<K: InstanceLayout> InstanceBuffer<K> {
 
         for buf in &self.buffers {
             let mut write_buffer = false;
+            let old_pos = pos as u64;
 
             if let Some(store) = renderer.get_buffer_mut(buf) {
                 let range = pos..pos + store.store.len();
@@ -124,17 +125,17 @@ impl<K: InstanceLayout> InstanceBuffer<K> {
                     store.changed = false;
                     write_buffer = true
                 }
+
+                pos += store.store.len();
             }
 
             if write_buffer {
                 if let Some(store) = renderer.get_buffer(buf) {
                     renderer.device.queue.write_buffer(
                         &self.buffer,
-                        pos as u64,
+                        old_pos,
                         &store.store,
                     );
-
-                    pos += store.store.len();
                 }
             }
         }

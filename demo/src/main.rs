@@ -210,7 +210,7 @@ async fn main() -> Result<(), AscendingError> {
     let rects_pipeline =
         RectsRenderPipeline::new(&mut renderer, surface_format)?;
     let text_buffer = InstanceBuffer::new(renderer.gpu_device());
-    let sprite_buffer = InstanceBuffer::with_capacity(renderer.gpu_device(), 1);
+    let sprite_buffer = InstanceBuffer::with_capacity(renderer.gpu_device(), 2);
     let maplower_buffer =
         InstanceBuffer::with_capacity(renderer.gpu_device(), 540);
     let mapupper_buffer =

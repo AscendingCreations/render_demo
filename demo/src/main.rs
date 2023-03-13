@@ -162,7 +162,7 @@ async fn main() -> Result<(), AscendingError> {
             256,
         ))
     })
-    .take(4)
+    .take(3)
     .collect();
 
     let text_atlas = TextAtlas::new(&mut renderer, 2, 256, 2048).unwrap();
@@ -189,24 +189,23 @@ async fn main() -> Result<(), AscendingError> {
     sprites[0].color = Color::rgba(255, 255, 255, 120);
 
     let surface_format = renderer.surface_format();
-    let sprite_pipeline =
-        ImageRenderPipeline::new(&mut renderer, surface_format)?;
-    //let text_pipeline = TextRenderPipeline::new(&mut renderer, surface_format)?;
+
     let map_pipeline = MapRenderPipeline::new(&mut renderer, surface_format)?;
     let rects_pipeline =
         RectsRenderPipeline::new(&mut renderer, surface_format)?;
     //let text_buffer = InstanceBuffer::new(renderer.gpu_device());
-    let sprite_buffer = InstanceBuffer::with_capacity(renderer.gpu_device(), 2);
     let maplower_buffer =
         InstanceBuffer::with_capacity(renderer.gpu_device(), 540);
     let mapupper_buffer =
         InstanceBuffer::with_capacity(renderer.gpu_device(), 180);
-    let animation_buffer = InstanceBuffer::new(renderer.gpu_device());
     let rects_buffer = InstanceBuffer::new(renderer.gpu_device());
 
     let text_renderer =
         TextRenderer::new(&mut renderer, surface_format).unwrap();
-
+    let sprite_renderer =
+        ImageRenderer::new(&mut renderer, surface_format).unwrap();
+    let animation_renderer =
+        ImageRenderer::new(&mut renderer, surface_format).unwrap();
     let mut size = renderer.size();
 
     let system = System::new(
@@ -255,7 +254,7 @@ async fn main() -> Result<(), AscendingError> {
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
 
     let allocation = Texture::from_file("images/anim/0.png")?
-        .group_upload(&mut atlases[2], &renderer)
+        .group_upload(&mut atlases[0], &renderer)
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
 
     let mut animation = Image::new(Some(allocation), &mut renderer);
@@ -283,10 +282,10 @@ async fn main() -> Result<(), AscendingError> {
     };
 
     rects
-        .set_color(&renderer, &mut atlases[3], Color::rgba(255, 255, 0, 255))
+        .set_color(&renderer, &mut atlases[2], Color::rgba(255, 255, 0, 255))
         .set_border_color(
             &renderer,
-            &mut atlases[3],
+            &mut atlases[2],
             Color::rgba(0, 0, 0, 255),
         );
     //.set_container_uv(Vec4::new(0.0, 0.0, 168.0, 32.0));
@@ -337,9 +336,8 @@ async fn main() -> Result<(), AscendingError> {
     let mut state = State {
         system,
         sprites,
-        sprite_pipeline,
-        sprite_buffer,
-        sprite_atlas: atlases.remove(0),
+        animation,
+        image_atlas: atlases.remove(0),
         map,
         map_pipeline,
         maplower_buffer,
@@ -347,13 +345,12 @@ async fn main() -> Result<(), AscendingError> {
         map_group,
         map_atlas: atlases.remove(0),
         map_textures,
-        animation,
-        animation_buffer,
-        animation_atlas: atlases.remove(0),
         rects,
         rects_buffer,
         rects_pipeline,
         rects_atlas: atlases.remove(0),
+        sprite_renderer,
+        animation_renderer,
         text_atlas,
         text_renderer,
     };
@@ -455,10 +452,10 @@ async fn main() -> Result<(), AscendingError> {
         );
 
         state.sprites.iter_mut().for_each(|sprite| {
-            let index = sprite.update(&mut renderer);
-            state.sprite_buffer.add_buffer_store(&mut renderer, index);
+            state.sprite_renderer.image_update(sprite, &mut renderer);
         });
-        state.sprite_buffer.finalize(&mut renderer);
+
+        state.sprite_renderer.finalize(&mut renderer);
 
         state
             .text_renderer
@@ -478,11 +475,10 @@ async fn main() -> Result<(), AscendingError> {
         state.maplower_buffer.finalize(&mut renderer);
         state.mapupper_buffer.finalize(&mut renderer);
 
-        let index = state.animation.update(&mut renderer);
         state
-            .animation_buffer
-            .add_buffer_store(&mut renderer, index);
-        state.animation_buffer.finalize(&mut renderer);
+            .animation_renderer
+            .image_update(&mut state.animation, &mut renderer);
+        state.animation_renderer.finalize(&mut renderer);
 
         let index = state.rects.update(&mut renderer);
         state.rects_buffer.add_buffer_store(&mut renderer, index);
@@ -519,10 +515,9 @@ async fn main() -> Result<(), AscendingError> {
         frame_time.update();
         frame.present();
 
-        state.animation_atlas.clean();
+        state.image_atlas.clean();
         state.rects_atlas.clean();
         state.map_atlas.clean();
-        state.sprite_atlas.clean();
         state.text_atlas.clean();
         ui.ui_buffer_mut().atlas_clean();
     })

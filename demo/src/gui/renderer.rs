@@ -1,6 +1,6 @@
 use crate::{
     AtlasGroup, GpuRenderer, InstanceBuffer, LayoutStorage, StaticBufferObject,
-    TextRenderPipeline, TextVertex, Vec2,
+    TextAtlas, TextRenderPipeline, TextVertex, Vec2,
 };
 use cosmic_text::{CacheKey, FontSystem};
 use graphics::*;
@@ -12,10 +12,8 @@ pub struct UIBuffer {
     pub ui_pipeline: RectsRenderPipeline,
     pub ui_atlas: AtlasGroup,
     /// Text test stuff.
-    pub text_buffer: InstanceBuffer<TextVertex>,
-    pub text_pipeline: TextRenderPipeline,
-    pub text_atlas: AtlasGroup<CacheKey, Vec2>,
-    pub emoji_atlas: AtlasGroup<CacheKey, Vec2>,
+    pub text_renderer: TextRenderer,
+    pub text_atlas: TextAtlas,
 }
 
 impl UIBuffer {
@@ -34,32 +32,15 @@ impl UIBuffer {
                 256,
                 256,
             ),
-            text_buffer: InstanceBuffer::new(renderer.gpu_device()),
-            text_pipeline: TextRenderPipeline::new(
+            text_renderer: TextRenderer::new(
                 renderer,
-                renderer.surface_format(),
-            )?,
-            text_atlas: AtlasGroup::new(
-                renderer,
-                2048,
-                wgpu::TextureFormat::R8Unorm,
-                GroupType::Fonts,
-                2,
-                256,
-            ),
-            emoji_atlas: AtlasGroup::new(
-                renderer,
-                2048,
                 wgpu::TextureFormat::Rgba8UnormSrgb,
-                GroupType::Textures,
-                2,
-                256,
-            ),
+            )?,
+            text_atlas: TextAtlas::new(renderer, 2, 256, 2048)?,
         })
     }
 
     pub fn atlas_clean(&mut self) {
-        self.emoji_atlas.clean();
         self.text_atlas.clean();
         self.ui_atlas.clean();
     }
@@ -94,11 +75,6 @@ where
             system,
         );
 
-        /*self.render_text(
-            &buffer.text_buffer,
-            &buffer.text_atlas,
-            &buffer.emoji_atlas,
-            &buffer.text_pipeline,
-        );*/
+        self.render_text(&buffer.text_renderer, &buffer.text_atlas);
     }
 }

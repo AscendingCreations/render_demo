@@ -12,12 +12,12 @@ where
     pub system: System<Controls>,
     /// Sprite data TODO: Make an array,
     pub sprites: Vec<Image>,
+    pub animation: Image,
     /// Render pipe line for Sprites
-    pub sprite_pipeline: ImageRenderPipeline,
-    /// Vertex buffer group for Sprites
-    pub sprite_buffer: InstanceBuffer<ImageVertex>,
-    /// AtlasGroup to hold Sprite Images
-    pub sprite_atlas: AtlasGroup,
+    pub sprite_renderer: ImageRenderer,
+    pub animation_renderer: ImageRenderer,
+    /// AtlasGroup to hold Sprite/animation Images
+    pub image_atlas: AtlasGroup,
     /// maps TODO: make this an array.
     pub map: Map,
     /// Render Pipeline for maps
@@ -31,11 +31,6 @@ where
     pub map_textures: MapTextures,
     /// contains the Tile images.
     pub map_atlas: AtlasGroup,
-    /// animation test stuff.
-    pub animation: Image,
-    pub animation_buffer: InstanceBuffer<ImageVertex>,
-    pub animation_atlas: AtlasGroup,
-
     /// Basic shape rendering.
     pub rects: Rect,
     pub rects_buffer: InstanceBuffer<RectVertex>,
@@ -111,17 +106,9 @@ where
             &self.map_pipeline,
         );
 
-        pass.render_image(
-            &self.sprite_buffer,
-            &self.sprite_atlas,
-            &self.sprite_pipeline,
-        );
+        pass.render_image(&self.sprite_renderer, &self.image_atlas);
 
-        pass.render_image(
-            &self.animation_buffer,
-            &self.animation_atlas,
-            &self.sprite_pipeline,
-        );
+        pass.render_image(&self.animation_renderer, &self.image_atlas);
 
         pass.render_maps(
             &self.mapupper_buffer,

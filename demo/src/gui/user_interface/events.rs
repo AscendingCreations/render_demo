@@ -48,7 +48,7 @@ impl<T> UI<T> {
         }
 
         self.ui_buffer_mut().ui_buffer.finalize(renderer);
-        self.ui_buffer_mut().text_buffer.finalize(renderer);
+        self.ui_buffer_mut().text_renderer.finalize(renderer);
     }
 
     pub fn event_mouse_position(

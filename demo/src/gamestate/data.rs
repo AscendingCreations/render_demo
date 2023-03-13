@@ -42,11 +42,8 @@ where
     pub rects_pipeline: RectsRenderPipeline,
     pub rects_atlas: AtlasGroup,
     /// Text test stuff.
-    //pub text_render: TextRender,
-    pub text_buffer: InstanceBuffer<TextVertex>,
-    pub text_pipeline: TextRenderPipeline,
-    pub text_atlas: AtlasGroup<CacheKey, Vec2>,
-    pub emoji_atlas: AtlasGroup<CacheKey, Vec2>,
+    pub text_atlas: TextAtlas,
+    pub text_renderer: TextRenderer,
 }
 
 impl<Controls> Pass<crate::UIBuffer> for State<Controls>
@@ -133,12 +130,7 @@ where
             &self.map_pipeline,
         );
 
-        pass.render_text(
-            &self.text_buffer,
-            &self.text_atlas,
-            &self.emoji_atlas,
-            &self.text_pipeline,
-        );
+        pass.render_text(&self.text_renderer, &self.text_atlas);
 
         pass.render_rects(
             &self.rects_buffer,

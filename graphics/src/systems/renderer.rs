@@ -76,7 +76,7 @@ impl GpuRenderer {
         self.window.resize(&self.device, size)
     }
 
-    pub fn size(&self) -> PhysicalSize<u32> {
+    pub fn size(&self) -> PhysicalSize<f32> {
         self.window.size
     }
 

@@ -167,12 +167,12 @@ impl<T> UI<T> {
                     let size = renderer.size();
                     let pos = Vec2::new(
                         (*x as f32) * hidpi,
-                        size.height as f32 - ((*y as f32) * hidpi),
+                        size.height - ((*y as f32) * hidpi),
                     );
                     self.event_mouse_position(
                         renderer,
                         pos,
-                        Vec2::new(size.width as f32, size.height as f32),
+                        Vec2::new(size.width, size.height),
                         user_data,
                     );
                 }

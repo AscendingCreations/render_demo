@@ -165,24 +165,7 @@ async fn main() -> Result<(), AscendingError> {
     .take(4)
     .collect();
 
-    let emoji_atlas = AtlasGroup::new(
-        &mut renderer,
-        2048,
-        wgpu::TextureFormat::Rgba8UnormSrgb,
-        GroupType::Textures,
-        2,
-        256,
-    );
-
-    let text_atlas = AtlasGroup::new(
-        &mut renderer,
-        2048,
-        wgpu::TextureFormat::R8Unorm,
-        GroupType::Fonts,
-        2,
-        256,
-    );
-
+    let text_atlas = TextAtlas::new(&mut renderer, 2, 256, 2048).unwrap();
     let allocation = Texture::from_file("images/Female_1.png")?
         .group_upload(&mut atlases[0], &renderer)
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
@@ -208,11 +191,11 @@ async fn main() -> Result<(), AscendingError> {
     let surface_format = renderer.surface_format();
     let sprite_pipeline =
         ImageRenderPipeline::new(&mut renderer, surface_format)?;
-    let text_pipeline = TextRenderPipeline::new(&mut renderer, surface_format)?;
+    //let text_pipeline = TextRenderPipeline::new(&mut renderer, surface_format)?;
     let map_pipeline = MapRenderPipeline::new(&mut renderer, surface_format)?;
     let rects_pipeline =
         RectsRenderPipeline::new(&mut renderer, surface_format)?;
-    let text_buffer = InstanceBuffer::new(renderer.gpu_device());
+    //let text_buffer = InstanceBuffer::new(renderer.gpu_device());
     let sprite_buffer = InstanceBuffer::with_capacity(renderer.gpu_device(), 2);
     let maplower_buffer =
         InstanceBuffer::with_capacity(renderer.gpu_device(), 540);
@@ -221,20 +204,23 @@ async fn main() -> Result<(), AscendingError> {
     let animation_buffer = InstanceBuffer::new(renderer.gpu_device());
     let rects_buffer = InstanceBuffer::new(renderer.gpu_device());
 
+    let text_renderer =
+        TextRenderer::new(&mut renderer, surface_format).unwrap();
+
     let mut size = renderer.size();
 
     let system = System::new(
         &mut renderer,
         Projection::Orthographic {
             left: 0.0,
-            right: size.width as f32,
+            right: size.width,
             bottom: 0.0,
-            top: size.height as f32,
+            top: size.height,
             near: 1.0,
             far: -100.0,
         },
         FlatControls::new(FlatSettings::default()),
-        [size.width as f32, size.height as f32],
+        [size.width, size.height],
     );
 
     let mut map = Map::new(&mut renderer);
@@ -305,14 +291,14 @@ async fn main() -> Result<(), AscendingError> {
         );
     //.set_container_uv(Vec4::new(0.0, 0.0, 168.0, 32.0));
 
-    let mut font_cache: SwashCache<'static> = SwashCache::new(&FONT_SYSTEM);
+    //let mut font_cache: SwashCache<'static> = SwashCache::new();
     //let text_render = TextRender::new();
     let scale = renderer.window().current_monitor().unwrap().scale_factor();
 
     let mut text = Text::new(
         &mut renderer,
         &FONT_SYSTEM,
-        Some(Metrics::new(16, 16).scale(scale as i32)),
+        Some(Metrics::new(16.0, 16.0).scale(scale as f32)),
         Vec3::new(0.0, 32.0, 1.0),
         Vec2::new(256.0, 256.0),
         Some(TextBounds::new(8.0, 32.0, 190.0, 0.0)),
@@ -369,9 +355,7 @@ async fn main() -> Result<(), AscendingError> {
         rects_pipeline,
         rects_atlas: atlases.remove(0),
         text_atlas,
-        emoji_atlas,
-        text_pipeline,
-        text_buffer,
+        text_renderer,
     };
 
     let mut views = HashMap::new();
@@ -414,8 +398,8 @@ async fn main() -> Result<(), AscendingError> {
         let new_size = renderer.size();
         let inner_size = renderer.window().inner_size();
 
-        if new_size.width == 0
-            || new_size.height == 0
+        if new_size.width == 0.0
+            || new_size.height == 0.0
             || inner_size.width == 0
             || inner_size.height == 0
         {
@@ -427,7 +411,7 @@ async fn main() -> Result<(), AscendingError> {
 
         mouse_pos = {
             let pos = input_handler.mouse_position().unwrap_or((0.0, 0.0));
-            Vec2::new(pos.0, size.height as f32 - pos.1)
+            Vec2::new(pos.0, size.height - pos.1)
         };
 
         let frame = match renderer.update(&event).unwrap() {
@@ -440,9 +424,9 @@ async fn main() -> Result<(), AscendingError> {
 
             state.system.set_projection(Projection::Orthographic {
                 left: 0.0,
-                right: new_size.width as f32,
+                right: new_size.width,
                 bottom: 0.0,
-                top: new_size.height as f32,
+                top: new_size.height,
                 near: 1.0,
                 far: -100.0,
             });
@@ -459,10 +443,9 @@ async fn main() -> Result<(), AscendingError> {
 
         let seconds = frame_time.seconds();
         state.system.update(&renderer, &frame_time);
-        state.system.update_screen(
-            &renderer,
-            [new_size.width as f32, new_size.height as f32],
-        );
+        state
+            .system
+            .update_screen(&renderer, [new_size.width, new_size.height]);
 
         views.insert(
             "framebuffer".to_string(),
@@ -477,18 +460,16 @@ async fn main() -> Result<(), AscendingError> {
         });
         state.sprite_buffer.finalize(&mut renderer);
 
-        let index = text
-            .update(
-                &mut font_cache,
+        state
+            .text_renderer
+            .text_update(
+                &mut text,
                 &mut state.text_atlas,
-                &mut state.emoji_atlas,
+                &FONT_SYSTEM,
                 &mut renderer,
-                &state.system,
             )
             .unwrap();
-
-        state.text_buffer.add_buffer_store(&mut renderer, index);
-        state.text_buffer.finalize(&mut renderer);
+        state.text_renderer.finalize(&mut renderer);
 
         let (lower, upper) =
             state.map.update(&mut renderer, &mut state.map_textures);
@@ -543,7 +524,6 @@ async fn main() -> Result<(), AscendingError> {
         state.map_atlas.clean();
         state.sprite_atlas.clean();
         state.text_atlas.clean();
-        state.emoji_atlas.clean();
         ui.ui_buffer_mut().atlas_clean();
     })
 }

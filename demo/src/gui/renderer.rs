@@ -94,11 +94,11 @@ where
             system,
         );
 
-        self.render_text(
+        /*self.render_text(
             &buffer.text_buffer,
             &buffer.text_atlas,
             &buffer.emoji_atlas,
             &buffer.text_pipeline,
-        );
+        );*/
     }
 }

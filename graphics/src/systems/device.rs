@@ -30,7 +30,7 @@ pub struct GpuWindow {
     pub(crate) surface: wgpu::Surface,
     pub(crate) window: Window,
     pub(crate) surface_format: wgpu::TextureFormat,
-    pub(crate) size: PhysicalSize<u32>,
+    pub(crate) size: PhysicalSize<f32>,
     pub(crate) surface_config: wgpu::SurfaceConfiguration,
 }
 
@@ -50,17 +50,15 @@ impl GpuWindow {
 
         self.surface_config.height = size.height;
         self.surface_config.width = size.width;
-
         self.surface
             .configure(gpu_device.device(), &self.surface_config);
-
         self.surface_format = wgpu::TextureFormat::Bgra8UnormSrgb;
-        self.size = size;
+        self.size = PhysicalSize::new(size.width as f32, size.height as f32);
 
         Ok(())
     }
 
-    pub fn size(&self) -> PhysicalSize<u32> {
+    pub fn size(&self) -> PhysicalSize<f32> {
         self.size
     }
 
@@ -94,7 +92,11 @@ impl GpuWindow {
                 match self.surface.get_current_texture() {
                     Ok(frame) => return Ok(Some(frame)),
                     Err(wgpu::SurfaceError::Lost) => {
-                        self.resize(gpu_device, self.size)?;
+                        let size = PhysicalSize::new(
+                            self.size.width as u32,
+                            self.size.height as u32,
+                        );
+                        self.resize(gpu_device, size)?;
                     }
                     Err(wgpu::SurfaceError::Outdated) => {
                         return Ok(None);
@@ -124,8 +126,8 @@ impl GpuWindow {
         gpu_device: &GpuDevice,
     ) -> wgpu::TextureView {
         let size = wgpu::Extent3d {
-            width: self.size.width,
-            height: self.size.height,
+            width: self.size.width as u32,
+            height: self.size.height as u32,
             depth_or_array_layers: 1,
         };
 
@@ -202,7 +204,7 @@ impl AdapterExt for wgpu::Adapter {
                 surface,
                 window,
                 surface_format: wgpu::TextureFormat::Bgra8UnormSrgb,
-                size,
+                size: PhysicalSize::new(size.width as f32, size.height as f32),
                 surface_config,
             },
             GpuDevice { device, queue },

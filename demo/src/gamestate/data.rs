@@ -21,12 +21,7 @@ where
     /// maps TODO: make this an array.
     pub map: Map,
     /// vertex buffer group for maps
-    pub maplower_buffer: InstanceBuffer<MapVertex>,
-    pub mapupper_buffer: InstanceBuffer<MapVertex>,
-    /// Texture Bind group for Maptextures
-    pub map_group: TextureGroup,
-    /// contains the Map layer grids in pixel form.
-    pub map_textures: MapTextures,
+    pub map_renderer: MapRenderer,
     /// contains the Tile images.
     pub map_atlas: AtlasGroup,
     /// Basic shape rendering.
@@ -96,12 +91,7 @@ where
             wgpu::IndexFormat::Uint16,
         );
 
-        pass.render_maps(
-            renderer,
-            &self.maplower_buffer,
-            &self.map_atlas,
-            &self.map_group,
-        );
+        pass.render_lower_maps(renderer, &self.map_renderer, &self.map_atlas);
 
         pass.render_image(renderer, &self.sprite_renderer, &self.image_atlas);
 
@@ -111,12 +101,7 @@ where
             &self.image_atlas,
         );
 
-        pass.render_maps(
-            renderer,
-            &self.mapupper_buffer,
-            &self.map_atlas,
-            &self.map_group,
-        );
+        pass.render_upper_maps(renderer, &self.map_renderer, &self.map_atlas);
 
         pass.render_text(renderer, &self.text_renderer, &self.text_atlas);
 

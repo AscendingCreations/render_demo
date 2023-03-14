@@ -189,15 +189,12 @@ async fn main() -> Result<(), AscendingError> {
     sprites[0].pos.z = 5.0;
     sprites[0].color = Color::rgba(255, 255, 255, 120);
 
-    let maplower_buffer =
-        InstanceBuffer::with_capacity(renderer.gpu_device(), 540);
-    let mapupper_buffer =
-        InstanceBuffer::with_capacity(renderer.gpu_device(), 180);
     let rects_buffer = InstanceBuffer::new(renderer.gpu_device());
-
     let text_renderer = TextRenderer::new(&mut renderer).unwrap();
     let sprite_renderer = ImageRenderer::new(&mut renderer).unwrap();
     let animation_renderer = ImageRenderer::new(&mut renderer).unwrap();
+    let mut map_renderer = MapRenderer::new(&mut renderer, 81).unwrap();
+
     let mut size = renderer.size();
 
     let system = System::new(
@@ -233,15 +230,7 @@ async fn main() -> Result<(), AscendingError> {
             .ok_or_else(|| OtherError::new("failed to upload image"))?;
     }
 
-    let mut map_textures = MapTextures::new(&renderer, 81);
-    let map_group = TextureGroup::from_view(
-        &mut renderer,
-        &map_textures.texture_view,
-        MapLayout,
-        GroupType::Textures,
-    );
-
-    map.layer = map_textures
+    map.layer = map_renderer
         .get_unused_id()
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
 
@@ -331,11 +320,8 @@ async fn main() -> Result<(), AscendingError> {
         animation,
         image_atlas: atlases.remove(0),
         map,
-        maplower_buffer,
-        mapupper_buffer,
-        map_group,
+        map_renderer,
         map_atlas: atlases.remove(0),
-        map_textures,
         rects,
         rects_buffer,
         rects_atlas: atlases.remove(0),
@@ -458,12 +444,8 @@ async fn main() -> Result<(), AscendingError> {
             .unwrap();
         state.text_renderer.finalize(&mut renderer);
 
-        let (lower, upper) =
-            state.map.update(&mut renderer, &mut state.map_textures);
-        state.maplower_buffer.add_buffer_store(&mut renderer, lower);
-        state.mapupper_buffer.add_buffer_store(&mut renderer, upper);
-        state.maplower_buffer.finalize(&mut renderer);
-        state.mapupper_buffer.finalize(&mut renderer);
+        state.map_renderer.map_update(&mut state.map, &mut renderer);
+        state.map_renderer.finalize(&mut renderer);
 
         state
             .animation_renderer

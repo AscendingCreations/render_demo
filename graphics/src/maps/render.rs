@@ -1,5 +1,5 @@
 use crate::{
-    AtlasGroup, InstanceBuffer, MapRenderPipeline, MapVertex,
+    AtlasGroup, GpuRenderer, InstanceBuffer, MapRenderPipeline, MapVertex,
     StaticBufferObject, TextureGroup,
 };
 
@@ -9,10 +9,10 @@ where
 {
     fn render_maps(
         &mut self,
+        renderer: &'b GpuRenderer,
         buffer: &'b InstanceBuffer<MapVertex>,
         atlas_group: &'b AtlasGroup,
         map_group: &'b TextureGroup,
-        pipeline: &'b MapRenderPipeline,
     );
 }
 
@@ -22,16 +22,18 @@ where
 {
     fn render_maps(
         &mut self,
+        renderer: &'b GpuRenderer,
         buffer: &'b InstanceBuffer<MapVertex>,
         atlas_group: &'b AtlasGroup,
         map_group: &'b TextureGroup,
-        pipeline: &'b MapRenderPipeline,
     ) {
         if buffer.count() > 0 {
             self.set_bind_group(1, &atlas_group.texture.bind_group, &[]);
             self.set_bind_group(2, &map_group.bind_group, &[]);
             self.set_vertex_buffer(1, buffer.instances(None));
-            self.set_pipeline(pipeline.render_pipeline());
+            self.set_pipeline(
+                renderer.get_pipelines(MapRenderPipeline).unwrap(),
+            );
             self.draw_indexed(
                 0..StaticBufferObject::index_count(),
                 0,

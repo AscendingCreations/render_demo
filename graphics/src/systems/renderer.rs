@@ -1,6 +1,6 @@
 use crate::{
     AscendingError, BufferStore, DrawOrder, GpuDevice, GpuWindow, Layout,
-    LayoutStorage, StaticBufferObject,
+    LayoutStorage, PipeLineLayout, PipelineStorage, StaticBufferObject,
 };
 use generational_array::{
     GenerationalArray, GenerationalArrayResult, GenerationalArrayResultMut,
@@ -49,6 +49,7 @@ pub struct GpuRenderer {
     pub(crate) device: GpuDevice,
     pub(crate) buffer_stores: GenerationalArray<BufferStore>,
     pub(crate) layout_storage: LayoutStorage,
+    pub(crate) pipeline_storage: PipelineStorage,
     pub buffer_object: StaticBufferObject,
 }
 
@@ -61,6 +62,7 @@ impl GpuRenderer {
             device,
             buffer_stores: GenerationalArray::new(),
             layout_storage: LayoutStorage::new(),
+            pipeline_storage: PipelineStorage::new(),
             buffer_object,
         }
     }
@@ -153,5 +155,42 @@ impl GpuRenderer {
         layout: K,
     ) -> Rc<wgpu::BindGroupLayout> {
         self.layout_storage.create_layout(&mut self.device, layout)
+    }
+
+    pub fn create_pipelines(&mut self, surface_format: wgpu::TextureFormat) {
+        self.pipeline_storage.create_pipeline(
+            &mut self.device,
+            &mut self.layout_storage,
+            surface_format,
+            crate::ImageRenderPipeline,
+        );
+
+        self.pipeline_storage.create_pipeline(
+            &mut self.device,
+            &mut self.layout_storage,
+            surface_format,
+            crate::MapRenderPipeline,
+        );
+
+        self.pipeline_storage.create_pipeline(
+            &mut self.device,
+            &mut self.layout_storage,
+            surface_format,
+            crate::TextRenderPipeline,
+        );
+
+        self.pipeline_storage.create_pipeline(
+            &mut self.device,
+            &mut self.layout_storage,
+            surface_format,
+            crate::RectsRenderPipeline,
+        );
+    }
+
+    pub fn get_pipelines<K: PipeLineLayout>(
+        &self,
+        pipeline: K,
+    ) -> Option<&wgpu::RenderPipeline> {
+        self.pipeline_storage.get_pipeline(pipeline)
     }
 }

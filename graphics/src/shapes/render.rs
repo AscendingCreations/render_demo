@@ -1,5 +1,5 @@
 use crate::{
-    AtlasGroup, InstanceBuffer, RectVertex, RectsRenderPipeline,
+    AtlasGroup, GpuRenderer, InstanceBuffer, RectVertex, RectsRenderPipeline,
     StaticBufferObject, System,
 };
 
@@ -10,9 +10,9 @@ where
 {
     fn render_rects(
         &mut self,
+        renderer: &'b GpuRenderer,
         buffer: &'b InstanceBuffer<RectVertex>,
         atlas_group: &'b AtlasGroup,
-        pipeline: &'b RectsRenderPipeline,
         system: &'b System<Controls>,
     );
 }
@@ -24,15 +24,17 @@ where
 {
     fn render_rects(
         &mut self,
+        renderer: &'b GpuRenderer,
         buffer: &'b InstanceBuffer<RectVertex>,
         atlas_group: &'b AtlasGroup,
-        pipeline: &'b RectsRenderPipeline,
         system: &'b System<Controls>,
     ) {
         if buffer.count() > 0 {
             self.set_bind_group(1, &atlas_group.texture.bind_group, &[]);
             self.set_vertex_buffer(1, buffer.instances(None));
-            self.set_pipeline(pipeline.render_pipeline());
+            self.set_pipeline(
+                renderer.get_pipelines(RectsRenderPipeline).unwrap(),
+            );
             let mut scissor_is_default = true;
 
             for i in 0..buffer.count() {

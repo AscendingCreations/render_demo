@@ -20,8 +20,6 @@ where
     pub image_atlas: AtlasGroup,
     /// maps TODO: make this an array.
     pub map: Map,
-    /// Render Pipeline for maps
-    pub map_pipeline: MapRenderPipeline,
     /// vertex buffer group for maps
     pub maplower_buffer: InstanceBuffer<MapVertex>,
     pub mapupper_buffer: InstanceBuffer<MapVertex>,
@@ -34,7 +32,6 @@ where
     /// Basic shape rendering.
     pub rects: Rect,
     pub rects_buffer: InstanceBuffer<RectVertex>,
-    pub rects_pipeline: RectsRenderPipeline,
     pub rects_atlas: AtlasGroup,
     /// Text test stuff.
     pub text_atlas: TextAtlas,
@@ -100,32 +97,36 @@ where
         );
 
         pass.render_maps(
+            renderer,
             &self.maplower_buffer,
             &self.map_atlas,
             &self.map_group,
-            &self.map_pipeline,
         );
 
-        pass.render_image(&self.sprite_renderer, &self.image_atlas);
+        pass.render_image(renderer, &self.sprite_renderer, &self.image_atlas);
 
-        pass.render_image(&self.animation_renderer, &self.image_atlas);
+        pass.render_image(
+            renderer,
+            &self.animation_renderer,
+            &self.image_atlas,
+        );
 
         pass.render_maps(
+            renderer,
             &self.mapupper_buffer,
             &self.map_atlas,
             &self.map_group,
-            &self.map_pipeline,
         );
 
-        pass.render_text(&self.text_renderer, &self.text_atlas);
+        pass.render_text(renderer, &self.text_renderer, &self.text_atlas);
 
         pass.render_rects(
+            renderer,
             &self.rects_buffer,
             &self.rects_atlas,
-            &self.rects_pipeline,
             &self.system,
         );
 
-        pass.render_widgets(ui_buffer, &self.system);
+        pass.render_widgets(renderer, ui_buffer, &self.system);
     }
 }

@@ -149,6 +149,7 @@ async fn main() -> Result<(), AscendingError> {
         .unwrap();
 
     let mut renderer = GpuRenderer::new(gpu_window, gpu_device);
+    renderer.create_pipelines(renderer.surface_format());
 
     println!("{:?}", renderer.adapter().get_info());
 
@@ -188,24 +189,15 @@ async fn main() -> Result<(), AscendingError> {
     sprites[0].pos.z = 5.0;
     sprites[0].color = Color::rgba(255, 255, 255, 120);
 
-    let surface_format = renderer.surface_format();
-
-    let map_pipeline = MapRenderPipeline::new(&mut renderer, surface_format)?;
-    let rects_pipeline =
-        RectsRenderPipeline::new(&mut renderer, surface_format)?;
-    //let text_buffer = InstanceBuffer::new(renderer.gpu_device());
     let maplower_buffer =
         InstanceBuffer::with_capacity(renderer.gpu_device(), 540);
     let mapupper_buffer =
         InstanceBuffer::with_capacity(renderer.gpu_device(), 180);
     let rects_buffer = InstanceBuffer::new(renderer.gpu_device());
 
-    let text_renderer =
-        TextRenderer::new(&mut renderer, surface_format).unwrap();
-    let sprite_renderer =
-        ImageRenderer::new(&mut renderer, surface_format).unwrap();
-    let animation_renderer =
-        ImageRenderer::new(&mut renderer, surface_format).unwrap();
+    let text_renderer = TextRenderer::new(&mut renderer).unwrap();
+    let sprite_renderer = ImageRenderer::new(&mut renderer).unwrap();
+    let animation_renderer = ImageRenderer::new(&mut renderer).unwrap();
     let mut size = renderer.size();
 
     let system = System::new(
@@ -339,7 +331,6 @@ async fn main() -> Result<(), AscendingError> {
         animation,
         image_atlas: atlases.remove(0),
         map,
-        map_pipeline,
         maplower_buffer,
         mapupper_buffer,
         map_group,
@@ -347,7 +338,6 @@ async fn main() -> Result<(), AscendingError> {
         map_textures,
         rects,
         rects_buffer,
-        rects_pipeline,
         rects_atlas: atlases.remove(0),
         sprite_renderer,
         animation_renderer,

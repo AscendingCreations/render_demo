@@ -45,18 +45,13 @@ impl TextAtlas {
 
 pub struct TextRenderer {
     pub(crate) buffer: InstanceBuffer<TextVertex>,
-    pub(crate) pipeline: TextRenderPipeline,
     pub(crate) swash_cache: SwashCache,
 }
 
 impl TextRenderer {
-    pub fn new(
-        renderer: &mut GpuRenderer,
-        surface_format: wgpu::TextureFormat,
-    ) -> Result<Self, AscendingError> {
+    pub fn new(renderer: &mut GpuRenderer) -> Result<Self, AscendingError> {
         Ok(Self {
             buffer: InstanceBuffer::new(renderer.gpu_device()),
-            pipeline: TextRenderPipeline::new(renderer, surface_format)?,
             swash_cache: SwashCache::new(),
         })
     }
@@ -92,7 +87,12 @@ pub trait RenderText<'a, 'b>
 where
     'b: 'a,
 {
-    fn render_text(&mut self, renderer: &'b TextRenderer, atlas: &'b TextAtlas);
+    fn render_text(
+        &mut self,
+        renderer: &'b GpuRenderer,
+        buffer: &'b TextRenderer,
+        atlas: &'b TextAtlas,
+    );
 }
 
 impl<'a, 'b> RenderText<'a, 'b> for wgpu::RenderPass<'a>
@@ -101,18 +101,21 @@ where
 {
     fn render_text(
         &mut self,
-        renderer: &'b TextRenderer,
+        renderer: &'b GpuRenderer,
+        buffer: &'b TextRenderer,
         atlas: &'b TextAtlas,
     ) {
-        if renderer.buffer.count() > 0 {
+        if buffer.buffer.count() > 0 {
             self.set_bind_group(1, &atlas.text.texture.bind_group, &[]);
             self.set_bind_group(2, &atlas.emoji.texture.bind_group, &[]);
-            self.set_vertex_buffer(1, renderer.buffer.instances(None));
-            self.set_pipeline(renderer.pipeline.render_pipeline());
+            self.set_vertex_buffer(1, buffer.buffer.instances(None));
+            self.set_pipeline(
+                renderer.get_pipelines(TextRenderPipeline).unwrap(),
+            );
             self.draw_indexed(
                 0..StaticBufferObject::index_count(),
                 0,
-                0..renderer.buffer.count(),
+                0..buffer.buffer.count(),
             );
         }
     }

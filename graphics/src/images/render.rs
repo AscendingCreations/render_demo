@@ -4,18 +4,13 @@ use crate::{
 };
 
 pub struct ImageRenderer {
-    pub pipeline: ImageRenderPipeline,
     pub buffer: InstanceBuffer<ImageVertex>,
 }
 
 impl ImageRenderer {
-    pub fn new(
-        renderer: &mut GpuRenderer,
-        surface_format: wgpu::TextureFormat,
-    ) -> Result<Self, AscendingError> {
+    pub fn new(renderer: &mut GpuRenderer) -> Result<Self, AscendingError> {
         Ok(Self {
             buffer: InstanceBuffer::new(renderer.gpu_device()),
-            pipeline: ImageRenderPipeline::new(renderer, surface_format)?,
         })
     }
 
@@ -48,7 +43,8 @@ where
 {
     fn render_image(
         &mut self,
-        renderer: &'b ImageRenderer,
+        renderer: &'b GpuRenderer,
+        buffer: &'b ImageRenderer,
         atlas: &'b AtlasGroup,
     );
 }
@@ -59,18 +55,21 @@ where
 {
     fn render_image(
         &mut self,
-        renderer: &'b ImageRenderer,
+        renderer: &'b GpuRenderer,
+        buffer: &'b ImageRenderer,
         atlas: &'b AtlasGroup,
     ) {
-        if renderer.buffer.count() > 0 {
+        if buffer.buffer.count() > 0 {
             self.set_bind_group(1, &atlas.texture.bind_group, &[]);
-            self.set_vertex_buffer(1, renderer.buffer.instances(None));
-            self.set_pipeline(renderer.pipeline.render_pipeline());
+            self.set_vertex_buffer(1, buffer.buffer.instances(None));
+            self.set_pipeline(
+                renderer.get_pipelines(ImageRenderPipeline).unwrap(),
+            );
 
             self.draw_indexed(
                 0..StaticBufferObject::index_count(),
                 0,
-                0..renderer.buffer.count(),
+                0..buffer.buffer.count(),
             );
         }
     }

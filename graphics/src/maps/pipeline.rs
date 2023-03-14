@@ -1,18 +1,21 @@
 use crate::{
-    AscendingError, GpuRenderer, InstanceLayout, MapLayout, MapVertex,
-    StaticBufferObject, SystemLayout, TextureLayout,
+    GpuDevice, InstanceLayout, LayoutStorage, MapLayout, MapVertex,
+    PipeLineLayout, StaticBufferObject, SystemLayout, TextureLayout,
 };
+use bytemuck::{Pod, Zeroable};
 
-pub struct MapRenderPipeline {
-    render_pipeline: wgpu::RenderPipeline,
-}
+#[repr(C)]
+#[derive(Clone, Copy, Hash, Pod, Zeroable)]
+pub struct MapRenderPipeline;
 
-impl MapRenderPipeline {
-    pub fn new(
-        renderer: &mut GpuRenderer,
+impl PipeLineLayout for MapRenderPipeline {
+    fn create_layout(
+        &self,
+        gpu_device: &mut GpuDevice,
+        layouts: &mut LayoutStorage,
         surface_format: wgpu::TextureFormat,
-    ) -> Result<Self, AscendingError> {
-        let shader = renderer.device().create_shader_module(
+    ) -> wgpu::RenderPipeline {
+        let shader = gpu_device.device().create_shader_module(
             wgpu::ShaderModuleDescriptor {
                 label: Some("Shader"),
                 source: wgpu::ShaderSource::Wgsl(
@@ -21,15 +24,15 @@ impl MapRenderPipeline {
             },
         );
 
-        let system_layout = renderer.create_layout(SystemLayout);
-        let texture_layout = renderer.create_layout(TextureLayout);
-        let map_layout = renderer.create_layout(MapLayout);
+        let system_layout = layouts.create_layout(gpu_device, SystemLayout);
+        let texture_layout = layouts.create_layout(gpu_device, TextureLayout);
+        let map_layout = layouts.create_layout(gpu_device, MapLayout);
 
         // Create the render pipeline.
-        let render_pipeline = renderer.device().create_render_pipeline(
+        gpu_device.device().create_render_pipeline(
             &wgpu::RenderPipelineDescriptor {
                 label: Some("Map render pipeline"),
-                layout: Some(&renderer.device().create_pipeline_layout(
+                layout: Some(&gpu_device.device().create_pipeline_layout(
                     &wgpu::PipelineLayoutDescriptor {
                         label: Some("Map_render_pipeline_layout"),
                         bind_group_layouts: &[
@@ -86,12 +89,6 @@ impl MapRenderPipeline {
                 }),
                 multiview: None,
             },
-        );
-
-        Ok(Self { render_pipeline })
-    }
-
-    pub fn render_pipeline(&self) -> &wgpu::RenderPipeline {
-        &self.render_pipeline
+        )
     }
 }

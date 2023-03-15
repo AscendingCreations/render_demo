@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 /// The `Pass` trait represents either a render or compute pass. This way the passes can be
 /// implemented in a modular way.
 pub trait Pass<T> {
@@ -10,7 +8,6 @@ pub trait Pass<T> {
         &mut self,
         renderer: &crate::GpuRenderer,
         encoder: &mut wgpu::CommandEncoder,
-        views: &HashMap<String, wgpu::TextureView>,
         ui_buffer: &T,
     );
 }

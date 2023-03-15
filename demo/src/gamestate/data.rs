@@ -26,7 +26,7 @@ where
     pub map_atlas: AtlasGroup,
     /// Basic shape rendering.
     pub rects: Rect,
-    pub rects_buffer: InstanceBuffer<RectVertex>,
+    pub rects_renderer: RectRenderer,
     pub rects_atlas: AtlasGroup,
     /// Text test stuff.
     pub text_atlas: TextAtlas,
@@ -107,7 +107,7 @@ where
 
         pass.render_rects(
             renderer,
-            &self.rects_buffer,
+            &self.rects_renderer,
             &self.rects_atlas,
             &self.system,
         );

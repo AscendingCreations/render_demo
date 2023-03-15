@@ -1,6 +1,6 @@
 use crate::{
-    AtlasGroup, GpuRenderer, InstanceBuffer, LayoutStorage, StaticBufferObject,
-    TextAtlas, TextRenderPipeline, TextVertex, Vec2,
+    AtlasGroup, GpuRenderer, InstanceBuffer, LayoutStorage, RectRenderer,
+    StaticBufferObject, TextAtlas, TextRenderPipeline, TextVertex, Vec2,
 };
 use cosmic_text::{CacheKey, FontSystem};
 use graphics::*;
@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 pub struct UIBuffer {
     /// Basic shape/image rendering for widgets.
-    pub ui_buffer: InstanceBuffer<RectVertex>,
+    pub ui_buffer: RectRenderer,
     pub ui_atlas: AtlasGroup,
     /// Text test stuff.
     pub text_renderer: TextRenderer,
@@ -18,7 +18,7 @@ pub struct UIBuffer {
 impl UIBuffer {
     pub fn new(renderer: &mut GpuRenderer) -> Result<Self, AscendingError> {
         Ok(Self {
-            ui_buffer: InstanceBuffer::new(renderer.gpu_device()),
+            ui_buffer: RectRenderer::new(renderer)?,
             ui_atlas: AtlasGroup::new(
                 renderer,
                 2048,

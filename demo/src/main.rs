@@ -189,7 +189,7 @@ async fn main() -> Result<(), AscendingError> {
     sprites[0].pos.z = 5.0;
     sprites[0].color = Color::rgba(255, 255, 255, 120);
 
-    let rects_buffer = InstanceBuffer::new(renderer.gpu_device());
+    let rects_renderer = RectRenderer::new(&mut renderer).unwrap();
     let text_renderer = TextRenderer::new(&mut renderer).unwrap();
     let sprite_renderer = ImageRenderer::new(&mut renderer).unwrap();
     let animation_renderer = ImageRenderer::new(&mut renderer).unwrap();
@@ -323,7 +323,7 @@ async fn main() -> Result<(), AscendingError> {
         map_renderer,
         map_atlas: atlases.remove(0),
         rects,
-        rects_buffer,
+        rects_renderer,
         rects_atlas: atlases.remove(0),
         sprite_renderer,
         animation_renderer,
@@ -432,7 +432,6 @@ async fn main() -> Result<(), AscendingError> {
         });
 
         state.sprite_renderer.finalize(&mut renderer);
-
         state
             .text_renderer
             .text_update(
@@ -443,18 +442,16 @@ async fn main() -> Result<(), AscendingError> {
             )
             .unwrap();
         state.text_renderer.finalize(&mut renderer);
-
         state.map_renderer.map_update(&mut state.map, &mut renderer);
         state.map_renderer.finalize(&mut renderer);
-
         state
             .animation_renderer
             .image_update(&mut state.animation, &mut renderer);
         state.animation_renderer.finalize(&mut renderer);
-
-        let index = state.rects.update(&mut renderer);
-        state.rects_buffer.add_buffer_store(&mut renderer, index);
-        state.rects_buffer.finalize(&mut renderer);
+        state
+            .rects_renderer
+            .rect_update(&mut state.rects, &mut renderer);
+        state.rects_renderer.finalize(&mut renderer);
 
         ui.event_draw(&mut renderer, &frame_time, &mut state);
         // Start encoding commands.

@@ -1,7 +1,37 @@
 use crate::{
-    AtlasGroup, GpuRenderer, InstanceBuffer, RectVertex, RectsRenderPipeline,
-    StaticBufferObject, System,
+    AscendingError, AtlasGroup, GpuRenderer, InstanceBuffer, OrderedIndex,
+    Rect, RectVertex, RectsRenderPipeline, StaticBufferObject, System,
 };
+
+pub struct RectRenderer {
+    pub buffer: InstanceBuffer<RectVertex>,
+}
+
+impl RectRenderer {
+    pub fn new(renderer: &mut GpuRenderer) -> Result<Self, AscendingError> {
+        Ok(Self {
+            buffer: InstanceBuffer::new(renderer.gpu_device()),
+        })
+    }
+
+    pub fn add_buffer_store(
+        &mut self,
+        renderer: &mut GpuRenderer,
+        index: OrderedIndex,
+    ) {
+        self.buffer.add_buffer_store(renderer, index);
+    }
+
+    pub fn finalize(&mut self, renderer: &mut GpuRenderer) {
+        self.buffer.finalize(renderer)
+    }
+
+    pub fn rect_update(&mut self, rect: &mut Rect, renderer: &mut GpuRenderer) {
+        let index = rect.update(renderer);
+
+        self.add_buffer_store(renderer, index);
+    }
+}
 
 pub trait RenderRects<'a, 'b, Controls>
 where
@@ -11,7 +41,7 @@ where
     fn render_rects(
         &mut self,
         renderer: &'b GpuRenderer,
-        buffer: &'b InstanceBuffer<RectVertex>,
+        buffer: &'b RectRenderer,
         atlas_group: &'b AtlasGroup,
         system: &'b System<Controls>,
     );
@@ -25,20 +55,21 @@ where
     fn render_rects(
         &mut self,
         renderer: &'b GpuRenderer,
-        buffer: &'b InstanceBuffer<RectVertex>,
+        buffer: &'b RectRenderer,
         atlas_group: &'b AtlasGroup,
         system: &'b System<Controls>,
     ) {
-        if buffer.count() > 0 {
+        if buffer.buffer.count() > 0 {
             self.set_bind_group(1, &atlas_group.texture.bind_group, &[]);
-            self.set_vertex_buffer(1, buffer.instances(None));
+            self.set_vertex_buffer(1, buffer.buffer.instances(None));
             self.set_pipeline(
                 renderer.get_pipelines(RectsRenderPipeline).unwrap(),
             );
             let mut scissor_is_default = true;
 
-            for i in 0..buffer.count() {
-                if let Some(Some(bounds)) = buffer.bounds.get(i as usize) {
+            for i in 0..buffer.buffer.count() {
+                if let Some(Some(bounds)) = buffer.buffer.bounds.get(i as usize)
+                {
                     let bounds = system.world_to_screen(false, bounds);
 
                     self.set_scissor_rect(

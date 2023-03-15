@@ -177,7 +177,7 @@ async fn main() -> Result<(), AscendingError> {
     let y = 0.0;
 
     for _i in 0..2 {
-        let mut sprite = Image::new(Some(allocation), &mut renderer);
+        let mut sprite = Image::new(Some(allocation), &mut renderer, 1);
         sprite.pos = Vec3::new(x, y, 5.1);
         sprite.hw = Vec2::new(48.0, 48.0);
         sprite.uv = Vec4::new(48.0, 96.0, 48.0, 48.0);
@@ -192,7 +192,6 @@ async fn main() -> Result<(), AscendingError> {
     let rects_renderer = RectRenderer::new(&mut renderer).unwrap();
     let text_renderer = TextRenderer::new(&mut renderer).unwrap();
     let sprite_renderer = ImageRenderer::new(&mut renderer).unwrap();
-    let animation_renderer = ImageRenderer::new(&mut renderer).unwrap();
     let mut map_renderer = MapRenderer::new(&mut renderer, 81).unwrap();
 
     let mut size = renderer.size();
@@ -238,7 +237,7 @@ async fn main() -> Result<(), AscendingError> {
         .group_upload(&mut atlases[0], &renderer)
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
 
-    let mut animation = Image::new(Some(allocation), &mut renderer);
+    let mut animation = Image::new(Some(allocation), &mut renderer, 2);
 
     animation.pos = Vec3::new(96.0, 96.0, 5.0);
     animation.hw = Vec2::new(64.0, 64.0);
@@ -326,7 +325,6 @@ async fn main() -> Result<(), AscendingError> {
         rects_renderer,
         rects_atlas: atlases.remove(0),
         sprite_renderer,
-        animation_renderer,
         text_atlas,
         text_renderer,
     };
@@ -415,7 +413,9 @@ async fn main() -> Result<(), AscendingError> {
         state.sprites.iter_mut().for_each(|sprite| {
             state.sprite_renderer.image_update(sprite, &mut renderer);
         });
-
+        state
+            .sprite_renderer
+            .image_update(&mut state.animation, &mut renderer);
         state.sprite_renderer.finalize(&mut renderer);
         state
             .text_renderer
@@ -429,10 +429,6 @@ async fn main() -> Result<(), AscendingError> {
         state.text_renderer.finalize(&mut renderer);
         state.map_renderer.map_update(&mut state.map, &mut renderer);
         state.map_renderer.finalize(&mut renderer);
-        state
-            .animation_renderer
-            .image_update(&mut state.animation, &mut renderer);
-        state.animation_renderer.finalize(&mut renderer);
         state
             .rects_renderer
             .rect_update(&mut state.rects, &mut renderer);

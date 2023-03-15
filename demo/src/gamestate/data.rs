@@ -23,7 +23,6 @@ where
     /// Rendering Buffers and other shared data.
     pub text_renderer: TextRenderer,
     pub sprite_renderer: ImageRenderer,
-    pub animation_renderer: ImageRenderer,
     pub rects_renderer: RectRenderer,
     pub map_renderer: MapRenderer,
 }
@@ -82,12 +81,6 @@ where
         pass.render_lower_maps(renderer, &self.map_renderer, &self.map_atlas);
 
         pass.render_image(renderer, &self.sprite_renderer, &self.image_atlas);
-
-        pass.render_image(
-            renderer,
-            &self.animation_renderer,
-            &self.image_atlas,
-        );
 
         pass.render_upper_maps(renderer, &self.map_renderer, &self.map_atlas);
 

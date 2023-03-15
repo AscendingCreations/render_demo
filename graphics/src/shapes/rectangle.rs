@@ -220,7 +220,7 @@ impl Rect {
             store.changed = true;
         }
 
-        self.order = DrawOrder::new(false, &self.position)
+        self.order = DrawOrder::new(false, &self.position, 1);
     }
 
     /// used to check and update the ShapeVertex array.

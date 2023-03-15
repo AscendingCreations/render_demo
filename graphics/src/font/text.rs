@@ -205,7 +205,7 @@ impl Text {
             store.changed = true;
         }
 
-        self.order = DrawOrder::new(false, &self.pos);
+        self.order = DrawOrder::new(false, &self.pos, 1);
         self.changed = false;
         Ok(())
     }
@@ -227,7 +227,7 @@ impl Text {
             size,
             bounds: bounds.unwrap_or_default(),
             store_id: renderer.new_buffer(),
-            order: DrawOrder::new(false, &pos),
+            order: DrawOrder::new(false, &pos, 1),
             changed: true,
             default_color: Color::rgba(0, 0, 0, 255),
             use_camera: false,

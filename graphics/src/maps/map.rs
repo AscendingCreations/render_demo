@@ -108,7 +108,7 @@ impl Map {
         }
 
         self.order =
-            DrawOrder::new(false, &Vec3::new(self.pos.x, self.pos.y, 1.0));
+            DrawOrder::new(false, &Vec3::new(self.pos.x, self.pos.y, 1.0), 1);
         self.changed = false;
     }
 

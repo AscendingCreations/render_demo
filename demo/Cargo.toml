@@ -33,3 +33,4 @@ wgpu.workspace = true
 chrono.workspace = true
 ubits.workspace = true
 slab.workspace = true
+hecs.workspace = true

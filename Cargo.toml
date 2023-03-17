@@ -29,6 +29,8 @@ chrono = { version = "0.4.23", features = ["clock", "serde", "std"] }
 ubits = "0.3.1"
 slab = "0.4.8"
 lru = "0.9.0"
+generational_array = "0.1.1"
+ritehash = "0.2.0"
 
 [workspace.dependencies.naga]
 #git = "https://github.com/gfx-rs/naga"

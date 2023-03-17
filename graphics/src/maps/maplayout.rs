@@ -6,7 +6,10 @@ use bytemuck::{Pod, Zeroable};
 pub struct MapLayout;
 
 impl Layout for MapLayout {
-    fn create_layout(&self, gpu_device: &GpuDevice) -> wgpu::BindGroupLayout {
+    fn create_layout(
+        &self,
+        gpu_device: &mut GpuDevice,
+    ) -> wgpu::BindGroupLayout {
         let entries = vec![
             wgpu::BindGroupLayoutEntry {
                 binding: 0,

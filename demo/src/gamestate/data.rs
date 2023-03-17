@@ -8,48 +8,29 @@ pub struct State<Controls>
 where
     Controls: camera::controls::Controls,
 {
-    /// Storage container for layouts for faster initlization
-    pub layout_storage: LayoutStorage,
     /// World Camera Controls and time. Deturmines how the world is looked at.
     pub system: System<Controls>,
     /// Sprite data TODO: Make an array,
     pub sprites: Vec<Image>,
+    pub animation: Image,
     /// Render pipe line for Sprites
-    pub sprite_pipeline: ImageRenderPipeline,
-    /// Vertex buffer group for Sprites
-    pub sprite_buffer: InstanceBuffer<ImageVertex>,
-    /// AtlasGroup to hold Sprite Images
-    pub sprite_atlas: AtlasGroup,
+    pub sprite_renderer: ImageRenderer,
+    pub animation_renderer: ImageRenderer,
+    /// AtlasGroup to hold Sprite/animation Images
+    pub image_atlas: AtlasGroup,
     /// maps TODO: make this an array.
     pub map: Map,
-    /// Render Pipeline for maps
-    pub map_pipeline: MapRenderPipeline,
     /// vertex buffer group for maps
-    pub maplower_buffer: InstanceBuffer<MapVertex>,
-    pub mapupper_buffer: InstanceBuffer<MapVertex>,
-    /// Texture Bind group for Maptextures
-    pub map_group: TextureGroup,
-    /// contains the Map layer grids in pixel form.
-    pub map_textures: MapTextures,
+    pub map_renderer: MapRenderer,
     /// contains the Tile images.
     pub map_atlas: AtlasGroup,
-    /// animation test stuff.
-    pub animation: Image,
-    pub animation_buffer: InstanceBuffer<ImageVertex>,
-    pub animation_atlas: AtlasGroup,
-
     /// Basic shape rendering.
     pub rects: Rect,
-    pub rects_buffer: InstanceBuffer<RectVertex>,
-    pub rects_pipeline: RectsRenderPipeline,
+    pub rects_renderer: RectRenderer,
     pub rects_atlas: AtlasGroup,
     /// Text test stuff.
-    //pub text_render: TextRender,
-    pub text_buffer: InstanceBuffer<TextVertex>,
-    pub text_pipeline: TextRenderPipeline,
-    pub text_atlas: AtlasGroup<CacheKey, Vec2>,
-    pub emoji_atlas: AtlasGroup<CacheKey, Vec2>,
-    pub buffer_object: StaticBufferObject,
+    pub text_atlas: TextAtlas,
+    pub text_renderer: TextRenderer,
 }
 
 impl<Controls> Pass<crate::UIBuffer> for State<Controls>
@@ -58,6 +39,7 @@ where
 {
     fn render(
         &mut self,
+        renderer: &GpuRenderer,
         encoder: &mut wgpu::CommandEncoder,
         views: &HashMap<String, wgpu::TextureView>,
         ui_buffer: &crate::UIBuffer,
@@ -103,52 +85,33 @@ where
 
         // Lets set the Reusable Vertices and Indicies here.
         // This is used for each Renderer, Should be more performant since it is shared.
-        pass.set_vertex_buffer(0, self.buffer_object.vertices());
+        pass.set_vertex_buffer(0, renderer.buffer_object.vertices());
         pass.set_index_buffer(
-            self.buffer_object.indices(),
+            renderer.buffer_object.indices(),
             wgpu::IndexFormat::Uint16,
         );
 
-        pass.render_maps(
-            &self.maplower_buffer,
-            &self.map_atlas,
-            &self.map_group,
-            &self.map_pipeline,
-        );
+        pass.render_lower_maps(renderer, &self.map_renderer, &self.map_atlas);
+
+        pass.render_image(renderer, &self.sprite_renderer, &self.image_atlas);
 
         pass.render_image(
-            &self.sprite_buffer,
-            &self.sprite_atlas,
-            &self.sprite_pipeline,
+            renderer,
+            &self.animation_renderer,
+            &self.image_atlas,
         );
 
-        pass.render_image(
-            &self.animation_buffer,
-            &self.animation_atlas,
-            &self.sprite_pipeline,
-        );
+        pass.render_upper_maps(renderer, &self.map_renderer, &self.map_atlas);
 
-        pass.render_maps(
-            &self.mapupper_buffer,
-            &self.map_atlas,
-            &self.map_group,
-            &self.map_pipeline,
-        );
-
-        pass.render_text(
-            &self.text_buffer,
-            &self.text_atlas,
-            &self.emoji_atlas,
-            &self.text_pipeline,
-        );
+        pass.render_text(renderer, &self.text_renderer, &self.text_atlas);
 
         pass.render_rects(
-            &self.rects_buffer,
+            renderer,
+            &self.rects_renderer,
             &self.rects_atlas,
-            &self.rects_pipeline,
             &self.system,
         );
 
-        pass.render_widgets(ui_buffer, &self.system);
+        pass.render_widgets(renderer, ui_buffer, &self.system);
     }
 }

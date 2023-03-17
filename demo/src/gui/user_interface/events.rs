@@ -1,5 +1,5 @@
 use crate::{
-    CallBack, CallBackKey, CallBacks, FrameTime, Handle, Identity,
+    CallBack, CallBackKey, CallBacks, FrameTime, GpuRenderer, Handle, Identity,
     InternalCallBacks, UIBuffer, UiFlags, Widget, WidgetRef, UI,
 };
 use graphics::*;
@@ -24,7 +24,7 @@ use winit::{
 impl<T> UI<T> {
     pub fn event_draw(
         &mut self,
-        device: &GpuDevice,
+        renderer: &mut GpuRenderer,
         time: &FrameTime,
         user_data: &mut T,
     ) {
@@ -36,25 +36,24 @@ impl<T> UI<T> {
 
             if let Some(callback) = self.get_inner_callback(&key) {
                 if let InternalCallBacks::Draw(draw) = callback.as_ref() {
-                    draw(&mut mut_wdgt, self, device, time);
+                    draw(&mut mut_wdgt, self, renderer, time);
                 }
             }
 
             if let Some(callback) = self.get_user_callback(&key) {
                 if let CallBacks::Draw(draw) = callback.as_ref() {
-                    draw(&mut mut_wdgt, self, device, time, user_data);
+                    draw(&mut mut_wdgt, self, renderer, time, user_data);
                 }
             }
         }
 
-        self.ui_buffer_mut().ui_buffer.finalize(device);
-        self.ui_buffer_mut().text_buffer.finalize(device);
+        self.ui_buffer_mut().ui_buffer.finalize(renderer);
+        self.ui_buffer_mut().text_renderer.finalize(renderer);
     }
 
     pub fn event_mouse_position(
         &mut self,
-        device: &GpuDevice,
-        window: &mut Window,
+        renderer: &mut GpuRenderer,
         position: Vec2,
         screensize: Vec2,
         user_data: &mut T,
@@ -62,13 +61,13 @@ impl<T> UI<T> {
         self.new_mouse_pos = position;
 
         if self.moving {
-            if let Ok(win_pos) = window.outer_position() {
+            if let Ok(win_pos) = renderer.window().outer_position() {
                 let mut win_pos = Vec2::new(win_pos.x as f32, win_pos.y as f32);
                 win_pos.x = position[0] + win_pos.x - self.mouse_clicked[0];
                 win_pos.y = position[1] + win_pos.y - self.mouse_clicked[1];
-                window.set_outer_position(PhysicalPosition::new(
-                    win_pos.x, win_pos.y,
-                ));
+                renderer.window_mut().set_outer_position(
+                    PhysicalPosition::new(win_pos.x, win_pos.y),
+                );
             } else {
                 panic!("Not Supported. This will be a Soft warning via log later on.")
             }
@@ -100,13 +99,13 @@ impl<T> UI<T> {
                         control_pos.z,
                     ));
                     self.widget_position_update(
-                        device,
+                        renderer,
                         &mut focused.borrow_mut(),
                     );
                 }
             }
 
-            self.mouse_over_event(device, user_data);
+            self.mouse_over_event(renderer, user_data);
         }
 
         self.mouse_pos = position;
@@ -114,7 +113,7 @@ impl<T> UI<T> {
 
     pub fn event_mouse_button(
         &mut self,
-        device: &GpuDevice,
+        renderer: &mut GpuRenderer,
         button: MouseButton,
         pressed: bool,
         user_data: &mut T,
@@ -123,9 +122,9 @@ impl<T> UI<T> {
         self.mouse_clicked = self.mouse_pos;
 
         if pressed {
-            self.mouse_press(device, user_data);
+            self.mouse_press(renderer, user_data);
         } else {
-            self.mouse_release(device, user_data);
+            self.mouse_release(renderer, user_data);
         }
     }
 
@@ -135,8 +134,7 @@ impl<T> UI<T> {
 
     pub fn handle_events(
         &mut self,
-        window: &mut GpuWindow,
-        device: &GpuDevice,
+        renderer: &mut GpuRenderer,
         event: &Event<()>,
         hidpi: f32,
         user_data: &mut T,
@@ -145,7 +143,7 @@ impl<T> UI<T> {
             Event::WindowEvent {
                 ref event,
                 window_id,
-            } if window_id == window.window().id() => match event {
+            } if window_id == renderer.window().id() => match event {
                 WindowEvent::KeyboardInput {
                     input:
                         KeyboardInput {
@@ -159,23 +157,22 @@ impl<T> UI<T> {
                 WindowEvent::MouseInput { state, button, .. } => {
                     let pressed = *state == ElementState::Pressed;
                     self.event_mouse_button(
-                        device, *button, pressed, user_data,
+                        renderer, *button, pressed, user_data,
                     );
                 }
                 WindowEvent::CursorMoved {
                     position: PhysicalPosition { x, y },
                     ..
                 } => {
-                    let size = window.size();
+                    let size = renderer.size();
                     let pos = Vec2::new(
                         (*x as f32) * hidpi,
-                        size.height as f32 - ((*y as f32) * hidpi),
+                        size.height - ((*y as f32) * hidpi),
                     );
                     self.event_mouse_position(
-                        device,
-                        window.window_mut(),
+                        renderer,
                         pos,
-                        Vec2::new(size.width as f32, size.height as f32),
+                        Vec2::new(size.width, size.height),
                         user_data,
                     );
                 }

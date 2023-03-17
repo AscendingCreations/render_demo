@@ -1,18 +1,20 @@
 use crate::{
-    AscendingError, GpuDevice, InstanceLayout, LayoutStorage, MapLayout,
-    MapVertex, StaticBufferObject, SystemLayout, TextureLayout,
+    GpuDevice, InstanceLayout, LayoutStorage, MapLayout, MapVertex,
+    PipeLineLayout, StaticBufferObject, SystemLayout, TextureLayout,
 };
+use bytemuck::{Pod, Zeroable};
 
-pub struct MapRenderPipeline {
-    render_pipeline: wgpu::RenderPipeline,
-}
+#[repr(C)]
+#[derive(Clone, Copy, Hash, Pod, Zeroable)]
+pub struct MapRenderPipeline;
 
-impl MapRenderPipeline {
-    pub fn new(
-        gpu_device: &GpuDevice,
+impl PipeLineLayout for MapRenderPipeline {
+    fn create_layout(
+        &self,
+        gpu_device: &mut GpuDevice,
+        layouts: &mut LayoutStorage,
         surface_format: wgpu::TextureFormat,
-        layout_storage: &mut LayoutStorage,
-    ) -> Result<Self, AscendingError> {
+    ) -> wgpu::RenderPipeline {
         let shader = gpu_device.device().create_shader_module(
             wgpu::ShaderModuleDescriptor {
                 label: Some("Shader"),
@@ -22,14 +24,12 @@ impl MapRenderPipeline {
             },
         );
 
-        let system_layout =
-            layout_storage.create_layout(gpu_device, SystemLayout);
-        let texture_layout =
-            layout_storage.create_layout(gpu_device, TextureLayout);
-        let map_layout = layout_storage.create_layout(gpu_device, MapLayout);
+        let system_layout = layouts.create_layout(gpu_device, SystemLayout);
+        let texture_layout = layouts.create_layout(gpu_device, TextureLayout);
+        let map_layout = layouts.create_layout(gpu_device, MapLayout);
 
         // Create the render pipeline.
-        let render_pipeline = gpu_device.device().create_render_pipeline(
+        gpu_device.device().create_render_pipeline(
             &wgpu::RenderPipelineDescriptor {
                 label: Some("Map render pipeline"),
                 layout: Some(&gpu_device.device().create_pipeline_layout(
@@ -89,12 +89,6 @@ impl MapRenderPipeline {
                 }),
                 multiview: None,
             },
-        );
-
-        Ok(Self { render_pipeline })
-    }
-
-    pub fn render_pipeline(&self) -> &wgpu::RenderPipeline {
-        &self.render_pipeline
+        )
     }
 }

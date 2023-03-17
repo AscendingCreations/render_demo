@@ -1,9 +1,9 @@
 use crate::{
-    AscendingError, AtlasGroup, BufferStoreRef, Color, GpuDevice, System,
-    TextVertex, Vec2, Vec3, Vec4,
+    AscendingError, Color, DrawOrder, GpuRenderer, Index, OrderedIndex,
+    TextAtlas, TextVertex, Vec2, Vec3, Vec4,
 };
 use cosmic_text::{
-    Attrs, Buffer, CacheKey, FontSystem, Metrics, SwashCache, SwashContent,
+    Attrs, Buffer, FontSystem, Metrics, SwashCache, SwashContent,
 };
 
 /// Controls the visible area of the text. Any text outside of the visible area will be clipped.
@@ -29,7 +29,8 @@ pub struct Text {
     pub size: Vec2,
     pub default_color: Color,
     pub bounds: TextBounds,
-    pub store: BufferStoreRef,
+    pub store_id: Index,
+    pub order: DrawOrder,
     /// if the shader should render with the camera's view.
     pub use_camera: bool,
     /// if anything got updated we need to update the buffers too.
@@ -37,26 +38,24 @@ pub struct Text {
 }
 
 impl Text {
-    pub fn create_quad<Controls>(
+    pub fn create_quad(
         &mut self,
+        font_system: &FontSystem,
         cache: &mut SwashCache,
-        text_atlas: &mut AtlasGroup<CacheKey, Vec2>,
-        emoji_atlas: &mut AtlasGroup<CacheKey, Vec2>,
-        gpu_device: &GpuDevice,
-        system: &System<Controls>,
-    ) -> Result<(), AscendingError>
-    where
-        Controls: camera::controls::Controls,
-    {
+        atlas: &mut TextAtlas,
+        renderer: &mut GpuRenderer,
+    ) -> Result<(), AscendingError> {
         for run in self.buffer.layout_runs() {
             for glyph in run.glyphs.iter() {
-                if text_atlas.atlas.get(&glyph.cache_key).is_some()
-                    || emoji_atlas.atlas.get(&glyph.cache_key).is_some()
+                if atlas.text.atlas.get(&glyph.cache_key).is_some()
+                    || atlas.emoji.atlas.get(&glyph.cache_key).is_some()
                 {
                     continue;
                 }
 
-                let image = cache.get_image_uncached(glyph.cache_key).unwrap();
+                let image = cache
+                    .get_image_uncached(font_system, glyph.cache_key)
+                    .unwrap();
                 let bitmap = image.data;
                 let is_color = match image.content {
                     SwashContent::Color => true,
@@ -69,7 +68,8 @@ impl Text {
 
                 if width > 0 && height > 0 {
                     if is_color {
-                        let _ = emoji_atlas
+                        let _ = atlas
+                            .emoji
                             .atlas
                             .upload(
                                 glyph.cache_key,
@@ -80,11 +80,12 @@ impl Text {
                                     image.placement.left as f32,
                                     image.placement.top as f32,
                                 ),
-                                gpu_device,
+                                renderer,
                             )
                             .ok_or(AscendingError::AtlasFull)?;
                     } else {
-                        let _ = text_atlas
+                        let _ = atlas
+                            .text
                             .atlas
                             .upload(
                                 glyph.cache_key,
@@ -95,7 +96,7 @@ impl Text {
                                     image.placement.left as f32,
                                     image.placement.top as f32,
                                 ),
-                                gpu_device,
+                                renderer,
                             )
                             .ok_or(AscendingError::AtlasFull)?;
                     }
@@ -106,15 +107,15 @@ impl Text {
         let mut text_buf = Vec::with_capacity(64 * 4);
 
         for run in self.buffer.layout_runs() {
-            let line_y = run.line_y as f32;
+            let line_y = run.line_y;
 
             for glyph in run.glyphs.iter() {
                 let (allocation, is_color) = if let Some(allocation) =
-                    text_atlas.atlas.get(&glyph.cache_key)
+                    atlas.text.atlas.get(&glyph.cache_key)
                 {
                     (allocation, false)
                 } else if let Some(allocation) =
-                    emoji_atlas.atlas.get(&glyph.cache_key)
+                    atlas.emoji.atlas.get(&glyph.cache_key)
                 {
                     (allocation, true)
                 } else {
@@ -138,11 +139,12 @@ impl Text {
                         None => self.default_color,
                     });
 
+                let screensize = renderer.size();
                 //Bounds used from Glyphon
                 let bounds_min_x = self.bounds.0.x.max(0.0);
                 let bounds_min_y = self.bounds.0.w.max(0.0);
-                let bounds_max_x = self.bounds.0.z.min(system.screen_size[0]);
-                let bounds_max_y = self.bounds.0.y.min(system.screen_size[1]);
+                let bounds_max_x = self.bounds.0.z.min(screensize.width);
+                let bounds_max_y = self.bounds.0.y.min(screensize.height);
 
                 // Starts beyond right edge or ends beyond left edge
                 let max_x = x + width;
@@ -198,14 +200,18 @@ impl Text {
             }
         }
 
-        self.store.borrow_mut().store =
-            bytemuck::cast_slice(&text_buf).to_vec();
-        self.store.borrow_mut().changed = true;
+        if let Some(store) = renderer.get_buffer_mut(&self.store_id) {
+            store.store = bytemuck::cast_slice(&text_buf).to_vec();
+            store.changed = true;
+        }
+
+        self.order = DrawOrder::new(false, &self.pos);
         self.changed = false;
         Ok(())
     }
 
     pub fn new(
+        renderer: &mut GpuRenderer,
         font_system: &'static FontSystem,
         metrics: Option<Metrics>,
         pos: Vec3,
@@ -215,12 +221,13 @@ impl Text {
         Self {
             buffer: Buffer::new(
                 font_system,
-                metrics.unwrap_or(Metrics::new(16, 16).scale(1)),
+                metrics.unwrap_or(Metrics::new(16.0, 16.0).scale(1.0)),
             ),
             pos,
             size,
             bounds: bounds.unwrap_or_default(),
-            store: BufferStoreRef::default(),
+            store_id: renderer.new_buffer(),
+            order: DrawOrder::new(false, &pos),
             changed: true,
             default_color: Color::rgba(0, 0, 0, 255),
             use_camera: false,
@@ -234,7 +241,7 @@ impl Text {
     }
 
     pub fn set_buffer_size(&mut self, width: i32, height: i32) {
-        self.buffer.set_size(width, height);
+        self.buffer.set_size(width as f32, height as f32);
         self.changed = true;
     }
 
@@ -246,27 +253,17 @@ impl Text {
 
     /// used to check and update the vertex array.
     /// must call build_layout before you can Call this.
-    pub fn update<Controls>(
+    pub fn update(
         &mut self,
+        font_system: &FontSystem,
         cache: &mut SwashCache,
-        text_atlas: &mut AtlasGroup<CacheKey, Vec2>,
-        emoji_atlas: &mut AtlasGroup<CacheKey, Vec2>,
-        gpu_device: &GpuDevice,
-        system: &System<Controls>,
-    ) -> Result<BufferStoreRef, AscendingError>
-    where
-        Controls: camera::controls::Controls,
-    {
+        atlas: &mut TextAtlas,
+        renderer: &mut GpuRenderer,
+    ) -> Result<OrderedIndex, AscendingError> {
         if self.changed {
-            self.create_quad(
-                cache,
-                text_atlas,
-                emoji_atlas,
-                gpu_device,
-                system,
-            )?;
+            self.create_quad(font_system, cache, atlas, renderer)?;
         }
 
-        Ok(self.store.clone())
+        Ok(OrderedIndex::new(self.order, self.store_id))
     }
 }

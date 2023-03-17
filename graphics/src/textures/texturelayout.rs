@@ -6,7 +6,10 @@ use bytemuck::{Pod, Zeroable};
 pub struct TextureLayout;
 
 impl Layout for TextureLayout {
-    fn create_layout(&self, gpu_device: &GpuDevice) -> wgpu::BindGroupLayout {
+    fn create_layout(
+        &self,
+        gpu_device: &mut GpuDevice,
+    ) -> wgpu::BindGroupLayout {
         let entries = vec![
             wgpu::BindGroupLayoutEntry {
                 binding: 0,

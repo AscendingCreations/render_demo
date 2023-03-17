@@ -1,4 +1,4 @@
-use crate::{Allocation, AscendingError, Atlas, AtlasGroup, GpuDevice};
+use crate::{Allocation, AscendingError, Atlas, AtlasGroup, GpuRenderer};
 use image::{DynamicImage, GenericImageView, ImageFormat};
 use std::{
     io::{Error, ErrorKind},
@@ -61,23 +61,16 @@ impl Texture {
     pub fn upload(
         &self,
         atlas: &mut Atlas,
-        gpu_device: &GpuDevice,
+        renderer: &GpuRenderer,
     ) -> Option<Allocation> {
         let (width, height) = self.size;
-        atlas.upload(
-            self.name.clone(),
-            &self.bytes,
-            width,
-            height,
-            0,
-            gpu_device,
-        )
+        atlas.upload(self.name.clone(), &self.bytes, width, height, 0, renderer)
     }
 
     pub fn group_upload(
         &self,
         atlas_group: &mut AtlasGroup,
-        gpu_device: &GpuDevice,
+        renderer: &GpuRenderer,
     ) -> Option<Allocation> {
         let (width, height) = self.size;
         atlas_group.atlas.upload(
@@ -86,7 +79,7 @@ impl Texture {
             width,
             height,
             0,
-            gpu_device,
+            renderer,
         )
     }
 

@@ -17,22 +17,23 @@ pub struct Button {
 fn draw<T>(
     control: &mut Widget<T>,
     ui: &mut UI<T>,
-    _device: &GpuDevice,
+    renderer: &mut GpuRenderer,
     _time: &FrameTime,
 ) {
     if let Some(button) =
         control.ui.as_mut().as_mut_any().downcast_mut::<Button>()
     {
+        let index = button.shape.update(renderer);
         ui.ui_buffer_mut()
             .ui_buffer
-            .add_buffer_store(button.shape.update())
+            .add_buffer_store(renderer, index);
     }
 }
 
 fn mouse_over<T>(
     control: &mut Widget<T>,
     ui: &mut UI<T>,
-    device: &GpuDevice,
+    renderer: &mut GpuRenderer,
     is_over: bool,
 ) {
     if let Some(button) =
@@ -41,7 +42,7 @@ fn mouse_over<T>(
         button
             .shape
             .set_color(
-                device,
+                renderer,
                 &mut ui.ui_buffer_mut().ui_atlas,
                 if is_over {
                     button.over_color
@@ -50,7 +51,7 @@ fn mouse_over<T>(
                 },
             )
             .set_border_color(
-                device,
+                renderer,
                 &mut ui.ui_buffer_mut().ui_atlas,
                 if is_over {
                     button.border_over_color
@@ -64,7 +65,7 @@ fn mouse_over<T>(
 fn mouse_button<T>(
     control: &mut Widget<T>,
     ui: &mut UI<T>,
-    device: &GpuDevice,
+    renderer: &mut GpuRenderer,
     mouse_btn: MouseButton,
     is_pressed: bool,
     _mods: ModifiersState,
@@ -85,12 +86,12 @@ fn mouse_button<T>(
                 button
                     .shape
                     .set_color(
-                        device,
+                        renderer,
                         &mut ui.ui_buffer_mut().ui_atlas,
                         colors.0,
                     )
                     .set_border_color(
-                        device,
+                        renderer,
                         &mut ui.ui_buffer_mut().ui_atlas,
                         colors.1,
                     );
@@ -98,12 +99,12 @@ fn mouse_button<T>(
                 button
                     .shape
                     .set_color(
-                        device,
+                        renderer,
                         &mut ui.ui_buffer_mut().ui_atlas,
                         button.color,
                     )
                     .set_border_color(
-                        device,
+                        renderer,
                         &mut ui.ui_buffer_mut().ui_atlas,
                         button.border_color,
                     );
@@ -115,22 +116,22 @@ fn mouse_button<T>(
 impl Button {
     pub fn new(
         ui_buffer: &mut UIBuffer,
-        device: &GpuDevice,
+        renderer: &mut GpuRenderer,
         position: Vec3,
         size: Vec2,
         border_width: f32,
         radius: Option<f32>,
     ) -> Button {
-        let mut shape = Rect::default();
+        let mut shape = Rect::new(renderer);
 
         shape
             .set_color(
-                device,
+                renderer,
                 &mut ui_buffer.ui_atlas,
                 Color::rgba(20, 20, 20, 255),
             )
             .set_border_color(
-                device,
+                renderer,
                 &mut ui_buffer.ui_atlas,
                 Color::rgba(0, 0, 0, 255),
             )

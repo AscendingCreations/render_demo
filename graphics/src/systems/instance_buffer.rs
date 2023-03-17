@@ -1,5 +1,6 @@
-use crate::{GpuDevice, Vec4};
-use std::{cell::RefCell, marker::PhantomData, ops::Range, rc::Rc};
+use crate::{GpuDevice, GpuRenderer, OrderedIndex, Vec3, Vec4};
+use std::cmp::Ordering;
+use std::{marker::PhantomData, ops::Range};
 use wgpu::util::DeviceExt;
 
 #[derive(Copy, Clone, Debug)]
@@ -17,7 +18,40 @@ impl Default for Bounds {
     }
 }
 
-pub type BufferStoreRef = Rc<RefCell<BufferStore>>;
+#[derive(Copy, Clone, PartialEq, Eq, Default)]
+pub struct DrawOrder {
+    pub alpha: bool, // alpha always is highest
+    pub x: u32,      // Lower is lower
+    pub y: u32,      // higher is lower
+    pub z: u32,      // lower is higher
+}
+
+impl PartialOrd for DrawOrder {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for DrawOrder {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.alpha
+            .cmp(&other.alpha)
+            .then(self.x.cmp(&other.x))
+            .then(self.y.cmp(&other.y).reverse())
+            .then(self.z.cmp(&other.z).reverse())
+    }
+}
+
+impl DrawOrder {
+    pub fn new(alpha: bool, pos: &Vec3) -> Self {
+        Self {
+            alpha,
+            x: (pos.x * 100.0) as u32,
+            y: (pos.y * 100.0) as u32,
+            z: (pos.z * 100.0) as u32,
+        }
+    }
+}
 
 #[derive(Default)]
 pub struct BufferStore {
@@ -45,7 +79,7 @@ pub trait InstanceLayout {
 
 //This Holds onto all the instances Compressed into a byte array.
 pub struct InstanceBuffer<K: InstanceLayout> {
-    pub buffers: Vec<BufferStoreRef>,
+    pub buffers: Vec<OrderedIndex>,
     pub buffer: wgpu::Buffer,
     pub bounds: Vec<Option<Bounds>>,
     count: usize,
@@ -81,44 +115,65 @@ impl<K: InstanceLayout> InstanceBuffer<K> {
         }
     }
 
-    pub fn add_buffer_store(&mut self, store: BufferStoreRef) {
-        let size = store.borrow().store.len();
+    pub fn add_buffer_store(
+        &mut self,
+        renderer: &mut GpuRenderer,
+        index: OrderedIndex,
+    ) {
+        if let Some(store) = renderer.get_buffer(&index.index) {
+            let size = store.store.len();
 
-        self.buffers.push(store);
-        self.needed_size += size;
+            self.buffers.push(index);
+            self.needed_size += size;
+        }
     }
 
-    pub fn finalize(&mut self, gpu_device: &GpuDevice) {
+    pub fn finalize(&mut self, renderer: &mut GpuRenderer) {
         let mut changed = false;
         let mut pos = 0;
 
         if self.needed_size > self.max {
-            self.resize(gpu_device, self.needed_size / K::instance_stride());
+            self.resize(
+                renderer.gpu_device(),
+                self.needed_size / K::instance_stride(),
+            );
             changed = true;
         }
 
         self.count = self.needed_size / K::instance_stride();
         self.len = self.needed_size;
 
-        for buf in &self.buffers {
-            let mut buffer = buf.borrow_mut();
-            let range = pos..pos + buffer.store.len();
+        self.buffers.sort();
 
-            if buffer.pos != range || changed || buffer.changed {
-                if K::is_bounded() {
-                    self.bounds.push(buffer.bounds);
+        for buf in &self.buffers {
+            let mut write_buffer = false;
+            let old_pos = pos as u64;
+
+            if let Some(store) = renderer.get_buffer_mut(&buf.index) {
+                let range = pos..pos + store.store.len();
+
+                if store.pos != range || changed || store.changed {
+                    if K::is_bounded() {
+                        self.bounds.push(store.bounds);
+                    }
+
+                    store.pos = range;
+                    store.changed = false;
+                    write_buffer = true
                 }
 
-                buffer.pos = range;
-                buffer.changed = false;
-                gpu_device.queue().write_buffer(
-                    &self.buffer,
-                    pos as u64,
-                    &buffer.store,
-                );
+                pos += store.store.len();
             }
 
-            pos += buffer.store.len();
+            if write_buffer {
+                if let Some(store) = renderer.get_buffer(&buf.index) {
+                    renderer.device.queue.write_buffer(
+                        &self.buffer,
+                        old_pos,
+                        &store.store,
+                    );
+                }
+            }
         }
 
         self.needed_size = 0;

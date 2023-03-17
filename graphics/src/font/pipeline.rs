@@ -1,18 +1,20 @@
 use crate::{
-    AscendingError, GpuDevice, InstanceLayout, LayoutStorage,
+    GpuDevice, InstanceLayout, LayoutStorage, PipeLineLayout,
     StaticBufferObject, SystemLayout, TextVertex, TextureLayout,
 };
+use bytemuck::{Pod, Zeroable};
 
-pub struct TextRenderPipeline {
-    render_pipeline: wgpu::RenderPipeline,
-}
+#[repr(C)]
+#[derive(Clone, Copy, Hash, Pod, Zeroable)]
+pub struct TextRenderPipeline;
 
-impl TextRenderPipeline {
-    pub fn new(
-        gpu_device: &GpuDevice,
+impl PipeLineLayout for TextRenderPipeline {
+    fn create_layout(
+        &self,
+        gpu_device: &mut GpuDevice,
+        layouts: &mut LayoutStorage,
         surface_format: wgpu::TextureFormat,
-        layout_storage: &mut LayoutStorage,
-    ) -> Result<Self, AscendingError> {
+    ) -> wgpu::RenderPipeline {
         let shader = gpu_device.device().create_shader_module(
             wgpu::ShaderModuleDescriptor {
                 label: Some("Shader"),
@@ -22,13 +24,11 @@ impl TextRenderPipeline {
             },
         );
 
-        let system_layout =
-            layout_storage.create_layout(gpu_device, SystemLayout);
-        let texture_layout =
-            layout_storage.create_layout(gpu_device, TextureLayout);
+        let system_layout = layouts.create_layout(gpu_device, SystemLayout);
+        let texture_layout = layouts.create_layout(gpu_device, TextureLayout);
 
         // Create the render pipeline.
-        let render_pipeline = gpu_device.device().create_render_pipeline(
+        gpu_device.device().create_render_pipeline(
             &wgpu::RenderPipelineDescriptor {
                 label: Some("Text render pipeline"),
                 layout: Some(&gpu_device.device().create_pipeline_layout(
@@ -90,12 +90,6 @@ impl TextRenderPipeline {
                 }),
                 multiview: None,
             },
-        );
-
-        Ok(Self { render_pipeline })
-    }
-
-    pub fn render_pipeline(&self) -> &wgpu::RenderPipeline {
-        &self.render_pipeline
+        )
     }
 }

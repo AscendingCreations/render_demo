@@ -20,10 +20,11 @@ impl Default for Bounds {
 
 #[derive(Copy, Clone, PartialEq, Eq, Default)]
 pub struct DrawOrder {
+    pub layer: u32, // lowest to highest. for spliting different types into layers.
     pub alpha: bool, // alpha always is highest
-    pub x: u32,      // Lower is lower
-    pub y: u32,      // higher is lower
-    pub z: u32,      // lower is higher
+    pub x: u32,     // Lower is lower
+    pub y: u32,     // higher is lower
+    pub z: u32,     // lower is higher
 }
 
 impl PartialOrd for DrawOrder {
@@ -34,8 +35,9 @@ impl PartialOrd for DrawOrder {
 
 impl Ord for DrawOrder {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.alpha
-            .cmp(&other.alpha)
+        self.layer
+            .cmp(&other.layer)
+            .then(self.alpha.cmp(&other.alpha))
             .then(self.x.cmp(&other.x))
             .then(self.y.cmp(&other.y).reverse())
             .then(self.z.cmp(&other.z).reverse())
@@ -43,8 +45,9 @@ impl Ord for DrawOrder {
 }
 
 impl DrawOrder {
-    pub fn new(alpha: bool, pos: &Vec3) -> Self {
+    pub fn new(alpha: bool, pos: &Vec3, layer: u32) -> Self {
         Self {
+            layer,
             alpha,
             x: (pos.x * 100.0) as u32,
             y: (pos.y * 100.0) as u32,

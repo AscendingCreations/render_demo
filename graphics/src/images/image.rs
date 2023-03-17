@@ -23,6 +23,7 @@ pub struct Image {
     pub texture: Option<Allocation>,
     pub store_id: Index,
     pub order: DrawOrder,
+    pub render_layer: u32,
     /// if anything got updated we need to update the buffers too.
     pub changed: bool,
 }
@@ -31,6 +32,7 @@ impl Image {
     pub fn new(
         texture: Option<Allocation>,
         renderer: &mut GpuRenderer,
+        render_layer: u32,
     ) -> Self {
         Self {
             pos: Vec3::default(),
@@ -44,6 +46,7 @@ impl Image {
             texture,
             store_id: renderer.new_buffer(),
             order: DrawOrder::default(),
+            render_layer,
             changed: true,
         }
     }
@@ -78,7 +81,8 @@ impl Image {
             store.changed = true;
         }
 
-        self.order = DrawOrder::new(self.color.a() < 255, &self.pos);
+        self.order =
+            DrawOrder::new(self.color.a() < 255, &self.pos, self.render_layer);
         self.changed = false;
     }
 

@@ -10,27 +10,21 @@ where
 {
     /// World Camera Controls and time. Deturmines how the world is looked at.
     pub system: System<Controls>,
-    /// Sprite data TODO: Make an array,
+    /// Data stores for render types
     pub sprites: Vec<Image>,
-    pub animation: Image,
-    /// Render pipe line for Sprites
-    pub sprite_renderer: ImageRenderer,
-    pub animation_renderer: ImageRenderer,
-    /// AtlasGroup to hold Sprite/animation Images
-    pub image_atlas: AtlasGroup,
-    /// maps TODO: make this an array.
-    pub map: Map,
-    /// vertex buffer group for maps
-    pub map_renderer: MapRenderer,
-    /// contains the Tile images.
-    pub map_atlas: AtlasGroup,
-    /// Basic shape rendering.
     pub rects: Rect,
-    pub rects_renderer: RectRenderer,
+    pub animation: Image,
+    pub map: Map,
+    /// Atlas Groups for Textures in GPU
+    pub image_atlas: AtlasGroup,
+    pub map_atlas: AtlasGroup,
     pub rects_atlas: AtlasGroup,
-    /// Text test stuff.
     pub text_atlas: TextAtlas,
+    /// Rendering Buffers and other shared data.
     pub text_renderer: TextRenderer,
+    pub sprite_renderer: ImageRenderer,
+    pub rects_renderer: RectRenderer,
+    pub map_renderer: MapRenderer,
 }
 
 impl<Controls> Pass<crate::UIBuffer> for State<Controls>
@@ -41,16 +35,12 @@ where
         &mut self,
         renderer: &GpuRenderer,
         encoder: &mut wgpu::CommandEncoder,
-        views: &HashMap<String, wgpu::TextureView>,
         ui_buffer: &crate::UIBuffer,
     ) {
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("render pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: views
-                    .get("framebuffer")
-                    .as_ref()
-                    .expect("no frame view?"),
+                view: renderer.frame_buffer().as_ref().expect("no frame view?"),
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {
@@ -64,10 +54,7 @@ where
             })],
             depth_stencil_attachment: Some(
                 wgpu::RenderPassDepthStencilAttachment {
-                    view: views
-                        .get("depthbuffer")
-                        .as_ref()
-                        .expect("no depth view?"),
+                    view: renderer.depth_buffer(),
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(1.0),
                         store: true,
@@ -94,12 +81,6 @@ where
         pass.render_lower_maps(renderer, &self.map_renderer, &self.map_atlas);
 
         pass.render_image(renderer, &self.sprite_renderer, &self.image_atlas);
-
-        pass.render_image(
-            renderer,
-            &self.animation_renderer,
-            &self.image_atlas,
-        );
 
         pass.render_upper_maps(renderer, &self.map_renderer, &self.map_atlas);
 

@@ -24,7 +24,7 @@ impl Default for TextBounds {
 }
 
 pub struct Text {
-    pub buffer: Buffer<'static>,
+    pub buffer: Buffer,
     pub pos: Vec3,
     pub size: Vec2,
     pub default_color: Color,
@@ -40,7 +40,7 @@ pub struct Text {
 impl Text {
     pub fn create_quad(
         &mut self,
-        font_system: &FontSystem,
+        font_system: &mut FontSystem,
         cache: &mut SwashCache,
         atlas: &mut TextAtlas,
         renderer: &mut GpuRenderer,
@@ -212,7 +212,7 @@ impl Text {
 
     pub fn new(
         renderer: &mut GpuRenderer,
-        font_system: &'static FontSystem,
+        font_system: &mut FontSystem,
         metrics: Option<Metrics>,
         pos: Vec3,
         size: Vec2,
@@ -235,19 +235,31 @@ impl Text {
     }
 
     /// resets the TextRender bytes to empty for new bytes
-    pub fn set_text(&mut self, text: &str, attrs: Attrs<'static>) {
-        self.buffer.set_text(text, attrs);
+    pub fn set_text(
+        &mut self,
+        font_system: &mut FontSystem,
+        text: &str,
+        attrs: Attrs<'static>,
+    ) {
+        self.buffer.set_text(font_system, text, attrs);
         self.changed = true;
     }
 
-    pub fn set_buffer_size(&mut self, width: i32, height: i32) {
-        self.buffer.set_size(width as f32, height as f32);
+    pub fn set_buffer_size(
+        &mut self,
+        font_system: &mut FontSystem,
+        width: i32,
+        height: i32,
+    ) {
+        self.buffer
+            .set_size(font_system, width as f32, height as f32);
         self.changed = true;
     }
 
     /// resets the TextRender bytes to empty for new bytes
-    pub fn clear(&mut self) {
-        self.buffer.set_text("", cosmic_text::Attrs::new());
+    pub fn clear(&mut self, font_system: &mut FontSystem) {
+        self.buffer
+            .set_text(font_system, "", cosmic_text::Attrs::new());
         self.changed = true;
     }
 
@@ -255,7 +267,7 @@ impl Text {
     /// must call build_layout before you can Call this.
     pub fn update(
         &mut self,
-        font_system: &FontSystem,
+        font_system: &mut FontSystem,
         cache: &mut SwashCache,
         atlas: &mut TextAtlas,
         renderer: &mut GpuRenderer,

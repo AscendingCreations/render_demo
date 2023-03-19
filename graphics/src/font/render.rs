@@ -1,7 +1,6 @@
 use crate::{
-    AscendingError, AtlasGroup, GpuRenderer, GroupType, InstanceBuffer,
-    OrderedIndex, StaticBufferObject, Text, TextRenderPipeline, TextVertex,
-    Vec2,
+    AscendingError, AtlasGroup, GpuRenderer, InstanceBuffer, OrderedIndex,
+    StaticBufferObject, Text, TextRenderPipeline, TextVertex, Vec2,
 };
 use cosmic_text::{CacheKey, FontSystem, SwashCache};
 
@@ -22,7 +21,6 @@ impl TextAtlas {
                 renderer,
                 size,
                 wgpu::TextureFormat::R8Unorm,
-                GroupType::Fonts,
                 min_pressure,
                 max_pressure,
             ),
@@ -30,7 +28,6 @@ impl TextAtlas {
                 renderer,
                 size,
                 wgpu::TextureFormat::Rgba8UnormSrgb,
-                GroupType::Textures,
                 min_pressure,
                 max_pressure,
             ),
@@ -72,7 +69,7 @@ impl TextRenderer {
         &mut self,
         text: &mut Text,
         atlas: &mut TextAtlas,
-        font_system: &FontSystem,
+        font_system: &mut FontSystem,
         renderer: &mut GpuRenderer,
     ) -> Result<(), AscendingError> {
         let index =

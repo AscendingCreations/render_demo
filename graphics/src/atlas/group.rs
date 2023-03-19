@@ -1,6 +1,4 @@
-use crate::{
-    Allocation, Atlas, GpuRenderer, GroupType, TextureGroup, TextureLayout,
-};
+use crate::{Allocation, Atlas, GpuRenderer, TextureGroup, TextureLayout};
 use std::hash::Hash;
 
 /// Group of a Atlas Details
@@ -17,7 +15,6 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
         renderer: &mut GpuRenderer,
         size: u32,
         format: wgpu::TextureFormat,
-        group_type: GroupType,
         pressure_min: usize,
         pressure_max: usize,
     ) -> Self {
@@ -33,7 +30,6 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
             renderer,
             &atlas.texture_view,
             TextureLayout,
-            group_type,
         );
 
         Self { atlas, texture }

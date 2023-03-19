@@ -1,6 +1,6 @@
 use crate::{Allocation, GpuRenderer, Layer};
 use lru::LruCache;
-use std::{cell::RefCell, hash::Hash, num::NonZeroU32};
+use std::{hash::Hash, num::NonZeroU32};
 
 pub struct Atlas<U: Hash + Eq + Clone = String, Data: Copy + Default = i32> {
     /// Texture in GRAM
@@ -12,7 +12,7 @@ pub struct Atlas<U: Hash + Eq + Clone = String, Data: Copy + Default = i32> {
     /// Holds the Original Texture Size and layer information.
     pub extent: wgpu::Extent3d,
     /// File Paths or names to prevent duplicates.
-    pub cache: Vec<RefCell<LruCache<U, Allocation<Data>>>>,
+    pub cache: [LruCache<U, Allocation<Data>>; 2],
     /// Format the Texture uses.
     pub format: wgpu::TextureFormat,
     /// When Eviction starts each Cleanup Call. This is the amount of layers.
@@ -74,15 +74,15 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
             layer.allocator.clear();
         }
 
-        for cache in &self.cache {
-            cache.borrow_mut().clear();
+        for cache in &mut self.cache {
+            cache.clear();
         }
     }
 
     pub fn clean(&mut self) {
         if self.layers.len() >= self.pressure_min {
             self.cache.swap(0, 1);
-            let mut old_cache = self.cache.get(1).unwrap().borrow_mut();
+            let old_cache = &mut self.cache[1];
 
             while let Some((_key, allocation)) = old_cache.pop_lru() {
                 self.layers
@@ -91,36 +91,32 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
                     .allocator
                     .deallocate(allocation.allocation);
             }
-        } else if self.cache.get(0).unwrap().borrow().len()
-            > self.cache.get(1).unwrap().borrow().len()
-        {
-            let mut old_cache = self.cache.get(0).unwrap().borrow_mut();
-            let mut new_cache = self.cache.get(1).unwrap().borrow_mut();
 
-            while let Some((key, allocation)) = new_cache.pop_lru() {
-                old_cache.push(key, allocation);
-            }
-        } else {
+            return;
+        } else if self.cache[0].len() < self.cache[1].len() {
             self.cache.swap(0, 1);
-            let mut old_cache = self.cache.get(1).unwrap().borrow_mut();
-            let mut new_cache = self.cache.get(0).unwrap().borrow_mut();
+        }
 
-            while let Some((key, allocation)) = old_cache.pop_lru() {
-                new_cache.push(key, allocation);
-            }
+        let mut data = Vec::with_capacity(self.cache[1].len());
+
+        while let Some((key, allocation)) = self.cache[1].pop_lru() {
+            data.push((key, allocation));
+        }
+
+        for (key, allocation) in data {
+            self.cache[0].push(key, allocation);
         }
     }
 
     // Gets the data and updates its cache position and time.
     pub fn get(&mut self, key: &U) -> Option<Allocation<Data>> {
-        let mut old_cache = self.cache.get(0).unwrap().borrow_mut();
-        let mut new_cache = self.cache.get(1).unwrap().borrow_mut();
+        let alloc = self.cache[0].pop(key);
 
-        if let Some(allocation) = old_cache.pop(key) {
-            new_cache.push(key.clone(), allocation);
+        if let Some(allocation) = alloc {
+            self.cache[1].push(key.clone(), allocation);
             Some(allocation)
         } else {
-            new_cache.get(key).copied()
+            self.cache[1].get(key).copied()
         }
     }
 
@@ -245,10 +241,7 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
             texture_view,
             layers: vec![Layer::new(size)],
             extent,
-            cache: vec![
-                RefCell::new(LruCache::unbounded()),
-                RefCell::new(LruCache::unbounded()),
-            ],
+            cache: [LruCache::unbounded(), LruCache::unbounded()],
             format,
             pressure_min,
             pressure_max,
@@ -265,21 +258,13 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
         data: Data,
         renderer: &GpuRenderer,
     ) -> Option<Allocation<Data>> {
-        if self.cache.get(0).unwrap().borrow().contains(&hash) {
-            if let Some(allocation) =
-                self.cache.get(0).unwrap().borrow_mut().pop(&hash)
-            {
-                self.cache
-                    .get(1)
-                    .unwrap()
-                    .borrow_mut()
-                    .push(hash.clone(), allocation);
+        if self.cache[0].contains(&hash) {
+            if let Some(allocation) = self.cache[0].pop(&hash) {
+                self.cache[1].push(hash.clone(), allocation);
                 return Some(allocation);
             }
-        } else if self.cache.get(1).unwrap().borrow().contains(&hash) {
-            if let Some(allocation) =
-                self.cache.get(1).unwrap().borrow_mut().get(&hash)
-            {
+        } else if self.cache[1].contains(&hash) {
+            if let Some(allocation) = self.cache[1].get(&hash) {
                 return Some(*allocation);
             }
         }
@@ -293,11 +278,7 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
         };
 
         self.upload_allocation(bytes, &allocation, renderer);
-        self.cache
-            .get(1)
-            .unwrap()
-            .borrow_mut()
-            .push(hash, allocation);
+        self.cache[1].push(hash, allocation);
         Some(allocation)
     }
 

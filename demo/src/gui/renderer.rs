@@ -23,7 +23,6 @@ impl UIBuffer {
                 renderer,
                 2048,
                 wgpu::TextureFormat::Rgba8UnormSrgb,
-                GroupType::Textures,
                 256,
                 256,
             ),

@@ -1,12 +1,5 @@
 use crate::{GpuRenderer, Layout};
 
-#[derive(PartialEq, Eq, Copy, Clone, Debug, Default)]
-pub enum GroupType {
-    #[default]
-    Textures,
-    Fonts,
-}
-
 pub struct TextureGroup {
     pub bind_group: wgpu::BindGroup,
 }
@@ -16,20 +9,11 @@ impl TextureGroup {
         renderer: &mut GpuRenderer,
         texture_view: &wgpu::TextureView,
         layout: K,
-        texture_type: GroupType,
     ) -> Self {
         let diffuse_sampler =
             renderer.device().create_sampler(&wgpu::SamplerDescriptor {
-                label: if texture_type == GroupType::Textures {
-                    Some("Texture_sampler")
-                } else {
-                    Some("Font_Texture_sampler")
-                },
-                lod_max_clamp: if texture_type == GroupType::Textures {
-                    1.0
-                } else {
-                    0f32
-                },
+                label: Some("Texture_sampler"),
+                lod_max_clamp: 0.0,
                 ..Default::default()
             });
 
@@ -49,11 +33,7 @@ impl TextureGroup {
             renderer
                 .device()
                 .create_bind_group(&wgpu::BindGroupDescriptor {
-                    label: if texture_type == GroupType::Textures {
-                        Some("Texture Bind Group")
-                    } else {
-                        Some("Font Texture Bind Group")
-                    },
+                    label: Some("Texture Bind Group"),
                     layout: &layout,
                     entries: &entries,
                 });

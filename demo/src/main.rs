@@ -50,7 +50,6 @@ enum Axis {
 }
 
 static MY_LOGGER: MyLogger = MyLogger(Level::Debug);
-static FONT_SYSTEM: Lazy<FontSystem> = Lazy::new(FontSystem::new);
 
 struct MyLogger(pub Level);
 
@@ -128,6 +127,7 @@ async fn main() -> Result<(), AscendingError> {
         .build(&event_loop)
         .unwrap();
     let instance = wgpu::Instance::default();
+    let mut font_system = FontSystem::new();
 
     let (gpu_window, gpu_device) = instance
         .create_device(
@@ -158,7 +158,6 @@ async fn main() -> Result<(), AscendingError> {
             &mut renderer,
             2048,
             wgpu::TextureFormat::Rgba8UnormSrgb,
-            GroupType::Textures,
             256,
             256,
         ))
@@ -276,7 +275,7 @@ async fn main() -> Result<(), AscendingError> {
 
     let mut text = Text::new(
         &mut renderer,
-        &FONT_SYSTEM,
+        &mut font_system,
         Some(Metrics::new(16.0, 16.0).scale(scale as f32)),
         Vec3::new(0.0, 32.0, 1.0),
         Vec2::new(256.0, 256.0),
@@ -285,7 +284,11 @@ async fn main() -> Result<(), AscendingError> {
 
     let ui_buffer = UIBuffer::new(&mut renderer)?;
 
-    text.set_buffer_size(size.width as i32, size.height as i32);
+    text.set_buffer_size(
+        &mut font_system,
+        size.width as i32,
+        size.height as i32,
+    );
 
     let mut ui = UI::<State<FlatControls>>::new(ui_buffer);
     let button = Button::new(
@@ -422,7 +425,7 @@ async fn main() -> Result<(), AscendingError> {
             .text_update(
                 &mut text,
                 &mut state.text_atlas,
-                &FONT_SYSTEM,
+                &mut font_system,
                 &mut renderer,
             )
             .unwrap();
@@ -450,6 +453,7 @@ async fn main() -> Result<(), AscendingError> {
 
         if time < seconds {
             text.set_text(
+                &mut font_system,
                 &format!("生活,삶,जिंदगी 😀 FPS: {fps} \nhello"),
                 cosmic_text::Attrs::new(),
             );

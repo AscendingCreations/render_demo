@@ -2,7 +2,7 @@ use crate::{
     AscendingError, AtlasGroup, GpuRenderer, InstanceBuffer, OrderedIndex,
     StaticBufferObject, Text, TextRenderPipeline, TextVertex, Vec2,
 };
-use cosmic_text::{CacheKey, FontSystem, SwashCache};
+use cosmic_text::{CacheKey, SwashCache};
 
 pub struct TextAtlas {
     pub(crate) text: AtlasGroup<CacheKey, Vec2>,
@@ -55,11 +55,9 @@ impl TextRenderer {
         &mut self,
         text: &mut Text,
         atlas: &mut TextAtlas,
-        font_system: &mut FontSystem,
         renderer: &mut GpuRenderer,
     ) -> Result<(), AscendingError> {
-        let index =
-            text.update(font_system, &mut self.swash_cache, atlas, renderer)?;
+        let index = text.update(&mut self.swash_cache, atlas, renderer)?;
 
         self.add_buffer_store(renderer, index);
         Ok(())

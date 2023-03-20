@@ -3,6 +3,7 @@ use crate::{
     LayoutStorage, OtherError, PipeLineLayout, PipelineStorage,
     StaticBufferObject,
 };
+use cosmic_text::FontSystem;
 use generational_array::{
     GenerationalArray, GenerationalArrayResult, GenerationalArrayResultMut,
     GenerationalIndex,
@@ -54,11 +55,16 @@ pub struct GpuRenderer {
     pub(crate) depthbuffer: wgpu::TextureView,
     pub(crate) framebuffer: Option<wgpu::TextureView>,
     pub(crate) frame: Option<wgpu::SurfaceTexture>,
+    pub font_sys: FontSystem,
     pub buffer_object: StaticBufferObject,
 }
 
 impl GpuRenderer {
-    pub fn new(window: GpuWindow, device: GpuDevice) -> Self {
+    pub fn new(
+        window: GpuWindow,
+        device: GpuDevice,
+        font_sys: FontSystem,
+    ) -> Self {
         let buffer_object = StaticBufferObject::create_buffer(&device);
         let depth_buffer = window.create_depth_texture(&device);
 
@@ -71,6 +77,7 @@ impl GpuRenderer {
             depthbuffer: depth_buffer,
             framebuffer: None,
             frame: None,
+            font_sys,
             buffer_object,
         }
     }

@@ -2,9 +2,7 @@ use crate::{
     AscendingError, Color, DrawOrder, GpuRenderer, Index, OrderedIndex,
     TextAtlas, TextVertex, Vec2, Vec3, Vec4,
 };
-use cosmic_text::{
-    Attrs, Buffer, FontSystem, Metrics, SwashCache, SwashContent,
-};
+use cosmic_text::{Attrs, Buffer, Metrics, SwashCache, SwashContent};
 
 /// Controls the visible area of the text. Any text outside of the visible area will be clipped.
 /// This is given by glyphon.
@@ -40,7 +38,6 @@ pub struct Text {
 impl Text {
     pub fn create_quad(
         &mut self,
-        font_system: &mut FontSystem,
         cache: &mut SwashCache,
         atlas: &mut TextAtlas,
         renderer: &mut GpuRenderer,
@@ -54,7 +51,7 @@ impl Text {
                 }
 
                 let image = cache
-                    .get_image_uncached(font_system, glyph.cache_key)
+                    .get_image_uncached(&mut renderer.font_sys, glyph.cache_key)
                     .unwrap();
                 let bitmap = image.data;
                 let is_color = match image.content {
@@ -212,19 +209,17 @@ impl Text {
 
     pub fn new(
         renderer: &mut GpuRenderer,
-        font_system: &mut FontSystem,
         metrics: Option<Metrics>,
         pos: Vec3,
-        size: Vec2,
         bounds: Option<TextBounds>,
     ) -> Self {
         Self {
             buffer: Buffer::new(
-                font_system,
+                &mut renderer.font_sys,
                 metrics.unwrap_or(Metrics::new(16.0, 16.0).scale(1.0)),
             ),
             pos,
-            size,
+            size: Vec2::default(),
             bounds: bounds.unwrap_or_default(),
             store_id: renderer.new_buffer(),
             order: DrawOrder::new(false, &pos, 1),
@@ -237,29 +232,40 @@ impl Text {
     /// resets the TextRender bytes to empty for new bytes
     pub fn set_text(
         &mut self,
-        font_system: &mut FontSystem,
+        renderer: &mut GpuRenderer,
         text: &str,
         attrs: Attrs<'static>,
     ) {
-        self.buffer.set_text(font_system, text, attrs);
+        self.buffer.set_text(&mut renderer.font_sys, text, attrs);
+        self.changed = true;
+    }
+
+    pub fn set_default_color(&mut self, color: Color) {
+        self.default_color = color;
         self.changed = true;
     }
 
     pub fn set_buffer_size(
         &mut self,
-        font_system: &mut FontSystem,
+        renderer: &mut GpuRenderer,
         width: i32,
         height: i32,
     ) {
-        self.buffer
-            .set_size(font_system, width as f32, height as f32);
+        self.buffer.set_size(
+            &mut renderer.font_sys,
+            width as f32,
+            height as f32,
+        );
         self.changed = true;
     }
 
     /// resets the TextRender bytes to empty for new bytes
-    pub fn clear(&mut self, font_system: &mut FontSystem) {
-        self.buffer
-            .set_text(font_system, "", cosmic_text::Attrs::new());
+    pub fn clear(&mut self, renderer: &mut GpuRenderer) {
+        self.buffer.set_text(
+            &mut renderer.font_sys,
+            "",
+            cosmic_text::Attrs::new(),
+        );
         self.changed = true;
     }
 
@@ -267,13 +273,12 @@ impl Text {
     /// must call build_layout before you can Call this.
     pub fn update(
         &mut self,
-        font_system: &mut FontSystem,
         cache: &mut SwashCache,
         atlas: &mut TextAtlas,
         renderer: &mut GpuRenderer,
     ) -> Result<OrderedIndex, AscendingError> {
         if self.changed {
-            self.create_quad(font_system, cache, atlas, renderer)?;
+            self.create_quad(cache, atlas, renderer)?;
         }
 
         Ok(OrderedIndex::new(self.order, self.store_id))

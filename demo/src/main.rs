@@ -127,7 +127,7 @@ async fn main() -> Result<(), AscendingError> {
         .build(&event_loop)
         .unwrap();
     let instance = wgpu::Instance::default();
-    let mut font_system = FontSystem::new();
+    let font_system = FontSystem::new();
 
     let (gpu_window, gpu_device) = instance
         .create_device(
@@ -148,7 +148,7 @@ async fn main() -> Result<(), AscendingError> {
         .await
         .unwrap();
 
-    let mut renderer = GpuRenderer::new(gpu_window, gpu_device);
+    let mut renderer = GpuRenderer::new(gpu_window, gpu_device, font_system);
     renderer.create_pipelines(renderer.surface_format());
 
     println!("{:?}", renderer.adapter().get_info());
@@ -272,20 +272,14 @@ async fn main() -> Result<(), AscendingError> {
 
     let mut text = Text::new(
         &mut renderer,
-        &mut font_system,
         Some(Metrics::new(16.0, 16.0).scale(scale as f32)),
         Vec3::new(0.0, 32.0, 1.0),
-        Vec2::new(256.0, 256.0),
         Some(TextBounds::new(8.0, 32.0, 190.0, 0.0)),
     );
 
     let ui_buffer = UIBuffer::new(&mut renderer)?;
 
-    text.set_buffer_size(
-        &mut font_system,
-        size.width as i32,
-        size.height as i32,
-    );
+    text.set_buffer_size(&mut renderer, size.width as i32, size.height as i32);
 
     let mut ui = UI::<State<FlatControls>>::new(ui_buffer);
     let button = Button::new(
@@ -295,9 +289,8 @@ async fn main() -> Result<(), AscendingError> {
         Vec2::new(50.0, 50.0),
         1.0,
         Some(5.0),
-    );
-
-    let button: WidgetRef<State<FlatControls>> = button.into_widget(Identity {
+    )
+    .into_widget(Identity {
         name: "button".to_string(),
         id: 1,
     });
@@ -418,12 +411,7 @@ async fn main() -> Result<(), AscendingError> {
         state.sprite_renderer.finalize(&mut renderer);
         state
             .text_renderer
-            .text_update(
-                &mut text,
-                &mut state.text_atlas,
-                &mut font_system,
-                &mut renderer,
-            )
+            .text_update(&mut text, &mut state.text_atlas, &mut renderer)
             .unwrap();
         state.text_renderer.finalize(&mut renderer);
         state.map_renderer.map_update(&mut state.map, &mut renderer);
@@ -449,7 +437,7 @@ async fn main() -> Result<(), AscendingError> {
 
         if time < seconds {
             text.set_text(
-                &mut font_system,
+                &mut renderer,
                 &format!("生活,삶,जिंदगी 😀 FPS: {fps} \nhello"),
                 cosmic_text::Attrs::new(),
             );

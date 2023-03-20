@@ -10,23 +10,12 @@ pub struct TextAtlas {
 }
 
 impl TextAtlas {
-    pub fn new(
-        renderer: &mut GpuRenderer,
-        max_layers: usize,
-        size: u32,
-    ) -> Result<Self, AscendingError> {
+    pub fn new(renderer: &mut GpuRenderer) -> Result<Self, AscendingError> {
         Ok(Self {
-            text: AtlasGroup::new(
-                renderer,
-                size,
-                wgpu::TextureFormat::R8Unorm,
-                max_layers,
-            ),
+            text: AtlasGroup::new(renderer, wgpu::TextureFormat::R8Unorm),
             emoji: AtlasGroup::new(
                 renderer,
-                size,
                 wgpu::TextureFormat::Rgba8UnormSrgb,
-                max_layers,
             ),
         })
     }

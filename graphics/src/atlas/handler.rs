@@ -18,7 +18,7 @@ pub struct Atlas<U: Hash + Eq + Clone = String, Data: Copy + Default = i32> {
     pub format: wgpu::TextureFormat,
     /// When the System will Error if reached. This is the max allowed Layers
     /// Default is 256 as Most GPU allow a max of 256.
-    pub max_layers: usize,
+    pub max_layers: u32,
 }
 
 impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
@@ -44,10 +44,35 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
             }
         }
 
+        /* Try to see if we can clear out unused allocations first. */
+        loop {
+            let (key, _) = self.cache.peek_lru()?;
+
+            //Check if ID has been used yet?
+            if self.last_used.contains(key) {
+                //Failed to find any unused allocations so lets try to add a layer.
+                break;
+            }
+
+            let (_, allocation) = self.cache.pop_lru()?;
+            let layer_id = allocation.layer;
+            let layer = self.layers.get_mut(layer_id).unwrap();
+
+            layer.allocator.deallocate(allocation.allocation);
+
+            if let Some(allocation) = layer.allocator.allocate(width, height) {
+                return Some(Allocation {
+                    allocation,
+                    layer: layer_id,
+                    data,
+                });
+            }
+        }
+
         /* Add a new layer, as we found no layer to allocate from and could
         not retrieve any old allocations to use. */
 
-        if self.layers.len() + 1 == self.max_layers {
+        if self.layers.len() + 1 == self.max_layers as usize {
             return None;
         }
 
@@ -180,15 +205,11 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
         renderer.queue().submit(std::iter::once(encoder.finish()));
     }
 
-    pub fn new(
-        renderer: &GpuRenderer,
-        size: u32,
-        format: wgpu::TextureFormat,
-        max_layers: usize,
-    ) -> Self {
+    pub fn new(renderer: &GpuRenderer, format: wgpu::TextureFormat) -> Self {
+        let limits = renderer.device().limits();
         let extent = wgpu::Extent3d {
-            width: size,
-            height: size,
+            width: limits.max_texture_dimension_3d,
+            height: limits.max_texture_dimension_3d,
             depth_or_array_layers: 1,
         };
 
@@ -220,12 +241,12 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
         Self {
             texture,
             texture_view,
-            layers: vec![Layer::new(size)],
+            layers: vec![Layer::new(limits.max_texture_dimension_3d)],
             extent,
             cache: LruCache::unbounded(),
             last_used: HashSet::default(),
             format,
-            max_layers,
+            max_layers: limits.max_texture_array_layers,
         }
     }
 

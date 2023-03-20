@@ -13,11 +13,9 @@ pub struct AtlasGroup<U: Hash + Eq + Clone = String, Data: Copy + Default = i32>
 impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
     pub fn new(
         renderer: &mut GpuRenderer,
-        size: u32,
         format: wgpu::TextureFormat,
-        max_layers: usize,
     ) -> Self {
-        let atlas = Atlas::<U, Data>::new(renderer, size, format, max_layers);
+        let atlas = Atlas::<U, Data>::new(renderer, format);
 
         let texture = TextureGroup::from_view(
             renderer,

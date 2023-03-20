@@ -156,16 +156,13 @@ async fn main() -> Result<(), AscendingError> {
     let mut atlases: Vec<AtlasGroup> = iter::from_fn(|| {
         Some(AtlasGroup::new(
             &mut renderer,
-            2048,
             wgpu::TextureFormat::Rgba8UnormSrgb,
-            256,
-            256,
         ))
     })
     .take(3)
     .collect();
 
-    let text_atlas = TextAtlas::new(&mut renderer, 2, 256, 2048).unwrap();
+    let text_atlas = TextAtlas::new(&mut renderer).unwrap();
     let allocation = Texture::from_file("images/Female_1.png")?
         .group_upload(&mut atlases[0], &renderer)
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
@@ -467,10 +464,10 @@ async fn main() -> Result<(), AscendingError> {
         frame_time.update();
         renderer.present().unwrap();
 
-        state.image_atlas.clean();
-        state.rects_atlas.clean();
-        state.map_atlas.clean();
-        state.text_atlas.clean();
-        ui.ui_buffer_mut().atlas_clean();
+        state.image_atlas.trim();
+        state.rects_atlas.trim();
+        state.map_atlas.trim();
+        state.text_atlas.trim();
+        ui.ui_buffer_mut().atlas_trim();
     })
 }

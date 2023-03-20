@@ -75,23 +75,21 @@ pub enum InternalCallBacks<T> {
     FocusChange(InternalBooleanRef<T>),
 }
 
-pub type DrawRef<T> = Box<
-    dyn Fn(&mut Widget<T>, &mut UI<T>, &mut GpuRenderer, &FrameTime, &mut T),
->;
+pub type DrawRef<T> = 
+    fn(&mut Widget<T>, &mut UI<T>, &mut GpuRenderer, &FrameTime, &mut T);
 pub type MousePresentRef<T> =
-    Box<dyn Fn(&mut Widget<T>, &mut UI<T>, &mut GpuRenderer, bool, &mut T)>;
-pub type MouseScrollRef<T> = Box<
-    dyn Fn(
+    fn(&mut Widget<T>, &mut UI<T>, &mut GpuRenderer, bool, &mut T);
+pub type MouseScrollRef<T> = 
+    fn(
         &mut Widget<T>,
         &mut UI<T>,
         &mut GpuRenderer,
         (f32, f32),
         ModifiersState,
         &mut T,
-    ),
->;
-pub type MousePressRef<T> = Box<
-    dyn Fn(
+    );
+pub type MousePressRef<T> = 
+    fn(
         &mut Widget<T>,
         &mut UI<T>,
         &mut GpuRenderer,
@@ -99,22 +97,20 @@ pub type MousePressRef<T> = Box<
         bool,
         ModifiersState,
         &mut T,
-    ),
->;
-pub type KeyPressRef<T> = Box<
-    dyn Fn(
+    );
+pub type KeyPressRef<T> = 
+    fn(
         &mut Widget<T>,
         &mut UI<T>,
         &mut GpuRenderer,
         KeyboardInput,
         ModifiersState,
         &mut T,
-    ),
->;
-pub type ValueChangedRef<T> = Box<
-    dyn Fn(&mut Widget<T>, &mut UI<T>, &mut GpuRenderer, ReturnValue, &mut T),
->;
+    );
+pub type ValueChangedRef<T> = 
+    fn(&mut Widget<T>, &mut UI<T>, &mut GpuRenderer, ReturnValue, &mut T);
 
+#[derive(Copy, Clone)]
 pub enum CallBacks<T> {
     Draw(DrawRef<T>),
     MousePresent(MousePresentRef<T>),

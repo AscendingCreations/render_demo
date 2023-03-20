@@ -302,12 +302,11 @@ async fn main() -> Result<(), AscendingError> {
         id: 1,
     });
 
-    button.borrow_mut().actions.set(UiFlags::AlwaysUseable);
+    UI::set_action(&button, UiFlags::AlwaysUseable);
 
-    let callbackkey = button.borrow().callback_key(CallBack::MousePress);
     ui.add_user_callback(
-        CallBacks::MousePress(Box::new(mouse_button)),
-        callbackkey,
+        CallBacks::MousePress(mouse_button),
+        UI::get_callback_key(&button, CallBack::MousePress),
     );
     ui.add_widget_by_id(None, button);
 

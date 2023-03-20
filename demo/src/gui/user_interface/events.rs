@@ -41,7 +41,7 @@ impl<T> UI<T> {
             }
 
             if let Some(callback) = self.get_user_callback(&key) {
-                if let CallBacks::Draw(draw) = callback.as_ref() {
+                if let CallBacks::Draw(draw) = callback {
                     draw(&mut mut_wdgt, self, renderer, time, user_data);
                 }
             }

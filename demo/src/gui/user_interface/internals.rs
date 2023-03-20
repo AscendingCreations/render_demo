@@ -65,7 +65,7 @@ impl<T> UI<T> {
         }
 
         if let Some(callback) = self.get_user_callback(&key) {
-            if let CallBacks::MousePresent(present) = callback.as_ref() {
+            if let CallBacks::MousePresent(present) = callback {
                 present(
                     &mut control.borrow_mut(),
                     self,
@@ -468,7 +468,7 @@ impl<T> UI<T> {
         }
 
         if let Some(callback) = self.get_user_callback(&key) {
-            if let CallBacks::MousePress(mouse_press) = callback.as_ref() {
+            if let CallBacks::MousePress(mouse_press) = callback {
                 mouse_press(
                     &mut mut_wdgt,
                     self,

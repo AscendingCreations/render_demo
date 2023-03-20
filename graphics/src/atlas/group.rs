@@ -15,16 +15,9 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
         renderer: &mut GpuRenderer,
         size: u32,
         format: wgpu::TextureFormat,
-        pressure_min: usize,
-        pressure_max: usize,
+        max_layers: usize,
     ) -> Self {
-        let atlas = Atlas::<U, Data>::new(
-            renderer,
-            size,
-            format,
-            pressure_min,
-            pressure_max,
-        );
+        let atlas = Atlas::<U, Data>::new(renderer, size, format, max_layers);
 
         let texture = TextureGroup::from_view(
             renderer,
@@ -49,7 +42,7 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
             .upload(hash, bytes, width, height, data, renderer)
     }
 
-    pub fn clean(&mut self) {
-        self.atlas.clean();
+    pub fn trim(&mut self) {
+        self.atlas.trim();
     }
 }

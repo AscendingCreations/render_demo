@@ -12,8 +12,7 @@ pub struct TextAtlas {
 impl TextAtlas {
     pub fn new(
         renderer: &mut GpuRenderer,
-        min_pressure: usize,
-        max_pressure: usize,
+        max_layers: usize,
         size: u32,
     ) -> Result<Self, AscendingError> {
         Ok(Self {
@@ -21,22 +20,20 @@ impl TextAtlas {
                 renderer,
                 size,
                 wgpu::TextureFormat::R8Unorm,
-                min_pressure,
-                max_pressure,
+                max_layers,
             ),
             emoji: AtlasGroup::new(
                 renderer,
                 size,
                 wgpu::TextureFormat::Rgba8UnormSrgb,
-                min_pressure,
-                max_pressure,
+                max_layers,
             ),
         })
     }
 
-    pub fn clean(&mut self) {
-        self.emoji.clean();
-        self.text.clean();
+    pub fn trim(&mut self) {
+        self.emoji.trim();
+        self.text.trim();
     }
 }
 

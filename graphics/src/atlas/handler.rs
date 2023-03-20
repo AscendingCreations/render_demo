@@ -1,5 +1,6 @@
 use crate::{Allocation, GpuRenderer, Layer};
-use std::{collections::HashMap, hash::Hash, num::NonZeroU32};
+use lru::LruCache;
+use std::{collections::HashSet, hash::Hash, num::NonZeroU32};
 
 pub struct Atlas<U: Hash + Eq + Clone = String, Data: Copy + Default = i32> {
     /// Texture in GRAM
@@ -11,15 +12,13 @@ pub struct Atlas<U: Hash + Eq + Clone = String, Data: Copy + Default = i32> {
     /// Holds the Original Texture Size and layer information.
     pub extent: wgpu::Extent3d,
     /// File Paths or names to prevent duplicates.
-    pub cache: [HashMap<U, Allocation<Data>>; 2],
+    pub cache: LruCache<U, Allocation<Data>>,
+    pub last_used: HashSet<U>,
     /// Format the Texture uses.
     pub format: wgpu::TextureFormat,
-    /// When Eviction starts each Cleanup Call. This is the amount of layers.
-    /// 0 means it will never evict anything.
-    pub pressure_min: usize,
     /// When the System will Error if reached. This is the max allowed Layers
     /// Default is 256 as Most GPU allow a max of 256.
-    pub pressure_max: usize,
+    pub max_layers: usize,
 }
 
 impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
@@ -48,7 +47,7 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
         /* Add a new layer, as we found no layer to allocate from and could
         not retrieve any old allocations to use. */
 
-        if self.layers.len() + 1 == self.pressure_max {
+        if self.layers.len() + 1 == self.max_layers {
             return None;
         }
 
@@ -73,49 +72,34 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
             layer.allocator.clear();
         }
 
-        for cache in &mut self.cache {
-            cache.clear();
-        }
+        self.cache.clear();
+        self.last_used.clear();
     }
 
-    pub fn clean(&mut self) {
-        if self.layers.len() >= self.pressure_min {
-            self.cache.swap(0, 1);
-
-            for (_key, allocation) in self.cache[1].drain() {
-                self.layers
-                    .get_mut(allocation.layer)
-                    .unwrap()
-                    .allocator
-                    .deallocate(allocation.allocation);
-            }
-
-            return;
-        } else if self.cache[0].len() < self.cache[1].len() {
-            self.cache.swap(0, 1);
-        }
-
-        let mut data = Vec::with_capacity(self.cache[1].len());
-
-        for (key, allocation) in self.cache[1].drain() {
-            data.push((key, allocation));
-        }
-
-        for (key, allocation) in data {
-            self.cache[0].insert(key, allocation);
-        }
+    pub fn trim(&mut self) {
+        self.last_used.clear();
     }
 
-    // Gets the data and updates its cache position and time.
+    pub fn promote(&mut self, key: U) {
+        self.cache.promote(&key);
+        self.last_used.insert(key);
+    }
+
+    pub fn peek(&mut self, key: &U) -> Option<&Allocation<Data>> {
+        self.cache.peek(key)
+    }
+
+    pub fn contains(&mut self, key: &U) -> bool {
+        self.cache.contains(key)
+    }
+
     pub fn get(&mut self, key: &U) -> Option<Allocation<Data>> {
-        let alloc = self.cache[0].remove(key);
-
-        if let Some(allocation) = alloc {
-            self.cache[1].insert(key.clone(), allocation);
-            Some(allocation)
-        } else {
-            self.cache[1].get(key).copied()
+        if let Some(allocation) = self.cache.get_mut(key) {
+            self.last_used.insert(key.clone());
+            return Some(*allocation);
         }
+
+        None
     }
 
     fn grow(&mut self, amount: usize, renderer: &GpuRenderer) {
@@ -200,8 +184,7 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
         renderer: &GpuRenderer,
         size: u32,
         format: wgpu::TextureFormat,
-        pressure_min: usize,
-        pressure_max: usize,
+        max_layers: usize,
     ) -> Self {
         let extent = wgpu::Extent3d {
             width: size,
@@ -239,45 +222,38 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
             texture_view,
             layers: vec![Layer::new(size)],
             extent,
-            cache: [HashMap::new(), HashMap::new()],
+            cache: LruCache::unbounded(),
+            last_used: HashSet::default(),
             format,
-            pressure_min,
-            pressure_max,
+            max_layers,
         }
     }
 
     #[allow(clippy::too_many_arguments)]
     pub fn upload(
         &mut self,
-        hash: U,
+        key: U,
         bytes: &[u8],
         width: u32,
         height: u32,
         data: Data,
         renderer: &GpuRenderer,
     ) -> Option<Allocation<Data>> {
-        if self.cache[0].contains_key(&hash) {
-            if let Some(allocation) = self.cache[0].remove(&hash) {
-                self.cache[1].insert(hash.clone(), allocation);
-                return Some(allocation);
-            }
-        } else if self.cache[1].contains_key(&hash) {
-            if let Some(allocation) = self.cache[1].get(&hash) {
-                return Some(*allocation);
-            }
+        if let Some(allocation) = self.get(&key) {
+            Some(allocation)
+        } else {
+            let allocation = {
+                let nlayers = self.layers.len();
+                let allocation = self.allocate(width, height, data)?;
+                self.grow(self.layers.len() - nlayers, renderer);
+
+                allocation
+            };
+
+            self.upload_allocation(bytes, &allocation, renderer);
+            self.cache.push(key.clone(), allocation);
+            Some(allocation)
         }
-
-        let allocation = {
-            let nlayers = self.layers.len();
-            let allocation = self.allocate(width, height, data)?;
-            self.grow(self.layers.len() - nlayers, renderer);
-
-            allocation
-        };
-
-        self.upload_allocation(bytes, &allocation, renderer);
-        self.cache[1].insert(hash, allocation);
-        Some(allocation)
     }
 
     fn upload_allocation(

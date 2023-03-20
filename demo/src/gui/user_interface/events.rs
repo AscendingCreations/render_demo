@@ -35,7 +35,7 @@ impl<T> UI<T> {
             let mut mut_wdgt = widget.borrow_mut();
 
             if let Some(callback) = self.get_inner_callback(&key) {
-                if let InternalCallBacks::Draw(draw) = callback.as_ref() {
+                if let InternalCallBacks::Draw(draw) = callback {
                     draw(&mut mut_wdgt, self, renderer, time);
                 }
             }

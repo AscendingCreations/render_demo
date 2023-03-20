@@ -59,8 +59,7 @@ impl<T> UI<T> {
         let key = control.borrow().callback_key(CallBack::MousePresent);
 
         if let Some(callback) = self.get_inner_callback(&key) {
-            if let InternalCallBacks::MousePresent(present) = callback.as_ref()
-            {
+            if let InternalCallBacks::MousePresent(present) = callback {
                 present(&mut control.borrow_mut(), self, renderer, entered);
             }
         }
@@ -439,9 +438,7 @@ impl<T> UI<T> {
         self.focused = Some(mut_wdgt.id);
 
         if let Some(callback) = self.get_inner_callback(&key) {
-            if let InternalCallBacks::FocusChange(focus_changed) =
-                callback.as_ref()
-            {
+            if let InternalCallBacks::FocusChange(focus_changed) = callback {
                 focus_changed(&mut mut_wdgt, self, renderer, focused);
             }
         }
@@ -458,9 +455,7 @@ impl<T> UI<T> {
         let key = mut_wdgt.callback_key(CallBack::MousePress);
 
         if let Some(callback) = self.get_inner_callback(&key) {
-            if let InternalCallBacks::MousePress(mouse_press) =
-                callback.as_ref()
-            {
+            if let InternalCallBacks::MousePress(mouse_press) = callback {
                 mouse_press(
                     &mut mut_wdgt,
                     self,
@@ -722,7 +717,7 @@ impl<T> UI<T> {
 
         if let Some(callback) = self.get_inner_callback(&key) {
             if let InternalCallBacks::PositionChange(internal_update_pos) =
-                callback.as_ref()
+                callback
             {
                 internal_update_pos(parent, self, renderer);
             }
@@ -741,7 +736,7 @@ impl<T> UI<T> {
                 if let Some(callback) = self.get_inner_callback(&key) {
                     if let InternalCallBacks::PositionChange(
                         internal_update_pos,
-                    ) = callback.as_ref()
+                    ) = callback
                     {
                         internal_update_pos(&mut mut_wdgt, self, renderer);
                     }

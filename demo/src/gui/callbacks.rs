@@ -36,40 +36,34 @@ pub enum CallBack {
 }
 
 pub type InternalDrawRef<T> =
-    Box<dyn Fn(&mut Widget<T>, &mut UI<T>, &mut GpuRenderer, &FrameTime)>;
+    fn(&mut Widget<T>, &mut UI<T>, &mut GpuRenderer, &FrameTime);
 pub type InternalBooleanRef<T> =
-    Box<dyn Fn(&mut Widget<T>, &mut UI<T>, &mut GpuRenderer, bool)>;
-pub type InternalMouseScrollRef<T> = Box<
-    dyn Fn(
-        &mut Widget<T>,
-        &mut UI<T>,
-        &mut GpuRenderer,
-        (f32, f32),
-        ModifiersState,
-    ),
->;
-pub type InternalMousePressRef<T> = Box<
-    dyn Fn(
-        &mut Widget<T>,
-        &mut UI<T>,
-        &mut GpuRenderer,
-        MouseButton,
-        bool,
-        ModifiersState,
-    ),
->;
-pub type InternalKeyPressRef<T> = Box<
-    dyn Fn(
-        &mut Widget<T>,
-        &mut UI<T>,
-        &mut GpuRenderer,
-        KeyboardInput,
-        ModifiersState,
-    ),
->;
-pub type InternalUpdate<T> =
-    Box<dyn Fn(&mut Widget<T>, &mut UI<T>, &mut GpuRenderer)>;
+    fn(&mut Widget<T>, &mut UI<T>, &mut GpuRenderer, bool);
+pub type InternalMouseScrollRef<T> = fn(
+    &mut Widget<T>,
+    &mut UI<T>,
+    &mut GpuRenderer,
+    (f32, f32),
+    ModifiersState,
+);
+pub type InternalMousePressRef<T> = fn(
+    &mut Widget<T>,
+    &mut UI<T>,
+    &mut GpuRenderer,
+    MouseButton,
+    bool,
+    ModifiersState,
+);
+pub type InternalKeyPressRef<T> = fn(
+    &mut Widget<T>,
+    &mut UI<T>,
+    &mut GpuRenderer,
+    KeyboardInput,
+    ModifiersState,
+);
+pub type InternalUpdate<T> = fn(&mut Widget<T>, &mut UI<T>, &mut GpuRenderer);
 
+#[derive(Copy, Clone)]
 pub enum InternalCallBacks<T> {
     Draw(InternalDrawRef<T>),
     MousePresent(InternalBooleanRef<T>),

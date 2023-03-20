@@ -21,7 +21,7 @@ pub mod internals;
 pub struct UI<T> {
     ui_buffer: UIBuffer,
     /// Callback mapper. Hashes must be different.
-    callbacks: HashMap<CallBackKey, Rc<InternalCallBacks<T>>>,
+    callbacks: HashMap<CallBackKey, InternalCallBacks<T>>,
     user_callbacks: HashMap<CallBackKey, Rc<CallBacks<T>>>,
     name_map: HashMap<Identity, Handle>,
     widgets: Slab<WidgetRef<T>>,
@@ -101,8 +101,8 @@ impl<T> UI<T> {
     pub fn get_inner_callback(
         &self,
         key: &CallBackKey,
-    ) -> Option<Rc<InternalCallBacks<T>>> {
-        self.callbacks.get(key).cloned()
+    ) -> Option<&InternalCallBacks<T>> {
+        self.callbacks.get(key)
     }
 
     pub fn add_inner_callback(
@@ -110,7 +110,7 @@ impl<T> UI<T> {
         callback: InternalCallBacks<T>,
         key: CallBackKey,
     ) {
-        self.callbacks.insert(key, Rc::new(callback));
+        self.callbacks.insert(key, callback);
     }
 
     pub fn add_user_callback(

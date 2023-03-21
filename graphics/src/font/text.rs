@@ -17,7 +17,7 @@ impl TextBounds {
 
 impl Default for TextBounds {
     fn default() -> Self {
-        Self(Vec4::new(f32::MIN, f32::MIN, f32::MAX, f32::MAX))
+        Self(Vec4::new(0.0, i32::MAX as f32, i32::MAX as f32, 0.0))
     }
 }
 
@@ -211,6 +211,7 @@ impl Text {
         renderer: &mut GpuRenderer,
         metrics: Option<Metrics>,
         pos: Vec3,
+        size: Vec2,
         bounds: Option<TextBounds>,
     ) -> Self {
         Self {
@@ -219,7 +220,7 @@ impl Text {
                 metrics.unwrap_or(Metrics::new(16.0, 16.0).scale(1.0)),
             ),
             pos,
-            size: Vec2::default(),
+            size,
             bounds: bounds.unwrap_or_default(),
             store_id: renderer.new_buffer(),
             order: DrawOrder::new(false, &pos, 1),
@@ -234,7 +235,7 @@ impl Text {
         &mut self,
         renderer: &mut GpuRenderer,
         text: &str,
-        attrs: Attrs<'static>,
+        attrs: Attrs,
     ) {
         self.buffer.set_text(&mut renderer.font_sys, text, attrs);
         self.changed = true;
@@ -282,5 +283,12 @@ impl Text {
         }
 
         Ok(OrderedIndex::new(self.order, self.store_id))
+    }
+
+    pub fn check_mouse_bounds(&self, mouse_pos: Vec2) -> bool {
+        mouse_pos[0] > self.pos.x
+            && mouse_pos[0] < self.pos.x + self.size.x
+            && mouse_pos[1] > self.pos.y
+            && mouse_pos[1] < self.pos.y + self.size.y
     }
 }

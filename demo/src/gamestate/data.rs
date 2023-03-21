@@ -84,7 +84,7 @@ where
 
         pass.render_upper_maps(renderer, &self.map_renderer, &self.map_atlas);
 
-        pass.render_text(renderer, &self.text_renderer, &self.text_atlas);
+        // pass.render_text(renderer, &self.text_renderer, &self.text_atlas);
 
         pass.render_rects(
             renderer,

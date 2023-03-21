@@ -6,7 +6,7 @@ use camera::{
     Projection,
 };
 use cosmic_text::{
-    Action as TextAction, Buffer, FontSystem, Metrics, Style, SwashCache,
+    Action as TextAction, Attrs, Buffer, FontSystem, Metrics, Style, SwashCache,
 };
 use graphics::*;
 use input::{Bindings, FrameTime, InputHandler};
@@ -274,6 +274,7 @@ async fn main() -> Result<(), AscendingError> {
         &mut renderer,
         Some(Metrics::new(16.0, 16.0).scale(scale as f32)),
         Vec3::new(0.0, 32.0, 1.0),
+        Vec2::new(256.0, 256.0),
         Some(TextBounds::new(8.0, 32.0, 190.0, 0.0)),
     );
 
@@ -285,13 +286,27 @@ async fn main() -> Result<(), AscendingError> {
     let button = Button::new(
         ui.ui_buffer_mut(),
         &mut renderer,
-        Vec3::new(60.0, 300.0, 1.0),
+        Vec3::new(60.0, 300.0, 1.1),
         Vec2::new(50.0, 50.0),
         1.0,
         Some(5.0),
     )
     .into_widget(Identity {
         name: "button".to_string(),
+        id: 1,
+    });
+
+    let label = Label::new(
+        &mut renderer,
+        Some(Metrics::new(16.0, 16.0).scale(scale as f32)),
+        Vec3::new(60.0, 300.0, 1.0),
+        Vec2::new(150.0, 150.0),
+        "push me".to_string(),
+        Color::rgba(255, 255, 255, 255),
+        Attrs::new(),
+    )
+    .into_widget(Identity {
+        name: "label".to_string(),
         id: 1,
     });
 
@@ -302,6 +317,7 @@ async fn main() -> Result<(), AscendingError> {
         UI::get_callback_key(&button, CallBack::MousePress),
     );
     ui.add_widget_by_id(None, button);
+    ui.add_widget_by_id(None, label);
 
     renderer.window().set_visible(true);
 
@@ -409,11 +425,11 @@ async fn main() -> Result<(), AscendingError> {
             .sprite_renderer
             .image_update(&mut state.animation, &mut renderer);
         state.sprite_renderer.finalize(&mut renderer);
-        state
-            .text_renderer
-            .text_update(&mut text, &mut state.text_atlas, &mut renderer)
-            .unwrap();
-        state.text_renderer.finalize(&mut renderer);
+        //state
+        //    .text_renderer
+        //    .text_update(&mut text, &mut state.text_atlas, &mut renderer)
+        //    .unwrap();
+        //state.text_renderer.finalize(&mut renderer);
         state.map_renderer.map_update(&mut state.map, &mut renderer);
         state.map_renderer.finalize(&mut renderer);
         state

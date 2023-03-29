@@ -299,8 +299,8 @@ async fn main() -> Result<(), AscendingError> {
     let label = Label::new(
         &mut renderer,
         Some(Metrics::new(16.0, 16.0).scale(scale as f32)),
-        Vec3::new(60.0, 300.0, 1.0),
-        Vec2::new(150.0, 150.0),
+        Vec3::new(65.0, 345.0, 1.0),
+        Vec2::new(50.0, 50.0),
         "push me".to_string(),
         Color::rgba(255, 255, 255, 255),
         Attrs::new(),
@@ -317,7 +317,13 @@ async fn main() -> Result<(), AscendingError> {
         UI::get_callback_key(&button, CallBack::MousePress),
     );
     ui.add_widget_by_id(None, button);
-    ui.add_widget_by_id(None, label);
+    ui.add_widget_by_id(
+        Some(Identity {
+            name: "button".to_string(),
+            id: 1,
+        }),
+        label,
+    );
 
     renderer.window().set_visible(true);
 

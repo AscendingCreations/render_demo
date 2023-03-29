@@ -114,11 +114,11 @@ impl<T> UI<T> {
                 && over.borrow().actions.get(UiFlags::MouseOver)
                 && self.widget_moving.is_none()
             {
-                self.over = None;
-                control.borrow_mut().actions.clear(UiFlags::MouseOver);
+                over.borrow_mut().actions.clear(UiFlags::MouseOver);
                 self.widget_mouse_over_callback(
-                    renderer, control, false, user_data,
+                    renderer, &over, false, user_data,
                 );
+                self.over = None;
             }
         }
     }

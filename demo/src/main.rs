@@ -1,5 +1,4 @@
 #![allow(dead_code, clippy::collapsible_match, unused_imports)]
-#![feature(option_result_contains)]
 use backtrace::Backtrace;
 use camera::{
     controls::{Controls, FlatControls, FlatSettings},
@@ -296,16 +295,20 @@ async fn main() -> Result<(), AscendingError> {
         id: 1,
     });
 
-    let label = Label::new(
+    let mut label = Label::new(
         &mut renderer,
         Some(Metrics::new(16.0, 16.0).scale(scale as f32)),
-        Vec3::new(65.0, 345.0, 1.0),
+        Vec3::new(60.0, 300.0, 1.0),
         Vec2::new(50.0, 50.0),
         "push me".to_string(),
-        Color::rgba(255, 255, 255, 255),
         Attrs::new(),
-    )
-    .into_widget(Identity {
+    );
+
+    label
+        .set_default_color(Color::rgba(255, 255, 255, 255))
+        .set_offset(Vec2::new(20.0, -5.0));
+
+    let label = label.into_widget(Identity {
         name: "label".to_string(),
         id: 1,
     });

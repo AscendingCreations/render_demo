@@ -86,7 +86,7 @@ impl<T> UI<T> {
     ) {
         if entered {
             if self.over.is_some()
-                && !self.over.contains(&control.borrow().id)
+                && self.over != Some(control.borrow().id)
                 && self.widget_moving.is_none()
             {
                 let over = self.get_widget(self.over.unwrap());

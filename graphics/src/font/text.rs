@@ -25,6 +25,7 @@ pub struct Text {
     pub buffer: Buffer,
     pub pos: Vec3,
     pub size: Vec2,
+    pub offsets: Vec2,
     pub default_color: Color,
     pub bounds: TextBounds,
     pub store_id: Index,
@@ -125,8 +126,15 @@ impl Text {
                     (u as f32, v as f32, width as f32, height as f32);
 
                 let (mut x, mut y) = (
-                    (self.pos.x + glyph.x_int as f32 + position.x),
-                    (self.pos.y + glyph.y_int as f32 - line_y),
+                    (self.pos.x
+                        + self.offsets.x
+                        + glyph.x_int as f32
+                        + position.x),
+                    (self.pos.y
+                        + self.offsets.y
+                        + self.size.y
+                        + glyph.y_int as f32
+                        - line_y),
                 );
 
                 let color = is_color
@@ -145,13 +153,13 @@ impl Text {
 
                 // Starts beyond right edge or ends beyond left edge
                 let max_x = x + width;
-                if x > bounds_max_x || max_x < bounds_min_x {
+                if max_x > bounds_max_x || y < bounds_min_x {
                     continue;
                 }
 
                 // Starts beyond bottom edge or ends beyond top edge
                 let max_y = y + height;
-                if y > bounds_max_y || max_y < bounds_min_y {
+                if max_y > bounds_max_y || y < bounds_min_y {
                     continue;
                 }
 
@@ -221,6 +229,7 @@ impl Text {
             ),
             pos,
             size,
+            offsets: Vec2 { x: 0.0, y: 0.0 },
             bounds: bounds.unwrap_or_default(),
             store_id: renderer.new_buffer(),
             order: DrawOrder::new(false, &pos, 1),
@@ -243,6 +252,11 @@ impl Text {
 
     pub fn set_default_color(&mut self, color: Color) {
         self.default_color = color;
+        self.changed = true;
+    }
+
+    pub fn set_offset(&mut self, offsets: Vec2) {
+        self.offsets = offsets;
         self.changed = true;
     }
 

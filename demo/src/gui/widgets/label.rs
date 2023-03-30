@@ -34,22 +34,30 @@ impl Label {
         pos: Vec3,
         size: Vec2,
         value: String,
-        default_color: Color,
         attrs: Attrs,
     ) -> Label {
         let bounds = Some(TextBounds::new(
             pos.x,
-            pos.y,
+            pos.y + size.y,
             pos.x + size.x,
-            (pos.y - size.y).max(0.0),
+            pos.y.max(0.0),
         ));
         let mut text = Text::new(renderer, metrics, pos, size, bounds);
 
-        text.set_default_color(default_color);
         text.set_text(renderer, &value, attrs);
         text.set_buffer_size(renderer, size.x as i32, size.y as i32);
 
         Self { text }
+    }
+
+    pub fn set_default_color(&mut self, default_color: Color) -> &mut Self {
+        self.text.set_default_color(default_color);
+        self
+    }
+
+    pub fn set_offset(&mut self, offsets: Vec2) -> &mut Self {
+        self.text.set_offset(offsets);
+        self
     }
 }
 

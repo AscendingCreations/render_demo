@@ -285,7 +285,7 @@ async fn main() -> Result<(), AscendingError> {
         ui.ui_buffer_mut(),
         &mut renderer,
         Vec3::new(60.0, 300.0, 1.1),
-        Vec2::new(50.0, 50.0),
+        Vec2::new(155.0, 25.0),
         1.0,
         Some(5.0),
     )
@@ -298,14 +298,14 @@ async fn main() -> Result<(), AscendingError> {
         &mut renderer,
         Some(Metrics::new(16.0, 16.0).scale(scale as f32)),
         Vec3::new(60.0, 300.0, 1.0),
-        Vec2::new(50.0, 50.0),
-        "push me".to_string(),
+        Vec2::new(150.0, 25.0),
+        "私を押してください".to_string(),
         Attrs::new(),
     );
 
     label
         .set_default_color(Color::rgba(255, 255, 255, 255))
-        .set_offset(Vec2::new(20.0, -5.0));
+        .set_offset(Vec2::new(5.0, -5.0));
 
     let label = label.into_widget(Identity {
         name: "label".to_string(),
@@ -356,7 +356,6 @@ async fn main() -> Result<(), AscendingError> {
     let mut time = 0.0f32;
     let mut fps = 0u32;
     let mut mouse_pos = Vec2::default();
-    let mut id = 0;
 
     #[allow(deprecated)]
     event_loop.run(move |event, _, control_flow| {
@@ -373,10 +372,10 @@ async fn main() -> Result<(), AscendingError> {
             _ => {}
         }
 
-        if state.rects.check_mouse_bounds(mouse_pos) {
+        /*if state.rects.check_mouse_bounds(mouse_pos) {
             println!("Within the Shape: {id}");
             id += 1;
-        }
+        }*/
 
         let new_size = renderer.size();
         let inner_size = renderer.window().inner_size();

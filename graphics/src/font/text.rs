@@ -153,13 +153,13 @@ impl Text {
 
                 // Starts beyond right edge or ends beyond left edge
                 let max_x = x + width;
-                if max_x > bounds_max_x || y < bounds_min_x {
+                if x > bounds_max_x || max_x < bounds_min_x {
                     continue;
                 }
 
                 // Starts beyond bottom edge or ends beyond top edge
                 let max_y = y + height;
-                if max_y > bounds_max_y || y < bounds_min_y {
+                if y > bounds_max_y || max_y < bounds_min_y {
                     continue;
                 }
 

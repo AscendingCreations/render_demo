@@ -11,7 +11,6 @@ use graphics::*;
 use input::{Bindings, FrameTime, InputHandler};
 use log::{error, info, warn, Level, LevelFilter, Metadata, Record};
 use naga::{front::wgsl, valid::Validator};
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::{
     cell::RefCell,

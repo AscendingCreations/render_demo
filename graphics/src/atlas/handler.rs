@@ -1,6 +1,6 @@
 use crate::{Allocation, GpuRenderer, Layer};
 use lru::LruCache;
-use std::{cell::RefCell, hash::Hash, num::NonZeroU32};
+use std::{collections::HashSet, hash::Hash, num::NonZeroU32};
 
 pub struct Atlas<U: Hash + Eq + Clone = String, Data: Copy + Default = i32> {
     /// Texture in GRAM
@@ -12,15 +12,13 @@ pub struct Atlas<U: Hash + Eq + Clone = String, Data: Copy + Default = i32> {
     /// Holds the Original Texture Size and layer information.
     pub extent: wgpu::Extent3d,
     /// File Paths or names to prevent duplicates.
-    pub cache: Vec<RefCell<LruCache<U, Allocation<Data>>>>,
+    pub cache: LruCache<U, Allocation<Data>>,
+    pub last_used: HashSet<U>,
     /// Format the Texture uses.
     pub format: wgpu::TextureFormat,
-    /// When Eviction starts each Cleanup Call. This is the amount of layers.
-    /// 0 means it will never evict anything.
-    pub pressure_min: usize,
     /// When the System will Error if reached. This is the max allowed Layers
     /// Default is 256 as Most GPU allow a max of 256.
-    pub pressure_max: usize,
+    pub max_layers: u32,
 }
 
 impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
@@ -46,10 +44,35 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
             }
         }
 
+        /* Try to see if we can clear out unused allocations first. */
+        loop {
+            let (key, _) = self.cache.peek_lru()?;
+
+            //Check if ID has been used yet?
+            if self.last_used.contains(key) {
+                //Failed to find any unused allocations so lets try to add a layer.
+                break;
+            }
+
+            let (_, allocation) = self.cache.pop_lru()?;
+            let layer_id = allocation.layer;
+            let layer = self.layers.get_mut(layer_id).unwrap();
+
+            layer.allocator.deallocate(allocation.allocation);
+
+            if let Some(allocation) = layer.allocator.allocate(width, height) {
+                return Some(Allocation {
+                    allocation,
+                    layer: layer_id,
+                    data,
+                });
+            }
+        }
+
         /* Add a new layer, as we found no layer to allocate from and could
         not retrieve any old allocations to use. */
 
-        if self.layers.len() + 1 == self.pressure_max {
+        if self.layers.len() + 1 == self.max_layers as usize {
             return None;
         }
 
@@ -74,54 +97,34 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
             layer.allocator.clear();
         }
 
-        for cache in &self.cache {
-            cache.borrow_mut().clear();
-        }
+        self.cache.clear();
+        self.last_used.clear();
     }
 
-    pub fn clean(&mut self) {
-        if self.layers.len() >= self.pressure_min {
-            self.cache.swap(0, 1);
-            let mut old_cache = self.cache.get(1).unwrap().borrow_mut();
-
-            while let Some((_key, allocation)) = old_cache.pop_lru() {
-                self.layers
-                    .get_mut(allocation.layer)
-                    .unwrap()
-                    .allocator
-                    .deallocate(allocation.allocation);
-            }
-        } else if self.cache.get(0).unwrap().borrow().len()
-            > self.cache.get(1).unwrap().borrow().len()
-        {
-            let mut old_cache = self.cache.get(0).unwrap().borrow_mut();
-            let mut new_cache = self.cache.get(1).unwrap().borrow_mut();
-
-            while let Some((key, allocation)) = new_cache.pop_lru() {
-                old_cache.push(key, allocation);
-            }
-        } else {
-            self.cache.swap(0, 1);
-            let mut old_cache = self.cache.get(1).unwrap().borrow_mut();
-            let mut new_cache = self.cache.get(0).unwrap().borrow_mut();
-
-            while let Some((key, allocation)) = old_cache.pop_lru() {
-                new_cache.push(key, allocation);
-            }
-        }
+    pub fn trim(&mut self) {
+        self.last_used.clear();
     }
 
-    // Gets the data and updates its cache position and time.
+    pub fn promote(&mut self, key: U) {
+        self.cache.promote(&key);
+        self.last_used.insert(key);
+    }
+
+    pub fn peek(&mut self, key: &U) -> Option<&Allocation<Data>> {
+        self.cache.peek(key)
+    }
+
+    pub fn contains(&mut self, key: &U) -> bool {
+        self.cache.contains(key)
+    }
+
     pub fn get(&mut self, key: &U) -> Option<Allocation<Data>> {
-        let mut old_cache = self.cache.get(0).unwrap().borrow_mut();
-        let mut new_cache = self.cache.get(1).unwrap().borrow_mut();
-
-        if let Some(allocation) = old_cache.pop(key) {
-            new_cache.push(key.clone(), allocation);
-            Some(allocation)
-        } else {
-            new_cache.get(key).copied()
+        if let Some(allocation) = self.cache.get_mut(key) {
+            self.last_used.insert(key.clone());
+            return Some(*allocation);
         }
+
+        None
     }
 
     fn grow(&mut self, amount: usize, renderer: &GpuRenderer) {
@@ -202,16 +205,11 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
         renderer.queue().submit(std::iter::once(encoder.finish()));
     }
 
-    pub fn new(
-        renderer: &GpuRenderer,
-        size: u32,
-        format: wgpu::TextureFormat,
-        pressure_min: usize,
-        pressure_max: usize,
-    ) -> Self {
+    pub fn new(renderer: &GpuRenderer, format: wgpu::TextureFormat) -> Self {
+        let limits = renderer.device().limits();
         let extent = wgpu::Extent3d {
-            width: size,
-            height: size,
+            width: limits.max_texture_dimension_3d,
+            height: limits.max_texture_dimension_3d,
             depth_or_array_layers: 1,
         };
 
@@ -243,62 +241,40 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
         Self {
             texture,
             texture_view,
-            layers: vec![Layer::new(size)],
+            layers: vec![Layer::new(limits.max_texture_dimension_3d)],
             extent,
-            cache: vec![
-                RefCell::new(LruCache::unbounded()),
-                RefCell::new(LruCache::unbounded()),
-            ],
+            cache: LruCache::unbounded(),
+            last_used: HashSet::default(),
             format,
-            pressure_min,
-            pressure_max,
+            max_layers: limits.max_texture_array_layers,
         }
     }
 
     #[allow(clippy::too_many_arguments)]
     pub fn upload(
         &mut self,
-        hash: U,
+        key: U,
         bytes: &[u8],
         width: u32,
         height: u32,
         data: Data,
         renderer: &GpuRenderer,
     ) -> Option<Allocation<Data>> {
-        if self.cache.get(0).unwrap().borrow().contains(&hash) {
-            if let Some(allocation) =
-                self.cache.get(0).unwrap().borrow_mut().pop(&hash)
-            {
-                self.cache
-                    .get(1)
-                    .unwrap()
-                    .borrow_mut()
-                    .push(hash.clone(), allocation);
-                return Some(allocation);
-            }
-        } else if self.cache.get(1).unwrap().borrow().contains(&hash) {
-            if let Some(allocation) =
-                self.cache.get(1).unwrap().borrow_mut().get(&hash)
-            {
-                return Some(*allocation);
-            }
+        if let Some(allocation) = self.get(&key) {
+            Some(allocation)
+        } else {
+            let allocation = {
+                let nlayers = self.layers.len();
+                let allocation = self.allocate(width, height, data)?;
+                self.grow(self.layers.len() - nlayers, renderer);
+
+                allocation
+            };
+
+            self.upload_allocation(bytes, &allocation, renderer);
+            self.cache.push(key.clone(), allocation);
+            Some(allocation)
         }
-
-        let allocation = {
-            let nlayers = self.layers.len();
-            let allocation = self.allocate(width, height, data)?;
-            self.grow(self.layers.len() - nlayers, renderer);
-
-            allocation
-        };
-
-        self.upload_allocation(bytes, &allocation, renderer);
-        self.cache
-            .get(1)
-            .unwrap()
-            .borrow_mut()
-            .push(hash, allocation);
-        Some(allocation)
     }
 
     fn upload_allocation(

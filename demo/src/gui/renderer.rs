@@ -21,20 +21,16 @@ impl UIBuffer {
             ui_buffer: RectRenderer::new(renderer)?,
             ui_atlas: AtlasGroup::new(
                 renderer,
-                2048,
                 wgpu::TextureFormat::Rgba8UnormSrgb,
-                GroupType::Textures,
-                256,
-                256,
             ),
             text_renderer: TextRenderer::new(renderer)?,
-            text_atlas: TextAtlas::new(renderer, 2, 256, 2048)?,
+            text_atlas: TextAtlas::new(renderer)?,
         })
     }
 
-    pub fn atlas_clean(&mut self) {
-        self.text_atlas.clean();
-        self.ui_atlas.clean();
+    pub fn atlas_trim(&mut self) {
+        self.text_atlas.trim();
+        self.ui_atlas.trim();
     }
 }
 

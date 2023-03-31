@@ -4,33 +4,32 @@ members = ["demo", "input", "camera", "graphics"]
 
 [workspace.dependencies]
 async-trait = "0.1.64"
-bytemuck = { version = "1.13.0", features = ["derive"] }
-crevice = "0.12.0"
+bytemuck = { version = "1.13.1", features = ["derive"] }
+crevice = "0.13.0"
 crevice-derive = "0.10.0"
 mint = "0.5.9"
-thiserror = "1.0.38"
-ultraviolet = { version = "0.9.0", features = ["mint"] }
-winit = { version = "0.27.5", features = ["serde"] }
-image = "0.24.5"
-tokio = { version = "1.25.0", features = ["full"] }
-bitflags = "1.3.2"
+thiserror = "1.0.40"
+ultraviolet = { version = "0.9.1", features = ["mint"] }
+winit = { version = "0.28.3", features = ["serde"] }
+image = "0.24.6"
+tokio = { version = "1.27.0", features = ["full"] }
 guillotiere = "0.6.2"
-serde = { version = "1.0.152", features = ["derive"] }
+serde = { version = "1.0.159", features = ["derive"] }
 camera = { path = "./camera", package = "ascending_camera"}
 input = { path = "./input", package = "ascending_input" }
 graphics = { path = "./graphics", package = "ascending_graphics" }
 log = "0.4.17"
 backtrace = "0.3.67"
-once_cell = "1.17.1"
-futures = "0.3.26"
+futures = "0.3.27"
 cosmic-text = { git = "https://github.com/pop-os/cosmic-text" }
-ordered-float = { version = "3.4.0", features = ["serde"] }
-chrono = { version = "0.4.23", features = ["clock", "serde", "std"] }
+ordered-float = { version = "3.6.0", features = ["serde"] }
+chrono = { version = "0.4.24", features = ["clock", "serde", "std"] }
 ubits = "0.3.1"
 slab = "0.4.8"
-lru = "0.9.0"
+lru = "0.10.0"
 generational_array = "0.1.1"
 ritehash = "0.2.0"
+hecs = "0.10.1"
 
 [workspace.dependencies.naga]
 #git = "https://github.com/gfx-rs/naga"

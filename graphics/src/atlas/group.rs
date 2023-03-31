@@ -1,6 +1,4 @@
-use crate::{
-    Allocation, Atlas, GpuRenderer, GroupType, TextureGroup, TextureLayout,
-};
+use crate::{Allocation, Atlas, GpuRenderer, TextureGroup, TextureLayout};
 use std::hash::Hash;
 
 /// Group of a Atlas Details
@@ -15,25 +13,14 @@ pub struct AtlasGroup<U: Hash + Eq + Clone = String, Data: Copy + Default = i32>
 impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
     pub fn new(
         renderer: &mut GpuRenderer,
-        size: u32,
         format: wgpu::TextureFormat,
-        group_type: GroupType,
-        pressure_min: usize,
-        pressure_max: usize,
     ) -> Self {
-        let atlas = Atlas::<U, Data>::new(
-            renderer,
-            size,
-            format,
-            pressure_min,
-            pressure_max,
-        );
+        let atlas = Atlas::<U, Data>::new(renderer, format);
 
         let texture = TextureGroup::from_view(
             renderer,
             &atlas.texture_view,
             TextureLayout,
-            group_type,
         );
 
         Self { atlas, texture }
@@ -53,7 +40,7 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
             .upload(hash, bytes, width, height, data, renderer)
     }
 
-    pub fn clean(&mut self) {
-        self.atlas.clean();
+    pub fn trim(&mut self) {
+        self.atlas.trim();
     }
 }

@@ -59,14 +59,13 @@ impl<T> UI<T> {
         let key = control.borrow().callback_key(CallBack::MousePresent);
 
         if let Some(callback) = self.get_inner_callback(&key) {
-            if let InternalCallBacks::MousePresent(present) = callback.as_ref()
-            {
+            if let InternalCallBacks::MousePresent(present) = callback {
                 present(&mut control.borrow_mut(), self, renderer, entered);
             }
         }
 
         if let Some(callback) = self.get_user_callback(&key) {
-            if let CallBacks::MousePresent(present) = callback.as_ref() {
+            if let CallBacks::MousePresent(present) = callback {
                 present(
                     &mut control.borrow_mut(),
                     self,
@@ -87,7 +86,7 @@ impl<T> UI<T> {
     ) {
         if entered {
             if self.over.is_some()
-                && !self.over.contains(&control.borrow().id)
+                && self.over != Some(control.borrow().id)
                 && self.widget_moving.is_none()
             {
                 let over = self.get_widget(self.over.unwrap());
@@ -115,11 +114,11 @@ impl<T> UI<T> {
                 && over.borrow().actions.get(UiFlags::MouseOver)
                 && self.widget_moving.is_none()
             {
-                self.over = None;
-                control.borrow_mut().actions.clear(UiFlags::MouseOver);
+                over.borrow_mut().actions.clear(UiFlags::MouseOver);
                 self.widget_mouse_over_callback(
-                    renderer, control, false, user_data,
+                    renderer, &over, false, user_data,
                 );
+                self.over = None;
             }
         }
     }
@@ -439,9 +438,7 @@ impl<T> UI<T> {
         self.focused = Some(mut_wdgt.id);
 
         if let Some(callback) = self.get_inner_callback(&key) {
-            if let InternalCallBacks::FocusChange(focus_changed) =
-                callback.as_ref()
-            {
+            if let InternalCallBacks::FocusChange(focus_changed) = callback {
                 focus_changed(&mut mut_wdgt, self, renderer, focused);
             }
         }
@@ -458,9 +455,7 @@ impl<T> UI<T> {
         let key = mut_wdgt.callback_key(CallBack::MousePress);
 
         if let Some(callback) = self.get_inner_callback(&key) {
-            if let InternalCallBacks::MousePress(mouse_press) =
-                callback.as_ref()
-            {
+            if let InternalCallBacks::MousePress(mouse_press) = callback {
                 mouse_press(
                     &mut mut_wdgt,
                     self,
@@ -473,7 +468,7 @@ impl<T> UI<T> {
         }
 
         if let Some(callback) = self.get_user_callback(&key) {
-            if let CallBacks::MousePress(mouse_press) = callback.as_ref() {
+            if let CallBacks::MousePress(mouse_press) = callback {
                 mouse_press(
                     &mut mut_wdgt,
                     self,
@@ -722,7 +717,7 @@ impl<T> UI<T> {
 
         if let Some(callback) = self.get_inner_callback(&key) {
             if let InternalCallBacks::PositionChange(internal_update_pos) =
-                callback.as_ref()
+                callback
             {
                 internal_update_pos(parent, self, renderer);
             }
@@ -741,7 +736,7 @@ impl<T> UI<T> {
                 if let Some(callback) = self.get_inner_callback(&key) {
                     if let InternalCallBacks::PositionChange(
                         internal_update_pos,
-                    ) = callback.as_ref()
+                    ) = callback
                     {
                         internal_update_pos(&mut mut_wdgt, self, renderer);
                     }

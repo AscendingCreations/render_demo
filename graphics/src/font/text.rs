@@ -2,9 +2,7 @@ use crate::{
     AscendingError, Color, DrawOrder, GpuRenderer, Index, OrderedIndex,
     TextAtlas, TextVertex, Vec2, Vec3, Vec4,
 };
-use cosmic_text::{
-    Attrs, Buffer, FontSystem, Metrics, SwashCache, SwashContent,
-};
+use cosmic_text::{Attrs, Buffer, Metrics, SwashCache, SwashContent};
 
 /// Controls the visible area of the text. Any text outside of the visible area will be clipped.
 /// This is given by glyphon.
@@ -19,14 +17,15 @@ impl TextBounds {
 
 impl Default for TextBounds {
     fn default() -> Self {
-        Self(Vec4::new(f32::MIN, f32::MIN, f32::MAX, f32::MAX))
+        Self(Vec4::new(0.0, i32::MAX as f32, i32::MAX as f32, 0.0))
     }
 }
 
 pub struct Text {
-    pub buffer: Buffer<'static>,
+    pub buffer: Buffer,
     pub pos: Vec3,
     pub size: Vec2,
+    pub offsets: Vec2,
     pub default_color: Color,
     pub bounds: TextBounds,
     pub store_id: Index,
@@ -40,7 +39,6 @@ pub struct Text {
 impl Text {
     pub fn create_quad(
         &mut self,
-        font_system: &FontSystem,
         cache: &mut SwashCache,
         atlas: &mut TextAtlas,
         renderer: &mut GpuRenderer,
@@ -54,7 +52,7 @@ impl Text {
                 }
 
                 let image = cache
-                    .get_image_uncached(font_system, glyph.cache_key)
+                    .get_image_uncached(&mut renderer.font_sys, glyph.cache_key)
                     .unwrap();
                 let bitmap = image.data;
                 let is_color = match image.content {
@@ -111,11 +109,11 @@ impl Text {
 
             for glyph in run.glyphs.iter() {
                 let (allocation, is_color) = if let Some(allocation) =
-                    atlas.text.atlas.get(&glyph.cache_key)
+                    atlas.text.atlas.peek(&glyph.cache_key)
                 {
                     (allocation, false)
                 } else if let Some(allocation) =
-                    atlas.emoji.atlas.get(&glyph.cache_key)
+                    atlas.emoji.atlas.peek(&glyph.cache_key)
                 {
                     (allocation, true)
                 } else {
@@ -128,8 +126,15 @@ impl Text {
                     (u as f32, v as f32, width as f32, height as f32);
 
                 let (mut x, mut y) = (
-                    (self.pos.x + glyph.x_int as f32 + position.x),
-                    (self.pos.y + glyph.y_int as f32 - line_y),
+                    (self.pos.x
+                        + self.offsets.x
+                        + glyph.x_int as f32
+                        + position.x),
+                    (self.pos.y
+                        + self.offsets.y
+                        + self.size.y
+                        + glyph.y_int as f32
+                        - line_y),
                 );
 
                 let color = is_color
@@ -212,7 +217,6 @@ impl Text {
 
     pub fn new(
         renderer: &mut GpuRenderer,
-        font_system: &'static FontSystem,
         metrics: Option<Metrics>,
         pos: Vec3,
         size: Vec2,
@@ -220,11 +224,12 @@ impl Text {
     ) -> Self {
         Self {
             buffer: Buffer::new(
-                font_system,
+                &mut renderer.font_sys,
                 metrics.unwrap_or(Metrics::new(16.0, 16.0).scale(1.0)),
             ),
             pos,
             size,
+            offsets: Vec2 { x: 0.0, y: 0.0 },
             bounds: bounds.unwrap_or_default(),
             store_id: renderer.new_buffer(),
             order: DrawOrder::new(false, &pos, 1),
@@ -235,19 +240,47 @@ impl Text {
     }
 
     /// resets the TextRender bytes to empty for new bytes
-    pub fn set_text(&mut self, text: &str, attrs: Attrs<'static>) {
-        self.buffer.set_text(text, attrs);
+    pub fn set_text(
+        &mut self,
+        renderer: &mut GpuRenderer,
+        text: &str,
+        attrs: Attrs,
+    ) {
+        self.buffer.set_text(&mut renderer.font_sys, text, attrs);
         self.changed = true;
     }
 
-    pub fn set_buffer_size(&mut self, width: i32, height: i32) {
-        self.buffer.set_size(width as f32, height as f32);
+    pub fn set_default_color(&mut self, color: Color) {
+        self.default_color = color;
+        self.changed = true;
+    }
+
+    pub fn set_offset(&mut self, offsets: Vec2) {
+        self.offsets = offsets;
+        self.changed = true;
+    }
+
+    pub fn set_buffer_size(
+        &mut self,
+        renderer: &mut GpuRenderer,
+        width: i32,
+        height: i32,
+    ) {
+        self.buffer.set_size(
+            &mut renderer.font_sys,
+            width as f32,
+            height as f32,
+        );
         self.changed = true;
     }
 
     /// resets the TextRender bytes to empty for new bytes
-    pub fn clear(&mut self) {
-        self.buffer.set_text("", cosmic_text::Attrs::new());
+    pub fn clear(&mut self, renderer: &mut GpuRenderer) {
+        self.buffer.set_text(
+            &mut renderer.font_sys,
+            "",
+            cosmic_text::Attrs::new(),
+        );
         self.changed = true;
     }
 
@@ -255,15 +288,21 @@ impl Text {
     /// must call build_layout before you can Call this.
     pub fn update(
         &mut self,
-        font_system: &FontSystem,
         cache: &mut SwashCache,
         atlas: &mut TextAtlas,
         renderer: &mut GpuRenderer,
     ) -> Result<OrderedIndex, AscendingError> {
         if self.changed {
-            self.create_quad(font_system, cache, atlas, renderer)?;
+            self.create_quad(cache, atlas, renderer)?;
         }
 
         Ok(OrderedIndex::new(self.order, self.store_id))
+    }
+
+    pub fn check_mouse_bounds(&self, mouse_pos: Vec2) -> bool {
+        mouse_pos[0] > self.pos.x
+            && mouse_pos[0] < self.pos.x + self.size.x
+            && mouse_pos[1] > self.pos.y
+            && mouse_pos[1] < self.pos.y + self.size.y
     }
 }

@@ -182,15 +182,15 @@ impl<T: 'static> Control<T> for Button {
     ) -> Vec<(InternalCallBacks<T>, CallBackKey)> {
         vec![
             (
-                InternalCallBacks::Draw(Box::new(draw)),
+                InternalCallBacks::Draw(draw),
                 CallBackKey::new(id, CallBack::Draw),
             ),
             (
-                InternalCallBacks::MousePresent(Box::new(mouse_over)),
+                InternalCallBacks::MousePresent(mouse_over),
                 CallBackKey::new(id, CallBack::MousePresent),
             ),
             (
-                InternalCallBacks::MousePress(Box::new(mouse_button)),
+                InternalCallBacks::MousePress(mouse_button),
                 CallBackKey::new(id, CallBack::MousePress),
             ),
         ]

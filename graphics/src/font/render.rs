@@ -1,9 +1,8 @@
 use crate::{
-    AscendingError, AtlasGroup, GpuRenderer, GroupType, InstanceBuffer,
-    OrderedIndex, StaticBufferObject, Text, TextRenderPipeline, TextVertex,
-    Vec2,
+    AscendingError, AtlasGroup, GpuRenderer, InstanceBuffer, OrderedIndex,
+    StaticBufferObject, Text, TextRenderPipeline, TextVertex, Vec2,
 };
-use cosmic_text::{CacheKey, FontSystem, SwashCache};
+use cosmic_text::{CacheKey, SwashCache};
 
 pub struct TextAtlas {
     pub(crate) text: AtlasGroup<CacheKey, Vec2>,
@@ -11,35 +10,19 @@ pub struct TextAtlas {
 }
 
 impl TextAtlas {
-    pub fn new(
-        renderer: &mut GpuRenderer,
-        min_pressure: usize,
-        max_pressure: usize,
-        size: u32,
-    ) -> Result<Self, AscendingError> {
+    pub fn new(renderer: &mut GpuRenderer) -> Result<Self, AscendingError> {
         Ok(Self {
-            text: AtlasGroup::new(
-                renderer,
-                size,
-                wgpu::TextureFormat::R8Unorm,
-                GroupType::Fonts,
-                min_pressure,
-                max_pressure,
-            ),
+            text: AtlasGroup::new(renderer, wgpu::TextureFormat::R8Unorm),
             emoji: AtlasGroup::new(
                 renderer,
-                size,
                 wgpu::TextureFormat::Rgba8UnormSrgb,
-                GroupType::Textures,
-                min_pressure,
-                max_pressure,
             ),
         })
     }
 
-    pub fn clean(&mut self) {
-        self.emoji.clean();
-        self.text.clean();
+    pub fn trim(&mut self) {
+        self.emoji.trim();
+        self.text.trim();
     }
 }
 
@@ -72,11 +55,9 @@ impl TextRenderer {
         &mut self,
         text: &mut Text,
         atlas: &mut TextAtlas,
-        font_system: &FontSystem,
         renderer: &mut GpuRenderer,
     ) -> Result<(), AscendingError> {
-        let index =
-            text.update(font_system, &mut self.swash_cache, atlas, renderer)?;
+        let index = text.update(&mut self.swash_cache, atlas, renderer)?;
 
         self.add_buffer_store(renderer, index);
         Ok(())

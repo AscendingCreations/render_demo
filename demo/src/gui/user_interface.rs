@@ -21,8 +21,8 @@ pub mod internals;
 pub struct UI<T> {
     ui_buffer: UIBuffer,
     /// Callback mapper. Hashes must be different.
-    callbacks: HashMap<CallBackKey, Rc<InternalCallBacks<T>>>,
-    user_callbacks: HashMap<CallBackKey, Rc<CallBacks<T>>>,
+    callbacks: HashMap<CallBackKey, InternalCallBacks<T>>,
+    user_callbacks: HashMap<CallBackKey, CallBacks<T>>,
     name_map: HashMap<Identity, Handle>,
     widgets: Slab<WidgetRef<T>>,
     ///Contains All Visible widgets in rendering order
@@ -91,18 +91,29 @@ impl<T> UI<T> {
             .clone()
     }
 
+    pub fn get_callback_key(
+        widget: &WidgetRef<T>,
+        callback: CallBack,
+    ) -> CallBackKey {
+        CallBackKey::new(&widget.borrow().identity, callback)
+    }
+
+    pub fn set_action(widget: &WidgetRef<T>, action: UiFlags) {
+        widget.borrow_mut().actions.set(action);
+    }
+
     pub fn get_user_callback(
         &self,
         key: &CallBackKey,
-    ) -> Option<Rc<CallBacks<T>>> {
-        self.user_callbacks.get(key).cloned()
+    ) -> Option<&CallBacks<T>> {
+        self.user_callbacks.get(key)
     }
 
     pub fn get_inner_callback(
         &self,
         key: &CallBackKey,
-    ) -> Option<Rc<InternalCallBacks<T>>> {
-        self.callbacks.get(key).cloned()
+    ) -> Option<&InternalCallBacks<T>> {
+        self.callbacks.get(key)
     }
 
     pub fn add_inner_callback(
@@ -110,7 +121,7 @@ impl<T> UI<T> {
         callback: InternalCallBacks<T>,
         key: CallBackKey,
     ) {
-        self.callbacks.insert(key, Rc::new(callback));
+        self.callbacks.insert(key, callback);
     }
 
     pub fn add_user_callback(
@@ -118,7 +129,7 @@ impl<T> UI<T> {
         callback: CallBacks<T>,
         key: CallBackKey,
     ) {
-        self.user_callbacks.insert(key, Rc::new(callback));
+        self.user_callbacks.insert(key, callback);
     }
 
     pub fn remove_widget_by_handle(&mut self, handle: Handle) {

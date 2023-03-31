@@ -1,18 +1,16 @@
 #![allow(dead_code, clippy::collapsible_match, unused_imports)]
-#![feature(option_result_contains)]
 use backtrace::Backtrace;
 use camera::{
     controls::{Controls, FlatControls, FlatSettings},
     Projection,
 };
 use cosmic_text::{
-    Action as TextAction, Buffer, FontSystem, Metrics, Style, SwashCache,
+    Action as TextAction, Attrs, Buffer, FontSystem, Metrics, Style, SwashCache,
 };
 use graphics::*;
 use input::{Bindings, FrameTime, InputHandler};
 use log::{error, info, warn, Level, LevelFilter, Metadata, Record};
 use naga::{front::wgsl, valid::Validator};
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::{
     cell::RefCell,
@@ -50,7 +48,6 @@ enum Axis {
 }
 
 static MY_LOGGER: MyLogger = MyLogger(Level::Debug);
-static FONT_SYSTEM: Lazy<FontSystem> = Lazy::new(FontSystem::new);
 
 struct MyLogger(pub Level);
 
@@ -128,6 +125,7 @@ async fn main() -> Result<(), AscendingError> {
         .build(&event_loop)
         .unwrap();
     let instance = wgpu::Instance::default();
+    let font_system = FontSystem::new();
 
     let (gpu_window, gpu_device) = instance
         .create_device(
@@ -148,7 +146,7 @@ async fn main() -> Result<(), AscendingError> {
         .await
         .unwrap();
 
-    let mut renderer = GpuRenderer::new(gpu_window, gpu_device);
+    let mut renderer = GpuRenderer::new(gpu_window, gpu_device, font_system);
     renderer.create_pipelines(renderer.surface_format());
 
     println!("{:?}", renderer.adapter().get_info());
@@ -156,17 +154,13 @@ async fn main() -> Result<(), AscendingError> {
     let mut atlases: Vec<AtlasGroup> = iter::from_fn(|| {
         Some(AtlasGroup::new(
             &mut renderer,
-            2048,
             wgpu::TextureFormat::Rgba8UnormSrgb,
-            GroupType::Textures,
-            256,
-            256,
         ))
     })
     .take(3)
     .collect();
 
-    let text_atlas = TextAtlas::new(&mut renderer, 2, 256, 2048).unwrap();
+    let text_atlas = TextAtlas::new(&mut renderer).unwrap();
     let allocation = Texture::from_file("images/Female_1.png")?
         .group_upload(&mut atlases[0], &renderer)
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
@@ -276,7 +270,6 @@ async fn main() -> Result<(), AscendingError> {
 
     let mut text = Text::new(
         &mut renderer,
-        &FONT_SYSTEM,
         Some(Metrics::new(16.0, 16.0).scale(scale as f32)),
         Vec3::new(0.0, 32.0, 1.0),
         Vec2::new(256.0, 256.0),
@@ -285,31 +278,54 @@ async fn main() -> Result<(), AscendingError> {
 
     let ui_buffer = UIBuffer::new(&mut renderer)?;
 
-    text.set_buffer_size(size.width as i32, size.height as i32);
+    text.set_buffer_size(&mut renderer, size.width as i32, size.height as i32);
 
     let mut ui = UI::<State<FlatControls>>::new(ui_buffer);
     let button = Button::new(
         ui.ui_buffer_mut(),
         &mut renderer,
-        Vec3::new(60.0, 300.0, 1.0),
+        Vec3::new(60.0, 300.0, 1.1),
         Vec2::new(50.0, 50.0),
         1.0,
         Some(5.0),
-    );
-
-    let button: WidgetRef<State<FlatControls>> = button.into_widget(Identity {
+    )
+    .into_widget(Identity {
         name: "button".to_string(),
         id: 1,
     });
 
-    button.borrow_mut().actions.set(UiFlags::AlwaysUseable);
+    let mut label = Label::new(
+        &mut renderer,
+        Some(Metrics::new(16.0, 16.0).scale(scale as f32)),
+        Vec3::new(60.0, 300.0, 1.0),
+        Vec2::new(50.0, 50.0),
+        "push me".to_string(),
+        Attrs::new(),
+    );
 
-    let callbackkey = button.borrow().callback_key(CallBack::MousePress);
+    label
+        .set_default_color(Color::rgba(255, 255, 255, 255))
+        .set_offset(Vec2::new(20.0, -5.0));
+
+    let label = label.into_widget(Identity {
+        name: "label".to_string(),
+        id: 1,
+    });
+
+    UI::set_action(&button, UiFlags::AlwaysUseable);
+
     ui.add_user_callback(
-        CallBacks::MousePress(Box::new(mouse_button)),
-        callbackkey,
+        CallBacks::MousePress(mouse_button),
+        UI::get_callback_key(&button, CallBack::MousePress),
     );
     ui.add_widget_by_id(None, button);
+    ui.add_widget_by_id(
+        Some(Identity {
+            name: "button".to_string(),
+            id: 1,
+        }),
+        label,
+    );
 
     renderer.window().set_visible(true);
 
@@ -417,16 +433,11 @@ async fn main() -> Result<(), AscendingError> {
             .sprite_renderer
             .image_update(&mut state.animation, &mut renderer);
         state.sprite_renderer.finalize(&mut renderer);
-        state
-            .text_renderer
-            .text_update(
-                &mut text,
-                &mut state.text_atlas,
-                &FONT_SYSTEM,
-                &mut renderer,
-            )
-            .unwrap();
-        state.text_renderer.finalize(&mut renderer);
+        //state
+        //    .text_renderer
+        //    .text_update(&mut text, &mut state.text_atlas, &mut renderer)
+        //    .unwrap();
+        //state.text_renderer.finalize(&mut renderer);
         state.map_renderer.map_update(&mut state.map, &mut renderer);
         state.map_renderer.finalize(&mut renderer);
         state
@@ -450,6 +461,7 @@ async fn main() -> Result<(), AscendingError> {
 
         if time < seconds {
             text.set_text(
+                &mut renderer,
                 &format!("生活,삶,जिंदगी 😀 FPS: {fps} \nhello"),
                 cosmic_text::Attrs::new(),
             );
@@ -463,10 +475,10 @@ async fn main() -> Result<(), AscendingError> {
         frame_time.update();
         renderer.present().unwrap();
 
-        state.image_atlas.clean();
-        state.rects_atlas.clean();
-        state.map_atlas.clean();
-        state.text_atlas.clean();
-        ui.ui_buffer_mut().atlas_clean();
+        state.image_atlas.trim();
+        state.rects_atlas.trim();
+        state.map_atlas.trim();
+        state.text_atlas.trim();
+        ui.ui_buffer_mut().atlas_trim();
     })
 }

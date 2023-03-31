@@ -1,6 +1,6 @@
 use crate::{
-    AscendingError, AtlasGroup, GpuRenderer, GroupType, InstanceBuffer, Map,
-    MapLayout, MapRenderPipeline, MapTextures, MapVertex, OrderedIndex,
+    AscendingError, AtlasGroup, GpuRenderer, InstanceBuffer, Map, MapLayout,
+    MapRenderPipeline, MapTextures, MapVertex, OrderedIndex,
     StaticBufferObject, TextureGroup,
 };
 
@@ -33,7 +33,6 @@ impl MapRenderer {
                 renderer,
                 &map_textures.texture_view,
                 MapLayout,
-                GroupType::Textures,
             ),
             map_textures,
         })

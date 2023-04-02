@@ -63,8 +63,8 @@ impl<T> UI<T> {
         if self.moving {
             if let Ok(win_pos) = renderer.window().outer_position() {
                 let mut win_pos = Vec2::new(win_pos.x as f32, win_pos.y as f32);
-                win_pos.x = position[0] + win_pos.x - self.mouse_clicked[0];
-                win_pos.y = position[1] + win_pos.y - self.mouse_clicked[1];
+                win_pos.x += position.x - self.mouse_clicked.x;
+                win_pos.y += (position.y - self.mouse_clicked.y) * -1.0;
                 renderer.window_mut().set_outer_position(
                     PhysicalPosition::new(win_pos.x, win_pos.y),
                 );

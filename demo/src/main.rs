@@ -313,6 +313,8 @@ async fn main() -> Result<(), AscendingError> {
     });
 
     UI::set_action(&button, UiFlags::AlwaysUseable);
+    UI::set_action(&button, UiFlags::CanFocus);
+    UI::set_action(&button, UiFlags::CanMoveWindow);
 
     ui.add_user_callback(
         CallBacks::MousePress(mouse_button),

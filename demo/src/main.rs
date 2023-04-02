@@ -355,7 +355,7 @@ async fn main() -> Result<(), AscendingError> {
     let mut frame_time = FrameTime::new();
     let mut time = 0.0f32;
     let mut fps = 0u32;
-    let mut mouse_pos = Vec2::default();
+    //let mut mouse_pos = Vec2::default();
 
     #[allow(deprecated)]
     event_loop.run(move |event, _, control_flow| {
@@ -391,10 +391,10 @@ async fn main() -> Result<(), AscendingError> {
         input_handler.update(renderer.window(), &event, 1.0);
         ui.handle_events(&mut renderer, &event, 1.0, &mut state);
 
-        mouse_pos = {
+        /*mouse_pos = {
             let pos = input_handler.mouse_position().unwrap_or((0.0, 0.0));
             Vec2::new(pos.0, size.height - pos.1)
-        };
+        };*/
 
         if !renderer.update(&event).unwrap() {
             return;

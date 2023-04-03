@@ -141,7 +141,6 @@ impl<Message: Clone> UI<Message> {
         &mut self,
         renderer: &mut GpuRenderer,
         control: &WidgetRef<Message>,
-        events: &mut Vec<Message>,
     ) {
         let handle = control.borrow().id;
 
@@ -175,13 +174,12 @@ impl<Message: Clone> UI<Message> {
                     renderer,
                     &self.get_widget(focused_handle),
                     false,
-                    events,
                 );
             }
 
             control.borrow_mut().actions.set(UiFlags::IsFocused);
             self.focused = Some(handle);
-            self.widget_focused_callback(renderer, control, true, events);
+            self.widget_focused_callback(renderer, control, true);
         }
     }
 
@@ -206,7 +204,7 @@ impl<Message: Clone> UI<Message> {
         if !self.widget_is_focused(control) && self.focused.is_some() {
             let focused = self.get_widget(self.focused.unwrap());
 
-            self.widget_manual_focus(renderer, &focused, &mut vec![]);
+            self.widget_manual_focus(renderer, &focused);
         }
     }
 
@@ -402,7 +400,6 @@ impl<Message: Clone> UI<Message> {
         renderer: &mut GpuRenderer,
         control: &WidgetRef<Message>,
         focused: bool,
-        events: &mut Vec<Message>,
     ) {
         let mut control = control.borrow_mut();
         let actions = control.actions;
@@ -411,7 +408,7 @@ impl<Message: Clone> UI<Message> {
             self.ui_buffer_mut(),
             renderer,
             SystemEvent::FocusChange(focused),
-            events,
+            &mut vec![],
         );
     }
 
@@ -509,10 +506,10 @@ impl<Message: Clone> UI<Message> {
 
         if let Some(focused_handle) = self.focused {
             let focused = self.get_widget(focused_handle);
-            self.widget_focused_callback(renderer, &focused, false, events);
+            self.widget_focused_callback(renderer, &focused, false);
         }
 
-        self.widget_focused_callback(renderer, control, true, events);
+        self.widget_focused_callback(renderer, control, true);
         self.widget_set_clicked(renderer, control, events);
     }
 
@@ -535,7 +532,7 @@ impl<Message: Clone> UI<Message> {
                 if parent.borrow().actions.get(UiFlags::IsFocused) {
                     return true;
                 } else {
-                    self.widget_manual_focus(renderer, &parent, events);
+                    self.widget_manual_focus(renderer, &parent);
 
                     if parent.borrow().actions.get(UiFlags::FocusClick) {
                         self.widget_set_clicked(renderer, &parent, events);

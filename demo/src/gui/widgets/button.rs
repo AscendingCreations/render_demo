@@ -176,18 +176,4 @@ impl<Message: Clone> Control<Message> for Button<Message> {
         ui_buffer.ui_buffer.add_buffer_store(renderer, index);
         Ok(())
     }
-
-    fn into_widget(self) -> WidgetRef<Message>
-    where
-        Self: std::marker::Sized + 'static,
-    {
-        let actions: Vec<UiFlags> = Self::default_actions(&self);
-        let mut widget = Widget::new(self);
-
-        for action in actions {
-            widget.actions.set(action);
-        }
-
-        widget.into()
-    }
 }

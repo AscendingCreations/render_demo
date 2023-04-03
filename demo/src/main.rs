@@ -77,7 +77,7 @@ impl log::Log for MyLogger {
     fn flush(&self) {}
 }
 
-fn mouse_button<T>(
+/*fn mouse_button<T>(
     control: &mut Widget<T>,
     _ui: &mut UI<T>,
     _device: &mut GpuRenderer,
@@ -102,7 +102,7 @@ fn mouse_button<T>(
         }
         state.sprites[0].changed = true;
     }
-}
+}*/
 
 #[tokio::main]
 async fn main() -> Result<(), AscendingError> {
@@ -316,10 +316,6 @@ async fn main() -> Result<(), AscendingError> {
     UI::set_action(&button, UiFlags::CanFocus);
     UI::set_action(&button, UiFlags::CanMoveWindow);
 
-    ui.add_user_callback(
-        CallBacks::MousePress(mouse_button),
-        UI::get_callback_key(&button, CallBack::MousePress),
-    );
     ui.add_widget_by_id(None, button);
     ui.add_widget_by_id(
         Some(Identity {

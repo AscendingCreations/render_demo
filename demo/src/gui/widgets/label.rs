@@ -1,35 +1,19 @@
 use crate::{
-    CallBack, CallBackKey, Control, FrameTime, Identity, InternalCallBacks,
-    Metrics, ModifiersState, MouseButton, TextBounds, UIBuffer, UiFlags,
-    Widget, WidgetRef, UI,
+    Control, Event, FrameTime, Identity, Metrics, ModifiersState, MouseButton,
+    SystemEvent, TextBounds, UIBuffer, UiField, UiFlags, Widget, WidgetRef, UI,
 };
 use cosmic_text::Attrs;
 use graphics::*;
 
 pub struct Label {
+    identity: Identity,
     text: Text,
-}
-
-fn draw<T>(
-    control: &mut Widget<T>,
-    ui: &mut UI<T>,
-    renderer: &mut GpuRenderer,
-    _time: &FrameTime,
-) {
-    if let Some(label) =
-        control.ui.as_mut().as_mut_any().downcast_mut::<Label>()
-    {
-        let ui_buffer = ui.ui_buffer_mut();
-        ui_buffer
-            .text_renderer
-            .text_update(&mut label.text, &mut ui_buffer.text_atlas, renderer)
-            .unwrap();
-    }
 }
 
 impl Label {
     pub fn new(
         renderer: &mut GpuRenderer,
+        identity: Identity,
         metrics: Option<Metrics>,
         pos: Vec3,
         size: Vec2,
@@ -47,7 +31,7 @@ impl Label {
         text.set_text(renderer, &value, attrs);
         text.set_buffer_size(renderer, size.x as i32, size.y as i32);
 
-        Self { text }
+        Self { identity, text }
     }
 
     pub fn set_default_color(&mut self, default_color: Color) -> &mut Self {
@@ -61,7 +45,11 @@ impl Label {
     }
 }
 
-impl<T: 'static> Control<T> for Label {
+impl<T: 'static, Message: Clone> Control<T, Message> for Label {
+    fn get_id(&self) -> &Identity {
+        &self.identity
+    }
+
     fn check_mouse_bounds(&self, mouse_pos: Vec2) -> bool {
         self.text.check_mouse_bounds(mouse_pos)
     }
@@ -85,17 +73,30 @@ impl<T: 'static> Control<T> for Label {
         self.text.pos = position;
     }
 
-    fn get_internal_callbacks(
-        &self,
-        id: &Identity,
-    ) -> Vec<(InternalCallBacks<T>, CallBackKey)> {
-        vec![(
-            InternalCallBacks::Draw(draw),
-            CallBackKey::new(id, CallBack::Draw),
-        )]
-    }
-
     fn default_actions(&self) -> Vec<UiFlags> {
         vec![UiFlags::CanClickBehind]
+    }
+
+    fn event(
+        &mut self,
+        _actions: &UiField,
+        _ui_buffer: &mut UIBuffer,
+        _renderer: &mut GpuRenderer,
+        _event: SystemEvent,
+        _events: &mut Vec<Message>,
+    ) {
+    }
+
+    fn draw(
+        &mut self,
+        ui_buffer: &mut UIBuffer,
+        renderer: &mut GpuRenderer,
+        _frametime: &FrameTime,
+    ) -> Result<(), AscendingError> {
+        ui_buffer.text_renderer.text_update(
+            &mut self.text,
+            &mut ui_buffer.text_atlas,
+            renderer,
+        )
     }
 }

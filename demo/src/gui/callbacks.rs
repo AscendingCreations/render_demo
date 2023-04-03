@@ -7,36 +7,19 @@ use std::{cell::RefCell, collections::VecDeque, rc::Rc, vec::Vec};
 use ubits::bitfield;
 use winit::event::{KeyboardInput, ModifiersState, MouseButton};
 
-#[derive(Eq, PartialEq, Hash, Clone)]
-pub struct CallBackKey {
-    identity: Identity,
-    callback: CallBack,
-}
-
-impl CallBackKey {
-    pub(crate) fn new(identity: &Identity, callback: CallBack) -> Self {
-        Self {
-            identity: identity.to_owned(),
-            callback,
-        }
-    }
-}
-
-#[derive(Eq, PartialEq, Hash, Clone)]
-pub enum CallBack {
-    Draw,
-    MousePresent,
-    MouseScroll,
-    MousePress,
-    KeyPress,
+#[derive(Clone)]
+pub enum SystemEvent {
+    MousePresent(bool),
+    MouseScroll(f32, f32, ModifiersState),
+    MousePress(MouseButton, bool, ModifiersState),
+    KeyPress(KeyboardInput, ModifiersState),
     PositionChange,
     BoundsChange,
-    FocusChange,
-    ValueChanged,
+    FocusChange(bool),
 }
 
-pub type InternalDrawRef<T> =
-    fn(&mut Widget<T>, &mut UI<T>, &mut GpuRenderer, &FrameTime);
+/*pub type InternalDrawRef<T> =
+    fn(&mut Widget<T>, &mut UI<T>, );
 pub type InternalBooleanRef<T> =
     fn(&mut Widget<T>, &mut UI<T>, &mut GpuRenderer, bool);
 pub type InternalMouseScrollRef<T> = fn(
@@ -75,11 +58,11 @@ pub enum InternalCallBacks<T> {
     FocusChange(InternalBooleanRef<T>),
 }
 
-pub type DrawRef<T> = 
+pub type DrawRef<T> =
     fn(&mut Widget<T>, &mut UI<T>, &mut GpuRenderer, &FrameTime, &mut T);
 pub type MousePresentRef<T> =
     fn(&mut Widget<T>, &mut UI<T>, &mut GpuRenderer, bool, &mut T);
-pub type MouseScrollRef<T> = 
+pub type MouseScrollRef<T> =
     fn(
         &mut Widget<T>,
         &mut UI<T>,
@@ -88,7 +71,7 @@ pub type MouseScrollRef<T> =
         ModifiersState,
         &mut T,
     );
-pub type MousePressRef<T> = 
+pub type MousePressRef<T> =
     fn(
         &mut Widget<T>,
         &mut UI<T>,
@@ -98,7 +81,7 @@ pub type MousePressRef<T> =
         ModifiersState,
         &mut T,
     );
-pub type KeyPressRef<T> = 
+pub type KeyPressRef<T> =
     fn(
         &mut Widget<T>,
         &mut UI<T>,
@@ -107,7 +90,7 @@ pub type KeyPressRef<T> =
         ModifiersState,
         &mut T,
     );
-pub type ValueChangedRef<T> = 
+pub type ValueChangedRef<T> =
     fn(&mut Widget<T>, &mut UI<T>, &mut GpuRenderer, ReturnValue, &mut T);
 
 #[derive(Copy, Clone)]
@@ -119,3 +102,4 @@ pub enum CallBacks<T> {
     KeyPress(KeyPressRef<T>),
     ValueChanged(ValueChangedRef<T>),
 }
+*/

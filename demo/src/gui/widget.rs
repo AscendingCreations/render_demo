@@ -1,4 +1,4 @@
-use crate::{CallBack, InternalCallBacks, UIBuffer};
+use crate::{SystemEvent, UIBuffer, UI};
 use graphics::*;
 use input::FrameTime;
 use std::any::Any;
@@ -7,9 +7,7 @@ use ubits::bitfield;
 use wgpu::StencilFaceState;
 use winit::event::{KeyboardInput, ModifiersState};
 
-use super::CallBackKey;
-
-pub type WidgetRef<T> = Rc<RefCell<Widget<T>>>;
+pub type WidgetRef<T, Message> = Rc<RefCell<Widget<T, Message>>>;
 
 #[derive(Eq, PartialEq, Hash, Copy, Clone)]
 pub struct Handle(pub(crate) usize);
@@ -55,19 +53,51 @@ bitfield! {
     }
 }
 
-pub trait Control<T> {
+pub trait UserInterface<T, Message: Clone> {
+    fn event(
+        &mut self,
+        ui: &mut UI<T, Message>,
+        renderer: &mut GpuRenderer,
+        event: Message,
+    );
+}
+
+pub trait Control<T, Message: Clone> {
+    /// Widgets Name and user given ID All widgets must contain this.
+    fn get_id(&self) -> &Identity;
+
     fn check_mouse_bounds(&self, mouse_pos: Vec2) -> bool;
+
     fn get_bounds(&self) -> Vec4;
+
     fn get_size(&self) -> Vec2;
+
     fn get_position(&mut self) -> Vec3;
+
     fn set_position(&mut self, position: Vec3);
 
-    fn into_widget(self, id: Identity) -> WidgetRef<T>
+    fn event(
+        &mut self,
+        actions: UiField,
+        ui_buffer: &mut UIBuffer,
+        renderer: &mut GpuRenderer,
+        event: SystemEvent,
+        events: &mut Vec<Message>,
+    );
+
+    fn draw(
+        &mut self,
+        ui_buffer: &mut UIBuffer,
+        renderer: &mut GpuRenderer,
+        frametime: &FrameTime,
+    ) -> Result<(), AscendingError>;
+
+    fn into_widget(self, id: Identity) -> WidgetRef<T, Message>
     where
         Self: std::marker::Sized + 'static,
     {
         let actions = self.default_actions();
-        let mut widget = Widget::new(id, self);
+        let mut widget = Widget::new(self);
 
         for action in actions {
             widget.actions.set(action);
@@ -76,19 +106,17 @@ pub trait Control<T> {
         widget.into()
     }
 
-    fn get_internal_callbacks(
-        &self,
-        id: &Identity,
-    ) -> Vec<(InternalCallBacks<T>, CallBackKey)>;
     fn default_actions(&self) -> Vec<UiFlags>;
 }
 
-pub trait AnyData<T>: Control<T> {
+pub trait AnyData<T, Message: Clone>: Control<T, Message> {
     fn as_any(&self) -> &dyn Any;
     fn as_mut_any(&mut self) -> &mut dyn Any;
 }
 
-impl<T, U: Any + Control<T>> AnyData<T> for U {
+impl<T, Message: Clone, U: Any + Control<T, Message>> AnyData<T, Message>
+    for U
+{
     fn as_any(&self) -> &dyn Any {
         self
     }
@@ -100,15 +128,13 @@ impl<T, U: Any + Control<T>> AnyData<T> for U {
 
 /// TODO: Make Bounds Updater that will Update all the internal Bounds based on
 /// Parents Bounds if they got changed or if the childrens positions changed.
-pub struct Widget<T> {
+pub struct Widget<T, Message: Clone> {
     /// System Granted ID.
     pub id: Handle,
-    /// Widgets Name and user given ID.
-    pub identity: Identity,
     /// Used to Calculate and set the internal bounds of the widgets Data.
     pub bounds: Bounds,
     /// The UI holder for the Specific Widget.
-    pub ui: Box<dyn AnyData<T>>,
+    pub ui: Box<dyn AnyData<T, Message>>,
     ///If none then it is the Top most in the widget Tree.
     pub parent: Option<Handle>,
     ///The visible children in the Tree.
@@ -119,13 +145,9 @@ pub struct Widget<T> {
     pub actions: UiField,
 }
 
-impl<T> Widget<T> {
-    pub fn new(
-        identity: Identity,
-        control: (impl AnyData<T> + 'static),
-    ) -> Self {
+impl<T, Message: Clone> Widget<T, Message> {
+    pub fn new(control: (impl AnyData<T, Message> + 'static)) -> Self {
         Self {
-            identity,
             ui: Box::new(control),
             bounds: Bounds::default(),
             id: Handle(0),
@@ -142,17 +164,13 @@ impl<T> Widget<T> {
         self.hidden.clear();
     }
 
-    pub fn callback_key(&self, callback: CallBack) -> CallBackKey {
-        CallBackKey::new(&self.identity, callback)
-    }
-
     pub fn get_identity(&self) -> Identity {
-        self.identity.clone()
+        self.ui.get_id().clone()
     }
 }
 
-impl<T> From<Widget<T>> for WidgetRef<T> {
-    fn from(widget: Widget<T>) -> Self {
+impl<T, Message: Clone> From<Widget<T, Message>> for WidgetRef<T, Message> {
+    fn from(widget: Widget<T, Message>) -> Self {
         Rc::new(RefCell::new(widget))
     }
 }

@@ -1,6 +1,6 @@
 use crate::{
-    CallBack, CallBackKey, CallBacks, FrameTime, GpuRenderer, Handle, Identity,
-    InternalCallBacks, UIBuffer, UiFlags, Widget, WidgetRef, UI,
+    FrameTime, GpuRenderer, Handle, Identity, SystemEvent, UIBuffer, UiFlags,
+    UserInterface, Widget, WidgetRef, UI,
 };
 use graphics::*;
 use slab::Slab;
@@ -21,34 +21,24 @@ use winit::{
     window::Window,
 };
 
-impl<T> UI<T> {
+impl<T, Message: Clone> UI<T, Message> {
     pub fn event_draw(
         &mut self,
         renderer: &mut GpuRenderer,
         time: &FrameTime,
-        user_data: &mut T,
-    ) {
+    ) -> Result<(), AscendingError> {
         for handle in &self.zlist.clone() {
             let widget = self.get_widget(*handle);
 
-            let key = widget.borrow().callback_key(CallBack::Draw);
+            let key = widget.borrow().callback_key(Event::Draw);
             let mut mut_wdgt = widget.borrow_mut();
 
-            if let Some(callback) = self.get_inner_callback(&key) {
-                if let InternalCallBacks::Draw(draw) = callback {
-                    draw(&mut mut_wdgt, self, renderer, time);
-                }
-            }
-
-            if let Some(callback) = self.get_user_callback(&key) {
-                if let CallBacks::Draw(draw) = callback {
-                    draw(&mut mut_wdgt, self, renderer, time, user_data);
-                }
-            }
+            mut_wdgt.ui.draw(self.ui_buffer_mut(), renderer, time)?;
         }
 
         self.ui_buffer_mut().ui_buffer.finalize(renderer);
         self.ui_buffer_mut().text_renderer.finalize(renderer);
+        Ok(())
     }
 
     pub fn event_mouse_position(
@@ -56,7 +46,7 @@ impl<T> UI<T> {
         renderer: &mut GpuRenderer,
         position: Vec2,
         screensize: Vec2,
-        user_data: &mut T,
+        events: &mut Vec<Message>,
     ) {
         self.new_mouse_pos = position;
 
@@ -105,7 +95,7 @@ impl<T> UI<T> {
                 }
             }
 
-            self.mouse_over_event(renderer, user_data);
+            self.mouse_over_event(renderer, events);
         }
 
         self.mouse_pos = position;
@@ -116,15 +106,15 @@ impl<T> UI<T> {
         renderer: &mut GpuRenderer,
         button: MouseButton,
         pressed: bool,
-        user_data: &mut T,
+        events: &mut Vec<Message>,
     ) {
         self.button = button;
         self.mouse_clicked = self.mouse_pos;
 
         if pressed {
-            self.mouse_press(renderer, user_data);
+            self.mouse_press(renderer, events);
         } else {
-            self.mouse_release(renderer, user_data);
+            self.mouse_release(renderer, events);
         }
     }
 
@@ -138,7 +128,11 @@ impl<T> UI<T> {
         event: &Event<()>,
         hidpi: f32,
         user_data: &mut T,
-    ) {
+    ) where
+        T: UserInterface<T, Message>,
+    {
+        let mut events: Vec<Message> = Vec::new();
+
         match *event {
             Event::WindowEvent {
                 ref event,
@@ -157,7 +151,10 @@ impl<T> UI<T> {
                 WindowEvent::MouseInput { state, button, .. } => {
                     let pressed = *state == ElementState::Pressed;
                     self.event_mouse_button(
-                        renderer, *button, pressed, user_data,
+                        renderer,
+                        *button,
+                        pressed,
+                        &mut events,
                     );
                 }
                 WindowEvent::CursorMoved {
@@ -173,7 +170,7 @@ impl<T> UI<T> {
                         renderer,
                         pos,
                         Vec2::new(size.width, size.height),
-                        user_data,
+                        &mut events,
                     );
                 }
                 _ => (),

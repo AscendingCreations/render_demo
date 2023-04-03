@@ -1,4 +1,4 @@
-use crate::{UserInterface, UI};
+use crate::UI;
 use cosmic_text::{CacheKey, FontSystem};
 use graphics::*;
 use std::collections::HashMap;

@@ -1,6 +1,6 @@
 use crate::{
     FrameTime, GpuRenderer, Handle, Identity, SystemEvent, UIBuffer, UiFlags,
-    UserInterface, Widget, WidgetRef, UI,
+    Widget, WidgetRef, UI,
 };
 use graphics::*;
 use slab::Slab;

@@ -53,16 +53,6 @@ bitfield! {
     }
 }
 
-pub trait UserInterface {
-    type Message: Clone;
-    fn event(
-        &mut self,
-        ui: &mut UI<Self::Message>,
-        renderer: &mut GpuRenderer,
-        event: Self::Message,
-    );
-}
-
 pub trait Control<Message: Clone> {
     /// Widgets Name and user given ID All widgets must contain this.
     fn get_id(&self) -> &Identity;

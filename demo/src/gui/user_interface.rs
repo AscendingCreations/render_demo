@@ -18,10 +18,10 @@ use winit::window::Window;
 pub mod events;
 pub mod internals;
 
-pub struct UI<T, Message: Clone> {
+pub struct UI<Message: Clone> {
     ui_buffer: UIBuffer,
     name_map: HashMap<Identity, Handle>,
-    widgets: Slab<WidgetRef<T, Message>>,
+    widgets: Slab<WidgetRef<Message>>,
     ///Contains All Visible widgets in rendering order
     zlist: VecDeque<Handle>,
     ///The Visible Top widgets.
@@ -41,7 +41,7 @@ pub struct UI<T, Message: Clone> {
     modifier: ModifiersState,
 }
 
-impl<T, Message: Clone> UI<T, Message> {
+impl<Message: Clone> UI<Message> {
     pub fn new(ui_buffer: UIBuffer) -> Self {
         UI {
             ui_buffer,
@@ -71,14 +71,14 @@ impl<T, Message: Clone> UI<T, Message> {
         &mut self.ui_buffer
     }
 
-    pub fn get_widget(&self, handle: Handle) -> WidgetRef<T, Message> {
+    pub fn get_widget(&self, handle: Handle) -> WidgetRef<Message> {
         self.widgets
             .get(handle.get_key())
             .expect("ID Existed but widget does not exist?")
             .clone()
     }
 
-    pub fn get_widget_by_id(&self, id: Identity) -> WidgetRef<T, Message> {
+    pub fn get_widget_by_id(&self, id: Identity) -> WidgetRef<Message> {
         let handle = self.name_map.get(&id).unwrap();
         self.widgets
             .get(handle.get_key())
@@ -86,7 +86,7 @@ impl<T, Message: Clone> UI<T, Message> {
             .clone()
     }
 
-    pub fn set_action(widget: &WidgetRef<T, Message>, action: UiFlags) {
+    pub fn set_action(widget: &WidgetRef<Message>, action: UiFlags) {
         widget.borrow_mut().actions.set(action);
     }
 
@@ -128,7 +128,7 @@ impl<T, Message: Clone> UI<T, Message> {
     pub fn add_widget_by_handle(
         &mut self,
         parent_handle: Option<Handle>,
-        control: WidgetRef<T, Message>,
+        control: WidgetRef<Message>,
     ) {
         if let Some(handle) = parent_handle {
             self.widget_add(Some(&self.get_widget(handle)), control);
@@ -140,7 +140,7 @@ impl<T, Message: Clone> UI<T, Message> {
     pub fn add_widget_by_id(
         &mut self,
         parent_id: Option<Identity>,
-        control: WidgetRef<T, Message>,
+        control: WidgetRef<Message>,
     ) {
         if let Some(id) = parent_id {
             let handle = self.name_map.get(&id).unwrap();
@@ -153,7 +153,7 @@ impl<T, Message: Clone> UI<T, Message> {
     pub fn add_hidden_widget_by_handle(
         &mut self,
         parent_handle: Option<Handle>,
-        control: WidgetRef<T, Message>,
+        control: WidgetRef<Message>,
     ) {
         if let Some(handle) = parent_handle {
             self.widget_add_hidden(Some(&self.get_widget(handle)), control);
@@ -165,7 +165,7 @@ impl<T, Message: Clone> UI<T, Message> {
     pub fn add_hidden_widget_by_id(
         &mut self,
         parent_id: Option<Identity>,
-        control: WidgetRef<T, Message>,
+        control: WidgetRef<Message>,
     ) {
         if let Some(id) = parent_id {
             let handle = self.name_map.get(&id).unwrap();

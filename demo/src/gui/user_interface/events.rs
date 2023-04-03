@@ -21,7 +21,7 @@ use winit::{
     window::Window,
 };
 
-impl<T, Message: Clone> UI<T, Message> {
+impl<Message: Clone> UI<Message> {
     pub fn event_draw(
         &mut self,
         renderer: &mut GpuRenderer,
@@ -30,10 +30,11 @@ impl<T, Message: Clone> UI<T, Message> {
         for handle in &self.zlist.clone() {
             let widget = self.get_widget(*handle);
 
-            let key = widget.borrow().callback_key(Event::Draw);
-            let mut mut_wdgt = widget.borrow_mut();
-
-            mut_wdgt.ui.draw(self.ui_buffer_mut(), renderer, time)?;
+            widget.borrow_mut().ui.draw(
+                self.ui_buffer_mut(),
+                renderer,
+                time,
+            )?;
         }
 
         self.ui_buffer_mut().ui_buffer.finalize(renderer);
@@ -127,10 +128,7 @@ impl<T, Message: Clone> UI<T, Message> {
         renderer: &mut GpuRenderer,
         event: &Event<()>,
         hidpi: f32,
-        user_data: &mut T,
-    ) where
-        T: UserInterface<T, Message>,
-    {
+    ) -> Vec<Message> {
         let mut events: Vec<Message> = Vec::new();
 
         match *event {
@@ -207,5 +205,7 @@ impl<T, Message: Clone> UI<T, Message> {
             },
             _ => (),
         }
+
+        events
     }
 }

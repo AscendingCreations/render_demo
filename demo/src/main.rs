@@ -104,6 +104,11 @@ impl log::Log for MyLogger {
     }
 }*/
 
+#[derive(Clone)]
+pub enum Messages {
+    ButtonClick(Identity, (MouseButton, bool, ModifiersState)),
+}
+
 #[tokio::main]
 async fn main() -> Result<(), AscendingError> {
     log::set_logger(&MY_LOGGER).unwrap();
@@ -280,22 +285,28 @@ async fn main() -> Result<(), AscendingError> {
 
     text.set_buffer_size(&mut renderer, size.width as i32, size.height as i32);
 
-    let mut ui = UI::<State<FlatControls>>::new(ui_buffer);
+    let mut ui = UI::<Messages>::new(ui_buffer);
     let button = Button::new(
         ui.ui_buffer_mut(),
         &mut renderer,
+        Identity {
+            name: "button".to_string(),
+            id: 1,
+        },
         Vec3::new(60.0, 300.0, 1.1),
         Vec2::new(155.0, 25.0),
         1.0,
         Some(5.0),
+        Messages::ButtonClick,
     )
-    .into_widget(Identity {
-        name: "button".to_string(),
-        id: 1,
-    });
+    .into_widget();
 
     let mut label = Label::new(
         &mut renderer,
+        Identity {
+            name: "label".to_string(),
+            id: 1,
+        },
         Some(Metrics::new(16.0, 16.0).scale(scale as f32)),
         Vec3::new(60.0, 300.0, 1.0),
         Vec2::new(150.0, 25.0),
@@ -307,11 +318,6 @@ async fn main() -> Result<(), AscendingError> {
         .set_default_color(Color::rgba(255, 255, 255, 255))
         .set_offset(Vec2::new(5.0, -5.0));
 
-    let label = label.into_widget(Identity {
-        name: "label".to_string(),
-        id: 1,
-    });
-
     UI::set_action(&button, UiFlags::AlwaysUseable);
     UI::set_action(&button, UiFlags::CanFocus);
     UI::set_action(&button, UiFlags::CanMoveWindow);
@@ -322,7 +328,7 @@ async fn main() -> Result<(), AscendingError> {
             name: "button".to_string(),
             id: 1,
         }),
-        label,
+        label.into_widget(),
     );
 
     renderer.window().set_visible(true);
@@ -387,8 +393,11 @@ async fn main() -> Result<(), AscendingError> {
         }
 
         input_handler.update(renderer.window(), &event, 1.0);
-        ui.handle_events(&mut renderer, &event, 1.0, &mut state);
+        let events = ui.handle_events(&mut renderer, &event, 1.0);
 
+        for event in events {
+            state.event(&mut ui, &mut renderer, event);
+        }
         /*mouse_pos = {
             let pos = input_handler.mouse_position().unwrap_or((0.0, 0.0));
             Vec2::new(pos.0, size.height - pos.1)
@@ -442,7 +451,7 @@ async fn main() -> Result<(), AscendingError> {
             .rect_update(&mut state.rects, &mut renderer);
         state.rects_renderer.finalize(&mut renderer);
 
-        ui.event_draw(&mut renderer, &frame_time, &mut state);
+        ui.event_draw(&mut renderer, &frame_time).unwrap();
         // Start encoding commands.
         let mut encoder = renderer.device().create_command_encoder(
             &wgpu::CommandEncoderDescriptor {

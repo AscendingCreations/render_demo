@@ -6,7 +6,9 @@ use graphics::*;
 
 pub struct Button<Message> {
     identity: Identity,
-    on_press: Box<dyn Fn(Identity, SystemEvent) -> Message>,
+    #[allow(clippy::type_complexity)]
+    on_press:
+        Box<dyn Fn(Identity, (MouseButton, bool, ModifiersState)) -> Message>,
     over_color: Color,
     clicked_color: Color,
     color: Color,
@@ -17,6 +19,7 @@ pub struct Button<Message> {
 }
 
 impl<Message> Button<Message> {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
@@ -25,7 +28,8 @@ impl<Message> Button<Message> {
         size: Vec2,
         border_width: f32,
         radius: Option<f32>,
-        on_press: impl Fn(Identity, SystemEvent) -> Message,
+        on_press: impl Fn(Identity, (MouseButton, bool, ModifiersState)) -> Message
+            + 'static,
     ) -> Button<Message> {
         let mut shape = Rect::new(renderer);
 
@@ -59,7 +63,7 @@ impl<Message> Button<Message> {
     }
 }
 
-impl<T: 'static, Message: Clone> Control<T, Message> for Button<Message> {
+impl<Message: Clone> Control<Message> for Button<Message> {
     fn get_id(&self) -> &Identity {
         &self.identity
     }
@@ -93,7 +97,7 @@ impl<T: 'static, Message: Clone> Control<T, Message> for Button<Message> {
 
     fn event(
         &mut self,
-        actions: &UiField,
+        actions: UiField,
         ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
         event: SystemEvent,
@@ -117,7 +121,7 @@ impl<T: 'static, Message: Clone> Control<T, Message> for Button<Message> {
                         },
                     );
             }
-            SystemEvent::MousePress(mouse_btn, is_pressed, _mods) => {
+            SystemEvent::MousePress(mouse_btn, is_pressed, mods) => {
                 let mouse_over = actions.get(crate::gui::UiFlags::MouseOver);
 
                 if mouse_btn == MouseButton::Left {
@@ -125,10 +129,9 @@ impl<T: 'static, Message: Clone> Control<T, Message> for Button<Message> {
                         let colors = if is_pressed {
                             events.push((self.on_press)(
                                 self.identity.clone(),
-                                event,
-                            ))(
-                                self.clicked_color, self.border_clicked_color
-                            )
+                                (mouse_btn, is_pressed, mods),
+                            ));
+                            (self.clicked_color, self.border_clicked_color)
                         } else {
                             (self.over_color, self.border_over_color)
                         };
@@ -170,7 +173,21 @@ impl<T: 'static, Message: Clone> Control<T, Message> for Button<Message> {
         _frametime: &FrameTime,
     ) -> Result<(), AscendingError> {
         let index = self.shape.update(renderer);
-        ui_buffer.add_buffer_store(renderer, index);
+        ui_buffer.ui_buffer.add_buffer_store(renderer, index);
         Ok(())
+    }
+
+    fn into_widget(self) -> WidgetRef<Message>
+    where
+        Self: std::marker::Sized + 'static,
+    {
+        let actions: Vec<UiFlags> = Self::default_actions(&self);
+        let mut widget = Widget::new(self);
+
+        for action in actions {
+            widget.actions.set(action);
+        }
+
+        widget.into()
     }
 }

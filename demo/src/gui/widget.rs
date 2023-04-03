@@ -7,7 +7,7 @@ use ubits::bitfield;
 use wgpu::StencilFaceState;
 use winit::event::{KeyboardInput, ModifiersState};
 
-pub type WidgetRef<T, Message> = Rc<RefCell<Widget<T, Message>>>;
+pub type WidgetRef<Message> = Rc<RefCell<Widget<Message>>>;
 
 #[derive(Eq, PartialEq, Hash, Copy, Clone)]
 pub struct Handle(pub(crate) usize);
@@ -53,16 +53,17 @@ bitfield! {
     }
 }
 
-pub trait UserInterface<T, Message: Clone> {
+pub trait UserInterface {
+    type Message: Clone;
     fn event(
         &mut self,
-        ui: &mut UI<T, Message>,
+        ui: &mut UI<Self::Message>,
         renderer: &mut GpuRenderer,
-        event: Message,
+        event: Self::Message,
     );
 }
 
-pub trait Control<T, Message: Clone> {
+pub trait Control<Message: Clone> {
     /// Widgets Name and user given ID All widgets must contain this.
     fn get_id(&self) -> &Identity;
 
@@ -92,7 +93,7 @@ pub trait Control<T, Message: Clone> {
         frametime: &FrameTime,
     ) -> Result<(), AscendingError>;
 
-    fn into_widget(self, id: Identity) -> WidgetRef<T, Message>
+    fn into_widget(self) -> WidgetRef<Message>
     where
         Self: std::marker::Sized + 'static,
     {
@@ -109,14 +110,12 @@ pub trait Control<T, Message: Clone> {
     fn default_actions(&self) -> Vec<UiFlags>;
 }
 
-pub trait AnyData<T, Message: Clone>: Control<T, Message> {
+pub trait AnyData<Message: Clone>: Control<Message> {
     fn as_any(&self) -> &dyn Any;
     fn as_mut_any(&mut self) -> &mut dyn Any;
 }
 
-impl<T, Message: Clone, U: Any + Control<T, Message>> AnyData<T, Message>
-    for U
-{
+impl<Message: Clone, U: Any + Control<Message>> AnyData<Message> for U {
     fn as_any(&self) -> &dyn Any {
         self
     }
@@ -128,13 +127,13 @@ impl<T, Message: Clone, U: Any + Control<T, Message>> AnyData<T, Message>
 
 /// TODO: Make Bounds Updater that will Update all the internal Bounds based on
 /// Parents Bounds if they got changed or if the childrens positions changed.
-pub struct Widget<T, Message: Clone> {
+pub struct Widget<Message: Clone> {
     /// System Granted ID.
     pub id: Handle,
     /// Used to Calculate and set the internal bounds of the widgets Data.
     pub bounds: Bounds,
     /// The UI holder for the Specific Widget.
-    pub ui: Box<dyn AnyData<T, Message>>,
+    pub ui: Box<dyn AnyData<Message>>,
     ///If none then it is the Top most in the widget Tree.
     pub parent: Option<Handle>,
     ///The visible children in the Tree.
@@ -145,8 +144,8 @@ pub struct Widget<T, Message: Clone> {
     pub actions: UiField,
 }
 
-impl<T, Message: Clone> Widget<T, Message> {
-    pub fn new(control: (impl AnyData<T, Message> + 'static)) -> Self {
+impl<Message: Clone> Widget<Message> {
+    pub fn new(control: (impl AnyData<Message> + 'static)) -> Self {
         Self {
             ui: Box::new(control),
             bounds: Bounds::default(),
@@ -169,8 +168,8 @@ impl<T, Message: Clone> Widget<T, Message> {
     }
 }
 
-impl<T, Message: Clone> From<Widget<T, Message>> for WidgetRef<T, Message> {
-    fn from(widget: Widget<T, Message>) -> Self {
+impl<Message: Clone> From<Widget<Message>> for WidgetRef<Message> {
+    fn from(widget: Widget<Message>) -> Self {
         Rc::new(RefCell::new(widget))
     }
 }

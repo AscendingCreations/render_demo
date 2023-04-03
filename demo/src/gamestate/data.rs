@@ -1,6 +1,8 @@
+use crate::{UserInterface, UI};
 use cosmic_text::{CacheKey, FontSystem};
 use graphics::*;
 use std::collections::HashMap;
+use winit::event::MouseButton;
 
 use crate::gui::RenderWidgets;
 
@@ -25,6 +27,26 @@ where
     pub sprite_renderer: ImageRenderer,
     pub rects_renderer: RectRenderer,
     pub map_renderer: MapRenderer,
+}
+
+impl<Controls> State<Controls>
+where
+    Controls: camera::controls::Controls,
+{
+    pub fn event(
+        &mut self,
+        _ui: &mut UI<crate::Messages>,
+        _renderer: &mut GpuRenderer,
+        event: crate::Messages,
+    ) {
+        match event {
+            crate::Messages::ButtonClick(_id, (btn, clicked, _modifier)) => {
+                if btn == MouseButton::Left && clicked {
+                    println!("Pressed");
+                }
+            }
+        }
+    }
 }
 
 impl<Controls> Pass<crate::UIBuffer> for State<Controls>

@@ -45,7 +45,7 @@ impl Label {
     }
 }
 
-impl<T: 'static, Message: Clone> Control<T, Message> for Label {
+impl<Message: Clone> Control<Message> for Label {
     fn get_id(&self) -> &Identity {
         &self.identity
     }
@@ -79,7 +79,7 @@ impl<T: 'static, Message: Clone> Control<T, Message> for Label {
 
     fn event(
         &mut self,
-        _actions: &UiField,
+        _actions: UiField,
         _ui_buffer: &mut UIBuffer,
         _renderer: &mut GpuRenderer,
         _event: SystemEvent,

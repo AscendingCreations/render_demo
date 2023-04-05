@@ -15,7 +15,7 @@ use std::{
 use winit::event::{KeyboardInput, ModifiersState};
 use winit::window::Window;
 
-impl<Message: Clone> UI<Message> {
+impl<Message> UI<Message> {
     pub(crate) fn mouse_over_event(
         &mut self,
         renderer: &mut GpuRenderer,

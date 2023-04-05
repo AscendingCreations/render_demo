@@ -63,7 +63,7 @@ impl<Message> Button<Message> {
     }
 }
 
-impl<Message: Clone> Control<Message> for Button<Message> {
+impl<Message> Control<Message> for Button<Message> {
     fn get_id(&self) -> &Identity {
         &self.identity
     }

@@ -18,7 +18,7 @@ use winit::window::Window;
 pub mod events;
 pub mod internals;
 
-pub struct UI<Message: Clone> {
+pub struct UI<Message> {
     ui_buffer: UIBuffer,
     name_map: HashMap<Identity, Handle>,
     widgets: Slab<WidgetRef<Message>>,
@@ -41,7 +41,7 @@ pub struct UI<Message: Clone> {
     modifier: ModifiersState,
 }
 
-impl<Message: Clone> UI<Message> {
+impl<Message> UI<Message> {
     pub fn new(ui_buffer: UIBuffer) -> Self {
         UI {
             ui_buffer,

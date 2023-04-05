@@ -2,7 +2,7 @@ use crate::{
     Control, Event, FrameTime, Identity, Metrics, ModifiersState, MouseButton,
     SystemEvent, TextBounds, UIBuffer, UiField, UiFlags, Widget, WidgetRef, UI,
 };
-use cosmic_text::Attrs;
+use cosmic_text::{Align, Attrs};
 use graphics::*;
 
 pub struct Label {
@@ -45,7 +45,7 @@ impl Label {
     }
 }
 
-impl<Message: Clone> Control<Message> for Label {
+impl<Message> Control<Message> for Label {
     fn get_id(&self) -> &Identity {
         &self.identity
     }

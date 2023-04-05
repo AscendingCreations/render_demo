@@ -53,7 +53,7 @@ bitfield! {
     }
 }
 
-pub trait Control<Message: Clone> {
+pub trait Control<Message> {
     /// Widgets Name and user given ID All widgets must contain this.
     fn get_id(&self) -> &Identity;
 
@@ -100,12 +100,12 @@ pub trait Control<Message: Clone> {
     fn default_actions(&self) -> Vec<UiFlags>;
 }
 
-pub trait AnyData<Message: Clone>: Control<Message> {
+pub trait AnyData<Message>: Control<Message> {
     fn as_any(&self) -> &dyn Any;
     fn as_mut_any(&mut self) -> &mut dyn Any;
 }
 
-impl<Message: Clone, U: Any + Control<Message>> AnyData<Message> for U {
+impl<Message, U: Any + Control<Message>> AnyData<Message> for U {
     fn as_any(&self) -> &dyn Any {
         self
     }
@@ -117,7 +117,7 @@ impl<Message: Clone, U: Any + Control<Message>> AnyData<Message> for U {
 
 /// TODO: Make Bounds Updater that will Update all the internal Bounds based on
 /// Parents Bounds if they got changed or if the childrens positions changed.
-pub struct Widget<Message: Clone> {
+pub struct Widget<Message> {
     /// System Granted ID.
     pub id: Handle,
     /// Used to Calculate and set the internal bounds of the widgets Data.
@@ -134,7 +134,7 @@ pub struct Widget<Message: Clone> {
     pub actions: UiField,
 }
 
-impl<Message: Clone> Widget<Message> {
+impl<Message> Widget<Message> {
     pub fn new(control: (impl AnyData<Message> + 'static)) -> Self {
         Self {
             ui: Box::new(control),
@@ -158,7 +158,7 @@ impl<Message: Clone> Widget<Message> {
     }
 }
 
-impl<Message: Clone> From<Widget<Message>> for WidgetRef<Message> {
+impl<Message> From<Widget<Message>> for WidgetRef<Message> {
     fn from(widget: Widget<Message>) -> Self {
         Rc::new(RefCell::new(widget))
     }

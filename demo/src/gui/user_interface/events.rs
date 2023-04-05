@@ -21,7 +21,7 @@ use winit::{
     window::Window,
 };
 
-impl<Message: Clone> UI<Message> {
+impl<Message> UI<Message> {
     pub fn event_draw(
         &mut self,
         renderer: &mut GpuRenderer,

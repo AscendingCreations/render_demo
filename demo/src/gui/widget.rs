@@ -49,6 +49,7 @@ bitfield! {
         11 : CanMoveWindow,
         12 : Clicked,
         13 : ClickAble,
+        14 : AllowChildren,
     }
 }
 
@@ -100,6 +101,7 @@ impl<Message, U: Any + Control<Message>> AnyData<Message> for U {
     }
 }
 
+#[derive(Default)]
 pub struct Parent(pub Handle);
 
 impl Parent {
@@ -108,6 +110,7 @@ impl Parent {
     }
 }
 
+#[derive(Default)]
 pub struct Actions(pub UiField);
 
 impl Actions {
@@ -118,33 +121,19 @@ impl Actions {
     pub fn get_mut(&mut self) -> &mut UiField {
         &mut self.0
     }
-}
-
-pub struct Hidden(pub Vec<Handle>);
-
-impl Hidden {
-    pub fn get(&self) -> &Vec<Handle> {
-        &self.0
+    
+    pub fn exists(&self, flag: UiFlags) -> bool {
+        self.0.get(flag)
     }
-
-    pub fn get_mut(&mut self) -> &mut Vec<Handle> {
-        &mut self.0
+    
+    pub fn set(&mut self, flag: UiFlags){
+        self.0.set(flag)
     }
 }
 
-pub struct Visible(pub VecDeque<Handle>);
+pub struct Hidden;
 
-impl Visible {
-    pub fn get(&self) -> &VecDeque<Handle> {
-        &self.0
-    }
-
-    pub fn get_mut(&mut self) -> &mut VecDeque<Handle> {
-        &mut self.0
-    }
-}
-
-pub struct WidgetAny<Message>(Box<dyn AnyData<Message>>);
+pub struct WidgetAny<Message>(pub Box<dyn AnyData<Message>>);
 
 impl<Message> WidgetAny<Message> {
     pub fn get(&self) -> &dyn AnyData<Message> {
@@ -158,6 +147,7 @@ impl<Message> WidgetAny<Message> {
 
 pub struct Widget;
 
+#[derive(Default)]
 pub struct WidgetBounds(pub Bounds);
 
 impl WidgetBounds {

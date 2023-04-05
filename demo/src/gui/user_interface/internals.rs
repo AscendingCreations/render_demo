@@ -1,7 +1,9 @@
 use crate::{
-    FrameTime, Handle, Identity, SystemEvent, UIBuffer, UiFlags, Widget, UI,
+    Actions, FrameTime, Handle, Hidden, Identity, Parent, SystemEvent,
+    UIBuffer, UiFlags, Widget, UI,
 };
 use graphics::*;
+use hecs::{With, Without, World};
 use slab::Slab;
 use std::{
     any::Any,
@@ -231,52 +233,15 @@ impl<Message> UI<Message> {
 
     pub(crate) fn widget_add(
         &mut self,
-        parent: Option<&Widget<Message>>,
-        control: Widget<Message>,
+        world: &mut World,
+        parent: Option<Handle>,
+        control: Handle,
     ) {
-        let id = control.get_identity();
-        if self.name_map.contains_key(&id) {
-            panic!("You can not use the same Identity for multiple widgets");
-        }
-
-        let handle = Handle(self.widgets.insert(control));
-        let control = self.get_widget(handle);
-
-        control.id = handle;
-        self.name_map.insert(id, handle);
-
         if parent.is_none() {
-            self.visible.push_back(handle);
-            self.zlist.push_back(handle);
-            self.widget_show_children(&control)
+            self.zlist.push_back(control);
+            self.widget_show_children(control)
         } else if let Some(parent) = parent {
-            parent.visible.push_back(handle);
             self.widget_show_children(parent);
-        }
-    }
-
-    pub(crate) fn widget_add_hidden(
-        &mut self,
-        parent: Option<&Widget<Message>>,
-        control: Widget<Message>,
-    ) {
-        let id = control.get_identity();
-
-        if self.name_map.contains_key(&id) {
-            panic!("You can not use the same Identity for multiple widgets even if hidden");
-        }
-
-        //let callbacks = control.ui
-        let handle = Handle(self.widgets.insert(control));
-        let control = self.get_widget(handle);
-
-        control.id = handle;
-        self.name_map.insert(id, handle);
-
-        if parent.is_none() {
-            self.hidden.push(handle);
-        } else if let Some(parent) = parent {
-            parent.hidden.push(handle);
         }
     }
 
@@ -340,27 +305,39 @@ impl<Message> UI<Message> {
     // This does not move the children into the controls hidden Vec.
     // This is because we want to be able to reshow All the visible children
     // when we unhide the control.
-    pub(crate) fn widget_hide_children(&mut self, control: &Widget<Message>) {
-        for child_handle in &control.visible {
-            let child = self.get_widget(*child_handle);
+    pub(crate) fn widget_hide_children(
+        &mut self,
+        world: &mut World,
+        control: Handle,
+    ) {
+        for child in world
+            .query::<With<(&Widget, &Parent, Without<Hidden>)>>()
+            .iter()
+            .filter(|(entity, (_, parent))| *parent == Parent(control))
+            .map(|(entity, _)| entity)
+        {
+            let actions: Actions = world.get(child);
+            let child_handle = Handle(child);
 
             if let Some(pos) =
-                self.zlist.iter().position(|x| *x == *child_handle)
+                self.zlist.iter().position(|x| *x == child_handle)
             {
                 self.zlist.remove(pos);
             }
 
-            self.widget_hide_children(&child);
+            if actions.exists(UiFlags::AllowChildren) {
+                self.widget_hide_children(world, child_handle);
+            }
 
-            if self.focused == Some(*child_handle) {
+            if self.focused == Some(child_handle) {
                 self.focused = None;
             }
 
-            if self.clicked == Some(*child_handle) {
+            if self.clicked == Some(child_handle) {
                 self.clicked = None;
             }
 
-            if self.over == Some(*child_handle) {
+            if self.over == Some(child_handle) {
                 self.over = None;
             }
         }
@@ -368,20 +345,31 @@ impl<Message> UI<Message> {
 
     //This will Advance the children into the Back of the Zlist allowing them to
     //render on top.
-    pub(crate) fn widget_show_children(&mut self, control: &Widget<Message>) {
-        for child_handle in &control.visible {
-            let child = self.get_widget(*child_handle);
+    pub(crate) fn widget_show_children(
+        &mut self,
+        world: &mut World,
+        control: Handle,
+    ) {
+        for child in world
+            .query::<With<(&Widget, &Parent, Without<Hidden>)>>()
+            .iter()
+            .filter(|(entity, (_, parent))| *parent == Parent(control))
+            .map(|(entity, _)| entity)
+        {
+            let actions: Actions = world.get(child);
+            let child_handle = Handle(child);
 
             if let Some(pos) =
-                self.zlist.iter().position(|x| *x == *child_handle)
+                self.zlist.iter().position(|x| *x == child_handle)
             {
                 self.zlist.remove(pos);
-                self.zlist.push_back(*child_handle);
-            } else {
-                self.zlist.push_back(*child_handle);
             }
 
-            self.widget_show_children(&child);
+            self.zlist.push_back(child_handle);
+
+            if actions.exists(UiFlags::AllowChildren) {
+                self.widget_show_children(world, child_handle);
+            }
         }
     }
 

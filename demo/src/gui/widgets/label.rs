@@ -1,6 +1,6 @@
 use crate::{
     Control, Event, FrameTime, Identity, Metrics, ModifiersState, MouseButton,
-    SystemEvent, TextBounds, UIBuffer, UiField, UiFlags, Widget, WidgetRef, UI,
+    SystemEvent, TextBounds, UIBuffer, UiField, UiFlags, Widget, UI,
 };
 use cosmic_text::{Align, Attrs};
 use graphics::*;

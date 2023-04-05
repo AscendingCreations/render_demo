@@ -1,6 +1,6 @@
 use crate::{
     FrameTime, GpuRenderer, Handle, Identity, SystemEvent, UIBuffer, UiFlags,
-    Widget, WidgetRef, UI,
+    Widget, UI,
 };
 use graphics::*;
 use slab::Slab;
@@ -30,11 +30,7 @@ impl<Message> UI<Message> {
         for handle in &self.zlist.clone() {
             let widget = self.get_widget(*handle);
 
-            widget.borrow_mut().ui.draw(
-                self.ui_buffer_mut(),
-                renderer,
-                time,
-            )?;
+            widget.ui.draw(self.ui_buffer_mut(), renderer, time)?;
         }
 
         self.ui_buffer_mut().ui_buffer.finalize(renderer);
@@ -66,12 +62,12 @@ impl<Message> UI<Message> {
             if let Some(handle) = self.focused {
                 let focused = self.get_widget(handle);
 
-                if focused.borrow().actions.get(UiFlags::Moving) {
+                if focused.actions.get(UiFlags::Moving) {
                     let pos = [
                         position.x - self.mouse_pos[0],
                         position.y - self.mouse_pos[1],
                     ];
-                    let mut bounds = focused.borrow().ui.get_bounds();
+                    let mut bounds = focused.ui.get_bounds();
 
                     if bounds.x + pos[0] <= 0.0
                         || bounds.y + pos[1] <= 0.0
@@ -83,16 +79,13 @@ impl<Message> UI<Message> {
 
                     bounds.x += pos[0];
                     bounds.y += pos[1];
-                    let control_pos = focused.borrow_mut().ui.get_position();
-                    focused.borrow_mut().ui.set_position(Vec3::new(
+                    let control_pos = focused.ui.get_position();
+                    focused.ui.set_position(Vec3::new(
                         bounds.x,
                         bounds.y,
                         control_pos.z,
                     ));
-                    self.widget_position_update(
-                        renderer,
-                        &mut focused.borrow_mut(),
-                    );
+                    self.widget_position_update(renderer, &mut focused);
                 }
             }
 

@@ -1,6 +1,6 @@
 use crate::{
     Control, FrameTime, Handle, Identity, ModifiersState, MouseButton,
-    SystemEvent, UIBuffer, UiField, UiFlags, Widget, WidgetRef, UI,
+    SystemEvent, UIBuffer, UiField, UiFlags, Widget, UI,
 };
 use graphics::*;
 

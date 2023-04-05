@@ -286,7 +286,7 @@ async fn main() -> Result<(), AscendingError> {
     text.set_buffer_size(&mut renderer, size.width as i32, size.height as i32);
 
     let mut ui = UI::<Messages>::new(ui_buffer);
-    let button = Button::new(
+    let mut button = Button::new(
         ui.ui_buffer_mut(),
         &mut renderer,
         Identity {
@@ -318,9 +318,9 @@ async fn main() -> Result<(), AscendingError> {
         .set_default_color(Color::rgba(255, 255, 255, 255))
         .set_offset(Vec2::new(5.0, -5.0));
 
-    UI::set_action(&button, UiFlags::AlwaysUseable);
-    UI::set_action(&button, UiFlags::CanFocus);
-    UI::set_action(&button, UiFlags::CanMoveWindow);
+    UI::set_action(&mut button, UiFlags::AlwaysUseable);
+    UI::set_action(&mut button, UiFlags::CanFocus);
+    UI::set_action(&mut button, UiFlags::CanMoveWindow);
 
     ui.add_widget_by_id(None, button);
     ui.add_widget_by_id(

@@ -1,8 +1,9 @@
 use crate::{
-    Event, FrameTime, GpuDevice, Handle, Identity, UIBuffer, UiFlags, Widget,
-    WidgetRef,
+    Actions, AnyData, Event, FrameTime, GpuDevice, Handle, Identity, UIBuffer,
+    UiFlags, Widget,
 };
 use graphics::*;
+use hecs::{Entity, World};
 use slab::Slab;
 use std::{
     any::Any,
@@ -19,9 +20,7 @@ pub mod events;
 pub mod internals;
 
 pub struct UI<Message> {
-    ui_buffer: UIBuffer,
     name_map: HashMap<Identity, Handle>,
-    widgets: Slab<WidgetRef<Message>>,
     ///Contains All Visible widgets in rendering order
     zlist: VecDeque<Handle>,
     ///The Visible Top widgets.
@@ -39,14 +38,13 @@ pub struct UI<Message> {
     moving: bool,
     button: MouseButton,
     modifier: ModifiersState,
+    phantom: PhantomData<Message>,
 }
 
 impl<Message> UI<Message> {
-    pub fn new(ui_buffer: UIBuffer) -> Self {
+    pub fn new() -> Self {
         UI {
-            ui_buffer,
             name_map: HashMap::with_capacity(100),
-            widgets: Slab::with_capacity(100),
             zlist: VecDeque::with_capacity(100),
             visible: VecDeque::with_capacity(100),
             hidden: Vec::with_capacity(100),
@@ -60,34 +58,20 @@ impl<Message> UI<Message> {
             moving: false,
             button: MouseButton::Left,
             modifier: ModifiersState::default(),
+            phantom: PhantomData::default(),
         }
     }
 
-    pub fn ui_buffer(&self) -> &UIBuffer {
-        &self.ui_buffer
-    }
-
-    pub fn ui_buffer_mut(&mut self) -> &mut UIBuffer {
-        &mut self.ui_buffer
-    }
-
-    pub fn get_widget(&self, handle: Handle) -> WidgetRef<Message> {
-        self.widgets
-            .get(handle.get_key())
-            .expect("ID Existed but widget does not exist?")
-            .clone()
-    }
-
-    pub fn get_widget_by_id(&self, id: Identity) -> WidgetRef<Message> {
+    /*pub fn get_widget_by_id(&self, world: &mut World, id: Identity) -> &Widget<Message> {
         let handle = self.name_map.get(&id).unwrap();
         self.widgets
             .get(handle.get_key())
             .expect("ID Existed but widget does not exist?")
-            .clone()
-    }
+    }*/
 
-    pub fn set_action(widget: &WidgetRef<Message>, action: UiFlags) {
-        widget.borrow_mut().actions.set(action);
+    pub fn set_action(world: &mut World, id: Handle, action: UiFlags) {
+        let actions: Actions = world.get(id.get_key());
+        actions.get_mut().set(action);
     }
 
     pub fn remove_widget_by_handle(&mut self, handle: Handle) {
@@ -125,11 +109,10 @@ impl<Message> UI<Message> {
         self.widget_hide(&self.get_widget(*handle));
     }
 
-    pub fn add_widget_by_handle(
-        &mut self,
-        parent_handle: Option<Handle>,
-        control: WidgetRef<Message>,
-    ) {
+    pub fn add_widget<T>(&mut self, parent_handle: Option<Handle>, control: T)
+    where
+        T: AnyData<Message>,
+    {
         if let Some(handle) = parent_handle {
             self.widget_add(Some(&self.get_widget(handle)), control);
         } else {
@@ -137,39 +120,15 @@ impl<Message> UI<Message> {
         }
     }
 
-    pub fn add_widget_by_id(
-        &mut self,
-        parent_id: Option<Identity>,
-        control: WidgetRef<Message>,
-    ) {
-        if let Some(id) = parent_id {
-            let handle = self.name_map.get(&id).unwrap();
-            self.widget_add(Some(&self.get_widget(*handle)), control);
-        } else {
-            self.widget_add(None, control);
-        }
-    }
-
-    pub fn add_hidden_widget_by_handle(
+    pub fn add_hidden_widget<T>(
         &mut self,
         parent_handle: Option<Handle>,
-        control: WidgetRef<Message>,
-    ) {
+        control: T,
+    ) where
+        T: AnyData<Message>,
+    {
         if let Some(handle) = parent_handle {
             self.widget_add_hidden(Some(&self.get_widget(handle)), control);
-        } else {
-            self.widget_add_hidden(None, control);
-        }
-    }
-
-    pub fn add_hidden_widget_by_id(
-        &mut self,
-        parent_id: Option<Identity>,
-        control: WidgetRef<Message>,
-    ) {
-        if let Some(id) = parent_id {
-            let handle = self.name_map.get(&id).unwrap();
-            self.widget_add_hidden(Some(&self.get_widget(*handle)), control);
         } else {
             self.widget_add_hidden(None, control);
         }

@@ -1,6 +1,5 @@
 use crate::{
-    FrameTime, Handle, Identity, SystemEvent, UIBuffer, UiFlags, Widget,
-    WidgetRef, UI,
+    FrameTime, Handle, Identity, SystemEvent, UIBuffer, UiFlags, Widget, UI,
 };
 use graphics::*;
 use slab::Slab;
@@ -24,14 +23,14 @@ impl<Message> UI<Message> {
         for &handle in self.zlist.clone().iter().rev() {
             let control = self.get_widget(handle);
 
-            if control.borrow().ui.check_mouse_bounds(self.mouse_pos)
+            if control.ui.check_mouse_bounds(self.mouse_pos)
                 && self.widget_usable(&control)
             {
-                if control.borrow().actions.get(UiFlags::CanClickBehind) {
-                    if let Some(parent_handle) = control.borrow().parent {
+                if control.actions.get(UiFlags::CanClickBehind) {
+                    if let Some(parent_handle) = control.parent {
                         let parent = self.get_widget(parent_handle);
 
-                        if !parent.borrow().actions.get(UiFlags::Moving) {
+                        if !parent.actions.get(UiFlags::Moving) {
                             self.widget_mouse_over(
                                 renderer, &parent, true, events,
                             );
@@ -43,7 +42,7 @@ impl<Message> UI<Message> {
                     self.widget_mouse_over(renderer, &control, true, events);
                     return;
                 }
-            } else if !control.borrow().actions.get(UiFlags::Moving) {
+            } else if !control.actions.get(UiFlags::Moving) {
                 self.widget_mouse_over(renderer, &control, false, events);
             }
         }
@@ -52,11 +51,11 @@ impl<Message> UI<Message> {
     pub(crate) fn widget_mouse_over_callback(
         &mut self,
         renderer: &mut GpuRenderer,
-        control: &WidgetRef<Message>,
+        control: &Widget<Message>,
         entered: bool,
         events: &mut Vec<Message>,
     ) {
-        let mut control = control.borrow_mut();
+        let mut control = control;
         let actions = control.actions;
 
         control.ui.event(
@@ -71,27 +70,27 @@ impl<Message> UI<Message> {
     pub(crate) fn widget_mouse_over(
         &mut self,
         renderer: &mut GpuRenderer,
-        control: &WidgetRef<Message>,
+        control: &Widget<Message>,
         entered: bool,
         events: &mut Vec<Message>,
     ) {
         if entered {
             if self.over.is_some()
-                && self.over != Some(control.borrow().id)
+                && self.over != Some(control.id)
                 && self.widget_moving.is_none()
             {
                 let over = self.get_widget(self.over.unwrap());
 
-                over.borrow_mut().actions.clear(UiFlags::MouseOver);
-                control.borrow_mut().actions.set(UiFlags::MouseOver);
+                over.actions.clear(UiFlags::MouseOver);
+                control.actions.set(UiFlags::MouseOver);
                 self.widget_mouse_over_callback(renderer, &over, false, events);
-                self.over = Some(control.borrow().id);
+                self.over = Some(control.id);
                 self.widget_mouse_over_callback(
                     renderer, control, true, events,
                 );
             } else if self.over.is_none() {
-                self.over = Some(control.borrow().id);
-                control.borrow_mut().actions.set(UiFlags::MouseOver);
+                self.over = Some(control.id);
+                control.actions.set(UiFlags::MouseOver);
                 self.widget_mouse_over_callback(
                     renderer, control, true, events,
                 );
@@ -99,36 +98,36 @@ impl<Message> UI<Message> {
         } else if let Some(over_handle) = self.over {
             let over = self.get_widget(over_handle);
 
-            if !over.borrow().ui.check_mouse_bounds(self.mouse_pos)
-                && over.borrow().actions.get(UiFlags::MouseOver)
+            if !over.ui.check_mouse_bounds(self.mouse_pos)
+                && over.actions.get(UiFlags::MouseOver)
                 && self.widget_moving.is_none()
             {
-                over.borrow_mut().actions.clear(UiFlags::MouseOver);
+                over.actions.clear(UiFlags::MouseOver);
                 self.widget_mouse_over_callback(renderer, &over, false, events);
                 self.over = None;
             }
         }
     }
 
-    pub(crate) fn widget_usable(&self, control: &WidgetRef<Message>) -> bool {
-        if control.borrow().actions.get(UiFlags::AlwaysUseable) {
+    pub(crate) fn widget_usable(&self, control: &Widget<Message>) -> bool {
+        if control.actions.get(UiFlags::AlwaysUseable) {
             return true;
         }
 
-        if !control.borrow().actions.get(UiFlags::IsFocused) {
-            let mut parent_handle = control.borrow().parent;
+        if !control.actions.get(UiFlags::IsFocused) {
+            let mut parent_handle = control.parent;
 
             while let Some(handle) = parent_handle {
                 let parent = self.get_widget(handle);
 
-                if (parent.borrow().actions.get(UiFlags::CanFocus)
-                    && parent.borrow().actions.get(UiFlags::IsFocused))
-                    || parent.borrow().actions.get(UiFlags::AlwaysUseable)
+                if (parent.actions.get(UiFlags::CanFocus)
+                    && parent.actions.get(UiFlags::IsFocused))
+                    || parent.actions.get(UiFlags::AlwaysUseable)
                 {
                     return true;
                 }
 
-                parent_handle = parent.borrow().parent;
+                parent_handle = parent.parent;
             }
 
             false
@@ -140,11 +139,11 @@ impl<Message> UI<Message> {
     pub(crate) fn widget_manual_focus(
         &mut self,
         renderer: &mut GpuRenderer,
-        control: &WidgetRef<Message>,
+        control: &Widget<Message>,
     ) {
-        let handle = control.borrow().id;
+        let handle = control.id;
 
-        if control.borrow().actions.get(UiFlags::CanFocus) {
+        if control.actions.get(UiFlags::CanFocus) {
             if let Some(pos) = self.zlist.iter().position(|x| *x == handle) {
                 self.zlist.remove(pos);
                 self.zlist.push_back(handle);
@@ -152,9 +151,9 @@ impl<Message> UI<Message> {
 
             self.widget_show_children(control);
 
-            if let Some(parent_handle) = control.borrow().parent {
+            if let Some(parent_handle) = control.parent {
                 let wdgt = self.get_widget(parent_handle);
-                let mut parent = wdgt.borrow_mut();
+                let mut parent = wdgt;
 
                 if let Some(pos) =
                     parent.visible.iter().position(|x| *x == handle)
@@ -177,7 +176,7 @@ impl<Message> UI<Message> {
                 );
             }
 
-            control.borrow_mut().actions.set(UiFlags::IsFocused);
+            control.actions.set(UiFlags::IsFocused);
             self.focused = Some(handle);
             self.widget_focused_callback(renderer, control, true);
         }
@@ -186,11 +185,11 @@ impl<Message> UI<Message> {
     pub(crate) fn widget_show(
         &mut self,
         renderer: &mut GpuRenderer,
-        control: &WidgetRef<Message>,
+        control: &Widget<Message>,
     ) {
-        let handle = control.borrow().id;
+        let handle = control.id;
 
-        if control.borrow().parent.is_none() {
+        if control.parent.is_none() {
             self.visible.push_back(handle);
 
             if let Some(pos) = self.hidden.iter().position(|x| *x == handle) {
@@ -208,10 +207,10 @@ impl<Message> UI<Message> {
         }
     }
 
-    pub(crate) fn widget_hide(&mut self, control: &WidgetRef<Message>) {
-        let handle = control.borrow().id;
+    pub(crate) fn widget_hide(&mut self, control: &Widget<Message>) {
+        let handle = control.id;
 
-        if control.borrow().parent.is_none() {
+        if control.parent.is_none() {
             if let Some(pos) = self.visible.iter().position(|x| *x == handle) {
                 self.visible.remove(pos);
             }
@@ -232,10 +231,10 @@ impl<Message> UI<Message> {
 
     pub(crate) fn widget_add(
         &mut self,
-        parent: Option<&WidgetRef<Message>>,
-        control: WidgetRef<Message>,
+        parent: Option<&Widget<Message>>,
+        control: Widget<Message>,
     ) {
-        let id = control.borrow().get_identity();
+        let id = control.get_identity();
         if self.name_map.contains_key(&id) {
             panic!("You can not use the same Identity for multiple widgets");
         }
@@ -243,7 +242,7 @@ impl<Message> UI<Message> {
         let handle = Handle(self.widgets.insert(control));
         let control = self.get_widget(handle);
 
-        control.borrow_mut().id = handle;
+        control.id = handle;
         self.name_map.insert(id, handle);
 
         if parent.is_none() {
@@ -251,40 +250,40 @@ impl<Message> UI<Message> {
             self.zlist.push_back(handle);
             self.widget_show_children(&control)
         } else if let Some(parent) = parent {
-            parent.borrow_mut().visible.push_back(handle);
+            parent.visible.push_back(handle);
             self.widget_show_children(parent);
         }
     }
 
     pub(crate) fn widget_add_hidden(
         &mut self,
-        parent: Option<&WidgetRef<Message>>,
-        control: WidgetRef<Message>,
+        parent: Option<&Widget<Message>>,
+        control: Widget<Message>,
     ) {
-        let id = control.borrow().get_identity();
+        let id = control.get_identity();
 
         if self.name_map.contains_key(&id) {
             panic!("You can not use the same Identity for multiple widgets even if hidden");
         }
 
-        //let callbacks = control.borrow().ui
+        //let callbacks = control.ui
         let handle = Handle(self.widgets.insert(control));
         let control = self.get_widget(handle);
 
-        control.borrow_mut().id = handle;
+        control.id = handle;
         self.name_map.insert(id, handle);
 
         if parent.is_none() {
             self.hidden.push(handle);
         } else if let Some(parent) = parent {
-            parent.borrow_mut().hidden.push(handle);
+            parent.hidden.push(handle);
         }
     }
 
-    pub(crate) fn widget_clear_self(&mut self, control: &WidgetRef<Message>) {
-        let handle = control.borrow().id;
+    pub(crate) fn widget_clear_self(&mut self, control: &Widget<Message>) {
+        let handle = control.id;
 
-        if control.borrow().parent.is_none() {
+        if control.parent.is_none() {
             if let Some(pos) = self.visible.iter().position(|x| *x == handle) {
                 self.visible.remove(pos);
             }
@@ -310,7 +309,7 @@ impl<Message> UI<Message> {
             self.zlist.remove(pos);
         }
 
-        let identity = control.borrow().get_identity();
+        let identity = control.get_identity();
         if let Some(identity) = self.name_map.remove(&identity) {
             self.widgets.remove(identity.get_key());
         }
@@ -319,36 +318,30 @@ impl<Message> UI<Message> {
         self.widget_clear_hidden(control);
     }
 
-    pub(crate) fn widget_clear_visible(
-        &mut self,
-        control: &WidgetRef<Message>,
-    ) {
-        for child_handle in &control.borrow().visible {
+    pub(crate) fn widget_clear_visible(&mut self, control: &Widget<Message>) {
+        for child_handle in &control.visible {
             self.widget_clear_self(&self.get_widget(*child_handle));
         }
 
-        control.borrow_mut().hidden.clear();
-        control.borrow_mut().visible.clear();
+        control.hidden.clear();
+        control.visible.clear();
     }
 
-    pub(crate) fn widget_clear_hidden(&mut self, control: &WidgetRef<Message>) {
-        for child_handle in &control.borrow().hidden {
+    pub(crate) fn widget_clear_hidden(&mut self, control: &Widget<Message>) {
+        for child_handle in &control.hidden {
             self.widget_clear_self(&self.get_widget(*child_handle));
         }
 
-        control.borrow_mut().hidden.clear();
-        control.borrow_mut().visible.clear();
+        control.hidden.clear();
+        control.visible.clear();
     }
 
     // This will remove the children from the Zlist, focused, over and clicked.
     // This does not move the children into the controls hidden Vec.
     // This is because we want to be able to reshow All the visible children
     // when we unhide the control.
-    pub(crate) fn widget_hide_children(
-        &mut self,
-        control: &WidgetRef<Message>,
-    ) {
-        for child_handle in &control.borrow().visible {
+    pub(crate) fn widget_hide_children(&mut self, control: &Widget<Message>) {
+        for child_handle in &control.visible {
             let child = self.get_widget(*child_handle);
 
             if let Some(pos) =
@@ -375,11 +368,8 @@ impl<Message> UI<Message> {
 
     //This will Advance the children into the Back of the Zlist allowing them to
     //render on top.
-    pub(crate) fn widget_show_children(
-        &mut self,
-        control: &WidgetRef<Message>,
-    ) {
-        for child_handle in &control.borrow().visible {
+    pub(crate) fn widget_show_children(&mut self, control: &Widget<Message>) {
+        for child_handle in &control.visible {
             let child = self.get_widget(*child_handle);
 
             if let Some(pos) =
@@ -398,10 +388,10 @@ impl<Message> UI<Message> {
     pub(crate) fn widget_focused_callback(
         &mut self,
         renderer: &mut GpuRenderer,
-        control: &WidgetRef<Message>,
+        control: &Widget<Message>,
         focused: bool,
     ) {
-        let mut control = control.borrow_mut();
+        let mut control = control;
         let actions = control.actions;
         control.ui.event(
             actions,
@@ -415,11 +405,11 @@ impl<Message> UI<Message> {
     pub(crate) fn widget_mouse_press_callbacks(
         &mut self,
         renderer: &mut GpuRenderer,
-        control: &WidgetRef<Message>,
+        control: &Widget<Message>,
         pressed: bool,
         events: &mut Vec<Message>,
     ) {
-        let mut control = control.borrow_mut();
+        let mut control = control;
         let actions = control.actions;
         let btn = self.button;
         let modifier = self.modifier;
@@ -436,11 +426,11 @@ impl<Message> UI<Message> {
     pub(crate) fn widget_set_clicked(
         &mut self,
         renderer: &mut GpuRenderer,
-        control: &WidgetRef<Message>,
+        control: &Widget<Message>,
         events: &mut Vec<Message>,
     ) {
         {
-            let mut refctrl = control.borrow_mut();
+            let mut refctrl = control;
             let in_bounds = refctrl.ui.check_mouse_bounds(self.mouse_clicked);
 
             if refctrl.actions.get(UiFlags::CanMoveWindow) && in_bounds {
@@ -451,11 +441,8 @@ impl<Message> UI<Message> {
                 if let Some(parent_handle) = refctrl.parent {
                     let parent = self.get_widget(parent_handle);
 
-                    if parent.borrow().actions.get(UiFlags::CanMoveWindow)
-                        && parent
-                            .borrow()
-                            .ui
-                            .check_mouse_bounds(self.mouse_clicked)
+                    if parent.actions.get(UiFlags::CanMoveWindow)
+                        && parent.ui.check_mouse_bounds(self.mouse_clicked)
                     {
                         self.moving = true;
                     }
@@ -481,10 +468,10 @@ impl<Message> UI<Message> {
     pub(crate) fn widget_set_focus(
         &mut self,
         renderer: &mut GpuRenderer,
-        control: &WidgetRef<Message>,
+        control: &Widget<Message>,
         events: &mut Vec<Message>,
     ) {
-        let handle = control.borrow().id;
+        let handle = control.id;
 
         if let Some(pos) = self.zlist.iter().position(|x| *x == handle) {
             self.zlist.remove(pos);
@@ -493,9 +480,9 @@ impl<Message> UI<Message> {
         //This will basically append the children after the parent since they render first.
         self.widget_show_children(control);
 
-        if let Some(parent_handle) = control.borrow().parent {
+        if let Some(parent_handle) = control.parent {
             let wdgt = self.get_widget(parent_handle);
-            let mut parent = wdgt.borrow_mut();
+            let mut parent = wdgt;
 
             if let Some(pos) = parent.visible.iter().position(|x| *x == handle)
             {
@@ -516,39 +503,39 @@ impl<Message> UI<Message> {
     pub(crate) fn is_parent_focused(
         &mut self,
         renderer: &mut GpuRenderer,
-        control: &WidgetRef<Message>,
+        control: &Widget<Message>,
         events: &mut Vec<Message>,
     ) -> bool {
-        if control.borrow().actions.get(UiFlags::AlwaysUseable) {
+        if control.actions.get(UiFlags::AlwaysUseable) {
             return true;
         }
 
-        let mut parent_opt = control.borrow().parent;
+        let mut parent_opt = control.parent;
 
         while let Some(parent_handle) = parent_opt {
             let parent = self.get_widget(parent_handle);
 
-            if parent.borrow().actions.get(UiFlags::CanFocus) {
-                if parent.borrow().actions.get(UiFlags::IsFocused) {
+            if parent.actions.get(UiFlags::CanFocus) {
+                if parent.actions.get(UiFlags::IsFocused) {
                     return true;
                 } else {
                     self.widget_manual_focus(renderer, &parent);
 
-                    if parent.borrow().actions.get(UiFlags::FocusClick) {
+                    if parent.actions.get(UiFlags::FocusClick) {
                         self.widget_set_clicked(renderer, &parent, events);
                     }
 
                     return true;
                 }
-            } else if parent.borrow().actions.get(UiFlags::AlwaysUseable)
-                && parent.borrow().actions.get(UiFlags::ClickAble)
-                && control.borrow().parent == Some(parent_handle)
-                && control.borrow().actions.get(UiFlags::CanClickBehind)
+            } else if parent.actions.get(UiFlags::AlwaysUseable)
+                && parent.actions.get(UiFlags::ClickAble)
+                && control.parent == Some(parent_handle)
+                && control.actions.get(UiFlags::CanClickBehind)
             {
                 return true;
             }
 
-            parent_opt = parent.borrow().parent;
+            parent_opt = parent.parent;
         }
 
         false
@@ -556,22 +543,22 @@ impl<Message> UI<Message> {
 
     pub(crate) fn widget_is_focused(
         &mut self,
-        control: &WidgetRef<Message>,
+        control: &Widget<Message>,
     ) -> bool {
-        if control.borrow().actions.get(UiFlags::IsFocused) {
+        if control.actions.get(UiFlags::IsFocused) {
             return true;
         }
 
-        let mut parent_opt = control.borrow().parent;
+        let mut parent_opt = control.parent;
 
         while let Some(parent_handle) = parent_opt {
             let parent = self.get_widget(parent_handle);
 
-            if parent.borrow().actions.get(UiFlags::IsFocused) {
+            if parent.actions.get(UiFlags::IsFocused) {
                 return true;
             }
 
-            parent_opt = parent.borrow().parent;
+            parent_opt = parent.parent;
         }
 
         false
@@ -580,11 +567,11 @@ impl<Message> UI<Message> {
     pub(crate) fn mouse_press_event(
         &mut self,
         renderer: &mut GpuRenderer,
-        control: &WidgetRef<Message>,
+        control: &Widget<Message>,
         events: &mut Vec<Message>,
     ) {
-        if control.borrow().actions.get(UiFlags::CanFocus) {
-            if self.focused != Some(control.borrow().id) {
+        if control.actions.get(UiFlags::CanFocus) {
+            if self.focused != Some(control.id) {
                 self.widget_set_focus(renderer, control, events);
             } else {
                 self.widget_set_clicked(renderer, control, events);
@@ -602,21 +589,21 @@ impl<Message> UI<Message> {
         for handle in self.zlist.clone().iter().rev() {
             let child = self.get_widget(*handle);
 
-            if child.borrow().actions.get(UiFlags::ClickAble)
-                && child.borrow().ui.check_mouse_bounds(self.mouse_clicked)
+            if child.actions.get(UiFlags::ClickAble)
+                && child.ui.check_mouse_bounds(self.mouse_clicked)
             {
-                if child.borrow().actions.get(UiFlags::MoveAble) {
-                    child.borrow_mut().actions.clear(UiFlags::Moving);
+                if child.actions.get(UiFlags::MoveAble) {
+                    child.actions.clear(UiFlags::Moving);
                 }
 
                 self.mouse_press_event(renderer, &child, events);
                 return;
             }
 
-            if child.borrow().actions.get(UiFlags::MoveAble)
-                && child.borrow().ui.check_mouse_bounds(self.mouse_clicked)
+            if child.actions.get(UiFlags::MoveAble)
+                && child.ui.check_mouse_bounds(self.mouse_clicked)
             {
-                child.borrow_mut().actions.clear(UiFlags::Moving);
+                child.actions.clear(UiFlags::Moving);
             }
         }
     }
@@ -629,10 +616,10 @@ impl<Message> UI<Message> {
         if let Some(focused_handle) = self.focused {
             let focused = self.get_widget(focused_handle);
 
-            if focused.borrow().actions.get(UiFlags::Moving)
+            if focused.actions.get(UiFlags::Moving)
                 && self.widget_moving == Some(focused_handle)
             {
-                focused.borrow_mut().actions.clear(UiFlags::Moving);
+                focused.actions.clear(UiFlags::Moving);
                 self.widget_moving = None;
             }
         }
@@ -640,17 +627,17 @@ impl<Message> UI<Message> {
         for handle in self.zlist.clone().iter().rev() {
             let control = self.get_widget(*handle);
 
-            if control.borrow().actions.get(UiFlags::ClickAble)
-                && control.borrow().ui.check_mouse_bounds(self.mouse_clicked)
+            if control.actions.get(UiFlags::ClickAble)
+                && control.ui.check_mouse_bounds(self.mouse_clicked)
             {
-                if control.borrow().actions.get(UiFlags::CanMoveWindow) {
+                if control.actions.get(UiFlags::CanMoveWindow) {
                     self.moving = false;
                 }
 
-                if control.borrow().actions.get(UiFlags::Moving)
+                if control.actions.get(UiFlags::Moving)
                     && self.widget_moving == Some(*handle)
                 {
-                    control.borrow_mut().actions.clear(UiFlags::Moving);
+                    control.actions.clear(UiFlags::Moving);
                     self.widget_moving = None;
                 }
 
@@ -668,7 +655,7 @@ impl<Message> UI<Message> {
         _parent: &mut Widget<Message>,
     ) {
         //TODO Find good way to handle position updates for widgets being dragged around.
-        /*let mut control = control.borrow_mut();
+        /*let mut control = control;
 
         control.ui.event(
             control.actions,
@@ -691,11 +678,11 @@ impl<Message> UI<Message> {
         for handle in &parent.visible {
             let widget = self.get_widget(*handle);
 
-            if !widget.borrow().visible.is_empty() {
-                self.widget_position_update(renderer, &mut widget.borrow_mut());
+            if !widget.visible.is_empty() {
+                self.widget_position_update(renderer, &mut widget);
             } else {
-                let key = widget.borrow().callback_key(Event::PositionChange);
-                let mut mut_wdgt = widget.borrow_mut();
+                let key = widget.callback_key(Event::PositionChange);
+                let mut mut_wdgt = widget;
 
                 if let Some(callback) = self.get_inner_callback(&key) {
                     if let InternalCallBacks::PositionChange(

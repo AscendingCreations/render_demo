@@ -1,5 +1,6 @@
 use crate::{SystemEvent, UIBuffer, UI};
 use graphics::*;
+use hecs::Entity;
 use input::FrameTime;
 use std::any::Any;
 use std::{cell::RefCell, collections::VecDeque, rc::Rc, vec::Vec};
@@ -7,13 +8,11 @@ use ubits::bitfield;
 use wgpu::StencilFaceState;
 use winit::event::{KeyboardInput, ModifiersState};
 
-pub type WidgetRef<Message> = Rc<RefCell<Widget<Message>>>;
-
 #[derive(Eq, PartialEq, Hash, Copy, Clone)]
-pub struct Handle(pub(crate) usize);
+pub struct Handle(pub(crate) Entity);
 
 impl Handle {
-    pub fn get_key(&self) -> usize {
+    pub fn get_key(&self) -> Entity {
         self.0
     }
 }
@@ -83,20 +82,6 @@ pub trait Control<Message> {
         frametime: &FrameTime,
     ) -> Result<(), AscendingError>;
 
-    fn into_widget(self) -> WidgetRef<Message>
-    where
-        Self: std::marker::Sized + 'static,
-    {
-        let actions = self.default_actions();
-        let mut widget = Widget::new(self);
-
-        for action in actions {
-            widget.actions.set(action);
-        }
-
-        widget.into()
-    }
-
     fn default_actions(&self) -> Vec<UiFlags>;
 }
 
@@ -115,6 +100,77 @@ impl<Message, U: Any + Control<Message>> AnyData<Message> for U {
     }
 }
 
+pub struct Parent(pub Handle);
+
+impl Parent {
+    pub fn get_id(&self) -> Handle {
+        self.0
+    }
+}
+
+pub struct Actions(pub UiField);
+
+impl Actions {
+    pub fn get(&self) -> &UiField {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut UiField {
+        &mut self.0
+    }
+}
+
+pub struct Hidden(pub Vec<Handle>);
+
+impl Hidden {
+    pub fn get(&self) -> &Vec<Handle> {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut Vec<Handle> {
+        &mut self.0
+    }
+}
+
+pub struct Visible(pub VecDeque<Handle>);
+
+impl Visible {
+    pub fn get(&self) -> &VecDeque<Handle> {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut VecDeque<Handle> {
+        &mut self.0
+    }
+}
+
+pub struct WidgetAny<Message>(Box<dyn AnyData<Message>>);
+
+impl<Message> WidgetAny<Message> {
+    pub fn get(&self) -> &dyn AnyData<Message> {
+        self.0.as_ref()
+    }
+
+    pub fn get_mut(&mut self) -> &mut dyn AnyData<Message> {
+        self.0.as_mut()
+    }
+}
+
+pub struct Widget;
+
+pub struct WidgetBounds(pub Bounds);
+
+impl WidgetBounds {
+    pub fn get(&self) -> &Bounds {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut Bounds {
+        &mut self.0
+    }
+}
+
+/*
 /// TODO: Make Bounds Updater that will Update all the internal Bounds based on
 /// Parents Bounds if they got changed or if the childrens positions changed.
 pub struct Widget<Message> {
@@ -139,7 +195,7 @@ impl<Message> Widget<Message> {
         Self {
             ui: Box::new(control),
             bounds: Bounds::default(),
-            id: Handle(0),
+            id: Handle(Entity::DANGLING),
             parent: None,
             visible: VecDeque::new(),
             hidden: Vec::new(),
@@ -158,8 +214,8 @@ impl<Message> Widget<Message> {
     }
 }
 
-impl<Message> From<Widget<Message>> for WidgetRef<Message> {
+impl<Message> From<Widget<Message>> for Widget<Message> {
     fn from(widget: Widget<Message>) -> Self {
         Rc::new(RefCell::new(widget))
     }
-}
+}*/

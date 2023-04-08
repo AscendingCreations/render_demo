@@ -2,8 +2,14 @@ use crate::{SystemEvent, UIBuffer, UI};
 use graphics::*;
 use hecs::Entity;
 use input::FrameTime;
-use std::any::Any;
-use std::{cell::RefCell, collections::VecDeque, rc::Rc, vec::Vec};
+use std::{
+    any::Any,
+    cell::RefCell,
+    collections::VecDeque,
+    ops::{Deref, DerefMut},
+    rc::Rc,
+    vec::Vec,
+};
 use ubits::bitfield;
 use wgpu::StencilFaceState;
 use winit::event::{KeyboardInput, ModifiersState};
@@ -14,6 +20,12 @@ pub struct Handle(pub(crate) Entity);
 impl Handle {
     pub fn get_key(&self) -> Entity {
         self.0
+    }
+}
+
+impl Default for Handle {
+    fn default() -> Self {
+        Self(Entity::DANGLING)
     }
 }
 
@@ -105,6 +117,10 @@ impl<Message, U: Any + Control<Message>> AnyData<Message> for U {
 pub struct Parent(pub Handle);
 
 impl Parent {
+    pub fn get_key(&self) -> Entity {
+        self.0.get_key()
+    }
+
     pub fn get_id(&self) -> Handle {
         self.0
     }
@@ -121,13 +137,17 @@ impl Actions {
     pub fn get_mut(&mut self) -> &mut UiField {
         &mut self.0
     }
-    
+
     pub fn exists(&self, flag: UiFlags) -> bool {
         self.0.get(flag)
     }
-    
-    pub fn set(&mut self, flag: UiFlags){
-        self.0.set(flag)
+
+    pub fn set(&mut self, flag: UiFlags) {
+        self.0.set(flag);
+    }
+
+    pub fn clear(&mut self, flag: UiFlags) {
+        self.0.clear(flag);
     }
 }
 
@@ -142,6 +162,20 @@ impl<Message> WidgetAny<Message> {
 
     pub fn get_mut(&mut self) -> &mut dyn AnyData<Message> {
         self.0.as_mut()
+    }
+}
+
+impl<Message> Deref for WidgetAny<Message> {
+    type Target = Box<dyn AnyData<Message>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<Message> DerefMut for WidgetAny<Message> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 

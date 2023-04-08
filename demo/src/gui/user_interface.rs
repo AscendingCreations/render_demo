@@ -124,9 +124,12 @@ impl<Message> UI<Message> {
 
         if let Some(parent_handle) = parent_handle {
             world.insert_one(handle.get_key(), Parent(parent_handle));
+            self.widget_show_children(world, parent_handle);
+        } else {
+            self.zlist.push_back(handle);
+            self.widget_show_children(world, handle)
         }
 
-        self.widget_add(world, parent_handle, handle);
         handle
     }
 

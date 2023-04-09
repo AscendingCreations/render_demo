@@ -8,6 +8,7 @@ use std::{
     collections::VecDeque,
     ops::{Deref, DerefMut},
     rc::Rc,
+    sync::RwLock,
     vec::Vec,
 };
 use ubits::bitfield;
@@ -95,7 +96,7 @@ pub trait Control<Message> {
         frametime: &FrameTime,
     ) -> Result<(), AscendingError>;
 
-    fn default_actions(&self) -> Vec<UiFlags>;
+    fn default_actions(&self) -> UiField;
 }
 
 pub trait AnyData<Message>: Control<Message> {
@@ -153,27 +154,19 @@ impl Actions {
 
 pub struct Hidden;
 
-pub struct WidgetAny<Message>(pub Box<dyn AnyData<Message>>);
+pub struct WidgetAny<Message: 'static>(
+    pub Box<dyn AnyData<Message> + Send + Sync>,
+);
 
-impl<Message> WidgetAny<Message> {
-    pub fn get(&self) -> &dyn AnyData<Message> {
-        self.0.as_ref()
-    }
-
-    pub fn get_mut(&mut self) -> &mut dyn AnyData<Message> {
-        self.0.as_mut()
-    }
-}
-
-impl<Message> Deref for WidgetAny<Message> {
-    type Target = Box<dyn AnyData<Message>>;
+impl<Message: 'static> Deref for WidgetAny<Message> {
+    type Target = Box<dyn AnyData<Message> + Send + Sync>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl<Message> DerefMut for WidgetAny<Message> {
+impl<Message: 'static> DerefMut for WidgetAny<Message> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

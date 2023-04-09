@@ -7,8 +7,11 @@ use graphics::*;
 pub struct Button<Message> {
     identity: Identity,
     #[allow(clippy::type_complexity)]
-    on_press:
-        Box<dyn Fn(Identity, (MouseButton, bool, ModifiersState)) -> Message>,
+    on_press: Box<
+        dyn Fn(Identity, (MouseButton, bool, ModifiersState)) -> Message
+            + Send
+            + Sync,
+    >,
     over_color: Color,
     clicked_color: Color,
     color: Color,
@@ -28,8 +31,10 @@ impl<Message> Button<Message> {
         size: Vec2,
         border_width: f32,
         radius: Option<f32>,
-        on_press: impl Fn(Identity, (MouseButton, bool, ModifiersState)) -> Message
-            + 'static,
+        on_press: (impl Fn(Identity, (MouseButton, bool, ModifiersState)) -> Message
+             + Send
+             + Sync
+             + 'static),
     ) -> Button<Message> {
         let mut shape = Rect::new(renderer);
 
@@ -91,8 +96,10 @@ impl<Message> Control<Message> for Button<Message> {
         self.shape.position = position;
     }
 
-    fn default_actions(&self) -> Vec<UiFlags> {
-        vec![UiFlags::ClickAble]
+    fn default_actions(&self) -> UiField {
+        let mut field = UiField::default();
+        field.set(UiFlags::ClickAble);
+        field
     }
 
     fn event(

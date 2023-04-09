@@ -11,6 +11,7 @@ use std::{
     collections::{HashMap, VecDeque},
     marker::PhantomData,
     rc::Rc,
+    sync::RwLock,
     vec::Vec,
 };
 use winit::event::{KeyboardInput, ModifiersState, MouseButton};
@@ -19,7 +20,7 @@ use winit::window::Window;
 pub mod events;
 pub mod internals;
 
-pub struct UI<Message> {
+pub struct UI<Message: 'static> {
     name_map: HashMap<Identity, Handle>,
     ///Contains All Visible widgets in rendering order
     zlist: VecDeque<Handle>,
@@ -37,7 +38,7 @@ pub struct UI<Message> {
     phantom: PhantomData<Message>,
 }
 
-impl<Message> UI<Message> {
+impl<Message: 'static> UI<Message> {
     pub fn new() -> Self {
         UI {
             name_map: HashMap::with_capacity(100),
@@ -56,16 +57,11 @@ impl<Message> UI<Message> {
         }
     }
 
-    /*pub fn get_widget_by_id(&self, world: &mut World, id: Identity) -> &Widget<Message> {
-        let handle = self.name_map.get(&id).unwrap();
-        self.widgets
-            .get(handle.get_key())
-            .expect("ID Existed but widget does not exist?")
-    }*/
-
-    pub fn set_action(world: &mut World, id: Handle, action: UiFlags) {
-        let actions: Actions = world.get(id.get_key());
-        actions.get_mut().set(action);
+    pub fn set_action(world: &mut World, handle: Handle, action: UiFlags) {
+        let mut actions = world
+            .get::<&mut Actions>(handle.get_key())
+            .expect("Widget is missing its actions?");
+        actions.set(action);
     }
 
     pub fn remove_widget_by_handle(
@@ -73,29 +69,30 @@ impl<Message> UI<Message> {
         world: &mut World,
         handle: Handle,
     ) {
-        self.widget_clear_self(&self.get_widget(handle));
+        self.widget_clear_self(world, handle);
     }
 
     pub fn show_widget_by_handle(
         &mut self,
+        world: &mut World,
+        ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
         handle: Handle,
-    ) {
-        self.widget_show(renderer, &self.get_widget(handle));
+    ) -> Vec<Message> {
+        let mut events: Vec<Message> = Vec::new();
+        self.widget_show(world, ui_buffer, renderer, handle, &mut events);
+        events
     }
 
-    pub fn hide_widget_by_handle(&mut self, handle: Handle) {
-        self.widget_hide(&self.get_widget(handle));
+    pub fn hide_widget_by_handle(&mut self, world: &mut World, handle: Handle) {
+        self.widget_hide(world, handle);
     }
 
-    pub(crate) fn create_widget<T>(
+    pub(crate) fn create_widget(
         &mut self,
         world: &mut World,
-        control: T,
-    ) -> Handle
-    where
-        T: AnyData<Message>,
-    {
+        control: (impl AnyData<Message> + Send + Sync + 'static),
+    ) -> Handle {
         let actions = Actions(control.default_actions());
         let bounds = WidgetBounds(Bounds::default());
         let identity = control.get_id().clone();
@@ -111,19 +108,16 @@ impl<Message> UI<Message> {
         handle
     }
 
-    pub fn add_widget<T>(
+    pub fn add_widget(
         &mut self,
         world: &mut World,
         parent_handle: Option<Handle>,
-        control: T,
-    ) -> Handle
-    where
-        T: AnyData<Message>,
-    {
+        control: (impl AnyData<Message> + Send + Sync + 'static),
+    ) -> Handle {
         let handle = self.create_widget(world, control);
 
         if let Some(parent_handle) = parent_handle {
-            world.insert_one(handle.get_key(), Parent(parent_handle));
+            let _ = world.insert_one(handle.get_key(), Parent(parent_handle));
             self.widget_show_children(world, parent_handle);
         } else {
             self.zlist.push_back(handle);
@@ -133,29 +127,24 @@ impl<Message> UI<Message> {
         handle
     }
 
-    pub fn add_widget_hidden<T>(
+    pub fn add_widget_hidden(
         &mut self,
         world: &mut World,
         parent_handle: Option<Handle>,
-        control: T,
-    ) -> Handle
-    where
-        T: AnyData<Message>,
-    {
+        control: (impl AnyData<Message> + Send + Sync + 'static),
+    ) -> Handle {
         let handle = self.create_widget(world, control);
 
         if let Some(parent_handle) = parent_handle {
-            world.insert_one(handle.get_key(), Parent(parent_handle));
+            let _ = world.insert_one(handle.get_key(), Parent(parent_handle));
         }
 
-        world.insert_one(handle.get_key(), Hidden);
+        let _ = world.insert_one(handle.get_key(), Hidden);
         handle
     }
 
-    pub fn clear_widgets(&mut self, world: &mut World) {
-        self.visible.clear();
+    pub fn clear_widgets(&mut self, _world: &mut World) {
         self.zlist.clear();
-        self.hidden.clear();
         self.name_map.clear();
         self.focused = None;
         self.over = None;

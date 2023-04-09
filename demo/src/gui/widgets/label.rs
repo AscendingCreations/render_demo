@@ -73,8 +73,10 @@ impl<Message> Control<Message> for Label {
         self.text.pos = position;
     }
 
-    fn default_actions(&self) -> Vec<UiFlags> {
-        vec![UiFlags::CanClickBehind]
+    fn default_actions(&self) -> UiField {
+        let mut field = UiField::default();
+        field.set(UiFlags::CanClickBehind);
+        field
     }
 
     fn event(

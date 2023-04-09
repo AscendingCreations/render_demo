@@ -1,8 +1,9 @@
 use crate::{
-    FrameTime, GpuRenderer, Handle, Identity, SystemEvent, UIBuffer, UiFlags,
-    Widget, UI,
+    Actions, FrameTime, GpuRenderer, Handle, Identity, SystemEvent, UIBuffer,
+    UiFlags, Widget, WidgetAny, UI,
 };
 use graphics::*;
+use hecs::World;
 use slab::Slab;
 use std::{
     any::Any,
@@ -24,22 +25,28 @@ use winit::{
 impl<Message> UI<Message> {
     pub fn event_draw(
         &mut self,
+        world: &mut World,
+        ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
         time: &FrameTime,
     ) -> Result<(), AscendingError> {
         for handle in &self.zlist.clone() {
-            let widget = self.get_widget(*handle);
+            let mut ui = world
+                .get::<&mut WidgetAny<Message>>(handle.get_key())
+                .expect("Widget is missing its inner UI Type?");
 
-            widget.ui.draw(self.ui_buffer_mut(), renderer, time)?;
+            ui.draw(ui_buffer, renderer, time)?;
         }
 
-        self.ui_buffer_mut().ui_buffer.finalize(renderer);
-        self.ui_buffer_mut().text_renderer.finalize(renderer);
+        ui_buffer.ui_buffer.finalize(renderer);
+        ui_buffer.text_renderer.finalize(renderer);
         Ok(())
     }
 
     pub fn event_mouse_position(
         &mut self,
+        world: &mut World,
+        ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
         position: Vec2,
         screensize: Vec2,
@@ -60,14 +67,20 @@ impl<Message> UI<Message> {
             }
         } else {
             if let Some(handle) = self.focused {
-                let focused = self.get_widget(handle);
+                let action = world
+                    .get::<&Actions>(handle.get_key())
+                    .expect("Widget is missing its actions?");
 
-                if focused.actions.get(UiFlags::Moving) {
+                let mut ui = world
+                    .get::<&mut WidgetAny<Message>>(handle.get_key())
+                    .expect("Widget is missing its inner UI Type?");
+
+                if action.exists(UiFlags::Moving) {
                     let pos = [
                         position.x - self.mouse_pos[0],
                         position.y - self.mouse_pos[1],
                     ];
-                    let mut bounds = focused.ui.get_bounds();
+                    let mut bounds = ui.get_bounds();
 
                     if bounds.x + pos[0] <= 0.0
                         || bounds.y + pos[1] <= 0.0
@@ -79,17 +92,17 @@ impl<Message> UI<Message> {
 
                     bounds.x += pos[0];
                     bounds.y += pos[1];
-                    let control_pos = focused.ui.get_position();
-                    focused.ui.set_position(Vec3::new(
+                    let control_pos = ui.get_position();
+                    ui.set_position(Vec3::new(
                         bounds.x,
                         bounds.y,
                         control_pos.z,
                     ));
-                    self.widget_position_update(renderer, &mut focused);
+                    self.widget_position_update(renderer, handle);
                 }
             }
 
-            self.mouse_over_event(renderer, events);
+            self.mouse_over_event(world, ui_buffer, renderer, events);
         }
 
         self.mouse_pos = position;
@@ -97,6 +110,8 @@ impl<Message> UI<Message> {
 
     pub fn event_mouse_button(
         &mut self,
+        world: &mut World,
+        ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
         button: MouseButton,
         pressed: bool,
@@ -106,9 +121,9 @@ impl<Message> UI<Message> {
         self.mouse_clicked = self.mouse_pos;
 
         if pressed {
-            self.mouse_press(renderer, events);
+            self.mouse_press(world, ui_buffer, renderer, events);
         } else {
-            self.mouse_release(renderer, events);
+            self.mouse_release(world, ui_buffer, renderer, events);
         }
     }
 
@@ -118,6 +133,8 @@ impl<Message> UI<Message> {
 
     pub fn handle_events(
         &mut self,
+        world: &mut World,
+        ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
         event: &Event<()>,
         hidpi: f32,
@@ -142,6 +159,8 @@ impl<Message> UI<Message> {
                 WindowEvent::MouseInput { state, button, .. } => {
                     let pressed = *state == ElementState::Pressed;
                     self.event_mouse_button(
+                        world,
+                        ui_buffer,
                         renderer,
                         *button,
                         pressed,
@@ -158,6 +177,8 @@ impl<Message> UI<Message> {
                         size.height - ((*y as f32) * hidpi),
                     );
                     self.event_mouse_position(
+                        world,
+                        ui_buffer,
                         renderer,
                         pos,
                         Vec2::new(size.width, size.height),

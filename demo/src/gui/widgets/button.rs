@@ -1,10 +1,17 @@
 use crate::{
-    CallBack, CallBackKey, Control, FrameTime, Identity, InternalCallBacks,
-    ModifiersState, MouseButton, UIBuffer, UiFlags, Widget, WidgetRef, UI,
+    Control, FrameTime, Handle, Identity, ModifiersState, MouseButton,
+    SystemEvent, UIBuffer, UiField, UiFlags, Widget, UI,
 };
 use graphics::*;
 
-pub struct Button {
+pub struct Button<Message> {
+    identity: Identity,
+    #[allow(clippy::type_complexity)]
+    on_press: Box<
+        dyn Fn(Identity, (MouseButton, bool, ModifiersState)) -> Message
+            + Send
+            + Sync,
+    >,
     over_color: Color,
     clicked_color: Color,
     color: Color,
@@ -14,114 +21,21 @@ pub struct Button {
     shape: Rect,
 }
 
-fn draw<T>(
-    control: &mut Widget<T>,
-    ui: &mut UI<T>,
-    renderer: &mut GpuRenderer,
-    _time: &FrameTime,
-) {
-    if let Some(button) =
-        control.ui.as_mut().as_mut_any().downcast_mut::<Button>()
-    {
-        let index = button.shape.update(renderer);
-        ui.ui_buffer_mut()
-            .ui_buffer
-            .add_buffer_store(renderer, index);
-    }
-}
-
-fn mouse_over<T>(
-    control: &mut Widget<T>,
-    ui: &mut UI<T>,
-    renderer: &mut GpuRenderer,
-    is_over: bool,
-) {
-    if let Some(button) =
-        control.ui.as_mut().as_mut_any().downcast_mut::<Button>()
-    {
-        button
-            .shape
-            .set_color(
-                renderer,
-                &mut ui.ui_buffer_mut().ui_atlas,
-                if is_over {
-                    button.over_color
-                } else {
-                    button.color
-                },
-            )
-            .set_border_color(
-                renderer,
-                &mut ui.ui_buffer_mut().ui_atlas,
-                if is_over {
-                    button.border_over_color
-                } else {
-                    button.border_color
-                },
-            );
-    }
-}
-
-fn mouse_button<T>(
-    control: &mut Widget<T>,
-    ui: &mut UI<T>,
-    renderer: &mut GpuRenderer,
-    mouse_btn: MouseButton,
-    is_pressed: bool,
-    _mods: ModifiersState,
-) {
-    let mouse_over = control.actions.get(crate::gui::UiFlags::MouseOver);
-
-    if let Some(button) =
-        control.ui.as_mut().as_mut_any().downcast_mut::<Button>()
-    {
-        if mouse_btn == MouseButton::Left {
-            if mouse_over {
-                let colors = if is_pressed {
-                    (button.clicked_color, button.border_clicked_color)
-                } else {
-                    (button.over_color, button.border_over_color)
-                };
-
-                button
-                    .shape
-                    .set_color(
-                        renderer,
-                        &mut ui.ui_buffer_mut().ui_atlas,
-                        colors.0,
-                    )
-                    .set_border_color(
-                        renderer,
-                        &mut ui.ui_buffer_mut().ui_atlas,
-                        colors.1,
-                    );
-            } else {
-                button
-                    .shape
-                    .set_color(
-                        renderer,
-                        &mut ui.ui_buffer_mut().ui_atlas,
-                        button.color,
-                    )
-                    .set_border_color(
-                        renderer,
-                        &mut ui.ui_buffer_mut().ui_atlas,
-                        button.border_color,
-                    );
-            }
-        }
-    }
-}
-
-impl Button {
+impl<Message> Button<Message> {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
+        identity: Identity,
         position: Vec3,
         size: Vec2,
         border_width: f32,
         radius: Option<f32>,
-    ) -> Button {
+        on_press: (impl Fn(Identity, (MouseButton, bool, ModifiersState)) -> Message
+             + Send
+             + Sync
+             + 'static),
+    ) -> Button<Message> {
         let mut shape = Rect::new(renderer);
 
         shape
@@ -141,6 +55,8 @@ impl Button {
             .set_size(size);
 
         Self {
+            identity,
+            on_press: Box::new(on_press),
             over_color: Color::rgba(40, 40, 40, 255),
             clicked_color: Color::rgba(60, 60, 60, 255),
             color: Color::rgba(20, 20, 20, 255),
@@ -152,7 +68,11 @@ impl Button {
     }
 }
 
-impl<T: 'static> Control<T> for Button {
+impl<Message> Control<Message> for Button<Message> {
+    fn get_id(&self) -> &Identity {
+        &self.identity
+    }
+
     fn check_mouse_bounds(&self, mouse_pos: Vec2) -> bool {
         self.shape.check_mouse_bounds(mouse_pos)
     }
@@ -176,27 +96,91 @@ impl<T: 'static> Control<T> for Button {
         self.shape.position = position;
     }
 
-    fn get_internal_callbacks(
-        &self,
-        id: &Identity,
-    ) -> Vec<(InternalCallBacks<T>, CallBackKey)> {
-        vec![
-            (
-                InternalCallBacks::Draw(draw),
-                CallBackKey::new(id, CallBack::Draw),
-            ),
-            (
-                InternalCallBacks::MousePresent(mouse_over),
-                CallBackKey::new(id, CallBack::MousePresent),
-            ),
-            (
-                InternalCallBacks::MousePress(mouse_button),
-                CallBackKey::new(id, CallBack::MousePress),
-            ),
-        ]
+    fn default_actions(&self) -> UiField {
+        let mut field = UiField::default();
+        field.set(UiFlags::ClickAble);
+        field
     }
 
-    fn default_actions(&self) -> Vec<UiFlags> {
-        vec![UiFlags::ClickAble]
+    fn event(
+        &mut self,
+        actions: UiField,
+        ui_buffer: &mut UIBuffer,
+        renderer: &mut GpuRenderer,
+        event: SystemEvent,
+        events: &mut Vec<Message>,
+    ) {
+        match event {
+            SystemEvent::MousePresent(is_over) => {
+                self.shape
+                    .set_color(
+                        renderer,
+                        &mut ui_buffer.ui_atlas,
+                        if is_over { self.over_color } else { self.color },
+                    )
+                    .set_border_color(
+                        renderer,
+                        &mut ui_buffer.ui_atlas,
+                        if is_over {
+                            self.border_over_color
+                        } else {
+                            self.border_color
+                        },
+                    );
+            }
+            SystemEvent::MousePress(mouse_btn, is_pressed, mods) => {
+                let mouse_over = actions.get(crate::gui::UiFlags::MouseOver);
+
+                if mouse_btn == MouseButton::Left {
+                    if mouse_over {
+                        let colors = if is_pressed {
+                            events.push((self.on_press)(
+                                self.identity.clone(),
+                                (mouse_btn, is_pressed, mods),
+                            ));
+                            (self.clicked_color, self.border_clicked_color)
+                        } else {
+                            (self.over_color, self.border_over_color)
+                        };
+
+                        self.shape
+                            .set_color(
+                                renderer,
+                                &mut ui_buffer.ui_atlas,
+                                colors.0,
+                            )
+                            .set_border_color(
+                                renderer,
+                                &mut ui_buffer.ui_atlas,
+                                colors.1,
+                            );
+                    } else {
+                        self.shape
+                            .set_color(
+                                renderer,
+                                &mut ui_buffer.ui_atlas,
+                                self.color,
+                            )
+                            .set_border_color(
+                                renderer,
+                                &mut ui_buffer.ui_atlas,
+                                self.border_color,
+                            );
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn draw(
+        &mut self,
+        ui_buffer: &mut UIBuffer,
+        renderer: &mut GpuRenderer,
+        _frametime: &FrameTime,
+    ) -> Result<(), AscendingError> {
+        let index = self.shape.update(renderer);
+        ui_buffer.ui_buffer.add_buffer_store(renderer, index);
+        Ok(())
     }
 }

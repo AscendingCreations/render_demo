@@ -8,6 +8,7 @@ use cosmic_text::{
     Action as TextAction, Attrs, Buffer, FontSystem, Metrics, Style, SwashCache,
 };
 use graphics::*;
+use hecs::World;
 use input::{Bindings, FrameTime, InputHandler};
 use log::{error, info, warn, Level, LevelFilter, Metadata, Record};
 use naga::{front::wgsl, valid::Validator};
@@ -77,7 +78,7 @@ impl log::Log for MyLogger {
     fn flush(&self) {}
 }
 
-fn mouse_button<T>(
+/*fn mouse_button<T>(
     control: &mut Widget<T>,
     _ui: &mut UI<T>,
     _device: &mut GpuRenderer,
@@ -102,6 +103,11 @@ fn mouse_button<T>(
         }
         state.sprites[0].changed = true;
     }
+}*/
+
+#[derive(Clone)]
+pub enum Messages {
+    ButtonClick(Identity, (MouseButton, bool, ModifiersState)),
 }
 
 #[tokio::main]
@@ -276,26 +282,32 @@ async fn main() -> Result<(), AscendingError> {
         Some(TextBounds::new(8.0, 32.0, 190.0, 0.0)),
     );
 
-    let ui_buffer = UIBuffer::new(&mut renderer)?;
+    let mut ui_buffer = UIBuffer::new(&mut renderer)?;
 
     text.set_buffer_size(&mut renderer, size.width as i32, size.height as i32);
 
-    let mut ui = UI::<State<FlatControls>>::new(ui_buffer);
+    let mut world = World::new();
+    let mut ui = UI::<Messages>::new();
     let button = Button::new(
-        ui.ui_buffer_mut(),
+        &mut ui_buffer,
         &mut renderer,
+        Identity {
+            name: "button".to_string(),
+            id: 1,
+        },
         Vec3::new(60.0, 300.0, 1.1),
         Vec2::new(155.0, 25.0),
         1.0,
         Some(5.0),
-    )
-    .into_widget(Identity {
-        name: "button".to_string(),
-        id: 1,
-    });
+        Messages::ButtonClick,
+    );
 
     let mut label = Label::new(
         &mut renderer,
+        Identity {
+            name: "label".to_string(),
+            id: 1,
+        },
         Some(Metrics::new(16.0, 16.0).scale(scale as f32)),
         Vec3::new(60.0, 300.0, 1.0),
         Vec2::new(150.0, 25.0),
@@ -307,27 +319,12 @@ async fn main() -> Result<(), AscendingError> {
         .set_default_color(Color::rgba(255, 255, 255, 255))
         .set_offset(Vec2::new(5.0, -5.0));
 
-    let label = label.into_widget(Identity {
-        name: "label".to_string(),
-        id: 1,
-    });
+    let button = ui.add_widget(&mut world, None, button);
+    let _label = ui.add_widget(&mut world, Some(button), label);
 
-    UI::set_action(&button, UiFlags::AlwaysUseable);
-    UI::set_action(&button, UiFlags::CanFocus);
-    UI::set_action(&button, UiFlags::CanMoveWindow);
-
-    ui.add_user_callback(
-        CallBacks::MousePress(mouse_button),
-        UI::get_callback_key(&button, CallBack::MousePress),
-    );
-    ui.add_widget_by_id(None, button);
-    ui.add_widget_by_id(
-        Some(Identity {
-            name: "button".to_string(),
-            id: 1,
-        }),
-        label,
-    );
+    UI::<Messages>::set_action(&mut world, button, UiFlags::AlwaysUseable);
+    UI::<Messages>::set_action(&mut world, button, UiFlags::CanFocus);
+    UI::<Messages>::set_action(&mut world, button, UiFlags::CanMoveWindow);
 
     renderer.window().set_visible(true);
 
@@ -391,8 +388,17 @@ async fn main() -> Result<(), AscendingError> {
         }
 
         input_handler.update(renderer.window(), &event, 1.0);
-        ui.handle_events(&mut renderer, &event, 1.0, &mut state);
+        let events = ui.handle_events(
+            &mut world,
+            &mut ui_buffer,
+            &mut renderer,
+            &event,
+            1.0,
+        );
 
+        for event in events {
+            state.event(&mut ui, &mut renderer, event);
+        }
         /*mouse_pos = {
             let pos = input_handler.mouse_position().unwrap_or((0.0, 0.0));
             Vec2::new(pos.0, size.height - pos.1)
@@ -446,7 +452,8 @@ async fn main() -> Result<(), AscendingError> {
             .rect_update(&mut state.rects, &mut renderer);
         state.rects_renderer.finalize(&mut renderer);
 
-        ui.event_draw(&mut renderer, &frame_time, &mut state);
+        ui.event_draw(&mut world, &mut ui_buffer, &mut renderer, &frame_time)
+            .unwrap();
         // Start encoding commands.
         let mut encoder = renderer.device().create_command_encoder(
             &wgpu::CommandEncoderDescriptor {
@@ -455,7 +462,7 @@ async fn main() -> Result<(), AscendingError> {
         );
 
         // Run the render pass.
-        state.render(&renderer, &mut encoder, ui.ui_buffer());
+        state.render(&renderer, &mut encoder, &ui_buffer);
 
         // Submit our command queue.
         renderer.queue().submit(std::iter::once(encoder.finish()));
@@ -480,6 +487,6 @@ async fn main() -> Result<(), AscendingError> {
         state.rects_atlas.trim();
         state.map_atlas.trim();
         state.text_atlas.trim();
-        ui.ui_buffer_mut().atlas_trim();
+        ui_buffer.atlas_trim();
     })
 }

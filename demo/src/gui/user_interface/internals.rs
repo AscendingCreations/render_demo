@@ -1,8 +1,9 @@
 use crate::{
-    CallBack, CallBackKey, CallBacks, FrameTime, Handle, Identity,
-    InternalCallBacks, UIBuffer, UiFlags, Widget, WidgetRef, UI,
+    Actions, FrameTime, Handle, Hidden, Identity, Parent, SystemEvent,
+    UIBuffer, UiFlags, Widget, WidgetAny, UI,
 };
 use graphics::*;
+use hecs::{With, Without, World};
 use slab::Slab;
 use std::{
     any::Any,
@@ -15,133 +16,184 @@ use std::{
 use winit::event::{KeyboardInput, ModifiersState};
 use winit::window::Window;
 
-impl<T> UI<T> {
+impl<Message> UI<Message> {
     pub(crate) fn mouse_over_event(
         &mut self,
+        world: &mut World,
+        ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
-        user_data: &mut T,
+        events: &mut Vec<Message>,
     ) {
         for &handle in self.zlist.clone().iter().rev() {
-            let control = self.get_widget(handle);
+            let action = world
+                .get::<&Actions>(handle.get_key())
+                .expect("Widget is missing its actions?")
+                .0;
 
-            if control.borrow().ui.check_mouse_bounds(self.mouse_pos)
-                && self.widget_usable(&control)
+            if world
+                .get::<&WidgetAny<Message>>(handle.get_key())
+                .expect("Widget is missing its inner UI Type?")
+                .check_mouse_bounds(self.mouse_pos)
+                && self.widget_usable(world, handle)
             {
-                if control.borrow().actions.get(UiFlags::CanClickBehind) {
-                    if let Some(parent_handle) = control.borrow().parent {
-                        let parent = self.get_widget(parent_handle);
+                if action.get(UiFlags::CanClickBehind) {
+                    let parent = world
+                        .get::<&Parent>(handle.get_key())
+                        .ok()
+                        .map(|parent| parent.get_id());
 
-                        if !parent.borrow().actions.get(UiFlags::Moving) {
+                    if let Some(parent_handle) = parent {
+                        let parent_action = world
+                            .get::<&Actions>(parent_handle.get_key())
+                            .expect("Widget is missing its actions?")
+                            .0;
+
+                        if !parent_action.get(UiFlags::Moving) {
                             self.widget_mouse_over(
-                                renderer, &parent, true, user_data,
+                                world,
+                                ui_buffer,
+                                renderer,
+                                parent_handle,
+                                true,
+                                events,
                             );
                         }
 
                         return;
                     }
                 } else {
-                    self.widget_mouse_over(renderer, &control, true, user_data);
+                    self.widget_mouse_over(
+                        world, ui_buffer, renderer, handle, true, events,
+                    );
                     return;
                 }
-            } else if !control.borrow().actions.get(UiFlags::Moving) {
-                self.widget_mouse_over(renderer, &control, false, user_data);
+            } else if !action.get(UiFlags::Moving) {
+                self.widget_mouse_over(
+                    world, ui_buffer, renderer, handle, false, events,
+                );
             }
         }
     }
 
     pub(crate) fn widget_mouse_over_callback(
         &mut self,
+        world: &mut World,
+        ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
-        control: &WidgetRef<T>,
+        control: Handle,
         entered: bool,
-        user_data: &mut T,
+        events: &mut Vec<Message>,
     ) {
-        let key = control.borrow().callback_key(CallBack::MousePresent);
+        let action = world
+            .get::<&Actions>(control.get_key())
+            .expect("Widget is missing its actions?");
 
-        if let Some(callback) = self.get_inner_callback(&key) {
-            if let InternalCallBacks::MousePresent(present) = callback {
-                present(&mut control.borrow_mut(), self, renderer, entered);
-            }
-        }
+        let mut ui = world
+            .get::<&mut WidgetAny<Message>>(control.get_key())
+            .expect("Widget is missing its inner UI Type?");
 
-        if let Some(callback) = self.get_user_callback(&key) {
-            if let CallBacks::MousePresent(present) = callback {
-                present(
-                    &mut control.borrow_mut(),
-                    self,
-                    renderer,
-                    entered,
-                    user_data,
-                );
-            }
-        }
+        ui.event(
+            action.0,
+            ui_buffer,
+            renderer,
+            SystemEvent::MousePresent(entered),
+            events,
+        );
     }
 
     pub(crate) fn widget_mouse_over(
         &mut self,
+        world: &mut World,
+        ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
-        control: &WidgetRef<T>,
+        control: Handle,
         entered: bool,
-        user_data: &mut T,
+        events: &mut Vec<Message>,
     ) {
-        if entered {
-            if self.over.is_some()
-                && self.over != Some(control.borrow().id)
+        if let Some(over) = self.over {
+            let actions = world
+                .get::<&mut Actions>(over.get_key())
+                .expect("Widget is missing its actions?")
+                .0;
+
+            if entered {
+                if over != control && self.widget_moving.is_none() {
+                    world
+                        .get::<&mut Actions>(over.get_key())
+                        .expect("Widget is missing its actions?")
+                        .clear(UiFlags::MouseOver);
+
+                    world
+                        .get::<&mut Actions>(control.get_key())
+                        .expect("Widget is missing its actions?")
+                        .set(UiFlags::MouseOver);
+
+                    self.widget_mouse_over_callback(
+                        world, ui_buffer, renderer, over, false, events,
+                    );
+                    self.over = Some(control);
+                    self.widget_mouse_over_callback(
+                        world, ui_buffer, renderer, control, true, events,
+                    );
+                }
+            } else if !world
+                .get::<&mut WidgetAny<Message>>(over.get_key())
+                .expect("Widget is missing its inner UI Type?")
+                .check_mouse_bounds(self.mouse_pos)
+                && actions.get(UiFlags::MouseOver)
                 && self.widget_moving.is_none()
             {
-                let over = self.get_widget(self.over.unwrap());
-
-                over.borrow_mut().actions.clear(UiFlags::MouseOver);
-                control.borrow_mut().actions.set(UiFlags::MouseOver);
+                world
+                    .get::<&mut Actions>(over.get_key())
+                    .expect("Widget is missing its actions?")
+                    .clear(UiFlags::MouseOver);
                 self.widget_mouse_over_callback(
-                    renderer, &over, false, user_data,
-                );
-                self.over = Some(control.borrow().id);
-                self.widget_mouse_over_callback(
-                    renderer, control, true, user_data,
-                );
-            } else if self.over.is_none() {
-                self.over = Some(control.borrow().id);
-                control.borrow_mut().actions.set(UiFlags::MouseOver);
-                self.widget_mouse_over_callback(
-                    renderer, control, true, user_data,
-                );
-            }
-        } else if let Some(over_handle) = self.over {
-            let over = self.get_widget(over_handle);
-
-            if !over.borrow().ui.check_mouse_bounds(self.mouse_pos)
-                && over.borrow().actions.get(UiFlags::MouseOver)
-                && self.widget_moving.is_none()
-            {
-                over.borrow_mut().actions.clear(UiFlags::MouseOver);
-                self.widget_mouse_over_callback(
-                    renderer, &over, false, user_data,
+                    world, ui_buffer, renderer, over, false, events,
                 );
                 self.over = None;
             }
+        } else if entered {
+            self.over = Some(control);
+            world
+                .get::<&mut Actions>(control.get_key())
+                .expect("Widget is missing its actions?")
+                .set(UiFlags::MouseOver);
+            self.widget_mouse_over_callback(
+                world, ui_buffer, renderer, control, true, events,
+            );
         }
     }
 
-    pub(crate) fn widget_usable(&self, control: &WidgetRef<T>) -> bool {
-        if control.borrow().actions.get(UiFlags::AlwaysUseable) {
+    pub(crate) fn widget_usable(
+        &self,
+        world: &mut World,
+        control: Handle,
+    ) -> bool {
+        let actions = world
+            .get::<&Actions>(control.get_key())
+            .expect("Widget is missing its actions?");
+
+        if actions.exists(UiFlags::AlwaysUseable) {
             return true;
         }
 
-        if !control.borrow().actions.get(UiFlags::IsFocused) {
-            let mut parent_handle = control.borrow().parent;
+        if !actions.exists(UiFlags::IsFocused) {
+            let mut parent_handle =
+                world.get::<&Parent>(control.get_key()).ok();
 
-            while let Some(handle) = parent_handle {
-                let parent = self.get_widget(handle);
+            while let Some(parent) = parent_handle {
+                let parent_actions = world
+                    .get::<&Actions>(parent.get_key())
+                    .expect("Widget is missing its actions?");
 
-                if (parent.borrow().actions.get(UiFlags::CanFocus)
-                    && parent.borrow().actions.get(UiFlags::IsFocused))
-                    || parent.borrow().actions.get(UiFlags::AlwaysUseable)
+                if (parent_actions.exists(UiFlags::CanFocus)
+                    && parent_actions.exists(UiFlags::IsFocused))
+                    || parent_actions.exists(UiFlags::AlwaysUseable)
                 {
                     return true;
                 }
 
-                parent_handle = parent.borrow().parent;
+                parent_handle = world.get::<&Parent>(parent.get_key()).ok();
             }
 
             false
@@ -152,255 +204,173 @@ impl<T> UI<T> {
 
     pub(crate) fn widget_manual_focus(
         &mut self,
+        world: &mut World,
+        ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
-        control: &WidgetRef<T>,
+        control: Handle,
+        events: &mut Vec<Message>,
     ) {
-        let handle = control.borrow().id;
+        let actions = world
+            .get::<&mut Actions>(control.get_key())
+            .expect("Widget is missing its actions?")
+            .0;
 
-        if control.borrow().actions.get(UiFlags::CanFocus) {
-            if let Some(pos) = self.zlist.iter().position(|x| *x == handle) {
+        if actions.get(UiFlags::CanFocus) {
+            if let Some(pos) = self.zlist.iter().position(|x| *x == control) {
                 self.zlist.remove(pos);
-                self.zlist.push_back(handle);
+                self.zlist.push_back(control);
             }
 
-            self.widget_show_children(control);
-
-            if let Some(parent_handle) = control.borrow().parent {
-                let wdgt = self.get_widget(parent_handle);
-                let mut parent = wdgt.borrow_mut();
-
-                if let Some(pos) =
-                    parent.visible.iter().position(|x| *x == handle)
-                {
-                    parent.visible.remove(pos);
-                    parent.visible.push_back(handle);
-                }
-            } else if let Some(pos) =
-                self.visible.iter().position(|x| *x == handle)
-            {
-                self.visible.remove(pos);
-                self.visible.push_back(handle);
-            }
+            self.widget_show_children(world, control);
 
             if let Some(focused_handle) = self.focused {
                 self.widget_focused_callback(
+                    world,
+                    ui_buffer,
                     renderer,
-                    &self.get_widget(focused_handle),
+                    focused_handle,
                     false,
+                    events,
                 );
             }
 
-            control.borrow_mut().actions.set(UiFlags::IsFocused);
-            self.focused = Some(handle);
-            self.widget_focused_callback(renderer, control, true);
+            world
+                .get::<&mut Actions>(control.get_key())
+                .expect("Widget is missing its actions?")
+                .set(UiFlags::IsFocused);
+            self.focused = Some(control);
+            self.widget_focused_callback(
+                world, ui_buffer, renderer, control, true, events,
+            );
         }
     }
 
     pub(crate) fn widget_show(
         &mut self,
+        world: &mut World,
+        ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
-        control: &WidgetRef<T>,
+        control: Handle,
+        events: &mut Vec<Message>,
     ) {
-        let handle = control.borrow().id;
-
-        if control.borrow().parent.is_none() {
-            self.visible.push_back(handle);
-
-            if let Some(pos) = self.hidden.iter().position(|x| *x == handle) {
-                self.hidden.remove(pos);
-            }
-        }
-
-        self.zlist.push_back(handle);
-        self.widget_show_children(control);
-
-        if !self.widget_is_focused(control) && self.focused.is_some() {
-            let focused = self.get_widget(self.focused.unwrap());
-
-            self.widget_manual_focus(renderer, &focused);
-        }
-    }
-
-    pub(crate) fn widget_hide(&mut self, control: &WidgetRef<T>) {
-        let handle = control.borrow().id;
-
-        if control.borrow().parent.is_none() {
-            if let Some(pos) = self.visible.iter().position(|x| *x == handle) {
-                self.visible.remove(pos);
-            }
-
-            self.hidden.push(handle);
-        }
-
-        if let Some(pos) = self.zlist.iter().position(|x| *x == handle) {
+        if let Some(pos) = self.zlist.iter().position(|x| *x == control) {
             self.zlist.remove(pos);
         }
 
-        self.widget_hide_children(control);
+        self.zlist.push_back(control);
+        self.widget_show_children(world, control);
 
-        if self.focused == Some(handle) {
+        if !self.widget_is_focused(world, control) && self.focused.is_some() {
+            let focused = self.focused.unwrap();
+
+            self.widget_manual_focus(
+                world, ui_buffer, renderer, focused, events,
+            );
+        }
+    }
+
+    pub(crate) fn widget_hide(&mut self, world: &mut World, control: Handle) {
+        if let Some(pos) = self.zlist.iter().position(|x| *x == control) {
+            self.zlist.remove(pos);
+        }
+
+        self.widget_hide_children(world, control);
+
+        if self.focused == Some(control) {
             self.focused = None;
         }
     }
 
-    pub(crate) fn widget_add(
+    pub(crate) fn widget_clear_self(
         &mut self,
-        parent: Option<&WidgetRef<T>>,
-        control: WidgetRef<T>,
+        world: &mut World,
+        control: Handle,
     ) {
-        if self.name_map.contains_key(&control.borrow().identity) {
-            panic!("You can not use the same Identity for multiple widgets");
-        }
-
-        let callbacks = control
-            .borrow()
-            .ui
-            .get_internal_callbacks(&control.borrow().identity);
-
-        for (callback, key) in callbacks {
-            self.add_inner_callback(callback, key);
-        }
-
-        let handle = Handle(self.widgets.insert(control));
-        let control = self.get_widget(handle);
-
-        control.borrow_mut().id = handle;
-        self.name_map
-            .insert(control.borrow().identity.clone(), handle);
-
-        if parent.is_none() {
-            self.visible.push_back(handle);
-            self.zlist.push_back(handle);
-            self.widget_show_children(&control)
-        } else if let Some(parent) = parent {
-            parent.borrow_mut().visible.push_back(handle);
-            self.widget_show_children(parent);
-        }
-    }
-
-    pub(crate) fn widget_add_hidden(
-        &mut self,
-        parent: Option<&WidgetRef<T>>,
-        control: WidgetRef<T>,
-    ) {
-        if self.name_map.contains_key(&control.borrow().identity) {
-            panic!("You can not use the same Identity for multiple widgets even if hidden");
-        }
-
-        //let callbacks = control.borrow().ui
-        let handle = Handle(self.widgets.insert(control));
-        let control = self.get_widget(handle);
-
-        control.borrow_mut().id = handle;
-        self.name_map
-            .insert(control.borrow().identity.clone(), handle);
-
-        if parent.is_none() {
-            self.hidden.push(handle);
-        } else if let Some(parent) = parent {
-            parent.borrow_mut().hidden.push(handle);
-        }
-    }
-
-    pub(crate) fn widget_clear_self(&mut self, control: &WidgetRef<T>) {
-        let handle = control.borrow().id;
-
-        if control.borrow().parent.is_none() {
-            if let Some(pos) = self.visible.iter().position(|x| *x == handle) {
-                self.visible.remove(pos);
-            }
-
-            if let Some(pos) = self.hidden.iter().position(|x| *x == handle) {
-                self.hidden.remove(pos);
-            }
-        }
-
-        if self.focused == Some(handle) {
+        if self.focused == Some(control) {
             self.focused = None;
         }
 
-        if self.clicked == Some(handle) {
+        if self.clicked == Some(control) {
             self.clicked = None;
         }
 
-        if self.over == Some(handle) {
+        if self.over == Some(control) {
             self.over = None;
         }
 
-        if let Some(pos) = self.zlist.iter().position(|x| *x == handle) {
+        if let Some(pos) = self.zlist.iter().position(|x| *x == control) {
             self.zlist.remove(pos);
         }
 
-        let identity = control.borrow().identity.clone();
-        if let Some(identity) = self.name_map.remove(&identity) {
-            self.widgets.remove(identity.get_key());
+        self.name_map.remove(
+            world
+                .get::<&WidgetAny<Message>>(control.get_key())
+                .expect("Widget is missing its inner UI Type?")
+                .get_id(),
+        );
+
+        let children: Vec<Handle> = world
+            .query::<Without<(&Widget, &Parent), &Hidden>>()
+            .iter()
+            .filter(|(_entity, (_, parent))| parent.get_id() == control)
+            .map(|(entity, _)| Handle(entity))
+            .collect();
+
+        for child in children {
+            self.widget_clear_self(world, child);
         }
 
-        let callbacks = [
-            CallBack::MousePress,
-            CallBack::BoundsChange,
-            CallBack::Draw,
-            CallBack::FocusChange,
-            CallBack::KeyPress,
-            CallBack::MousePresent,
-            CallBack::MouseScroll,
-            CallBack::PositionChange,
-            CallBack::ValueChanged,
-        ];
+        let children: Vec<Handle> = world
+            .query::<With<(&Widget, &Parent), &Hidden>>()
+            .iter()
+            .filter(|(_entity, (_, parent))| parent.get_id() == control)
+            .map(|(entity, _)| Handle(entity))
+            .collect();
 
-        for callback in callbacks {
-            let key = control.borrow().callback_key(callback);
-            self.callbacks.remove(&key);
-            self.user_callbacks.remove(&key);
+        for child in children {
+            self.widget_clear_self(world, child);
         }
-
-        self.widget_clear_visible(control);
-        self.widget_clear_hidden(control);
-    }
-
-    pub(crate) fn widget_clear_visible(&mut self, control: &WidgetRef<T>) {
-        for child_handle in &control.borrow().visible {
-            self.widget_clear_self(&self.get_widget(*child_handle));
-        }
-
-        control.borrow_mut().hidden.clear();
-        control.borrow_mut().visible.clear();
-    }
-
-    pub(crate) fn widget_clear_hidden(&mut self, control: &WidgetRef<T>) {
-        for child_handle in &control.borrow().hidden {
-            self.widget_clear_self(&self.get_widget(*child_handle));
-        }
-
-        control.borrow_mut().hidden.clear();
-        control.borrow_mut().visible.clear();
     }
 
     // This will remove the children from the Zlist, focused, over and clicked.
     // This does not move the children into the controls hidden Vec.
     // This is because we want to be able to reshow All the visible children
     // when we unhide the control.
-    pub(crate) fn widget_hide_children(&mut self, control: &WidgetRef<T>) {
-        for child_handle in &control.borrow().visible {
-            let child = self.get_widget(*child_handle);
+    pub(crate) fn widget_hide_children(
+        &mut self,
+        world: &mut World,
+        control: Handle,
+    ) {
+        let children: Vec<Handle> = world
+            .query::<Without<(&Widget, &Parent), &Hidden>>()
+            .iter()
+            .filter(|(_entity, (_, parent))| parent.get_id() == control)
+            .map(|(entity, _)| Handle(entity))
+            .collect();
 
-            if let Some(pos) =
-                self.zlist.iter().position(|x| *x == *child_handle)
-            {
+        for child in children {
+            let actions = world
+                .get::<&Actions>(child.get_key())
+                .expect("Widget is missing its actions?")
+                .0;
+
+            if let Some(pos) = self.zlist.iter().position(|x| *x == child) {
                 self.zlist.remove(pos);
             }
 
-            self.widget_hide_children(&child);
+            if actions.get(UiFlags::AllowChildren) {
+                self.widget_hide_children(world, child);
+            }
 
-            if self.focused == Some(*child_handle) {
+            if self.focused == Some(child) {
                 self.focused = None;
             }
 
-            if self.clicked == Some(*child_handle) {
+            if self.clicked == Some(child) {
                 self.clicked = None;
             }
 
-            if self.over == Some(*child_handle) {
+            if self.over == Some(child) {
                 self.over = None;
             }
         }
@@ -408,216 +378,276 @@ impl<T> UI<T> {
 
     //This will Advance the children into the Back of the Zlist allowing them to
     //render on top.
-    pub(crate) fn widget_show_children(&mut self, control: &WidgetRef<T>) {
-        for child_handle in &control.borrow().visible {
-            let child = self.get_widget(*child_handle);
+    pub(crate) fn widget_show_children(
+        &mut self,
+        world: &mut World,
+        control: Handle,
+    ) {
+        let children: Vec<Handle> = world
+            .query::<Without<(&Widget, &Parent), &Hidden>>()
+            .iter()
+            .filter(|(_entity, (_, parent))| parent.get_id() == control)
+            .map(|(entity, _)| Handle(entity))
+            .collect();
 
-            if let Some(pos) =
-                self.zlist.iter().position(|x| *x == *child_handle)
-            {
+        for child in children {
+            let actions = world
+                .get::<&Actions>(child.get_key())
+                .expect("Widget is missing its actions?")
+                .0;
+
+            if let Some(pos) = self.zlist.iter().position(|x| *x == child) {
                 self.zlist.remove(pos);
-                self.zlist.push_back(*child_handle);
-            } else {
-                self.zlist.push_back(*child_handle);
             }
 
-            self.widget_show_children(&child);
+            self.zlist.push_back(child);
+
+            if actions.get(UiFlags::AllowChildren) {
+                self.widget_show_children(world, child);
+            }
         }
     }
 
     pub(crate) fn widget_focused_callback(
         &mut self,
+        world: &mut World,
+        ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
-        control: &WidgetRef<T>,
+        control: Handle,
         focused: bool,
+        events: &mut Vec<Message>,
     ) {
-        let mut mut_wdgt = control.borrow_mut();
-        let key = mut_wdgt.callback_key(CallBack::MousePress);
+        let mut ui = world
+            .get::<&mut WidgetAny<Message>>(control.get_key())
+            .expect("Widget is missing its inner UI Type?");
 
-        mut_wdgt.actions.set(UiFlags::IsFocused);
-        self.focused = Some(mut_wdgt.id);
+        let action = world
+            .get::<&Actions>(control.get_key())
+            .expect("Widget is missing its actions?");
 
-        if let Some(callback) = self.get_inner_callback(&key) {
-            if let InternalCallBacks::FocusChange(focus_changed) = callback {
-                focus_changed(&mut mut_wdgt, self, renderer, focused);
-            }
-        }
+        ui.event(
+            action.0,
+            ui_buffer,
+            renderer,
+            SystemEvent::FocusChange(focused),
+            events,
+        );
     }
 
     pub(crate) fn widget_mouse_press_callbacks(
         &mut self,
+        world: &mut World,
+        ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
-        control: &WidgetRef<T>,
+        control: Handle,
         pressed: bool,
-        user_data: &mut T,
+        events: &mut Vec<Message>,
     ) {
-        let mut mut_wdgt = control.borrow_mut();
-        let key = mut_wdgt.callback_key(CallBack::MousePress);
+        let mut ui = world
+            .get::<&mut WidgetAny<Message>>(control.get_key())
+            .expect("Widget is missing its inner UI Type?");
 
-        if let Some(callback) = self.get_inner_callback(&key) {
-            if let InternalCallBacks::MousePress(mouse_press) = callback {
-                mouse_press(
-                    &mut mut_wdgt,
-                    self,
-                    renderer,
-                    self.button,
-                    pressed,
-                    self.modifier,
-                );
-            }
-        }
+        let action = world
+            .get::<&Actions>(control.get_key())
+            .expect("Widget is missing its actions?");
 
-        if let Some(callback) = self.get_user_callback(&key) {
-            if let CallBacks::MousePress(mouse_press) = callback {
-                mouse_press(
-                    &mut mut_wdgt,
-                    self,
-                    renderer,
-                    self.button,
-                    pressed,
-                    self.modifier,
-                    user_data,
-                );
-            }
-        }
+        let btn = self.button;
+        let modifier = self.modifier;
+
+        ui.event(
+            action.0,
+            ui_buffer,
+            renderer,
+            SystemEvent::MousePress(btn, pressed, modifier),
+            events,
+        );
     }
 
     pub(crate) fn widget_set_clicked(
         &mut self,
+        world: &mut World,
+        ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
-        control: &WidgetRef<T>,
-        user_data: &mut T,
+        control: Handle,
+        events: &mut Vec<Message>,
     ) {
-        {
-            let mut refctrl = control.borrow_mut();
-            let in_bounds = refctrl.ui.check_mouse_bounds(self.mouse_clicked);
+        let action = world
+            .get::<&mut Actions>(control.get_key())
+            .expect("Widget is missing its actions?")
+            .0;
 
-            if refctrl.actions.get(UiFlags::CanMoveWindow) && in_bounds {
-                self.moving = true;
-            }
+        let in_bounds = world
+            .get::<&mut WidgetAny<Message>>(control.get_key())
+            .expect("Widget is missing its inner UI Type?")
+            .check_mouse_bounds(self.mouse_clicked);
 
-            if refctrl.actions.get(UiFlags::CanClickBehind) {
-                if let Some(parent_handle) = refctrl.parent {
-                    let parent = self.get_widget(parent_handle);
-
-                    if parent.borrow().actions.get(UiFlags::CanMoveWindow)
-                        && parent
-                            .borrow()
-                            .ui
-                            .check_mouse_bounds(self.mouse_clicked)
-                    {
-                        self.moving = true;
-                    }
-
-                    self.clicked = Some(parent_handle);
-                    self.widget_mouse_press_callbacks(
-                        renderer, &parent, true, user_data,
-                    );
-                }
-
-                return;
-            }
-
-            if refctrl.actions.get(UiFlags::MoveAble) && in_bounds {
-                refctrl.actions.set(UiFlags::Moving);
-                self.widget_moving = Some(refctrl.id);
-            }
+        if action.get(UiFlags::CanMoveWindow) && in_bounds {
+            self.moving = true;
         }
 
-        self.widget_mouse_press_callbacks(renderer, control, true, user_data);
+        if action.get(UiFlags::CanClickBehind) {
+            if let Ok(parent) = world
+                .get::<&Parent>(control.get_key())
+                .map(|parent| parent.get_id())
+            {
+                let parent_action = world
+                    .get::<&Actions>(parent.get_key())
+                    .expect("Widget is missing its actions?")
+                    .0;
+
+                if parent_action.get(UiFlags::CanMoveWindow)
+                    && world
+                        .get::<&WidgetAny<Message>>(parent.get_key())
+                        .expect("Widget is missing its inner UI Type?")
+                        .check_mouse_bounds(self.mouse_clicked)
+                {
+                    self.moving = true;
+                }
+
+                self.clicked = Some(parent);
+                self.widget_mouse_press_callbacks(
+                    world, ui_buffer, renderer, parent, true, events,
+                );
+            }
+
+            return;
+        }
+
+        if action.get(UiFlags::MoveAble) && in_bounds {
+            world
+                .get::<&mut Actions>(control.get_key())
+                .expect("Widget is missing its actions?")
+                .set(UiFlags::Moving);
+            self.widget_moving = Some(control);
+        }
+
+        self.widget_mouse_press_callbacks(
+            world, ui_buffer, renderer, control, true, events,
+        );
     }
 
     pub(crate) fn widget_set_focus(
         &mut self,
+        world: &mut World,
+        ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
-        control: &WidgetRef<T>,
-        user_data: &mut T,
+        control: Handle,
+        events: &mut Vec<Message>,
     ) {
-        let handle = control.borrow().id;
-
-        if let Some(pos) = self.zlist.iter().position(|x| *x == handle) {
+        if let Some(pos) = self.zlist.iter().position(|x| *x == control) {
             self.zlist.remove(pos);
-            self.zlist.push_back(handle);
+            self.zlist.push_back(control);
         }
+
         //This will basically append the children after the parent since they render first.
-        self.widget_show_children(control);
+        self.widget_show_children(world, control);
 
-        if let Some(parent_handle) = control.borrow().parent {
-            let wdgt = self.get_widget(parent_handle);
-            let mut parent = wdgt.borrow_mut();
-
-            if let Some(pos) = parent.visible.iter().position(|x| *x == handle)
-            {
-                parent.visible.remove(pos);
-                parent.visible.push_back(handle);
-            }
+        if let Some(focused) = self.focused {
+            self.widget_focused_callback(
+                world, ui_buffer, renderer, focused, false, events,
+            );
         }
 
-        if let Some(focused_handle) = self.focused {
-            let focused = self.get_widget(focused_handle);
-            self.widget_focused_callback(renderer, &focused, false);
-        }
-
-        self.widget_focused_callback(renderer, control, true);
-        self.widget_set_clicked(renderer, control, user_data);
+        self.widget_focused_callback(
+            world, ui_buffer, renderer, control, true, events,
+        );
+        self.widget_set_clicked(world, ui_buffer, renderer, control, events);
     }
 
     pub(crate) fn is_parent_focused(
         &mut self,
+        world: &mut World,
+        ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
-        control: &WidgetRef<T>,
-        user_data: &mut T,
+        control: Handle,
+        events: &mut Vec<Message>,
     ) -> bool {
-        if control.borrow().actions.get(UiFlags::AlwaysUseable) {
+        let action = world
+            .get::<&Actions>(control.get_key())
+            .expect("Widget is missing its actions?")
+            .0;
+
+        if action.get(UiFlags::AlwaysUseable) {
             return true;
         }
 
-        let mut parent_opt = control.borrow().parent;
+        let control_parent = world
+            .get::<&Parent>(control.get_key())
+            .ok()
+            .map(|parent| parent.get_id());
 
-        while let Some(parent_handle) = parent_opt {
-            let parent = self.get_widget(parent_handle);
+        let mut parent_opt = control_parent;
 
-            if parent.borrow().actions.get(UiFlags::CanFocus) {
-                if parent.borrow().actions.get(UiFlags::IsFocused) {
+        while let Some(parent) = parent_opt {
+            let parent_action = world
+                .get::<&Actions>(parent.get_key())
+                .expect("Widget is missing its actions?")
+                .0;
+
+            if parent_action.get(UiFlags::CanFocus) {
+                if parent_action.get(UiFlags::IsFocused) {
                     return true;
                 } else {
-                    self.widget_manual_focus(renderer, &parent);
+                    self.widget_manual_focus(
+                        world, ui_buffer, renderer, parent, events,
+                    );
 
-                    if parent.borrow().actions.get(UiFlags::FocusClick) {
-                        self.widget_set_clicked(renderer, &parent, user_data);
+                    if parent_action.get(UiFlags::FocusClick) {
+                        self.widget_set_clicked(
+                            world, ui_buffer, renderer, parent, events,
+                        );
                     }
 
                     return true;
                 }
-            } else if parent.borrow().actions.get(UiFlags::AlwaysUseable)
-                && parent.borrow().actions.get(UiFlags::ClickAble)
-                && control.borrow().parent == Some(parent_handle)
-                && control.borrow().actions.get(UiFlags::CanClickBehind)
+            } else if parent_action.get(UiFlags::AlwaysUseable)
+                && parent_action.get(UiFlags::ClickAble)
+                && Some(parent) == control_parent
+                && action.get(UiFlags::CanClickBehind)
             {
                 return true;
             }
 
-            parent_opt = parent.borrow().parent;
+            parent_opt = world
+                .get::<&Parent>(control.get_key())
+                .ok()
+                .map(|parent| parent.get_id());
         }
 
         false
     }
 
-    pub(crate) fn widget_is_focused(&mut self, control: &WidgetRef<T>) -> bool {
-        if control.borrow().actions.get(UiFlags::IsFocused) {
+    pub(crate) fn widget_is_focused(
+        &mut self,
+        world: &mut World,
+        control: Handle,
+    ) -> bool {
+        let action = world
+            .get::<&Actions>(control.get_key())
+            .expect("Widget is missing its actions?");
+
+        if action.exists(UiFlags::IsFocused) {
             return true;
         }
 
-        let mut parent_opt = control.borrow().parent;
+        let mut parent_opt = world
+            .get::<&Parent>(control.get_key())
+            .ok()
+            .map(|parent| parent.get_id());
 
         while let Some(parent_handle) = parent_opt {
-            let parent = self.get_widget(parent_handle);
+            let parent_action = world
+                .get::<&Actions>(parent_handle.get_key())
+                .expect("Widget is missing its actions?");
 
-            if parent.borrow().actions.get(UiFlags::IsFocused) {
+            if parent_action.exists(UiFlags::IsFocused) {
                 return true;
             }
 
-            parent_opt = parent.borrow().parent;
+            parent_opt = world
+                .get::<&Parent>(parent_handle.get_key())
+                .ok()
+                .map(|parent| parent.get_id());
         }
 
         false
@@ -625,83 +655,130 @@ impl<T> UI<T> {
 
     pub(crate) fn mouse_press_event(
         &mut self,
+        world: &mut World,
+        ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
-        control: &WidgetRef<T>,
-        user_data: &mut T,
+        control: Handle,
+        events: &mut Vec<Message>,
     ) {
-        if control.borrow().actions.get(UiFlags::CanFocus) {
-            if self.focused != Some(control.borrow().id) {
-                self.widget_set_focus(renderer, control, user_data);
+        let action = world
+            .get::<&Actions>(control.get_key())
+            .expect("Widget is missing its actions?")
+            .0;
+
+        if action.get(UiFlags::CanFocus) {
+            if self.focused != Some(control) {
+                self.widget_set_focus(
+                    world, ui_buffer, renderer, control, events,
+                );
             } else {
-                self.widget_set_clicked(renderer, control, user_data);
+                self.widget_set_clicked(
+                    world, ui_buffer, renderer, control, events,
+                );
             }
-        } else if self.is_parent_focused(renderer, control, user_data) {
-            self.widget_set_clicked(renderer, control, user_data);
+        } else if self
+            .is_parent_focused(world, ui_buffer, renderer, control, events)
+        {
+            self.widget_set_clicked(
+                world, ui_buffer, renderer, control, events,
+            );
         }
     }
 
     pub(crate) fn mouse_press(
         &mut self,
+        world: &mut World,
+        ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
-        user_data: &mut T,
+        events: &mut Vec<Message>,
     ) {
         for handle in self.zlist.clone().iter().rev() {
-            let child = self.get_widget(*handle);
+            let action = world
+                .get::<&mut Actions>(handle.get_key())
+                .expect("Widget is missing its actions?")
+                .0;
 
-            if child.borrow().actions.get(UiFlags::ClickAble)
-                && child.borrow().ui.check_mouse_bounds(self.mouse_clicked)
+            if action.get(UiFlags::ClickAble)
+                && world
+                    .get::<&WidgetAny<Message>>(handle.get_key())
+                    .expect("Widget is missing its inner UI Type?")
+                    .check_mouse_bounds(self.mouse_clicked)
             {
-                if child.borrow().actions.get(UiFlags::MoveAble) {
-                    child.borrow_mut().actions.clear(UiFlags::Moving);
+                if action.get(UiFlags::MoveAble) {
+                    world
+                        .get::<&mut Actions>(handle.get_key())
+                        .expect("Widget is missing its actions?")
+                        .clear(UiFlags::Moving);
                 }
 
-                self.mouse_press_event(renderer, &child, user_data);
+                self.mouse_press_event(
+                    world, ui_buffer, renderer, *handle, events,
+                );
                 return;
             }
 
-            if child.borrow().actions.get(UiFlags::MoveAble)
-                && child.borrow().ui.check_mouse_bounds(self.mouse_clicked)
+            if action.get(UiFlags::MoveAble)
+                && world
+                    .get::<&WidgetAny<Message>>(handle.get_key())
+                    .expect("Widget is missing its inner UI Type?")
+                    .check_mouse_bounds(self.mouse_clicked)
             {
-                child.borrow_mut().actions.clear(UiFlags::Moving);
+                world
+                    .get::<&mut Actions>(handle.get_key())
+                    .expect("Widget is missing its actions?")
+                    .clear(UiFlags::Moving);
             }
         }
     }
 
     pub(crate) fn mouse_release(
         &mut self,
+        world: &mut World,
+        ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
-        user_data: &mut T,
+        events: &mut Vec<Message>,
     ) {
         if let Some(focused_handle) = self.focused {
-            let focused = self.get_widget(focused_handle);
+            let mut action = world
+                .get::<&mut Actions>(focused_handle.get_key())
+                .expect("Widget is missing its actions?");
 
-            if focused.borrow().actions.get(UiFlags::Moving)
+            if action.exists(UiFlags::Moving)
                 && self.widget_moving == Some(focused_handle)
             {
-                focused.borrow_mut().actions.clear(UiFlags::Moving);
+                action.clear(UiFlags::Moving);
                 self.widget_moving = None;
             }
         }
 
         for handle in self.zlist.clone().iter().rev() {
-            let control = self.get_widget(*handle);
+            let action = world
+                .get::<&mut Actions>(handle.get_key())
+                .expect("Widget is missing its actions?")
+                .0;
 
-            if control.borrow().actions.get(UiFlags::ClickAble)
-                && control.borrow().ui.check_mouse_bounds(self.mouse_clicked)
+            if action.get(UiFlags::ClickAble)
+                && world
+                    .get::<&WidgetAny<Message>>(handle.get_key())
+                    .expect("Widget is missing its inner UI Type?")
+                    .check_mouse_bounds(self.mouse_clicked)
             {
-                if control.borrow().actions.get(UiFlags::CanMoveWindow) {
+                if action.get(UiFlags::CanMoveWindow) {
                     self.moving = false;
                 }
 
-                if control.borrow().actions.get(UiFlags::Moving)
+                if action.get(UiFlags::Moving)
                     && self.widget_moving == Some(*handle)
                 {
-                    control.borrow_mut().actions.clear(UiFlags::Moving);
+                    world
+                        .get::<&mut Actions>(handle.get_key())
+                        .expect("Widget is missing its actions?")
+                        .clear(UiFlags::Moving);
                     self.widget_moving = None;
                 }
 
                 self.widget_mouse_press_callbacks(
-                    renderer, &control, false, user_data,
+                    world, ui_buffer, renderer, *handle, false, events,
                 );
                 return;
             }
@@ -710,10 +787,21 @@ impl<T> UI<T> {
 
     pub(crate) fn widget_position_update(
         &mut self,
-        renderer: &mut GpuRenderer,
-        parent: &mut Widget<T>,
+        _renderer: &mut GpuRenderer,
+        _parent: Handle,
     ) {
-        let key = parent.callback_key(CallBack::PositionChange);
+        //TODO Find good way to handle position updates for widgets being dragged around.
+        /*let mut control = control;
+
+        control.ui.event(
+            control.actions,
+            self.ui_buffer_mut(),
+            renderer,
+            SystemEvent::PositionChange,
+            &mut vec![],
+        );
+
+        let key = parent.callback_key(Event::PositionChange);
 
         if let Some(callback) = self.get_inner_callback(&key) {
             if let InternalCallBacks::PositionChange(internal_update_pos) =
@@ -726,12 +814,11 @@ impl<T> UI<T> {
         for handle in &parent.visible {
             let widget = self.get_widget(*handle);
 
-            if !widget.borrow().visible.is_empty() {
-                self.widget_position_update(renderer, &mut widget.borrow_mut());
+            if !widget.visible.is_empty() {
+                self.widget_position_update(renderer, &mut widget);
             } else {
-                let key =
-                    widget.borrow().callback_key(CallBack::PositionChange);
-                let mut mut_wdgt = widget.borrow_mut();
+                let key = widget.callback_key(Event::PositionChange);
+                let mut mut_wdgt = widget;
 
                 if let Some(callback) = self.get_inner_callback(&key) {
                     if let InternalCallBacks::PositionChange(
@@ -742,6 +829,6 @@ impl<T> UI<T> {
                     }
                 }
             }
-        }
+        }*/
     }
 }

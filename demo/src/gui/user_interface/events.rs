@@ -1,8 +1,9 @@
 use crate::{
-    CallBack, CallBackKey, CallBacks, FrameTime, GpuRenderer, Handle, Identity,
-    InternalCallBacks, UIBuffer, UiFlags, Widget, WidgetRef, UI,
+    Actions, FrameTime, GpuRenderer, Handle, Identity, SystemEvent, UIBuffer,
+    UiFlags, Widget, WidgetAny, UI,
 };
 use graphics::*;
+use hecs::World;
 use slab::Slab;
 use std::{
     any::Any,
@@ -21,42 +22,35 @@ use winit::{
     window::Window,
 };
 
-impl<T> UI<T> {
+impl<Message> UI<Message> {
     pub fn event_draw(
         &mut self,
+        world: &mut World,
+        ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
         time: &FrameTime,
-        user_data: &mut T,
-    ) {
+    ) -> Result<(), AscendingError> {
         for handle in &self.zlist.clone() {
-            let widget = self.get_widget(*handle);
+            let mut ui = world
+                .get::<&mut WidgetAny<Message>>(handle.get_key())
+                .expect("Widget is missing its inner UI Type?");
 
-            let key = widget.borrow().callback_key(CallBack::Draw);
-            let mut mut_wdgt = widget.borrow_mut();
-
-            if let Some(callback) = self.get_inner_callback(&key) {
-                if let InternalCallBacks::Draw(draw) = callback {
-                    draw(&mut mut_wdgt, self, renderer, time);
-                }
-            }
-
-            if let Some(callback) = self.get_user_callback(&key) {
-                if let CallBacks::Draw(draw) = callback {
-                    draw(&mut mut_wdgt, self, renderer, time, user_data);
-                }
-            }
+            ui.draw(ui_buffer, renderer, time)?;
         }
 
-        self.ui_buffer_mut().ui_buffer.finalize(renderer);
-        self.ui_buffer_mut().text_renderer.finalize(renderer);
+        ui_buffer.ui_buffer.finalize(renderer);
+        ui_buffer.text_renderer.finalize(renderer);
+        Ok(())
     }
 
     pub fn event_mouse_position(
         &mut self,
+        world: &mut World,
+        ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
         position: Vec2,
         screensize: Vec2,
-        user_data: &mut T,
+        events: &mut Vec<Message>,
     ) {
         self.new_mouse_pos = position;
 
@@ -73,14 +67,20 @@ impl<T> UI<T> {
             }
         } else {
             if let Some(handle) = self.focused {
-                let focused = self.get_widget(handle);
+                let action = world
+                    .get::<&Actions>(handle.get_key())
+                    .expect("Widget is missing its actions?");
 
-                if focused.borrow().actions.get(UiFlags::Moving) {
+                let mut ui = world
+                    .get::<&mut WidgetAny<Message>>(handle.get_key())
+                    .expect("Widget is missing its inner UI Type?");
+
+                if action.exists(UiFlags::Moving) {
                     let pos = [
                         position.x - self.mouse_pos[0],
                         position.y - self.mouse_pos[1],
                     ];
-                    let mut bounds = focused.borrow().ui.get_bounds();
+                    let mut bounds = ui.get_bounds();
 
                     if bounds.x + pos[0] <= 0.0
                         || bounds.y + pos[1] <= 0.0
@@ -92,20 +92,17 @@ impl<T> UI<T> {
 
                     bounds.x += pos[0];
                     bounds.y += pos[1];
-                    let control_pos = focused.borrow_mut().ui.get_position();
-                    focused.borrow_mut().ui.set_position(Vec3::new(
+                    let control_pos = ui.get_position();
+                    ui.set_position(Vec3::new(
                         bounds.x,
                         bounds.y,
                         control_pos.z,
                     ));
-                    self.widget_position_update(
-                        renderer,
-                        &mut focused.borrow_mut(),
-                    );
+                    self.widget_position_update(renderer, handle);
                 }
             }
 
-            self.mouse_over_event(renderer, user_data);
+            self.mouse_over_event(world, ui_buffer, renderer, events);
         }
 
         self.mouse_pos = position;
@@ -113,18 +110,20 @@ impl<T> UI<T> {
 
     pub fn event_mouse_button(
         &mut self,
+        world: &mut World,
+        ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
         button: MouseButton,
         pressed: bool,
-        user_data: &mut T,
+        events: &mut Vec<Message>,
     ) {
         self.button = button;
         self.mouse_clicked = self.mouse_pos;
 
         if pressed {
-            self.mouse_press(renderer, user_data);
+            self.mouse_press(world, ui_buffer, renderer, events);
         } else {
-            self.mouse_release(renderer, user_data);
+            self.mouse_release(world, ui_buffer, renderer, events);
         }
     }
 
@@ -134,11 +133,14 @@ impl<T> UI<T> {
 
     pub fn handle_events(
         &mut self,
+        world: &mut World,
+        ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
         event: &Event<()>,
         hidpi: f32,
-        user_data: &mut T,
-    ) {
+    ) -> Vec<Message> {
+        let mut events: Vec<Message> = Vec::new();
+
         match *event {
             Event::WindowEvent {
                 ref event,
@@ -157,7 +159,12 @@ impl<T> UI<T> {
                 WindowEvent::MouseInput { state, button, .. } => {
                     let pressed = *state == ElementState::Pressed;
                     self.event_mouse_button(
-                        renderer, *button, pressed, user_data,
+                        world,
+                        ui_buffer,
+                        renderer,
+                        *button,
+                        pressed,
+                        &mut events,
                     );
                 }
                 WindowEvent::CursorMoved {
@@ -170,10 +177,12 @@ impl<T> UI<T> {
                         size.height - ((*y as f32) * hidpi),
                     );
                     self.event_mouse_position(
+                        world,
+                        ui_buffer,
                         renderer,
                         pos,
                         Vec2::new(size.width, size.height),
-                        user_data,
+                        &mut events,
                     );
                 }
                 _ => (),
@@ -210,5 +219,7 @@ impl<T> UI<T> {
             },
             _ => (),
         }
+
+        events
     }
 }

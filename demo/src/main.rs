@@ -78,33 +78,6 @@ impl log::Log for MyLogger {
     fn flush(&self) {}
 }
 
-/*fn mouse_button<T>(
-    control: &mut Widget<T>,
-    _ui: &mut UI<T>,
-    _device: &mut GpuRenderer,
-    mouse_btn: MouseButton,
-    is_pressed: bool,
-    _mods: ModifiersState,
-    state: &mut State<FlatControls>,
-) {
-    if control
-        .ui
-        .as_mut()
-        .as_mut_any()
-        .downcast_mut::<Button>()
-        .is_some()
-        && mouse_btn == MouseButton::Left
-        && is_pressed
-    {
-        state.sprites[0].pos.x += 1.0;
-
-        if state.sprites[0].pos.x >= 300.0 {
-            state.sprites[0].pos.x = 0.0;
-        }
-        state.sprites[0].changed = true;
-    }
-}*/
-
 #[derive(Clone)]
 pub enum Messages {
     ButtonClick(Identity, (MouseButton, bool, ModifiersState)),
@@ -258,6 +231,7 @@ async fn main() -> Result<(), AscendingError> {
         border: None,
         order: DrawOrder::default(),
         border_uv: Vec4::default(),
+        bounds: None,
         store_id: renderer.new_buffer(),
     };
 
@@ -268,10 +242,7 @@ async fn main() -> Result<(), AscendingError> {
             &mut atlases[2],
             Color::rgba(0, 0, 0, 255),
         );
-    //.set_container_uv(Vec4::new(0.0, 0.0, 168.0, 32.0));
 
-    //let mut font_cache: SwashCache<'static> = SwashCache::new();
-    //let text_render = TextRender::new();
     let scale = renderer.window().current_monitor().unwrap().scale_factor();
 
     let mut text = Text::new(
@@ -279,12 +250,12 @@ async fn main() -> Result<(), AscendingError> {
         Some(Metrics::new(16.0, 16.0).scale(scale as f32)),
         Vec3::new(0.0, 32.0, 1.0),
         Vec2::new(256.0, 256.0),
-        Some(TextBounds::new(8.0, 32.0, 190.0, 0.0)),
     );
 
     let mut ui_buffer = UIBuffer::new(&mut renderer)?;
 
-    text.set_buffer_size(&mut renderer, size.width as i32, size.height as i32);
+    text.set_buffer_size(&mut renderer, size.width as i32, size.height as i32)
+        .set_bounds(TextBounds::new(8.0, 32.0, 190.0, 0.0));
 
     let mut world = World::new();
     let mut ui = UI::<Messages>::new();

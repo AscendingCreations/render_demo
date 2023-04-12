@@ -74,6 +74,8 @@ pub trait Control<Message> {
 
     fn get_bounds(&self) -> Vec4;
 
+    fn set_bounds(&mut self, bounds: Option<Vec4>);
+
     fn get_size(&self) -> Vec2;
 
     fn get_position(&mut self) -> Vec3;

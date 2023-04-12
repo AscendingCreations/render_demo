@@ -16,6 +16,7 @@ pub struct Rect {
     pub radius: Option<f32>,
     pub store_id: Index,
     pub order: DrawOrder,
+    pub bounds: Option<Vec4>,
     /// if anything got updated we need to update the buffers too.
     pub changed: bool,
 }
@@ -33,6 +34,7 @@ impl Rect {
             radius: None,
             store_id: renderer.new_buffer(),
             order: DrawOrder::default(),
+            bounds: None,
             changed: true,
         }
     }
@@ -141,15 +143,9 @@ impl Rect {
     }
 
     ///This sets how a object should be Clip manipulated. Width and/or Height as 0 means unlimited.
-    pub fn set_bounds(
-        &mut self,
-        renderer: &mut GpuRenderer,
-        bounds: Option<Bounds>,
-    ) -> &mut Self {
-        if let Some(store) = renderer.get_buffer_mut(&self.store_id) {
-            store.bounds = bounds;
-            store.changed = true;
-        }
+    pub fn set_bounds(&mut self, bounds: Option<Vec4>) -> &mut Self {
+        self.bounds = bounds;
+        self.changed = true;
         self
     }
 
@@ -217,6 +213,13 @@ impl Rect {
 
         if let Some(store) = renderer.get_buffer_mut(&self.store_id) {
             store.store = bytemuck::bytes_of(&buffer).to_vec();
+
+            if let Some(bounds) = self.bounds {
+                store.bounds = Some(Bounds::new(bounds, self.size.y));
+            } else {
+                store.bounds = None;
+            }
+
             store.changed = true;
         }
 

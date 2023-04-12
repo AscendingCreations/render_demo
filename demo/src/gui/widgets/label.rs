@@ -20,15 +20,15 @@ impl Label {
         value: String,
         attrs: Attrs,
     ) -> Label {
-        let bounds = Some(TextBounds::new(
+        let bounds = TextBounds::new(
             pos.x,
             pos.y + size.y,
             pos.x + size.x,
             pos.y.max(0.0),
-        ));
-        let mut text = Text::new(renderer, metrics, pos, size, bounds);
+        );
+        let mut text = Text::new(renderer, metrics, pos, size);
 
-        text.set_text(renderer, &value, attrs);
+        text.set_text(renderer, &value, attrs).set_bounds(bounds);
         text.set_buffer_size(renderer, size.x as i32, size.y as i32);
 
         Self { identity, text }
@@ -58,7 +58,24 @@ impl<Message> Control<Message> for Label {
         let pos = self.text.pos;
         let size = self.text.size;
 
-        Vec4::new(pos.x, pos.y, size.x, size.y)
+        if self.text.bounds == TextBounds::default() {
+            Vec4::new(pos.x, pos.y, size.x, size.y)
+        } else {
+            Vec4::new(
+                self.text.bounds.0.x,
+                self.text.bounds.0.w,
+                self.text.bounds.0.z,
+                self.text.bounds.0.y,
+            )
+        }
+    }
+
+    fn set_bounds(&mut self, bounds: Option<Vec4>) {
+        self.text.set_bounds(if let Some(bounds) = bounds {
+            TextBounds::new(bounds.x, bounds.w, bounds.z, bounds.y)
+        } else {
+            TextBounds::default()
+        });
     }
 
     fn get_size(&self) -> Vec2 {

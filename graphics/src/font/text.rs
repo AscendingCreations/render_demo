@@ -220,7 +220,6 @@ impl Text {
         metrics: Option<Metrics>,
         pos: Vec3,
         size: Vec2,
-        bounds: Option<TextBounds>,
     ) -> Self {
         Self {
             buffer: Buffer::new(
@@ -230,7 +229,7 @@ impl Text {
             pos,
             size,
             offsets: Vec2 { x: 0.0, y: 0.0 },
-            bounds: bounds.unwrap_or_default(),
+            bounds: TextBounds::default(),
             store_id: renderer.new_buffer(),
             order: DrawOrder::new(false, &pos, 1),
             changed: true,
@@ -245,19 +244,28 @@ impl Text {
         renderer: &mut GpuRenderer,
         text: &str,
         attrs: Attrs,
-    ) {
+    ) -> &mut Self {
         self.buffer.set_text(&mut renderer.font_sys, text, attrs);
         self.changed = true;
+        self
     }
 
-    pub fn set_default_color(&mut self, color: Color) {
+    pub fn set_bounds(&mut self, bounds: TextBounds) -> &mut Self {
+        self.bounds = bounds;
+        self.changed = true;
+        self
+    }
+
+    pub fn set_default_color(&mut self, color: Color) -> &mut Self {
         self.default_color = color;
         self.changed = true;
+        self
     }
 
-    pub fn set_offset(&mut self, offsets: Vec2) {
+    pub fn set_offset(&mut self, offsets: Vec2) -> &mut Self {
         self.offsets = offsets;
         self.changed = true;
+        self
     }
 
     pub fn set_buffer_size(
@@ -265,23 +273,25 @@ impl Text {
         renderer: &mut GpuRenderer,
         width: i32,
         height: i32,
-    ) {
+    ) -> &mut Self {
         self.buffer.set_size(
             &mut renderer.font_sys,
             width as f32,
             height as f32,
         );
         self.changed = true;
+        self
     }
 
     /// resets the TextRender bytes to empty for new bytes
-    pub fn clear(&mut self, renderer: &mut GpuRenderer) {
+    pub fn clear(&mut self, renderer: &mut GpuRenderer) -> &mut Self {
         self.buffer.set_text(
             &mut renderer.font_sys,
             "",
             cosmic_text::Attrs::new(),
         );
         self.changed = true;
+        self
     }
 
     /// used to check and update the vertex array.

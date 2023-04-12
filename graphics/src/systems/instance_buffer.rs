@@ -18,6 +18,16 @@ impl Default for Bounds {
     }
 }
 
+pub trait BoundsVecDefault {
+    fn bounds_default() -> Self;
+}
+
+impl BoundsVecDefault for Vec4 {
+    fn bounds_default() -> Self {
+        Vec4::new(0.0, 0.0, 2_147_483_600.0, 2_147_483_600.0)
+    }
+}
+
 #[derive(Copy, Clone, PartialEq, Eq, Default)]
 pub struct DrawOrder {
     pub layer: u32, // lowest to highest. for spliting different types into layers.

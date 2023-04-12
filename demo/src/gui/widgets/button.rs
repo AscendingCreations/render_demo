@@ -81,7 +81,15 @@ impl<Message> Control<Message> for Button<Message> {
         let pos = self.shape.position;
         let size = self.shape.size;
 
-        Vec4::new(pos.x, pos.y, size.x, size.y)
+        if let Some(bounds) = self.shape.bounds {
+            bounds
+        } else {
+            Vec4::new(pos.x, pos.y, size.x, size.y)
+        }
+    }
+
+    fn set_bounds(&mut self, bounds: Option<Vec4>) {
+        self.shape.set_bounds(bounds);
     }
 
     fn get_size(&self) -> Vec2 {

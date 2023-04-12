@@ -481,7 +481,10 @@ impl<Message> UI<Message> {
             .expect("Widget is missing its inner UI Type?")
             .check_mouse_bounds(self.mouse_clicked);
 
-        if action.get(UiFlags::CanMoveWindow) && in_bounds {
+        if action.get(UiFlags::CanMoveWindow)
+            && !action.get(UiFlags::MoveAble)
+            && in_bounds
+        {
             self.moving = true;
         }
 
@@ -789,6 +792,8 @@ impl<Message> UI<Message> {
         &mut self,
         _renderer: &mut GpuRenderer,
         _parent: Handle,
+        _pos: Vec2,
+        _parent_bounds: Vec4,
     ) {
         //TODO Find good way to handle position updates for widgets being dragged around.
         /*let mut control = control;

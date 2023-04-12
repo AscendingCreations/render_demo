@@ -1,6 +1,6 @@
 use crate::{
-    Actions, FrameTime, GpuRenderer, Handle, Identity, SystemEvent, UIBuffer,
-    UiFlags, Widget, WidgetAny, UI,
+    Actions, FrameTime, GpuRenderer, Handle, Identity, Parent, SystemEvent,
+    UIBuffer, UiFlags, Widget, WidgetAny, UI,
 };
 use graphics::*;
 use hecs::World;
@@ -69,36 +69,55 @@ impl<Message> UI<Message> {
             if let Some(handle) = self.focused {
                 let action = world
                     .get::<&Actions>(handle.get_key())
-                    .expect("Widget is missing its actions?");
+                    .expect("Widget is missing its actions?")
+                    .0;
 
-                let mut ui = world
-                    .get::<&mut WidgetAny<Message>>(handle.get_key())
-                    .expect("Widget is missing its inner UI Type?");
-
-                if action.exists(UiFlags::Moving) {
-                    let pos = [
-                        position.x - self.mouse_pos[0],
-                        position.y - self.mouse_pos[1],
-                    ];
-                    let mut bounds = ui.get_bounds();
-
-                    if bounds.x + pos[0] <= 0.0
-                        || bounds.y + pos[1] <= 0.0
-                        || bounds.x + bounds.z + pos[0] >= screensize[0]
-                        || bounds.y + bounds.w + pos[1] >= screensize[1]
+                if action.get(UiFlags::Moving) {
+                    let parent_bounds = if let Some(parent) = world
+                        .get::<&Parent>(handle.get_key())
+                        .ok()
+                        .map(|p| p.get_id())
                     {
-                        return;
+                        let ui = world
+                            .get::<&WidgetAny<Message>>(parent.get_key())
+                            .expect("Widget is missing its inner UI Type?");
+
+                        ui.get_bounds()
+                    } else {
+                        Vec4::new(0.0, 0.0, screensize.x, screensize.y)
+                    };
+
+                    let pos = Vec2::new(
+                        position.x - self.mouse_pos.x,
+                        (position.y - self.mouse_pos.y) * -1.0,
+                    );
+
+                    let bounds;
+
+                    {
+                        let mut ui = world
+                            .get::<&mut WidgetAny<Message>>(handle.get_key())
+                            .expect("Widget is missing its inner UI Type?");
+
+                        bounds = ui.get_bounds();
+
+                        if bounds.x + pos.x <= parent_bounds.x
+                            || bounds.y + pos.y <= parent_bounds.y
+                            || bounds.x + bounds.z + pos.x >= parent_bounds.z
+                            || bounds.y + bounds.w + pos.y >= parent_bounds.w
+                        {
+                            return;
+                        }
+
+                        let mut control_pos = ui.get_position();
+                        control_pos.x += pos.x;
+                        control_pos.y += pos.y;
+
+                        ui.set_position(control_pos);
+                        //todo ui.set_bounds();
                     }
 
-                    bounds.x += pos[0];
-                    bounds.y += pos[1];
-                    let control_pos = ui.get_position();
-                    ui.set_position(Vec3::new(
-                        bounds.x,
-                        bounds.y,
-                        control_pos.z,
-                    ));
-                    self.widget_position_update(renderer, handle);
+                    self.widget_position_update(renderer, handle, pos, bounds);
                 }
             }
 

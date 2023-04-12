@@ -143,11 +143,21 @@ impl<Message: 'static> UI<Message> {
         handle
     }
 
-    pub fn clear_widgets(&mut self, _world: &mut World) {
+    pub fn clear_widgets(&mut self, world: &mut World) {
         self.zlist.clear();
         self.name_map.clear();
         self.focused = None;
         self.over = None;
         self.clicked = None;
+
+        let widgets: Vec<Handle> = world
+            .query::<&Widget>()
+            .iter()
+            .map(|(entity, _)| Handle(entity))
+            .collect();
+
+        for handle in widgets {
+            let _ = world.despawn(handle.get_key());
+        }
     }
 }

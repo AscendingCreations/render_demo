@@ -174,6 +174,7 @@ impl<Message: 'static> DerefMut for WidgetAny<Message> {
 
 pub struct Widget;
 
+// TODO: Make Bounds Updater that will Update all the internal Bounds based on
 #[derive(Default)]
 pub struct WidgetBounds(pub Bounds);
 
@@ -186,53 +187,3 @@ impl WidgetBounds {
         &mut self.0
     }
 }
-
-/*
-/// TODO: Make Bounds Updater that will Update all the internal Bounds based on
-/// Parents Bounds if they got changed or if the childrens positions changed.
-pub struct Widget<Message> {
-    /// System Granted ID.
-    pub id: Handle,
-    /// Used to Calculate and set the internal bounds of the widgets Data.
-    pub bounds: Bounds,
-    /// The UI holder for the Specific Widget.
-    pub ui: Box<dyn AnyData<Message>>,
-    ///If none then it is the Top most in the widget Tree.
-    pub parent: Option<Handle>,
-    ///The visible children in the Tree.
-    pub visible: VecDeque<Handle>,
-    ///The loaded but hidden children in the Tree.
-    pub hidden: Vec<Handle>,
-    /// Boolean Field of Actions Widgets can use.
-    pub actions: UiField,
-}
-
-impl<Message> Widget<Message> {
-    pub fn new(control: (impl AnyData<Message> + 'static)) -> Self {
-        Self {
-            ui: Box::new(control),
-            bounds: Bounds::default(),
-            id: Handle(Entity::DANGLING),
-            parent: None,
-            visible: VecDeque::new(),
-            hidden: Vec::new(),
-            actions: UiField::new(0),
-        }
-    }
-
-    pub fn clear(&mut self) {
-        self.parent = None;
-        self.visible.clear();
-        self.hidden.clear();
-    }
-
-    pub fn get_identity(&self) -> Identity {
-        self.ui.get_id().clone()
-    }
-}
-
-impl<Message> From<Widget<Message>> for Widget<Message> {
-    fn from(widget: Widget<Message>) -> Self {
-        Rc::new(RefCell::new(widget))
-    }
-}*/

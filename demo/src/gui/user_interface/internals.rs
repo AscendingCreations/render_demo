@@ -330,6 +330,8 @@ impl<Message> UI<Message> {
         for child in children {
             self.widget_clear_self(world, child);
         }
+
+        let _ = world.despawn(control.get_key());
     }
 
     // This will remove the children from the Zlist, focused, over and clicked.

@@ -73,10 +73,10 @@ where
                     let bounds = system.world_to_screen(false, bounds);
 
                     self.set_scissor_rect(
-                        bounds.0.x as u32,
-                        bounds.0.y as u32,
-                        bounds.0.z as u32,
-                        bounds.0.w as u32,
+                        bounds.x as u32,
+                        bounds.y as u32,
+                        bounds.z as u32,
+                        bounds.w as u32,
                     );
                     scissor_is_default = false;
                 } else if !scissor_is_default {

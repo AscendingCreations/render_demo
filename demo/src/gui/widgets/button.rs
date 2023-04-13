@@ -1,6 +1,6 @@
 use crate::{
     Control, FrameTime, Handle, Identity, ModifiersState, MouseButton,
-    SystemEvent, UIBuffer, UiField, UiFlags, Widget, UI,
+    SystemEvent, UIBuffer, UiField, UiFlags, Widget, WorldBounds, UI,
 };
 use graphics::*;
 
@@ -77,18 +77,11 @@ impl<Message> Control<Message> for Button<Message> {
         self.shape.check_mouse_bounds(mouse_pos)
     }
 
-    fn get_bounds(&self) -> Vec4 {
-        let pos = self.shape.position;
-        let size = self.shape.size;
-
-        if let Some(bounds) = self.shape.bounds {
-            bounds
-        } else {
-            Vec4::new(pos.x, pos.y, size.x, size.y)
-        }
+    fn get_bounds(&self) -> Option<WorldBounds> {
+        self.shape.bounds
     }
 
-    fn set_bounds(&mut self, bounds: Option<Vec4>) {
+    fn set_bounds(&mut self, bounds: Option<WorldBounds>) {
         self.shape.set_bounds(bounds);
     }
 

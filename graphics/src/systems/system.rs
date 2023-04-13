@@ -1,4 +1,4 @@
-use crate::{Bounds, GpuDevice, GpuRenderer, Layout};
+use crate::{GpuDevice, GpuRenderer, Layout, WorldBounds};
 use bytemuck::{Pod, Zeroable};
 use camera::Projection;
 use crevice::std140::AsStd140;
@@ -270,8 +270,8 @@ where
     pub fn projected_world_to_screen(
         &self,
         scale: bool,
-        bounds: &Bounds,
-    ) -> Bounds {
+        bounds: &WorldBounds,
+    ) -> Vec4 {
         let projection = Mat4::from(self.camera.projection());
         let model = Mat4::identity();
         let view = if scale {
@@ -282,7 +282,7 @@ where
         let clip_coords = projection
             * view
             * model
-            * Vec4::new(bounds.0.x, bounds.0.y, 1.0, 1.0);
+            * Vec4::new(bounds.left, bounds.bottom, 1.0, 1.0);
         let coords = clip_coords.xyz() / clip_coords.w;
 
         let xy = Vec2::new(
@@ -292,22 +292,23 @@ where
 
         let (bw, bh, objh) = if scale {
             (
-                bounds.0.z * self.camera.scale(),
-                bounds.0.w * self.camera.scale(),
-                bounds.1 * self.camera.scale(),
+                bounds.right * self.camera.scale(),
+                bounds.top * self.camera.scale(),
+                bounds.height * self.camera.scale(),
             )
         } else {
-            (bounds.0.z, bounds.0.w, bounds.1)
+            (bounds.right, bounds.top, bounds.height)
         };
 
-        Bounds::new(Vec4::new(xy.x, xy.y - objh, bw, bh), objh)
+        Vec4::new(xy.x, xy.y - objh, bw, bh)
     }
 
-    pub fn world_to_screen(&self, scale: bool, bounds: &Bounds) -> Bounds {
+    pub fn world_to_screen(&self, scale: bool, bounds: &WorldBounds) -> Vec4 {
         let projection = Mat4::from(self.camera.projection());
         let model = Mat4::identity();
-        let clip_coords =
-            projection * model * Vec4::new(bounds.0.x, bounds.0.y, 1.0, 1.0);
+        let clip_coords = projection
+            * model
+            * Vec4::new(bounds.left, bounds.bottom, 1.0, 1.0);
         let coords = clip_coords.xyz() / clip_coords.w;
 
         let xy = Vec2::new(
@@ -317,14 +318,14 @@ where
 
         let (bw, bh, objh) = if scale {
             (
-                bounds.0.z * self.camera.scale(),
-                bounds.0.w * self.camera.scale(),
-                bounds.1 * self.camera.scale(),
+                bounds.right * self.camera.scale(),
+                bounds.top * self.camera.scale(),
+                bounds.height * self.camera.scale(),
             )
         } else {
-            (bounds.0.z, bounds.0.w, bounds.1)
+            (bounds.right, bounds.top, bounds.height)
         };
 
-        Bounds::new(Vec4::new(xy.x, xy.y - objh, bw, bh), objh)
+        Vec4::new(xy.x, xy.y - objh, bw, bh)
     }
 }

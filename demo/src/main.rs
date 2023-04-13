@@ -255,7 +255,7 @@ async fn main() -> Result<(), AscendingError> {
     let mut ui_buffer = UIBuffer::new(&mut renderer)?;
 
     text.set_buffer_size(&mut renderer, size.width as i32, size.height as i32)
-        .set_bounds(TextBounds::new(0.0, 0.0, 190.0, 32.0));
+        .set_bounds(Some(WorldBounds::new(0.0, 0.0, 190.0, 32.0, 1.0)));
 
     let mut world = World::new();
     let mut ui = UI::<Messages>::new();

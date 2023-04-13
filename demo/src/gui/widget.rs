@@ -72,9 +72,9 @@ pub trait Control<Message> {
 
     fn check_mouse_bounds(&self, mouse_pos: Vec2) -> bool;
 
-    fn get_bounds(&self) -> Vec4;
+    fn get_bounds(&self) -> Option<WorldBounds>;
 
-    fn set_bounds(&mut self, bounds: Option<Vec4>);
+    fn set_bounds(&mut self, bounds: Option<WorldBounds>);
 
     fn get_size(&self) -> Vec2;
 
@@ -178,14 +178,14 @@ pub struct Widget;
 
 // TODO: Make Bounds Updater that will Update all the internal Bounds based on
 #[derive(Default)]
-pub struct WidgetBounds(pub Bounds);
+pub struct WidgetBounds(pub WorldBounds);
 
 impl WidgetBounds {
-    pub fn get(&self) -> &Bounds {
+    pub fn get(&self) -> &WorldBounds {
         &self.0
     }
 
-    pub fn get_mut(&mut self) -> &mut Bounds {
+    pub fn get_mut(&mut self) -> &mut WorldBounds {
         &mut self.0
     }
 }

@@ -1,25 +1,8 @@
 use crate::{
     AscendingError, Color, DrawOrder, GpuRenderer, Index, OrderedIndex,
-    TextAtlas, TextVertex, Vec2, Vec3, Vec4,
+    TextAtlas, TextVertex, Vec2, Vec3, WorldBounds,
 };
 use cosmic_text::{Attrs, Buffer, Metrics, SwashCache, SwashContent};
-
-/// Controls the visible area of the text. Any text outside of the visible area will be clipped.
-/// This is given by glyphon.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct TextBounds(pub Vec4);
-
-impl TextBounds {
-    pub fn new(left: f32, bottom: f32, right: f32, top: f32) -> Self {
-        Self(Vec4::new(left, bottom, right, top))
-    }
-}
-
-impl Default for TextBounds {
-    fn default() -> Self {
-        Self(Vec4::new(0.0, 0.0, i32::MAX as f32, i32::MAX as f32))
-    }
-}
 
 pub struct Text {
     pub buffer: Buffer,
@@ -27,7 +10,7 @@ pub struct Text {
     pub size: Vec2,
     pub offsets: Vec2,
     pub default_color: Color,
-    pub bounds: TextBounds,
+    pub bounds: Option<WorldBounds>,
     pub store_id: Index,
     pub order: DrawOrder,
     /// if the shader should render with the camera's view.
@@ -145,50 +128,53 @@ impl Text {
                     });
 
                 let screensize = renderer.size();
-                //Bounds used from Glyphon
-                let bounds_min_x = self.bounds.0.x.max(0.0);
-                let bounds_min_y = self.bounds.0.y.max(0.0);
-                let bounds_max_x = self.bounds.0.z.min(screensize.width);
-                let bounds_max_y = self.bounds.0.w.min(screensize.height);
 
-                // Starts beyond right edge or ends beyond left edge
-                let max_x = x + width;
-                if x > bounds_max_x || max_x < bounds_min_x {
-                    continue;
-                }
+                if let Some(bounds) = self.bounds {
+                    //Bounds used from Glyphon
+                    let bounds_min_x = bounds.left.max(0.0);
+                    let bounds_min_y = bounds.bottom.max(0.0);
+                    let bounds_max_x = bounds.right.min(screensize.width);
+                    let bounds_max_y = bounds.top.min(screensize.height);
 
-                // Starts beyond bottom edge or ends beyond top edge
-                let max_y = y + height;
-                if y > bounds_max_y || max_y < bounds_min_y {
-                    continue;
-                }
+                    // Starts beyond right edge or ends beyond left edge
+                    let max_x = x + width;
+                    if x > bounds_max_x || max_x < bounds_min_x {
+                        continue;
+                    }
 
-                // Clip left edge
-                if x < bounds_min_x {
-                    let right_shift = bounds_min_x - x;
+                    // Starts beyond bottom edge or ends beyond top edge
+                    let max_y = y + height;
+                    if y > bounds_max_y || max_y < bounds_min_y {
+                        continue;
+                    }
 
-                    x = bounds_min_x;
-                    width = max_x - bounds_min_x;
-                    u += right_shift;
-                }
+                    // Clip left edge
+                    if x < bounds_min_x {
+                        let right_shift = bounds_min_x - x;
 
-                // Clip right edge
-                if x + width > bounds_max_x {
-                    width = bounds_max_x - x;
-                }
+                        x = bounds_min_x;
+                        width = max_x - bounds_min_x;
+                        u += right_shift;
+                    }
 
-                // Clip top edge
-                if y < bounds_min_y {
-                    height -= bounds_min_y;
-                    y = bounds_min_y;
-                }
+                    // Clip right edge
+                    if x + width > bounds_max_x {
+                        width = bounds_max_x - x;
+                    }
 
-                // Clip top edge
-                if y + height > bounds_max_y {
-                    let bottom_shift = (y + height) - bounds_max_y;
+                    // Clip top edge
+                    if y < bounds_min_y {
+                        height -= bounds_min_y;
+                        y = bounds_min_y;
+                    }
 
-                    v += bottom_shift;
-                    height -= bottom_shift;
+                    // Clip top edge
+                    if y + height > bounds_max_y {
+                        let bottom_shift = (y + height) - bounds_max_y;
+
+                        v += bottom_shift;
+                        height -= bottom_shift;
+                    }
                 }
 
                 let default = TextVertex {
@@ -229,7 +215,7 @@ impl Text {
             pos,
             size,
             offsets: Vec2 { x: 0.0, y: 0.0 },
-            bounds: TextBounds::default(),
+            bounds: None,
             store_id: renderer.new_buffer(),
             order: DrawOrder::new(false, &pos, 1),
             changed: true,
@@ -250,7 +236,7 @@ impl Text {
         self
     }
 
-    pub fn set_bounds(&mut self, bounds: TextBounds) -> &mut Self {
+    pub fn set_bounds(&mut self, bounds: Option<WorldBounds>) -> &mut Self {
         self.bounds = bounds;
         self.changed = true;
         self

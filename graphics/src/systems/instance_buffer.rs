@@ -1,30 +1,49 @@
-use crate::{GpuDevice, GpuRenderer, OrderedIndex, Vec3, Vec4};
+use crate::{GpuDevice, GpuRenderer, OrderedIndex, Vec3};
 use std::cmp::Ordering;
 use std::{marker::PhantomData, ops::Range};
 use wgpu::util::DeviceExt;
 
-#[derive(Copy, Clone, Debug)]
-pub struct Bounds(pub Vec4, pub f32);
+///This is the location within the World that the Clipping should take place.
+/// Height is needed for any Scissoring within the Window as Window only scissors
+/// in Windows Locations and not World locations.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct WorldBounds {
+    pub left: f32,
+    pub bottom: f32,
+    pub right: f32,
+    pub top: f32,
+    //used to transform world coords into window coords.
+    //text rendering can just use anything here.
+    pub height: f32,
+}
 
-impl Bounds {
-    pub fn new(bounds: Vec4, obj_h: f32) -> Self {
-        Self(bounds, obj_h)
+impl WorldBounds {
+    pub fn new(
+        left: f32,
+        bottom: f32,
+        right: f32,
+        top: f32,
+        height: f32,
+    ) -> Self {
+        Self {
+            left,
+            bottom,
+            right,
+            top,
+            height,
+        }
     }
 }
 
-impl Default for Bounds {
+impl Default for WorldBounds {
     fn default() -> Self {
-        Self(Vec4::new(0.0, 0.0, 2_147_483_600.0, 2_147_483_600.0), 0.0)
-    }
-}
-
-pub trait BoundsVecDefault {
-    fn bounds_default() -> Self;
-}
-
-impl BoundsVecDefault for Vec4 {
-    fn bounds_default() -> Self {
-        Vec4::new(0.0, 0.0, 2_147_483_600.0, 2_147_483_600.0)
+        Self {
+            left: 0.0,
+            bottom: 0.0,
+            right: 2_147_483_600.0,
+            top: 2_147_483_600.0,
+            height: 1.0,
+        }
     }
 }
 
@@ -69,7 +88,8 @@ impl DrawOrder {
 #[derive(Default)]
 pub struct BufferStore {
     pub store: Vec<u8>,
-    pub bounds: Option<Bounds>,
+    //bounds and height to reverse the clipping for Windows Scissor routine.
+    pub bounds: Option<WorldBounds>,
     pub changed: bool,
     pub pos: Range<usize>,
 }
@@ -94,7 +114,7 @@ pub trait InstanceLayout {
 pub struct InstanceBuffer<K: InstanceLayout> {
     pub buffers: Vec<OrderedIndex>,
     pub buffer: wgpu::Buffer,
-    pub bounds: Vec<Option<Bounds>>,
+    pub bounds: Vec<Option<WorldBounds>>,
     count: usize,
     len: usize,
     max: usize,
@@ -224,7 +244,7 @@ impl<K: InstanceLayout> InstanceBuffer<K> {
         &mut self,
         gpu_device: &GpuDevice,
         bytes: &[u8],
-        bounds: &[Option<Bounds>],
+        bounds: &[Option<WorldBounds>],
     ) {
         let size = bytes.len();
 

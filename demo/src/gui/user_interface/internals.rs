@@ -795,7 +795,7 @@ impl<Message> UI<Message> {
         _renderer: &mut GpuRenderer,
         _parent: Handle,
         _pos: Vec2,
-        _parent_bounds: Vec4,
+        _parent_bounds: WorldBounds,
     ) {
         //TODO Find good way to handle position updates for widgets being dragged around.
         /*let mut control = control;

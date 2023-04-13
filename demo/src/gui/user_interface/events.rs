@@ -1,6 +1,6 @@
 use crate::{
     Actions, FrameTime, GpuRenderer, Handle, Identity, Parent, SystemEvent,
-    UIBuffer, UiFlags, Widget, WidgetAny, UI,
+    UIBuffer, UiFlags, Widget, WidgetAny, WorldBounds, UI,
 };
 use graphics::*;
 use hecs::World;
@@ -82,9 +82,16 @@ impl<Message> UI<Message> {
                             .get::<&WidgetAny<Message>>(parent.get_key())
                             .expect("Widget is missing its inner UI Type?");
 
-                        ui.get_bounds()
+                        ui.get_bounds().unwrap_or_default()
                     } else {
-                        Vec4::new(0.0, 0.0, screensize.x, screensize.y)
+                        //If no parent then the screen is its parent lets set the screen size.
+                        WorldBounds::new(
+                            0.0,
+                            0.0,
+                            screensize.x,
+                            screensize.y,
+                            1.0,
+                        )
                     };
 
                     let pos = Vec2::new(
@@ -99,14 +106,27 @@ impl<Message> UI<Message> {
                             .get::<&mut WidgetAny<Message>>(handle.get_key())
                             .expect("Widget is missing its inner UI Type?");
 
-                        bounds = ui.get_bounds();
+                        if let Some(control_bounds) = ui.get_bounds() {
+                            bounds = control_bounds;
+                            if bounds.left + pos.x <= parent_bounds.left
+                                || bounds.bottom + pos.y <= parent_bounds.bottom
+                                || bounds.right + pos.x >= parent_bounds.right
+                                || bounds.top + pos.y >= parent_bounds.top
+                            {
+                                return;
+                            }
+                        } else {
+                            //If no predeturmined Size we will set this to the actual controls size as default.
+                            let size = ui.get_size();
+                            let pos = ui.get_position();
 
-                        if bounds.x + pos.x <= parent_bounds.x
-                            || bounds.y + pos.y <= parent_bounds.y
-                            || bounds.x + bounds.z + pos.x >= parent_bounds.z
-                            || bounds.y + bounds.w + pos.y >= parent_bounds.w
-                        {
-                            return;
+                            bounds = WorldBounds::new(
+                                pos.x,
+                                pos.y,
+                                pos.x + size.x,
+                                pos.y + size.y,
+                                size.y,
+                            )
                         }
 
                         let mut control_pos = ui.get_position();

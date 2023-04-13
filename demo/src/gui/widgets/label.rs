@@ -1,6 +1,6 @@
 use crate::{
     Control, Event, FrameTime, Identity, Metrics, ModifiersState, MouseButton,
-    SystemEvent, TextBounds, UIBuffer, UiField, UiFlags, Widget, UI,
+    SystemEvent, UIBuffer, UiField, UiFlags, Widget, UI, WorldBounds
 };
 use cosmic_text::{Align, Attrs};
 use graphics::*;
@@ -20,15 +20,16 @@ impl Label {
         value: String,
         attrs: Attrs,
     ) -> Label {
-        let bounds = TextBounds::new(
+        let bounds = WorldBounds::new(
             pos.x,
             pos.y.max(0.0),
             pos.x + size.x,
             pos.y + size.y,
+            1.0
         );
         let mut text = Text::new(renderer, metrics, pos, size);
 
-        text.set_text(renderer, &value, attrs).set_bounds(bounds);
+        text.set_text(renderer, &value, attrs).set_bounds(Some(bounds));
         text.set_buffer_size(renderer, size.x as i32, size.y as i32);
 
         Self { identity, text }
@@ -54,28 +55,12 @@ impl<Message> Control<Message> for Label {
         self.text.check_mouse_bounds(mouse_pos)
     }
 
-    fn get_bounds(&self) -> Vec4 {
-        let pos = self.text.pos;
-        let size = self.text.size;
-
-        if self.text.bounds == TextBounds::default() {
-            Vec4::new(pos.x, pos.y, size.x, size.y)
-        } else {
-            Vec4::new(
-                self.text.bounds.0.x,
-                self.text.bounds.0.y,
-                self.text.bounds.0.z,
-                self.text.bounds.0.w,
-            )
-        }
+    fn get_bounds(&self) -> Option<WorldBounds> {
+        self.text.bounds
     }
 
-    fn set_bounds(&mut self, bounds: Option<Vec4>) {
-        self.text.set_bounds(if let Some(bounds) = bounds {
-            TextBounds::new(bounds.x, bounds.y, bounds.z, bounds.w)
-        } else {
-            TextBounds::default()
-        });
+    fn set_bounds(&mut self, bounds: Option<WorldBounds>) {
+        self.text.set_bounds(bounds);
     }
 
     fn get_size(&self) -> Vec2 {

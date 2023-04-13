@@ -94,7 +94,7 @@ impl<Message: 'static> UI<Message> {
         control: (impl AnyData<Message> + Send + Sync + 'static),
     ) -> Handle {
         let actions = Actions(control.default_actions());
-        let bounds = WidgetBounds(Bounds::default());
+        let bounds = WidgetBounds(WorldBounds::default());
         let identity = control.get_id().clone();
 
         if self.name_map.contains_key(&identity) {

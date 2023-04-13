@@ -10,14 +10,14 @@ use cosmic_text::{Attrs, Buffer, Metrics, SwashCache, SwashContent};
 pub struct TextBounds(pub Vec4);
 
 impl TextBounds {
-    pub fn new(left: f32, top: f32, right: f32, bottom: f32) -> Self {
-        Self(Vec4::new(left, top, right, bottom))
+    pub fn new(left: f32, bottom: f32, right: f32, top: f32) -> Self {
+        Self(Vec4::new(left, bottom, right, top))
     }
 }
 
 impl Default for TextBounds {
     fn default() -> Self {
-        Self(Vec4::new(0.0, i32::MAX as f32, i32::MAX as f32, 0.0))
+        Self(Vec4::new(0.0, 0.0, i32::MAX as f32, i32::MAX as f32))
     }
 }
 
@@ -147,9 +147,9 @@ impl Text {
                 let screensize = renderer.size();
                 //Bounds used from Glyphon
                 let bounds_min_x = self.bounds.0.x.max(0.0);
-                let bounds_min_y = self.bounds.0.w.max(0.0);
+                let bounds_min_y = self.bounds.0.y.max(0.0);
                 let bounds_max_x = self.bounds.0.z.min(screensize.width);
-                let bounds_max_y = self.bounds.0.y.min(screensize.height);
+                let bounds_max_y = self.bounds.0.w.min(screensize.height);
 
                 // Starts beyond right edge or ends beyond left edge
                 let max_x = x + width;

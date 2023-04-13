@@ -248,14 +248,14 @@ async fn main() -> Result<(), AscendingError> {
     let mut text = Text::new(
         &mut renderer,
         Some(Metrics::new(16.0, 16.0).scale(scale as f32)),
-        Vec3::new(0.0, 32.0, 1.0),
-        Vec2::new(256.0, 256.0),
+        Vec3::new(0.0, 0.0, 1.0),
+        Vec2::new(190.0, 32.0),
     );
 
     let mut ui_buffer = UIBuffer::new(&mut renderer)?;
 
     text.set_buffer_size(&mut renderer, size.width as i32, size.height as i32)
-        .set_bounds(TextBounds::new(8.0, 32.0, 190.0, 0.0));
+        .set_bounds(TextBounds::new(0.0, 0.0, 190.0, 32.0));
 
     let mut world = World::new();
     let mut ui = UI::<Messages>::new();
@@ -411,11 +411,11 @@ async fn main() -> Result<(), AscendingError> {
             .sprite_renderer
             .image_update(&mut state.animation, &mut renderer);
         state.sprite_renderer.finalize(&mut renderer);
-        //state
-        //    .text_renderer
-        //    .text_update(&mut text, &mut state.text_atlas, &mut renderer)
-        //    .unwrap();
-        //state.text_renderer.finalize(&mut renderer);
+        state
+            .text_renderer
+            .text_update(&mut text, &mut state.text_atlas, &mut renderer)
+            .unwrap();
+        state.text_renderer.finalize(&mut renderer);
         state.map_renderer.map_update(&mut state.map, &mut renderer);
         state.map_renderer.finalize(&mut renderer);
         state

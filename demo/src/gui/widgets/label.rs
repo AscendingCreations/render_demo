@@ -22,9 +22,9 @@ impl Label {
     ) -> Label {
         let bounds = TextBounds::new(
             pos.x,
-            pos.y + size.y,
-            pos.x + size.x,
             pos.y.max(0.0),
+            pos.x + size.x,
+            pos.y + size.y,
         );
         let mut text = Text::new(renderer, metrics, pos, size);
 
@@ -63,16 +63,16 @@ impl<Message> Control<Message> for Label {
         } else {
             Vec4::new(
                 self.text.bounds.0.x,
-                self.text.bounds.0.w,
-                self.text.bounds.0.z,
                 self.text.bounds.0.y,
+                self.text.bounds.0.z,
+                self.text.bounds.0.w,
             )
         }
     }
 
     fn set_bounds(&mut self, bounds: Option<Vec4>) {
         self.text.set_bounds(if let Some(bounds) = bounds {
-            TextBounds::new(bounds.x, bounds.w, bounds.z, bounds.y)
+            TextBounds::new(bounds.x, bounds.y, bounds.z, bounds.w)
         } else {
             TextBounds::default()
         });

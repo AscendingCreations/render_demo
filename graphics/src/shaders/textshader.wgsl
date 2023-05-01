@@ -74,9 +74,9 @@ fn vertex(
 ) -> VertexOutput {
     var result: VertexOutput;
     var pos = vertex.pos;
-    var size = vec2<i32>(0);
+    var size = vec2<u32>(0u);
 
-     if vertex.is_color == 1u {
+    if vertex.is_color == 1u {
         size = textureDimensions(emoji_tex);
     } else {
         size = textureDimensions(tex);

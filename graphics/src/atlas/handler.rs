@@ -1,6 +1,6 @@
 use crate::{Allocation, GpuRenderer, Layer};
 use lru::LruCache;
-use std::{collections::HashSet, hash::Hash, num::NonZeroU32};
+use std::{collections::HashSet, hash::Hash };
 
 pub struct Atlas<U: Hash + Eq + Clone = String, Data: Copy + Default = i32> {
     /// Texture in GRAM
@@ -198,9 +198,9 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
                 dimension: Some(wgpu::TextureViewDimension::D2Array),
                 aspect: wgpu::TextureAspect::All,
                 base_mip_level: 0,
-                mip_level_count: std::num::NonZeroU32::new(1),
+                mip_level_count: Some(1),
                 base_array_layer: 0,
-                array_layer_count: NonZeroU32::new(self.layers.len() as u32),
+                array_layer_count: Some(self.layers.len() as u32),
             });
         renderer.queue().submit(std::iter::once(encoder.finish()));
     }
@@ -233,9 +233,9 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
             dimension: Some(wgpu::TextureViewDimension::D2Array),
             aspect: wgpu::TextureAspect::All,
             base_mip_level: 0,
-            mip_level_count: std::num::NonZeroU32::new(1),
+            mip_level_count: Some(1),
             base_array_layer: 0,
-            array_layer_count: std::num::NonZeroU32::new(1),
+            array_layer_count: Some(1),
         });
 
         Self {
@@ -301,14 +301,14 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
             buffer,
             wgpu::ImageDataLayout {
                 offset: 0,
-                bytes_per_row: std::num::NonZeroU32::new(
+                bytes_per_row: Some(
                     if self.format == wgpu::TextureFormat::Rgba8UnormSrgb {
                         4 * width
                     } else {
                         width
                     },
                 ),
-                rows_per_image: std::num::NonZeroU32::new(height),
+                rows_per_image: Some(height),
             },
             wgpu::Extent3d {
                 width,

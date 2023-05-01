@@ -40,9 +40,9 @@ impl MapTextures {
             dimension: Some(wgpu::TextureViewDimension::D2Array),
             aspect: wgpu::TextureAspect::All,
             base_mip_level: 0,
-            mip_level_count: std::num::NonZeroU32::new(1),
+            mip_level_count: Some(1),
             base_array_layer: 0,
-            array_layer_count: std::num::NonZeroU32::new(count),
+            array_layer_count: Some(count),
         });
 
         Self {
@@ -63,8 +63,8 @@ impl MapTextures {
             bytemuck::cast_slice(data),
             wgpu::ImageDataLayout {
                 offset: 0,
-                bytes_per_row: std::num::NonZeroU32::new(512),
-                rows_per_image: std::num::NonZeroU32::new(256),
+                bytes_per_row: Some(512),
+                rows_per_image: Some(256),
             },
             wgpu::Extent3d {
                 width: 32,

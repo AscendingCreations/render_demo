@@ -189,3 +189,17 @@ impl WidgetBounds {
         &mut self.0
     }
 }
+
+// TODO: Make Bounds of before any major clipping occurs so it can be reset back.
+#[derive(Default)]
+pub struct OriginalBounds(pub WorldBounds);
+
+impl OriginalBounds {
+    pub fn get(&self) -> &WorldBounds {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut WorldBounds {
+        &mut self.0
+    }
+}

@@ -53,7 +53,7 @@ impl<Message: 'static> UI<Message> {
             moving: false,
             button: MouseButton::Left,
             modifier: ModifiersState::default(),
-            phantom: PhantomData::default(),
+            phantom: PhantomData,
         }
     }
 

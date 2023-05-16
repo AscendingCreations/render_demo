@@ -1,6 +1,7 @@
 use crate::{
     Control, FrameTime, Handle, Identity, ModifiersState, MouseButton,
-    SystemEvent, UIBuffer, UiField, UiFlags, Widget, WorldBounds, UI,
+    SystemEvent, UIBuffer, UiField, UiFlags, Widget, WidgetEvent, WorldBounds,
+    UI,
 };
 use graphics::*;
 
@@ -81,8 +82,12 @@ impl<Message> Control<Message> for Button<Message> {
         self.shape.bounds
     }
 
-    fn set_bounds(&mut self, bounds: Option<WorldBounds>) {
-        self.shape.set_bounds(bounds);
+    fn update_bounds(
+        &mut self,
+        _offset: Vec3,
+        parent_bounds: Option<WorldBounds>,
+    ) {
+        self.shape.set_bounds(parent_bounds);
     }
 
     fn get_size(&self) -> Vec2 {
@@ -93,8 +98,8 @@ impl<Message> Control<Message> for Button<Message> {
         self.shape.position
     }
 
-    fn set_position(&mut self, position: Vec3) {
-        self.shape.position = position;
+    fn update_position(&mut self, offset: Vec3) {
+        self.shape.position += offset;
     }
 
     fn default_actions(&self) -> UiField {
@@ -110,7 +115,7 @@ impl<Message> Control<Message> for Button<Message> {
         renderer: &mut GpuRenderer,
         event: SystemEvent,
         events: &mut Vec<Message>,
-    ) {
+    ) -> WidgetEvent {
         match event {
             SystemEvent::MousePresent(is_over) => {
                 self.shape
@@ -172,6 +177,8 @@ impl<Message> Control<Message> for Button<Message> {
             }
             _ => {}
         }
+
+        WidgetEvent::None
     }
 
     fn draw(

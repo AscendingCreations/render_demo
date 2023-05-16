@@ -1,6 +1,6 @@
 use crate::{
     Actions, FrameTime, Handle, Hidden, Identity, Parent, SystemEvent,
-    UIBuffer, UiFlags, Widget, WidgetAny, UI,
+    UIBuffer, UiFlags, Widget, WidgetAny, WidgetEvent, UI,
 };
 use graphics::*;
 use hecs::{With, Without, World};
@@ -84,21 +84,25 @@ impl<Message> UI<Message> {
         entered: bool,
         events: &mut Vec<Message>,
     ) {
-        let action = world
-            .get::<&Actions>(control.get_key())
-            .expect("Widget is missing its actions?");
+        let event = {
+            let action = world
+                .get::<&Actions>(control.get_key())
+                .expect("Widget is missing its actions?");
 
-        let mut ui = world
-            .get::<&mut WidgetAny<Message>>(control.get_key())
-            .expect("Widget is missing its inner UI Type?");
+            let mut ui = world
+                .get::<&mut WidgetAny<Message>>(control.get_key())
+                .expect("Widget is missing its inner UI Type?");
 
-        ui.event(
-            action.0,
-            ui_buffer,
-            renderer,
-            SystemEvent::MousePresent(entered),
-            events,
-        );
+            ui.event(
+                action.0,
+                ui_buffer,
+                renderer,
+                SystemEvent::MousePresent(entered),
+                events,
+            )
+        };
+
+        self.widget_ui_events(world, ui_buffer, renderer, control, event);
     }
 
     pub(crate) fn widget_mouse_over(
@@ -419,21 +423,25 @@ impl<Message> UI<Message> {
         focused: bool,
         events: &mut Vec<Message>,
     ) {
-        let mut ui = world
-            .get::<&mut WidgetAny<Message>>(control.get_key())
-            .expect("Widget is missing its inner UI Type?");
+        let event = {
+            let mut ui = world
+                .get::<&mut WidgetAny<Message>>(control.get_key())
+                .expect("Widget is missing its inner UI Type?");
 
-        let action = world
-            .get::<&Actions>(control.get_key())
-            .expect("Widget is missing its actions?");
+            let action = world
+                .get::<&Actions>(control.get_key())
+                .expect("Widget is missing its actions?");
 
-        ui.event(
-            action.0,
-            ui_buffer,
-            renderer,
-            SystemEvent::FocusChange(focused),
-            events,
-        );
+            ui.event(
+                action.0,
+                ui_buffer,
+                renderer,
+                SystemEvent::FocusChange(focused),
+                events,
+            )
+        };
+
+        self.widget_ui_events(world, ui_buffer, renderer, control, event);
     }
 
     pub(crate) fn widget_mouse_press_callbacks(
@@ -445,24 +453,50 @@ impl<Message> UI<Message> {
         pressed: bool,
         events: &mut Vec<Message>,
     ) {
+        let event = {
+            let mut ui = world
+                .get::<&mut WidgetAny<Message>>(control.get_key())
+                .expect("Widget is missing its inner UI Type?");
+
+            let action = world
+                .get::<&Actions>(control.get_key())
+                .expect("Widget is missing its actions?");
+
+            let btn = self.button;
+            let modifier = self.modifier;
+
+            ui.event(
+                action.0,
+                ui_buffer,
+                renderer,
+                SystemEvent::MousePress(btn, pressed, modifier),
+                events,
+            )
+        };
+
+        self.widget_ui_events(world, ui_buffer, renderer, control, event);
+    }
+
+    pub(crate) fn widget_ui_events(
+        &mut self,
+        world: &mut World,
+        ui_buffer: &mut UIBuffer,
+        renderer: &mut GpuRenderer,
+        parent: Handle,
+        event: WidgetEvent,
+    ) {
         let mut ui = world
-            .get::<&mut WidgetAny<Message>>(control.get_key())
+            .get::<&mut WidgetAny<Message>>(parent.get_key())
             .expect("Widget is missing its inner UI Type?");
 
         let action = world
-            .get::<&Actions>(control.get_key())
+            .get::<&Actions>(parent.get_key())
             .expect("Widget is missing its actions?");
 
-        let btn = self.button;
-        let modifier = self.modifier;
-
-        ui.event(
-            action.0,
-            ui_buffer,
-            renderer,
-            SystemEvent::MousePress(btn, pressed, modifier),
-            events,
-        );
+        match event {
+            WidgetEvent::Scroll { offset: _ } => {}
+            WidgetEvent::None => {}
+        }
     }
 
     pub(crate) fn widget_set_clicked(
@@ -794,7 +828,7 @@ impl<Message> UI<Message> {
         &mut self,
         _renderer: &mut GpuRenderer,
         _parent: Handle,
-        _pos: Vec2,
+        _pos: Vec3,
         _parent_bounds: WorldBounds,
     ) {
         //TODO Find good way to handle position updates for widgets being dragged around.

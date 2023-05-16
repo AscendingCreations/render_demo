@@ -1,6 +1,7 @@
 use crate::{
     Control, Event, FrameTime, Identity, Metrics, ModifiersState, MouseButton,
-    SystemEvent, UIBuffer, UiField, UiFlags, Widget, UI, WorldBounds
+    SystemEvent, UIBuffer, UiField, UiFlags, Widget, WidgetEvent, WorldBounds,
+    UI,
 };
 use cosmic_text::{Align, Attrs};
 use graphics::*;
@@ -25,11 +26,12 @@ impl Label {
             pos.y.max(0.0),
             pos.x + size.x,
             pos.y + size.y,
-            1.0
+            1.0,
         );
         let mut text = Text::new(renderer, metrics, pos, size);
 
-        text.set_text(renderer, &value, attrs).set_bounds(Some(bounds));
+        text.set_text(renderer, &value, attrs)
+            .set_bounds(Some(bounds));
         text.set_buffer_size(renderer, size.x as i32, size.y as i32);
 
         Self { identity, text }
@@ -59,8 +61,12 @@ impl<Message> Control<Message> for Label {
         self.text.bounds
     }
 
-    fn set_bounds(&mut self, bounds: Option<WorldBounds>) {
-        self.text.set_bounds(bounds);
+    fn update_bounds(
+        &mut self,
+        _offset: Vec3,
+        parent_bounds: Option<WorldBounds>,
+    ) {
+        self.text.set_bounds(parent_bounds);
     }
 
     fn get_size(&self) -> Vec2 {
@@ -71,8 +77,8 @@ impl<Message> Control<Message> for Label {
         self.text.pos
     }
 
-    fn set_position(&mut self, position: Vec3) {
-        self.text.pos = position;
+    fn update_position(&mut self, offset: Vec3) {
+        self.text.pos += offset;
     }
 
     fn default_actions(&self) -> UiField {
@@ -88,7 +94,8 @@ impl<Message> Control<Message> for Label {
         _renderer: &mut GpuRenderer,
         _event: SystemEvent,
         _events: &mut Vec<Message>,
-    ) {
+    ) -> WidgetEvent {
+        WidgetEvent::None
     }
 
     fn draw(

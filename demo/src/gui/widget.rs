@@ -1,4 +1,4 @@
-use crate::{SystemEvent, UIBuffer, UI};
+use crate::{SystemEvent, UIBuffer, WidgetEvent, UI};
 use graphics::*;
 use hecs::Entity;
 use input::FrameTime;
@@ -74,13 +74,17 @@ pub trait Control<Message> {
 
     fn get_bounds(&self) -> Option<WorldBounds>;
 
-    fn set_bounds(&mut self, bounds: Option<WorldBounds>);
+    fn update_bounds(
+        &mut self,
+        offset: Vec3,
+        parent_bounds: Option<WorldBounds>,
+    );
 
     fn get_size(&self) -> Vec2;
 
     fn get_position(&mut self) -> Vec3;
 
-    fn set_position(&mut self, position: Vec3);
+    fn update_position(&mut self, offset: Vec3);
 
     fn event(
         &mut self,
@@ -89,7 +93,7 @@ pub trait Control<Message> {
         renderer: &mut GpuRenderer,
         event: SystemEvent,
         events: &mut Vec<Message>,
-    );
+    ) -> WidgetEvent;
 
     fn draw(
         &mut self,

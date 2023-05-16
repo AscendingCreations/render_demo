@@ -94,9 +94,10 @@ impl<Message> UI<Message> {
                         )
                     };
 
-                    let pos = Vec2::new(
+                    let pos = Vec3::new(
                         position.x - self.mouse_pos.x,
                         (position.y - self.mouse_pos.y) * -1.0,
+                        0.0,
                     );
 
                     let bounds;
@@ -129,11 +130,7 @@ impl<Message> UI<Message> {
                             )
                         }
 
-                        let mut control_pos = ui.get_position();
-                        control_pos.x += pos.x;
-                        control_pos.y += pos.y;
-
-                        ui.set_position(control_pos);
+                        ui.update_position(pos);
                         //todo ui.set_bounds();
                     }
 

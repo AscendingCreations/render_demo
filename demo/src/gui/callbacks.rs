@@ -17,3 +17,9 @@ pub enum SystemEvent {
     BoundsChange,
     FocusChange(bool),
 }
+
+#[derive(Clone)]
+pub enum WidgetEvent {
+    Scroll { offset: Vec3 },
+    None,
+}

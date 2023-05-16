@@ -61,24 +61,12 @@ impl<Message> Control<Message> for Label {
         self.text.bounds
     }
 
-    fn update_bounds(
-        &mut self,
-        _offset: Vec3,
-        parent_bounds: Option<WorldBounds>,
-    ) {
-        self.text.set_bounds(parent_bounds);
-    }
-
     fn get_size(&self) -> Vec2 {
         self.text.size
     }
 
     fn get_position(&mut self) -> Vec3 {
         self.text.pos
-    }
-
-    fn update_position(&mut self, offset: Vec3) {
-        self.text.pos += offset;
     }
 
     fn default_actions(&self) -> UiField {
@@ -92,9 +80,17 @@ impl<Message> Control<Message> for Label {
         _actions: UiField,
         _ui_buffer: &mut UIBuffer,
         _renderer: &mut GpuRenderer,
-        _event: SystemEvent,
+        event: SystemEvent,
         _events: &mut Vec<Message>,
     ) -> WidgetEvent {
+        match event {
+            SystemEvent::PositionChange(offset) => self.text.pos += offset,
+            SystemEvent::BoundsChange(offset, parent_bounds) => {
+                self.text.set_bounds(parent_bounds);
+            }
+            _ => {}
+        }
+
         WidgetEvent::None
     }
 

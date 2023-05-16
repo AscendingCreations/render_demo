@@ -82,24 +82,12 @@ impl<Message> Control<Message> for Button<Message> {
         self.shape.bounds
     }
 
-    fn update_bounds(
-        &mut self,
-        _offset: Vec3,
-        parent_bounds: Option<WorldBounds>,
-    ) {
-        self.shape.set_bounds(parent_bounds);
-    }
-
     fn get_size(&self) -> Vec2 {
         self.shape.size
     }
 
     fn get_position(&mut self) -> Vec3 {
         self.shape.position
-    }
-
-    fn update_position(&mut self, offset: Vec3) {
-        self.shape.position += offset;
     }
 
     fn default_actions(&self) -> UiField {
@@ -174,6 +162,12 @@ impl<Message> Control<Message> for Button<Message> {
                             );
                     }
                 }
+            }
+            SystemEvent::PositionChange(offset) => {
+                self.shape.position += offset;
+            }
+            SystemEvent::BoundsChange(offset, parent_bounds) => {
+                self.shape.set_bounds(parent_bounds);
             }
             _ => {}
         }

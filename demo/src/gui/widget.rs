@@ -63,6 +63,7 @@ bitfield! {
         12 : Clicked,
         13 : ClickAble,
         14 : AllowChildren,
+        15 : InnerScroll,
     }
 }
 
@@ -74,17 +75,9 @@ pub trait Control<Message> {
 
     fn get_bounds(&self) -> Option<WorldBounds>;
 
-    fn update_bounds(
-        &mut self,
-        offset: Vec3,
-        parent_bounds: Option<WorldBounds>,
-    );
-
     fn get_size(&self) -> Vec2;
 
     fn get_position(&mut self) -> Vec3;
-
-    fn update_position(&mut self, offset: Vec3);
 
     fn event(
         &mut self,

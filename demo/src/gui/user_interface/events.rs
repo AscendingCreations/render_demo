@@ -130,11 +130,20 @@ impl<Message> UI<Message> {
                             )
                         }
 
-                        ui.update_position(pos);
+                        ui.event(
+                            action,
+                            ui_buffer,
+                            renderer,
+                            SystemEvent::PositionChange(pos),
+                            events,
+                        );
+                        //ui.update_position(pos);
                         //todo ui.set_bounds();
                     }
 
-                    self.widget_position_update(renderer, handle, pos, bounds);
+                    self.widget_position_update(
+                        world, renderer, handle, pos, bounds,
+                    );
                 }
             }
 

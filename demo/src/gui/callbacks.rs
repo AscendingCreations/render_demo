@@ -9,17 +9,26 @@ use winit::event::{KeyboardInput, ModifiersState, MouseButton};
 
 #[derive(Clone)]
 pub enum SystemEvent {
+    /// Present?.
     MousePresent(bool),
+    /// Delta X, Y, Mod State.
     MouseScroll(f32, f32, ModifiersState),
+    /// Button, Pressed?, Mod State.
     MousePress(MouseButton, bool, ModifiersState),
+    /// Input Mod state.
     KeyPress(KeyboardInput, ModifiersState),
-    PositionChange,
-    BoundsChange,
+    /// Offset.
+    PositionChange(Vec3),
+    /// Offset, Parent Bounds.
+    BoundsChange(Vec3, Option<WorldBounds>),
+    /// Offset.
+    Scroll(Vec3),
+    // Changed?.
     FocusChange(bool),
 }
 
 #[derive(Clone)]
 pub enum WidgetEvent {
-    Scroll { offset: Vec3 },
+    Scroll(Vec3),
     None,
 }

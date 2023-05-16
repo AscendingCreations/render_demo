@@ -494,7 +494,7 @@ impl<Message> UI<Message> {
             .expect("Widget is missing its actions?");
 
         match event {
-            WidgetEvent::Scroll { offset: _ } => {}
+            WidgetEvent::Scroll(_offset) => {}
             WidgetEvent::None => {}
         }
     }
@@ -826,6 +826,7 @@ impl<Message> UI<Message> {
 
     pub(crate) fn widget_position_update(
         &mut self,
+        world: &mut World,
         _renderer: &mut GpuRenderer,
         _parent: Handle,
         _pos: Vec3,
@@ -834,42 +835,44 @@ impl<Message> UI<Message> {
         //TODO Find good way to handle position updates for widgets being dragged around.
         /*let mut control = control;
 
+        let mut ui = world
+            .get::<&mut WidgetAny<Message>>(parent.get_key())
+            .expect("Widget is missing its inner UI Type?");
+
+        let action = world
+            .get::<&Actions>(parent.get_key())
+            .expect("Widget is missing its actions?");
+
+        let children: Vec<Handle> = world
+            .query::<Without<(&Widget, &Parent), &Hidden>>()
+            .iter()
+            .filter(|(_entity, (_, parent))| parent.get_id() == control)
+            .map(|(entity, _)| Handle(entity))
+            .collect();
+
+        for child in children {
+            let actions = world
+                .get::<&Actions>(child.get_key())
+                .expect("Widget is missing its actions?")
+                .0;
+
+            if let Some(pos) = self.zlist.iter().position(|x| *x == child) {
+                self.zlist.remove(pos);
+            }
+
+            self.zlist.push_back(child);
+
+            if actions.get(UiFlags::AllowChildren) {
+                self.widget_show_children(world, child);
+            }
+        }
+
         control.ui.event(
             control.actions,
             self.ui_buffer_mut(),
             renderer,
             SystemEvent::PositionChange,
             &mut vec![],
-        );
-
-        let key = parent.callback_key(Event::PositionChange);
-
-        if let Some(callback) = self.get_inner_callback(&key) {
-            if let InternalCallBacks::PositionChange(internal_update_pos) =
-                callback
-            {
-                internal_update_pos(parent, self, renderer);
-            }
-        }
-
-        for handle in &parent.visible {
-            let widget = self.get_widget(*handle);
-
-            if !widget.visible.is_empty() {
-                self.widget_position_update(renderer, &mut widget);
-            } else {
-                let key = widget.callback_key(Event::PositionChange);
-                let mut mut_wdgt = widget;
-
-                if let Some(callback) = self.get_inner_callback(&key) {
-                    if let InternalCallBacks::PositionChange(
-                        internal_update_pos,
-                    ) = callback
-                    {
-                        internal_update_pos(&mut mut_wdgt, self, renderer);
-                    }
-                }
-            }
-        }*/
+        );*/
     }
 }

@@ -1,6 +1,6 @@
 use std::any::Any;
 
-pub enum ReturnValue {
+pub enum Value {
     Float32(f32),
     Float64(f64),
     UnsignedInteger(usize),

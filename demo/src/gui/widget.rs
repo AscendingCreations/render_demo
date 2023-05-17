@@ -79,6 +79,10 @@ pub trait Control<Message> {
 
     fn get_position(&mut self) -> Vec3;
 
+    fn get_inner_elements_data(&mut self) -> (Vec2, usize) {
+        (Vec2::new(1.0, 1.0), 1)
+    }
+
     fn event(
         &mut self,
         actions: UiField,
@@ -96,6 +100,10 @@ pub trait Control<Message> {
     ) -> Result<(), AscendingError>;
 
     fn default_actions(&self) -> UiField;
+
+    fn get_binding(&self) -> Option<Handle> {
+        None
+    }
 }
 
 pub trait AnyData<Message>: Control<Message> {
@@ -117,6 +125,21 @@ impl<Message, U: Any + Control<Message>> AnyData<Message> for U {
 pub struct Parent(pub Handle);
 
 impl Parent {
+    pub fn get_key(&self) -> Entity {
+        self.0.get_key()
+    }
+
+    pub fn get_id(&self) -> Handle {
+        self.0
+    }
+}
+
+/// Used to Bind a Widget to another. Example Scrollbars.
+/// So any action on them Also goes towards the BoundID
+#[derive(Default)]
+pub struct BoundID(pub Handle);
+
+impl BoundID {
     pub fn get_key(&self) -> Entity {
         self.0.get_key()
     }

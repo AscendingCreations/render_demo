@@ -8,7 +8,7 @@ mod widgets;
 pub use callbacks::*;
 pub use renderer::*;
 pub use user_interface::*;
-pub use values::ReturnValue;
+pub use values::Value;
 pub use widget::*;
 pub use widgets::*;
 pub use winit::event::{KeyboardInput, ModifiersState, MouseButton};

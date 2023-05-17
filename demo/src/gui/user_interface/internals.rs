@@ -494,7 +494,7 @@ impl<Message> UI<Message> {
             .expect("Widget is missing its actions?");
 
         match event {
-            WidgetEvent::Scroll(_offset) => {}
+            WidgetEvent::Scroll(_value, _max) => {}
             WidgetEvent::None => {}
         }
     }

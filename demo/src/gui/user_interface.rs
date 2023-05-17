@@ -1,6 +1,6 @@
 use crate::{
-    Actions, AnyData, Event, FrameTime, GpuDevice, Handle, Hidden, Identity,
-    Parent, UIBuffer, UiFlags, Widget, WidgetAny, WidgetBounds,
+    Actions, AnyData, BoundID, Event, FrameTime, GpuDevice, Handle, Hidden,
+    Identity, Parent, UIBuffer, UiFlags, Widget, WidgetAny, WidgetBounds,
 };
 use graphics::*;
 use hecs::{Entity, World};
@@ -64,6 +64,10 @@ impl<Message: 'static> UI<Message> {
         actions.set(action);
     }
 
+    pub fn set_binding(world: &mut World, handle: Handle, binding: Handle) {
+        let _ = world.insert_one(handle.get_key(), BoundID(binding));
+    }
+
     pub fn remove_widget_by_handle(
         &mut self,
         world: &mut World,
@@ -102,7 +106,12 @@ impl<Message: 'static> UI<Message> {
         }
 
         let ui = WidgetAny(Box::new(control));
+        let binding = ui.get_binding();
         let handle = Handle(world.spawn((Widget, actions, bounds, ui)));
+
+        if let Some(bind) = binding {
+            let _ = world.insert_one(handle.get_key(), BoundID(bind));
+        }
 
         self.name_map.insert(identity, handle);
         handle
@@ -159,5 +168,25 @@ impl<Message: 'static> UI<Message> {
         for handle in widgets {
             let _ = world.despawn(handle.get_key());
         }
+    }
+
+    pub fn get_widget_ui<'a>(
+        &mut self,
+        world: &'a mut World,
+        handle: Handle,
+    ) -> hecs::Ref<'a, WidgetAny<Message>> {
+        world
+            .get::<&WidgetAny<Message>>(handle.get_key())
+            .expect("Widget is missing its inner UI Type?")
+    }
+
+    pub fn get_widget_mut_ui<'a>(
+        &mut self,
+        world: &'a mut World,
+        handle: Handle,
+    ) -> hecs::RefMut<'a, WidgetAny<Message>> {
+        world
+            .get::<&mut WidgetAny<Message>>(handle.get_key())
+            .expect("Widget is missing its inner UI Type?")
     }
 }

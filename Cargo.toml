@@ -31,6 +31,7 @@ generational_array = "0.1.1"
 ritehash = "0.2.0"
 hecs = "0.10.3"
 
+
 [workspace.dependencies.naga]
 #git = "https://github.com/gfx-rs/naga"
 #rev = "b209d911"

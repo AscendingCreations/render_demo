@@ -1,4 +1,4 @@
-use crate::{Handle, Identity, ReturnValue, UIBuffer, Widget, UI};
+use crate::{Handle, Identity, UIBuffer, Value, Widget, UI};
 use graphics::*;
 use input::FrameTime;
 use std::any::Any;
@@ -29,6 +29,7 @@ pub enum SystemEvent {
 
 #[derive(Clone)]
 pub enum WidgetEvent {
-    Scroll(Vec3),
+    /// current value, Max value
+    Scroll(usize, usize),
     None,
 }

@@ -65,7 +65,9 @@ impl<Message: 'static> UI<Message> {
     }
 
     pub fn set_binding(world: &mut World, handle: Handle, binding: Handle) {
+        // Lets bind the parent bounds to the child bounds and vis versa.
         let _ = world.insert_one(handle.get_key(), BoundID(binding));
+        let _ = world.insert_one(binding.get_key(), BoundID(handle));
     }
 
     pub fn remove_widget_by_handle(
@@ -170,7 +172,7 @@ impl<Message: 'static> UI<Message> {
         }
     }
 
-    pub fn get_widget_ui<'a>(
+    pub fn get_widget<'a>(
         &mut self,
         world: &'a mut World,
         handle: Handle,
@@ -180,7 +182,7 @@ impl<Message: 'static> UI<Message> {
             .expect("Widget is missing its inner UI Type?")
     }
 
-    pub fn get_widget_mut_ui<'a>(
+    pub fn get_widget_mut<'a>(
         &mut self,
         world: &'a mut World,
         handle: Handle,

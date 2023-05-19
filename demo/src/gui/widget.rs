@@ -79,6 +79,9 @@ pub trait Control<Message> {
 
     fn get_position(&mut self) -> Vec3;
 
+    /// Only used when a Widget is set to have inner scroll Items.
+    /// Returns the average size of the inner Element and the count.
+    /// This is used to deturmine the scrollbars overall size.
     fn get_inner_elements_data(&mut self) -> (Vec2, usize) {
         (Vec2::new(1.0, 1.0), 1)
     }

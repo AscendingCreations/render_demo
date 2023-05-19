@@ -84,9 +84,11 @@ impl<Message> Control<Message> for Label {
         _events: &mut Vec<Message>,
     ) -> WidgetEvent {
         match event {
-            SystemEvent::PositionChange(offset) => self.text.pos += offset,
+            SystemEvent::PositionChange(offset) => {
+                self.text.set_position(self.text.pos + offset);
+            }
             SystemEvent::BoundsChange(offset, parent_bounds) => {
-                self.text.set_bounds(parent_bounds);
+                self.text.set_bounds(Some(parent_bounds));
             }
             _ => {}
         }

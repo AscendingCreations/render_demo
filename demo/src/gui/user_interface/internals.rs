@@ -495,7 +495,7 @@ impl<Message> UI<Message> {
 
         match event {
             WidgetEvent::Scroll(_value, _max) => {}
-            WidgetEvent::None => {}
+            _ => {}
         }
     }
 
@@ -824,27 +824,30 @@ impl<Message> UI<Message> {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn widget_position_update(
         &mut self,
         world: &mut World,
-        _renderer: &mut GpuRenderer,
-        _parent: Handle,
-        _pos: Vec3,
-        _parent_bounds: WorldBounds,
+        ui_buffer: &mut UIBuffer,
+        renderer: &mut GpuRenderer,
+        control: Handle,
+        pos: Vec3,
+        parent_bounds: WorldBounds,
+        events: &mut Vec<Message>,
     ) {
         //TODO Find good way to handle position updates for widgets being dragged around.
-        /*let mut control = control;
+        //let mut control = control;
 
-        let mut ui = world
+        /*  let mut ui = world
             .get::<&mut WidgetAny<Message>>(parent.get_key())
             .expect("Widget is missing its inner UI Type?");
 
         let action = world
             .get::<&Actions>(parent.get_key())
-            .expect("Widget is missing its actions?");
+            .expect("Widget is missing its actions?");*/
 
         let children: Vec<Handle> = world
-            .query::<Without<(&Widget, &Parent), &Hidden>>()
+            .query::<(&Widget, &Parent)>()
             .iter()
             .filter(|(_entity, (_, parent))| parent.get_id() == control)
             .map(|(entity, _)| Handle(entity))
@@ -856,23 +859,24 @@ impl<Message> UI<Message> {
                 .expect("Widget is missing its actions?")
                 .0;
 
-            if let Some(pos) = self.zlist.iter().position(|x| *x == child) {
-                self.zlist.remove(pos);
-            }
+            let mut ui = world
+                .get::<&mut WidgetAny<Message>>(child.get_key())
+                .expect("Widget is missing its inner UI Type?");
 
-            self.zlist.push_back(child);
-
-            if actions.get(UiFlags::AllowChildren) {
-                self.widget_show_children(world, child);
-            }
+            ui.event(
+                actions,
+                ui_buffer,
+                renderer,
+                SystemEvent::PositionChange(pos),
+                events,
+            );
+            ui.event(
+                actions,
+                ui_buffer,
+                renderer,
+                SystemEvent::BoundsChange(pos, parent_bounds),
+                events,
+            );
         }
-
-        control.ui.event(
-            control.actions,
-            self.ui_buffer_mut(),
-            renderer,
-            SystemEvent::PositionChange,
-            &mut vec![],
-        );*/
     }
 }

@@ -242,6 +242,12 @@ impl Text {
         self
     }
 
+    pub fn set_position(&mut self, position: Vec3) -> &mut Self {
+        self.pos = position;
+        self.changed = true;
+        self
+    }
+
     pub fn set_default_color(&mut self, color: Color) -> &mut Self {
         self.default_color = color;
         self.changed = true;

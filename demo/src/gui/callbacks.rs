@@ -20,16 +20,20 @@ pub enum SystemEvent {
     /// Offset.
     PositionChange(Vec3),
     /// Offset, Parent Bounds.
-    BoundsChange(Vec3, Option<WorldBounds>),
+    BoundsChange(Vec3, WorldBounds),
     /// Offset.
     Scroll(Vec3),
     // Changed?.
     FocusChange(bool),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub enum WidgetEvent {
     /// current value, Max value
     Scroll(usize, usize),
+    /// Will pass the event to the Bounded ID.
+    SystemEventPass(SystemEvent),
+    /// Wont run anything Extra.
+    #[default]
     None,
 }

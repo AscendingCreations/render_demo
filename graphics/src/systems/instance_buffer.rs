@@ -33,6 +33,26 @@ impl WorldBounds {
             height,
         }
     }
+
+    pub fn set_within_limits(mut self, limits: WorldBounds) -> Self {
+        if self.left < limits.left {
+            self.left = limits.left;
+        }
+
+        if self.bottom < limits.bottom {
+            self.bottom = limits.bottom;
+        }
+
+        if self.top > limits.top {
+            self.left = limits.top;
+        }
+
+        if self.right > limits.right {
+            self.right = limits.right;
+        }
+
+        self
+    }
 }
 
 impl Default for WorldBounds {

@@ -66,7 +66,7 @@ impl<Message> UI<Message> {
                 panic!("Not Supported. This will be a Soft warning via log later on.")
             }
         } else {
-            if let Some(handle) = self.focused {
+            if let Some(handle) = self.widget_moving {
                 let action = world
                     .get::<&Actions>(handle.get_key())
                     .expect("Widget is missing its actions?")
@@ -96,7 +96,7 @@ impl<Message> UI<Message> {
 
                     let pos = Vec3::new(
                         position.x - self.mouse_pos.x,
-                        (position.y - self.mouse_pos.y) * -1.0,
+                        position.y - self.mouse_pos.y,
                         0.0,
                     );
 
@@ -108,26 +108,35 @@ impl<Message> UI<Message> {
                             .expect("Widget is missing its inner UI Type?");
 
                         if let Some(control_bounds) = ui.get_bounds() {
-                            bounds = control_bounds;
-                            if bounds.left + pos.x <= parent_bounds.left
-                                || bounds.bottom + pos.y <= parent_bounds.bottom
-                                || bounds.right + pos.x >= parent_bounds.right
-                                || bounds.top + pos.y >= parent_bounds.top
-                            {
-                                return;
-                            }
+                            bounds = WorldBounds::new(
+                                control_bounds.left + pos.x,
+                                control_bounds.bottom + pos.y,
+                                control_bounds.right + pos.x,
+                                control_bounds.top + pos.y,
+                                control_bounds.height,
+                            ).set_within_limits(parent_bounds);
                         } else {
                             //If no predeturmined Size we will set this to the actual controls size as default.
                             let size = ui.get_size();
-                            let pos = ui.get_position();
+                            let control_pos = ui.get_position() + pos;
 
                             bounds = WorldBounds::new(
-                                pos.x,
-                                pos.y,
-                                pos.x + size.x,
-                                pos.y + size.y,
+                                control_pos.x,
+                                control_pos.y,
+                                control_pos.x + size.x,
+                                control_pos.y + size.y,
                                 size.y,
                             )
+                            .set_within_limits(parent_bounds)
+                        }
+
+                        if bounds.left < parent_bounds.left
+                            || bounds.bottom < parent_bounds.bottom
+                            || bounds.right > parent_bounds.right
+                            || bounds.top > parent_bounds.top
+                        {
+                            print!("");
+                            return;
                         }
 
                         ui.event(
@@ -137,12 +146,10 @@ impl<Message> UI<Message> {
                             SystemEvent::PositionChange(pos),
                             events,
                         );
-                        //ui.update_position(pos);
-                        //todo ui.set_bounds();
                     }
 
                     self.widget_position_update(
-                        world, renderer, handle, pos, bounds,
+                        world, ui_buffer, renderer, handle, pos, bounds, events,
                     );
                 }
             }

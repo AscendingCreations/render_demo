@@ -296,7 +296,7 @@ async fn main() -> Result<(), AscendingError> {
 
     UI::<Messages>::set_action(&mut world, button, UiFlags::AlwaysUseable);
     UI::<Messages>::set_action(&mut world, button, UiFlags::CanFocus);
-    UI::<Messages>::set_action(&mut world, button, UiFlags::CanMoveWindow);
+    UI::<Messages>::set_action(&mut world, button, UiFlags::MoveAble);
 
     renderer.window().set_visible(true);
 

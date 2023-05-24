@@ -34,7 +34,32 @@ impl WorldBounds {
         }
     }
 
-    pub fn set_within_limits(mut self, limits: WorldBounds) -> Self {
+    pub fn set_offset_within_limits(
+        &self,
+        offset: &mut Vec3,
+        limits: &WorldBounds,
+    ) {
+        if self.left + offset.x < limits.left {
+            offset.x = limits.left - self.left;
+        } else if self.right + offset.x > limits.right {
+            offset.x = limits.right - self.right;
+        }
+
+        if self.bottom + offset.y < limits.bottom {
+            offset.y = limits.bottom - self.bottom;
+        } else if self.top + offset.y > limits.top {
+            offset.y = limits.top - self.top;
+        }
+    }
+
+    pub fn add_offset(&mut self, offset: Vec3) {
+        self.left += offset.x;
+        self.right += offset.x;
+        self.top += offset.y;
+        self.bottom += offset.y;
+    }
+
+    pub fn set_within_limits(&mut self, limits: &WorldBounds) {
         if self.left < limits.left {
             self.left = limits.left;
         }
@@ -44,14 +69,12 @@ impl WorldBounds {
         }
 
         if self.top > limits.top {
-            self.left = limits.top;
+            self.top = limits.top;
         }
 
         if self.right > limits.right {
             self.right = limits.right;
         }
-
-        self
     }
 }
 

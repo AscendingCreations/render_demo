@@ -82,7 +82,7 @@ impl<Message> UI<Message> {
                             .get::<&WidgetAny<Message>>(parent.get_key())
                             .expect("Widget is missing its inner UI Type?");
 
-                        ui.get_bounds().unwrap_or_default()
+                        ui.get_view_bounds().unwrap_or_default()
                     } else {
                         //If no parent then the screen is its parent lets set the screen size.
                         WorldBounds::new(
@@ -94,13 +94,13 @@ impl<Message> UI<Message> {
                         )
                     };
 
-                    let pos = Vec3::new(
+                    let mut pos = Vec3::new(
                         position.x - self.mouse_pos.x,
                         position.y - self.mouse_pos.y,
                         0.0,
                     );
 
-                    let bounds;
+                    let mut bounds;
 
                     {
                         let mut ui = world
@@ -108,17 +108,11 @@ impl<Message> UI<Message> {
                             .expect("Widget is missing its inner UI Type?");
 
                         if let Some(control_bounds) = ui.get_bounds() {
-                            bounds = WorldBounds::new(
-                                control_bounds.left + pos.x,
-                                control_bounds.bottom + pos.y,
-                                control_bounds.right + pos.x,
-                                control_bounds.top + pos.y,
-                                control_bounds.height,
-                            ).set_within_limits(parent_bounds);
+                            bounds = control_bounds;
                         } else {
                             //If no predeturmined Size we will set this to the actual controls size as default.
                             let size = ui.get_size();
-                            let control_pos = ui.get_position() + pos;
+                            let control_pos = ui.get_position();
 
                             bounds = WorldBounds::new(
                                 control_pos.x,
@@ -127,8 +121,12 @@ impl<Message> UI<Message> {
                                 control_pos.y + size.y,
                                 size.y,
                             )
-                            .set_within_limits(parent_bounds)
                         }
+
+                        bounds
+                            .set_offset_within_limits(&mut pos, &parent_bounds);
+                        bounds.add_offset(pos);
+                        bounds.set_within_limits(&parent_bounds);
 
                         if bounds.left < parent_bounds.left
                             || bounds.bottom < parent_bounds.bottom

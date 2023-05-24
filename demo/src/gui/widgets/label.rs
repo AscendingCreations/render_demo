@@ -61,6 +61,10 @@ impl<Message> Control<Message> for Label {
         self.text.bounds
     }
 
+    fn get_view_bounds(&self) -> Option<WorldBounds> {
+        self.text.bounds
+    }
+
     fn get_size(&self) -> Vec2 {
         self.text.size
     }

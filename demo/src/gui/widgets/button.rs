@@ -82,6 +82,19 @@ impl<Message> Control<Message> for Button<Message> {
         self.shape.bounds
     }
 
+    fn get_view_bounds(&self) -> Option<WorldBounds> {
+        if let Some(mut bounds) = self.shape.bounds {
+            bounds.left += 1.0;
+            bounds.right -= 1.0;
+            bounds.top -= 1.0;
+            bounds.bottom += 1.0;
+            bounds.height -= 2.0;
+            Some(bounds)
+        } else {
+            None
+        }
+    }
+
     fn get_size(&self) -> Vec2 {
         self.shape.size
     }

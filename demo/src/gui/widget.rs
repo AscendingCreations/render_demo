@@ -75,6 +75,8 @@ pub trait Control<Message> {
 
     fn get_bounds(&self) -> Option<WorldBounds>;
 
+    fn get_view_bounds(&self) -> Option<WorldBounds>;
+
     fn get_size(&self) -> Vec2;
 
     fn get_position(&mut self) -> Vec3;

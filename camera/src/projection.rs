@@ -1,4 +1,4 @@
-use ultraviolet::Mat4;
+use glam::Mat4;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Projection {
@@ -28,20 +28,13 @@ impl From<Projection> for Mat4 {
                 top,
                 near,
                 far,
-            } => ultraviolet::projection::orthographic_wgpu_dx(
-                left, right, bottom, top, near, far,
-            ),
+            } => Mat4::orthographic_rh(left, right, bottom, top, near, far),
             Projection::Perspective {
                 fov,
                 aspect_ratio,
                 near,
                 far,
-            } => ultraviolet::projection::perspective_wgpu_dx(
-                fov,
-                aspect_ratio,
-                near,
-                far,
-            ),
+            } => Mat4::perspective_rh_gl(fov, aspect_ratio, near, far),
         }
     }
 }

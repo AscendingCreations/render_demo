@@ -1,6 +1,5 @@
 use super::Controls;
-use ultraviolet::{Mat4, Vec3};
-
+use glam::{Mat4, Vec3};
 #[derive(Clone, Debug, Default)]
 pub struct FlatInputs {
     /// move in this direction.
@@ -39,8 +38,8 @@ impl FlatControls {
         Self {
             inputs: FlatInputs::default(),
             settings,
-            view: Mat4::identity(),
-            eye: Vec3::zero(),
+            view: Mat4::IDENTITY,
+            eye: Vec3::ZERO,
             changed: true,
         }
     }
@@ -60,7 +59,8 @@ impl Controls for FlatControls {
         let changed = self.changed;
 
         if changed {
-            self.view = Mat4::identity() * Mat4::from_scale(self.settings.zoom);
+            self.view = Mat4::IDENTITY
+                * Mat4::from_scale(Vec3::new(1.0, 1.0, self.settings.zoom));
         }
 
         self.changed = false;

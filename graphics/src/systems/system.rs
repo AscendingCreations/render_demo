@@ -2,8 +2,8 @@ use crate::{GpuDevice, GpuRenderer, Layout, WorldBounds};
 use bytemuck::{Pod, Zeroable};
 use camera::Projection;
 use crevice::std140::AsStd140;
+use glam::{Mat4, Vec2, Vec3, Vec4};
 use input::FrameTime;
-use ultraviolet::{Mat4, Vec2, Vec4};
 use wgpu::util::DeviceExt;
 
 #[repr(C)]
@@ -273,17 +273,17 @@ where
         bounds: &WorldBounds,
     ) -> Vec4 {
         let projection = Mat4::from(self.camera.projection());
-        let model = Mat4::identity();
+        let model = Mat4::IDENTITY;
         let view = if scale {
-            ultraviolet::Mat4::from(self.camera.view())
+            Mat4::from(self.camera.view())
         } else {
-            Mat4::identity()
+            Mat4::IDENTITY
         };
         let clip_coords = projection
             * view
             * model
             * Vec4::new(bounds.left, bounds.bottom, 1.0, 1.0);
-        let coords = clip_coords.xyz() / clip_coords.w;
+        let coords = Vec3::from_slice(&clip_coords.to_array()) / clip_coords.w;
 
         let xy = Vec2::new(
             (coords.x + 1.0) * 0.5 * self.screen_size[0],
@@ -305,11 +305,11 @@ where
 
     pub fn world_to_screen(&self, scale: bool, bounds: &WorldBounds) -> Vec4 {
         let projection = Mat4::from(self.camera.projection());
-        let model = Mat4::identity();
+        let model = Mat4::IDENTITY;
         let clip_coords = projection
             * model
             * Vec4::new(bounds.left, bounds.bottom, 1.0, 1.0);
-        let coords = clip_coords.xyz() / clip_coords.w;
+        let coords = Vec3::from_slice(&clip_coords.to_array()) / clip_coords.w;
 
         let xy = Vec2::new(
             (coords.x + 1.0) * 0.5 * self.screen_size[0],

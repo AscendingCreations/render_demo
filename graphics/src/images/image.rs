@@ -65,11 +65,11 @@ impl Image {
         );
 
         let instance = ImageVertex {
-            position: *self.pos.as_array(),
-            hw: *self.hw.as_array(),
+            position: self.pos.to_array(),
+            hw: self.hw.to_array(),
             tex_data: [u, v, width, height],
             color: self.color.0,
-            frames: *self.frames.as_array(),
+            frames: self.frames.to_array(),
             animate: u32::from(self.animate),
             use_camera: u32::from(self.use_camera),
             time: self.switch_time,

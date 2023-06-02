@@ -1,6 +1,5 @@
 use super::Controls;
-use ultraviolet::{Mat4, Vec3};
-
+use glam::{Mat4, Vec3};
 #[derive(Clone, Debug, Default)]
 pub struct FlyingInputs {
     pub forward: f32,
@@ -62,10 +61,10 @@ impl FlyingControls {
             settings,
             position: position.into(),
             direction,
-            up: Vec3::unit_y(),
+            up: Vec3::Y,
             yaw,
             pitch,
-            view: Mat4::identity(),
+            view: Mat4::IDENTITY,
             changed: true,
         }
     }
@@ -155,7 +154,7 @@ impl Controls for FlyingControls {
         }
 
         if self.inputs.sideward != 0.0 {
-            let sideward = self.direction.cross(self.up).normalized();
+            let sideward = self.direction.cross(self.up).normalize();
             self.position +=
                 self.settings.speed * delta * self.inputs.sideward * sideward;
 
@@ -165,8 +164,8 @@ impl Controls for FlyingControls {
         }
 
         if self.inputs.upward != 0.0 {
-            let sideward = self.direction.cross(self.up).normalized();
-            let upward = sideward.cross(self.direction).normalized();
+            let sideward = self.direction.cross(self.up).normalize();
+            let upward = sideward.cross(self.direction).normalize();
 
             // Move upward or downward.
             self.position +=
@@ -179,7 +178,7 @@ impl Controls for FlyingControls {
 
         if changed {
             // Calculate the view matrix.
-            self.view = Mat4::look_at(
+            self.view = Mat4::look_at_rh(
                 self.position,
                 self.position + self.direction,
                 self.up,

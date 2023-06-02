@@ -9,4 +9,4 @@ edition = "2021"
 
 [dependencies]
 mint.workspace = true
-ultraviolet.workspace = true
+glam.workspace = true

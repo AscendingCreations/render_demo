@@ -1,5 +1,5 @@
 use super::Controls;
-use ultraviolet::{Mat4, Vec3};
+use glam::{Mat4, Vec3};
 
 #[derive(Clone, Debug, Default)]
 pub struct OrbitInputs {
@@ -77,8 +77,8 @@ impl OrbitControls {
             azimuth: 0.0,
             polar: 0.0,
             radius,
-            view: Mat4::identity(),
-            eye: Vec3::zero(),
+            view: Mat4::IDENTITY,
+            eye: Vec3::ZERO,
             changed: true,
         }
     }
@@ -174,11 +174,11 @@ impl Controls for OrbitControls {
             self.eye = Vec3::new(x, y, z);
 
             // Calculate the view matrix.
-            let forward = (self.eye - self.center).normalized();
-            let sideward = Vec3::unit_y().cross(forward).normalized();
-            let upward = forward.cross(sideward).normalized();
+            let forward = (self.eye - self.center).normalize();
+            let sideward = Vec3::Y.cross(forward).normalize();
+            let upward = forward.cross(sideward).normalize();
 
-            self.view = Mat4::look_at(self.eye, self.center, upward);
+            self.view = Mat4::look_at_rh(self.eye, self.center, upward);
         }
 
         self.changed = false;

@@ -18,4 +18,4 @@ pub use shapes::*;
 pub use systems::*;
 pub use textures::*;
 
-pub use ultraviolet::{Vec2, Vec3, Vec4};
+pub use glam::{Vec2, Vec3, Vec4};

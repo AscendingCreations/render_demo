@@ -9,7 +9,6 @@ crevice = "0.13.0"
 crevice-derive = "0.10.0"
 mint = "0.5.9"
 thiserror = "1.0.40"
-ultraviolet = { version = "0.9.1", features = ["mint"] }
 winit = { version = "0.28.3", features = ["serde"] }
 image = "0.24.6"
 tokio = { version = "1.28.0", features = ["full"] }
@@ -30,15 +29,15 @@ lru = "0.10.0"
 generational_array = "0.1.1"
 ritehash = "0.2.0"
 hecs = "0.10.3"
-
+glam = { version = "0.24.0", features = ["bytemuck", "mint"] }
 
 [workspace.dependencies.naga]
-#git = "https://github.com/gfx-rs/naga"
-#rev = "b209d911"
+git = "https://github.com/gfx-rs/naga"
+rev = "b99d58ea435090e561377949f428bce2c18451bb"
 version = "0.12.0"
 features = ["span", "validate", "wgsl-in"]
 
 [workspace.dependencies.wgpu]
-#git = "https://github.com/gfx-rs/wgpu"
+git = "https://github.com/gfx-rs/wgpu"
 #rev = "061e04b"
 version = "0.16.0"

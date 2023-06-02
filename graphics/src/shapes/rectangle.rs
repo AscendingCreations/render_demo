@@ -202,8 +202,8 @@ impl Rect {
         ];
 
         let buffer = RectVertex {
-            position: *self.position.as_array(),
-            size: *self.size.as_array(),
+            position: self.position.to_array(),
+            size: self.size.to_array(),
             border_width: self.border_width,
             radius: self.radius.unwrap_or_default(),
             container_data,

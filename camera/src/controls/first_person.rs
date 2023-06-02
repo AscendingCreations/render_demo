@@ -1,5 +1,5 @@
 use super::Controls;
-use ultraviolet::{Mat4, Vec3};
+use glam::{Mat4, Vec3};
 
 #[derive(Clone, Debug, Default)]
 pub struct FirstPersonInputs {
@@ -62,10 +62,10 @@ impl FirstPersonControls {
             settings,
             position: position.into(),
             direction,
-            up: Vec3::unit_y(),
+            up: Vec3::Y,
             yaw,
             pitch,
-            view: Mat4::identity(),
+            view: Mat4::IDENTITY,
             changed: true,
         }
     }
@@ -183,7 +183,7 @@ impl Controls for FirstPersonControls {
 
         if changed {
             // Calculate the view matrix.
-            self.view = Mat4::look_at(
+            self.view = Mat4::look_at_rh(
                 self.position,
                 self.position + self.direction,
                 self.up,

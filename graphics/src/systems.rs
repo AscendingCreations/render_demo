@@ -1,4 +1,7 @@
+mod bounds;
+mod buffer;
 mod device;
+mod draw_order;
 mod instance_buffer;
 mod layout;
 mod pass;
@@ -8,7 +11,10 @@ mod static_vbo;
 mod system;
 mod vbo;
 
+pub use bounds::WorldBounds;
+pub use buffer::{AsBufferPass, BufferData, BufferPass, BufferStore};
 pub use device::*;
+pub use draw_order::{DrawOrder, Index, OrderedIndex};
 pub use instance_buffer::*;
 pub use layout::*;
 pub use pass::*;

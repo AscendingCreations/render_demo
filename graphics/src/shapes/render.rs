@@ -1,6 +1,7 @@
 use crate::{
-    AscendingError, AtlasGroup, GpuRenderer, InstanceBuffer, OrderedIndex,
-    Rect, RectVertex, RectsRenderPipeline, StaticBufferObject, System,
+    AsBufferPass, AscendingError, AtlasGroup, GpuRenderer, InstanceBuffer,
+    OrderedIndex, Rect, RectVertex, RectsRenderPipeline, SetBuffers,
+    StaticBufferObject, System,
 };
 
 pub struct RectRenderer {
@@ -60,6 +61,7 @@ where
         system: &'b System<Controls>,
     ) {
         if buffer.buffer.count() > 0 {
+            self.set_buffers(renderer.buffer_object.as_buffer_pass());
             self.set_bind_group(1, &atlas_group.texture.bind_group, &[]);
             self.set_vertex_buffer(1, buffer.buffer.instances(None));
             self.set_pipeline(

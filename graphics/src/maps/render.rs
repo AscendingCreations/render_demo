@@ -1,7 +1,7 @@
 use crate::{
-    AscendingError, AtlasGroup, GpuRenderer, InstanceBuffer, Map, MapLayout,
-    MapRenderPipeline, MapTextures, MapVertex, OrderedIndex,
-    StaticBufferObject, TextureGroup,
+    AsBufferPass, AscendingError, AtlasGroup, GpuRenderer, InstanceBuffer, Map,
+    MapLayout, MapRenderPipeline, MapTextures, MapVertex, OrderedIndex,
+    SetBuffers, StaticBufferObject, TextureGroup,
 };
 
 pub struct MapRenderer {
@@ -97,6 +97,7 @@ where
         atlas_group: &'b AtlasGroup,
     ) {
         if buffer.maplower_buffer.count() > 0 {
+            self.set_buffers(renderer.buffer_object.as_buffer_pass());
             self.set_bind_group(1, &atlas_group.texture.bind_group, &[]);
             self.set_bind_group(2, &buffer.map_group.bind_group, &[]);
             self.set_vertex_buffer(1, buffer.maplower_buffer.instances(None));
@@ -118,6 +119,7 @@ where
         atlas_group: &'b AtlasGroup,
     ) {
         if buffer.mapupper_buffer.count() > 0 {
+            self.set_buffers(renderer.buffer_object.as_buffer_pass());
             self.set_bind_group(1, &atlas_group.texture.bind_group, &[]);
             self.set_bind_group(2, &buffer.map_group.bind_group, &[]);
             self.set_vertex_buffer(1, buffer.mapupper_buffer.instances(None));

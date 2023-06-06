@@ -1,6 +1,7 @@
 use crate::{
-    AscendingError, AtlasGroup, GpuRenderer, InstanceBuffer, OrderedIndex,
-    StaticBufferObject, Text, TextRenderPipeline, TextVertex, Vec2,
+    AsBufferPass, AscendingError, AtlasGroup, GpuRenderer, InstanceBuffer,
+    OrderedIndex, SetBuffers, StaticBufferObject, Text, TextRenderPipeline,
+    TextVertex, Vec2,
 };
 use cosmic_text::{CacheKey, SwashCache};
 
@@ -87,6 +88,7 @@ where
         atlas: &'b TextAtlas,
     ) {
         if buffer.buffer.count() > 0 {
+            self.set_buffers(renderer.buffer_object.as_buffer_pass());
             self.set_bind_group(1, &atlas.text.texture.bind_group, &[]);
             self.set_bind_group(2, &atlas.emoji.texture.bind_group, &[]);
             self.set_vertex_buffer(1, buffer.buffer.instances(None));

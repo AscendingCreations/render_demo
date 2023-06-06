@@ -1,4 +1,4 @@
-use crate::GpuDevice;
+use crate::{AsBufferPass, BufferPass, GpuDevice};
 use bytemuck::{Pod, Zeroable};
 use std::mem;
 use wgpu::util::DeviceExt;
@@ -34,6 +34,15 @@ const VERTS: [Vertex; 4] = [
 pub struct StaticBufferObject {
     pub vbo: wgpu::Buffer,
     pub ibo: wgpu::Buffer,
+}
+
+impl<'a> AsBufferPass<'a> for StaticBufferObject {
+    fn as_buffer_pass(&'a self) -> BufferPass<'a> {
+        BufferPass {
+            vertex_buffer: &self.vbo,
+            index_buffer: &self.ibo,
+        }
+    }
 }
 
 impl StaticBufferObject {

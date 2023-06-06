@@ -91,14 +91,13 @@ where
 
         // Lets set the System's Shader information here, mostly Camera, Size and Time
         pass.set_bind_group(0, self.system.bind_group(), &[]);
-
         // Lets set the Reusable Vertices and Indicies here.
         // This is used for each Renderer, Should be more performant since it is shared.
-        pass.set_vertex_buffer(0, renderer.buffer_object.vertices());
+        /*pass.set_vertex_buffer(0, renderer.buffer_object.vertices());
         pass.set_index_buffer(
             renderer.buffer_object.indices(),
             wgpu::IndexFormat::Uint16,
-        );
+        );*/
 
         //pass.render_lower_maps(renderer, &self.map_renderer, &self.map_atlas);
 

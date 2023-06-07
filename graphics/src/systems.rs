@@ -12,7 +12,7 @@ mod system;
 mod vbo;
 
 pub use bounds::WorldBounds;
-pub use buffer::{AsBufferPass, BufferData, BufferPass, BufferStore};
+pub use buffer::{AsBufferPass, Buffer, BufferData, BufferPass, BufferStore};
 pub use device::*;
 pub use draw_order::{DrawOrder, Index, OrderedIndex};
 pub use instance_buffer::*;

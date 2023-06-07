@@ -1,6 +1,5 @@
-use crate::{GpuDevice, GpuRenderer, OrderedIndex, WorldBounds};
+use crate::{Buffer, GpuDevice, GpuRenderer, OrderedIndex, WorldBounds};
 use std::{marker::PhantomData, ops::Range};
-use wgpu::util::DeviceExt;
 
 pub trait InstanceLayout {
     fn is_bounded() -> bool;
@@ -21,11 +20,8 @@ pub trait InstanceLayout {
 //This Holds onto all the instances Compressed into a byte array.
 pub struct InstanceBuffer<K: InstanceLayout> {
     pub buffers: Vec<OrderedIndex>,
-    pub buffer: wgpu::Buffer,
+    pub buffer: Buffer,
     pub bounds: Vec<Option<WorldBounds>>,
-    count: usize,
-    len: usize,
-    max: usize,
     // this is a calculation of the buffers size when being marked as ready to add into the buffer.
     needed_size: usize,
     // Ghost Data that doesnt Actually exist. Used to set the Generic to a trait.
@@ -39,18 +35,13 @@ impl<K: InstanceLayout> InstanceBuffer<K> {
     pub fn create_buffer(gpu_device: &GpuDevice, data: &[u8]) -> Self {
         InstanceBuffer {
             buffers: Vec::with_capacity(256),
-            buffer: gpu_device.device().create_buffer_init(
-                &wgpu::util::BufferInitDescriptor {
-                    label: Some("Instance Buffer"),
-                    contents: data,
-                    usage: wgpu::BufferUsages::VERTEX
-                        | wgpu::BufferUsages::COPY_DST,
-                },
+            buffer: Buffer::new(
+                gpu_device,
+                data,
+                wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+                Some("Instance Buffer"),
             ),
             bounds: Vec::new(),
-            count: 0,
-            len: 0,
-            max: data.len(),
             needed_size: 0,
             phantom_data: PhantomData,
         }
@@ -73,7 +64,7 @@ impl<K: InstanceLayout> InstanceBuffer<K> {
         let mut changed = false;
         let mut pos = 0;
 
-        if self.needed_size > self.max {
+        if self.needed_size > self.buffer.max {
             self.resize(
                 renderer.gpu_device(),
                 self.needed_size / K::instance_stride(),
@@ -81,8 +72,8 @@ impl<K: InstanceLayout> InstanceBuffer<K> {
             changed = true;
         }
 
-        self.count = self.needed_size / K::instance_stride();
-        self.len = self.needed_size;
+        self.buffer.count = self.needed_size / K::instance_stride();
+        self.buffer.len = self.needed_size;
 
         self.buffers.sort();
 
@@ -108,11 +99,7 @@ impl<K: InstanceLayout> InstanceBuffer<K> {
 
             if write_buffer {
                 if let Some(store) = renderer.get_buffer(&buf.index) {
-                    renderer.device.queue.write_buffer(
-                        &self.buffer,
-                        old_pos,
-                        &store.store,
-                    );
+                    self.buffer.write(&renderer.device, &store.store, old_pos);
                 }
             }
         }
@@ -125,16 +112,12 @@ impl<K: InstanceLayout> InstanceBuffer<K> {
     fn resize(&mut self, gpu_device: &GpuDevice, capacity: usize) {
         let data = K::with_capacity(capacity);
 
-        self.buffer = gpu_device.device().create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Vertex Buffer"),
-                contents: &data,
-                usage: wgpu::BufferUsages::VERTEX
-                    | wgpu::BufferUsages::COPY_DST,
-            },
+        self.buffer = Buffer::new(
+            gpu_device,
+            &data,
+            wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            Some("Vertex Buffer"),
         );
-        self.count = 0;
-        self.max = data.len();
     }
 
     /// creates a new pre initlized InstanceBuffer with a default size.
@@ -156,34 +139,34 @@ impl<K: InstanceLayout> InstanceBuffer<K> {
     ) {
         let size = bytes.len();
 
-        if size > self.max {
+        if size > self.buffer.max {
             self.resize(gpu_device, size / K::instance_stride());
         }
 
-        self.count = size / K::instance_stride();
-        self.len = size;
+        self.buffer.count = size / K::instance_stride();
+        self.buffer.len = size;
         self.bounds = bounds.to_vec();
 
-        gpu_device.queue().write_buffer(&self.buffer, 0, bytes);
+        self.buffer.write(gpu_device, bytes, 0);
     }
 
     /// Returns the elements count.
     pub fn count(&self) -> u32 {
-        self.count as u32
+        self.buffer.count as u32
     }
 
     /// Returns the elements byte count.
     pub fn len(&self) -> u64 {
-        self.len as u64
+        self.buffer.len as u64
     }
 
     pub fn is_empty(&self) -> bool {
-        self.len == 0
+        self.buffer.is_empty()
     }
 
     /// Returns vertex_buffer's max size in bytes.
     pub fn max(&self) -> usize {
-        self.max
+        self.buffer.max
     }
 
     /// Returns buffer's stride.
@@ -201,7 +184,7 @@ impl<K: InstanceLayout> InstanceBuffer<K> {
             0..self.len()
         };
 
-        self.buffer.slice(range)
+        self.buffer.buffer_slice(range)
     }
 
     /// Creates a Buffer based on capacity.

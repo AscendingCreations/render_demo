@@ -479,13 +479,13 @@ impl<Message> UI<Message> {
 
     pub(crate) fn widget_ui_events(
         &mut self,
-        world: &mut World,
-        ui_buffer: &mut UIBuffer,
-        renderer: &mut GpuRenderer,
-        parent: Handle,
-        event: WidgetEvent,
+        _world: &mut World,
+        _ui_buffer: &mut UIBuffer,
+        _renderer: &mut GpuRenderer,
+        _parent: Handle,
+        _event: WidgetEvent,
     ) {
-        let mut ui = world
+        /* let mut ui = world
             .get::<&mut WidgetAny<Message>>(parent.get_key())
             .expect("Widget is missing its inner UI Type?");
 
@@ -496,7 +496,7 @@ impl<Message> UI<Message> {
         match event {
             WidgetEvent::Scroll(_value, _max) => {}
             _ => {}
-        }
+        }*/
     }
 
     pub(crate) fn widget_set_clicked(

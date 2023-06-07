@@ -179,7 +179,7 @@ impl<Message> Control<Message> for Button<Message> {
             SystemEvent::PositionChange(offset) => {
                 self.shape.set_position(self.shape.position + offset);
             }
-            SystemEvent::BoundsChange(offset, parent_bounds) => {
+            SystemEvent::BoundsChange(_offset, parent_bounds) => {
                 self.shape.set_bounds(Some(parent_bounds));
             }
             _ => {}

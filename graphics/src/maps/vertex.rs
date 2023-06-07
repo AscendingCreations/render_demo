@@ -1,4 +1,4 @@
-use crate::InstanceLayout;
+use crate::{BufferData, BufferLayout};
 use std::iter;
 
 #[repr(C)]
@@ -20,7 +20,7 @@ impl Default for MapVertex {
     }
 }
 
-impl InstanceLayout for MapVertex {
+impl BufferLayout for MapVertex {
     fn is_bounded() -> bool {
         false
     }
@@ -31,18 +31,25 @@ impl InstanceLayout for MapVertex {
     }
 
     ///default set as large enough to contain 720 map layers.
-    fn default_buffer() -> Vec<u8> {
-        Self::with_capacity(720)
+    fn default_buffer() -> BufferData {
+        Self::with_capacity(720, 0)
     }
 
-    fn with_capacity(capacity: usize) -> Vec<u8> {
-        let instance_arr: Vec<MapVertex> =
-            iter::repeat(MapVertex::default()).take(capacity).collect();
+    fn with_capacity(
+        vertex_capacity: usize,
+        _index_capacity: usize,
+    ) -> BufferData {
+        let instance_arr: Vec<MapVertex> = iter::repeat(MapVertex::default())
+            .take(vertex_capacity)
+            .collect();
 
-        bytemuck::cast_slice(&instance_arr).to_vec()
+        BufferData {
+            vertexs: bytemuck::cast_slice(&instance_arr).to_vec(),
+            ..Default::default()
+        }
     }
 
-    fn instance_stride() -> usize {
+    fn stride() -> usize {
         std::mem::size_of::<[f32; 6]>()
     }
 }

@@ -40,7 +40,7 @@ where
         self.set_vertex_buffer(0, buffer.vertex_buffer.slice(..));
         self.set_index_buffer(
             buffer.index_buffer.slice(..),
-            wgpu::IndexFormat::Uint16,
+            wgpu::IndexFormat::Uint32,
         );
     }
 }

@@ -1,5 +1,5 @@
 use crate::{
-    GpuDevice, ImageVertex, InstanceLayout, LayoutStorage, PipeLineLayout,
+    BufferLayout, GpuDevice, ImageVertex, LayoutStorage, PipeLineLayout,
     StaticBufferObject, SystemLayout, TextureLayout,
 };
 use bytemuck::{Pod, Zeroable};
@@ -50,7 +50,7 @@ impl PipeLineLayout for ImageRenderPipeline {
                             ],
                         },
                         wgpu::VertexBufferLayout {
-                            array_stride: ImageVertex::instance_stride() as u64,
+                            array_stride: ImageVertex::stride() as u64,
                             step_mode: wgpu::VertexStepMode::Instance,
                             attributes: &ImageVertex::attributes(),
                         },

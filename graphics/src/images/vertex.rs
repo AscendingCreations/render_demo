@@ -1,4 +1,4 @@
-use crate::InstanceLayout;
+use crate::{BufferData, BufferLayout};
 use std::iter;
 
 #[repr(C)]
@@ -31,7 +31,7 @@ impl Default for ImageVertex {
     }
 }
 
-impl InstanceLayout for ImageVertex {
+impl BufferLayout for ImageVertex {
     fn is_bounded() -> bool {
         true
     }
@@ -42,20 +42,26 @@ impl InstanceLayout for ImageVertex {
     }
 
     ///default set as large enough to contain 10_000 sprites.
-    fn default_buffer() -> Vec<u8> {
-        Self::with_capacity(10_000)
+    fn default_buffer() -> BufferData {
+        Self::with_capacity(10_000, 0)
     }
 
-    fn with_capacity(capacity: usize) -> Vec<u8> {
+    fn with_capacity(
+        vertex_capacity: usize,
+        _index_capacity: usize,
+    ) -> BufferData {
         let instance_arr: Vec<ImageVertex> =
             iter::repeat(ImageVertex::default())
-                .take(capacity)
+                .take(vertex_capacity)
                 .collect();
 
-        bytemuck::cast_slice(&instance_arr).to_vec()
+        BufferData {
+            vertexs: bytemuck::cast_slice(&instance_arr).to_vec(),
+            ..Default::default()
+        }
     }
 
-    fn instance_stride() -> usize {
+    fn stride() -> usize {
         std::mem::size_of::<[f32; 16]>()
     }
 }

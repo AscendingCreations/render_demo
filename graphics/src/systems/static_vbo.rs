@@ -9,7 +9,7 @@ pub struct Vertex {
     _position: [f32; 2],
 }
 
-const INDICES: [u16; 6] = [0, 1, 2, 0, 2, 3];
+const INDICES: [u32; 6] = [0, 1, 2, 0, 2, 3];
 
 const VERTS: [Vertex; 4] = [
     Vertex {

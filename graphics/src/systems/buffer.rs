@@ -1,5 +1,5 @@
-use crate::{GpuDevice, OrderedIndex, WorldBounds};
-use std::{cmp::Ordering, marker::PhantomData, ops::Range};
+use crate::{GpuDevice, WorldBounds};
+use std::{marker::PhantomData, ops::Range};
 use wgpu::util::DeviceExt;
 
 #[derive(Default)]
@@ -29,30 +29,10 @@ pub struct BufferData {
 }
 
 //need this to render each mesh as an instance.
+#[derive(Default, Copy, Clone, PartialEq, Eq)]
 pub struct BufferDetails {
-    pub order_index: OrderedIndex,
     pub vertex_count: usize,
     pub index_count: usize,
-}
-
-impl PartialOrd for BufferDetails {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl PartialEq for BufferDetails {
-    fn eq(&self, other: &Self) -> bool {
-        self.order_index == other.order_index
-    }
-}
-
-impl Eq for BufferDetails {}
-
-impl Ord for BufferDetails {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.order_index.cmp(&other.order_index)
-    }
 }
 
 pub struct Buffer<K: BufferLayout> {

@@ -8,7 +8,7 @@ use std::ops::Range;
 //This is Used for objects that need more advanced VBO/IBO other wise use the Instance buffers.
 
 pub struct GpuBuffer<K: BufferLayout> {
-    unprocessed: Vec<BufferDetails>,
+    unprocessed: Vec<OrderedIndex>,
     pub buffers: Vec<BufferDetails>,
     pub vertex_buffer: Buffer<K>,
     vertex_needed: usize,
@@ -53,19 +53,18 @@ impl<K: BufferLayout> GpuBuffer<K> {
     pub fn add_buffer_store(
         &mut self,
         renderer: &mut GpuRenderer,
-        index: OrderedIndex,
+        mut index: OrderedIndex,
     ) {
         if let Some(store) = renderer.get_buffer(&index.index) {
             self.vertex_needed += store.store.len();
             self.index_needed += store.indexs.len();
 
-            let details = BufferDetails {
-                order_index: index,
+            index.render_details = BufferDetails {
                 vertex_count: store.store.len() / K::stride(),
                 index_count: store.indexs.len() / 4,
             };
 
-            self.unprocessed.push(details);
+            self.unprocessed.push(index);
         }
     }
 
@@ -88,6 +87,7 @@ impl<K: BufferLayout> GpuBuffer<K> {
         self.vertex_buffer.len = self.vertex_needed;
 
         self.unprocessed.sort();
+        self.buffers.clear();
 
         for (id, buf) in self.unprocessed.iter().enumerate() {
             let mut write_vertex = false;
@@ -95,8 +95,7 @@ impl<K: BufferLayout> GpuBuffer<K> {
             let old_vertex_pos = vertex_pos as u64;
             let old_index_pos = index_pos as u64;
 
-            if let Some(store) = renderer.get_buffer_mut(&buf.order_index.index)
-            {
+            if let Some(store) = renderer.get_buffer_mut(&buf.index) {
                 let vertex_range = vertex_pos..vertex_pos + store.store.len();
                 let index_range = index_pos..index_pos + store.indexs.len();
 
@@ -128,8 +127,7 @@ impl<K: BufferLayout> GpuBuffer<K> {
             }
 
             if write_vertex {
-                if let Some(store) = renderer.get_buffer(&buf.order_index.index)
-                {
+                if let Some(store) = renderer.get_buffer(&buf.index) {
                     self.vertex_buffer.write(
                         &renderer.device,
                         &store.store,
@@ -139,8 +137,7 @@ impl<K: BufferLayout> GpuBuffer<K> {
             }
 
             if write_index {
-                if let Some(store) = renderer.get_buffer(&buf.order_index.index)
-                {
+                if let Some(store) = renderer.get_buffer(&buf.index) {
                     self.index_buffer.write(
                         &renderer.device,
                         &store.indexs,
@@ -148,12 +145,12 @@ impl<K: BufferLayout> GpuBuffer<K> {
                     );
                 }
             }
+
+            self.buffers.push(buf.render_details);
         }
 
         self.vertex_needed = 0;
         self.index_needed = 0;
-        self.buffers.clear();
-        self.buffers.append(&mut self.unprocessed);
     }
 
     //private but resizes the buffer on the GPU when needed.

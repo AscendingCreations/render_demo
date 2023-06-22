@@ -1,70 +1,83 @@
 use crate::{
-    AscendingError, AtlasGroup, GpuRenderer, InstanceBuffer, OrderedIndex,
-    Rect, RectVertex, RectsRenderPipeline, StaticBufferObject, System,
+    AsBufferPass, AscendingError, AtlasGroup, GpuBuffer, GpuRenderer,
+    InstanceBuffer, Mesh, MeshInstance, MeshRenderPipeline, MeshVertex,
+    OrderedIndex, System,
 };
 
-pub struct RectRenderer {
-    pub buffer: InstanceBuffer<RectVertex>,
+pub struct MeshRenderer {
+    pub instances: InstanceBuffer<MeshInstance>,
+    pub vbos: GpuBuffer<MeshVertex>,
 }
 
-impl RectRenderer {
+pub struct MeshOrderIndex {
+    pub vbo: OrderedIndex,
+    pub ibo: OrderedIndex,
+}
+
+//TODO: Update this to take in instance buffer index too.
+impl MeshRenderer {
     pub fn new(renderer: &mut GpuRenderer) -> Result<Self, AscendingError> {
         Ok(Self {
-            buffer: InstanceBuffer::new(renderer.gpu_device()),
+            instances: InstanceBuffer::new(renderer.gpu_device()),
+            vbos: GpuBuffer::new(renderer.gpu_device()),
         })
     }
 
     pub fn add_buffer_store(
         &mut self,
         renderer: &mut GpuRenderer,
-        index: OrderedIndex,
+        index: MeshOrderIndex,
     ) {
-        self.buffer.add_buffer_store(renderer, index);
+        self.instances.add_buffer_store(renderer, index.ibo);
+        self.vbos.add_buffer_store(renderer, index.vbo);
     }
 
     pub fn finalize(&mut self, renderer: &mut GpuRenderer) {
-        self.buffer.finalize(renderer)
+        self.instances.finalize(renderer);
+        self.vbos.finalize(renderer);
     }
 
-    pub fn rect_update(&mut self, rect: &mut Rect, renderer: &mut GpuRenderer) {
-        let index = rect.update(renderer);
+    pub fn mesh_update(&mut self, mesh: &mut Mesh, renderer: &mut GpuRenderer) {
+        let index = mesh.update(renderer);
 
         self.add_buffer_store(renderer, index);
     }
 }
 
-pub trait RenderRects<'a, 'b, Controls>
+pub trait RenderMesh<'a, 'b, Controls>
 where
     'b: 'a,
     Controls: camera::controls::Controls,
 {
-    fn render_rects(
+    fn render_meshs(
         &mut self,
         renderer: &'b GpuRenderer,
-        buffer: &'b RectRenderer,
+        buffer: &'b MeshRenderer,
         atlas_group: &'b AtlasGroup,
         system: &'b System<Controls>,
     );
 }
 
-impl<'a, 'b, Controls> RenderRects<'a, 'b, Controls> for wgpu::RenderPass<'a>
+impl<'a, 'b, Controls> RenderMesh<'a, 'b, Controls> for wgpu::RenderPass<'a>
 where
     'b: 'a,
     Controls: camera::controls::Controls,
 {
-    fn render_rects(
+    fn render_meshs(
         &mut self,
         renderer: &'b GpuRenderer,
-        buffer: &'b RectRenderer,
+        buffer: &'b MeshRenderer,
         atlas_group: &'b AtlasGroup,
         system: &'b System<Controls>,
     ) {
-        if buffer.buffer.count() > 0 {
-            self.set_buffers(renderer.buffer_object.as_buffer_send());
+        //TODO Add new mesh handler to cycle correct buffers with index id's
+        /*
+        if buffer.vbos.count() > 0 {
+            self.set_buffers(buffer.vbos.as_buffer_send());
             self.set_bind_group(1, &atlas_group.texture.bind_group, &[]);
-            self.set_vertex_buffer(1, buffer.buffer.instances(None));
+            self.set_vertex_buffer(1, buffer.instances.instances(None));
             self.set_pipeline(
-                renderer.get_pipelines(RectsRenderPipeline).unwrap(),
+                renderer.get_pipelines(MeshRenderPipeline).unwrap(),
             );
             let mut scissor_is_default = true;
 
@@ -90,6 +103,8 @@ where
                     scissor_is_default = true;
                 };
 
+                // Indexs can always start at 0 per mesh data.
+                // Base vertex is the Addition to the Index
                 self.draw_indexed(
                     0..StaticBufferObject::index_count(),
                     0,
@@ -106,6 +121,6 @@ where
                     system.screen_size[1] as u32,
                 );
             }
-        }
+        }*/
     }
 }

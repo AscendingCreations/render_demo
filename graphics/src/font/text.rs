@@ -231,7 +231,12 @@ impl Text {
         text: &str,
         attrs: Attrs,
     ) -> &mut Self {
-        self.buffer.set_text(&mut renderer.font_sys, text, attrs);
+        self.buffer.set_text(
+            &mut renderer.font_sys,
+            text,
+            attrs,
+            cosmic_text::Shaping::Advanced,
+        );
         self.changed = true;
         self
     }
@@ -281,6 +286,7 @@ impl Text {
             &mut renderer.font_sys,
             "",
             cosmic_text::Attrs::new(),
+            cosmic_text::Shaping::Basic,
         );
         self.changed = true;
         self

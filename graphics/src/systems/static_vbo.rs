@@ -80,7 +80,7 @@ impl StaticBufferObject {
         }
     }
 
-    pub fn vertex_size() -> u64 {
+    pub fn stride() -> u64 {
         mem::size_of::<Vertex>() as u64
     }
 

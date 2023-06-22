@@ -328,4 +328,35 @@ where
 
         Vec4::new(xy.x, xy.y - objh, bw, bh)
     }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn world_to_screen_direct(
+        screen_size: [f32; 2],
+        scale: f32,
+        projection: Mat4,
+        left: f32,
+        bottom: f32,
+        right: f32,
+        top: f32,
+        height: f32,
+    ) -> Vec4 {
+        let model = Mat4::IDENTITY;
+        let clip_coords =
+            projection * model * Vec4::new(left, bottom, 1.0, 1.0);
+        let coords = Vec3::from_slice(&clip_coords.to_array()) / clip_coords.w;
+
+        let xy = Vec2::new(
+            (coords.x + 1.0) * 0.5 * screen_size[0],
+            (1.0 - coords.y) * 0.5 * screen_size[1],
+        );
+
+        let (bw, bh, objh) = if scale != 1.0 {
+            (right * scale, top * scale, height * scale)
+        } else {
+            (right, top, height)
+        };
+        // We must minus the height to flip the Y location to window coords.
+        // You might not need to do this based on how you handle your Y coords.
+        Vec4::new(xy.x, xy.y - objh, bw, bh)
+    }
 }

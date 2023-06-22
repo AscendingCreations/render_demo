@@ -1,6 +1,6 @@
 use crate::{Allocation, GpuRenderer, Layer};
 use lru::LruCache;
-use std::{collections::HashSet, hash::Hash };
+use std::{collections::HashSet, hash::Hash};
 
 pub struct Atlas<U: Hash + Eq + Clone = String, Data: Copy + Default = i32> {
     /// Texture in GRAM

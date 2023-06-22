@@ -47,7 +47,7 @@ impl PipeLineLayout for TextRenderPipeline {
                     entry_point: "vertex",
                     buffers: &[
                         wgpu::VertexBufferLayout {
-                            array_stride: StaticBufferObject::vertex_size(),
+                            array_stride: StaticBufferObject::stride(),
                             step_mode: wgpu::VertexStepMode::Vertex,
                             attributes: &[
                                 StaticBufferObject::vertex_attribute(),

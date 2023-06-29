@@ -5,12 +5,12 @@ use std::iter;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct MeshVertex {
+pub struct Mesh2DVertex {
     pub position: [f32; 3],
     pub color: u32,
 }
 
-impl Default for MeshVertex {
+impl Default for Mesh2DVertex {
     fn default() -> Self {
         Self {
             position: [0.0; 3],
@@ -19,7 +19,7 @@ impl Default for MeshVertex {
     }
 }
 
-impl BufferLayout for MeshVertex {
+impl BufferLayout for Mesh2DVertex {
     fn is_bounded() -> bool {
         true
     }
@@ -37,7 +37,7 @@ impl BufferLayout for MeshVertex {
         vertex_capacity: usize,
         index_capacity: usize,
     ) -> BufferData {
-        let vbo_arr: Vec<MeshVertex> = iter::repeat(MeshVertex::default())
+        let vbo_arr: Vec<Mesh2DVertex> = iter::repeat(Mesh2DVertex::default())
             .take(vertex_capacity)
             .collect();
 
@@ -64,28 +64,28 @@ pub struct VertexBuilder {
 }
 
 impl VertexBuilder {
-    pub fn new_vertex(self, position: LPoint) -> MeshVertex {
-        MeshVertex {
+    pub fn new_vertex(self, position: LPoint) -> Mesh2DVertex {
+        Mesh2DVertex {
             position: [position.x, position.y, self.z],
             color: self.color.0,
         }
     }
 }
 
-impl tess::StrokeVertexConstructor<MeshVertex> for VertexBuilder {
-    fn new_vertex(&mut self, vertex: tess::StrokeVertex) -> MeshVertex {
+impl tess::StrokeVertexConstructor<Mesh2DVertex> for VertexBuilder {
+    fn new_vertex(&mut self, vertex: tess::StrokeVertex) -> Mesh2DVertex {
         let position = vertex.position();
-        MeshVertex {
+        Mesh2DVertex {
             position: [position.x, position.y, self.z],
             color: self.color.0,
         }
     }
 }
 
-impl tess::FillVertexConstructor<MeshVertex> for VertexBuilder {
-    fn new_vertex(&mut self, vertex: tess::FillVertex) -> MeshVertex {
+impl tess::FillVertexConstructor<Mesh2DVertex> for VertexBuilder {
+    fn new_vertex(&mut self, vertex: tess::FillVertex) -> Mesh2DVertex {
         let position = vertex.position();
-        MeshVertex {
+        Mesh2DVertex {
             position: [position.x, position.y, self.z],
             color: self.color.0,
         }

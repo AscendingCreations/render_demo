@@ -167,7 +167,7 @@ async fn main() -> Result<(), AscendingError> {
     let text_renderer = TextRenderer::new(&mut renderer).unwrap();
     let sprite_renderer = ImageRenderer::new(&mut renderer).unwrap();
     let mut map_renderer = MapRenderer::new(&mut renderer, 81).unwrap();
-    let mesh_renderer = MeshRenderer::new(&mut renderer).unwrap();
+    let mesh_renderer = Mesh2DRenderer::new(&mut renderer).unwrap();
 
     let mut size = renderer.size();
 
@@ -299,7 +299,7 @@ async fn main() -> Result<(), AscendingError> {
     UI::<Messages>::set_action(&mut world, button, UiFlags::CanFocus);
     UI::<Messages>::set_action(&mut world, button, UiFlags::MoveAble);
 
-    let mut builder = MeshBuilder::new();
+    let mut builder = Mesh2DBuilder::new();
 
     builder
         .circle(
@@ -322,7 +322,7 @@ async fn main() -> Result<(), AscendingError> {
         )
         .unwrap();
 
-    let mut builder2 = MeshBuilder::new();
+    let mut builder2 = Mesh2DBuilder::new();
 
     builder2
         .circle(
@@ -344,7 +344,7 @@ async fn main() -> Result<(), AscendingError> {
             Color::rgba(255, 255, 255, 255),
         )
         .unwrap();
-    let mut mesh = [Mesh::new(&mut renderer), Mesh::new(&mut renderer)];
+    let mut mesh = [Mesh2D::new(&mut renderer), Mesh2D::new(&mut renderer)];
     mesh[0].from_builder(builder.finalize());
     mesh[1].from_builder(builder2.finalize());
     renderer.window().set_visible(true);

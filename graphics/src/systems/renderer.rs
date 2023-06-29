@@ -225,7 +225,7 @@ impl GpuRenderer {
             &mut self.device,
             &mut self.layout_storage,
             surface_format,
-            crate::MeshRenderPipeline,
+            crate::Mesh2DRenderPipeline,
         );
     }
 

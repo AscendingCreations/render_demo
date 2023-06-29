@@ -1,14 +1,14 @@
 use crate::{
-    BufferLayout, GpuDevice, LayoutStorage, MeshVertex, PipeLineLayout,
+    BufferLayout, GpuDevice, LayoutStorage, Mesh2DVertex, PipeLineLayout,
     SystemLayout,
 };
 use bytemuck::{Pod, Zeroable};
 
 #[repr(C)]
 #[derive(Clone, Copy, Hash, Pod, Zeroable)]
-pub struct MeshRenderPipeline;
+pub struct Mesh2DRenderPipeline;
 
-impl PipeLineLayout for MeshRenderPipeline {
+impl PipeLineLayout for Mesh2DRenderPipeline {
     fn create_layout(
         &self,
         gpu_device: &mut GpuDevice,
@@ -41,9 +41,9 @@ impl PipeLineLayout for MeshRenderPipeline {
                     module: &shader,
                     entry_point: "vertex",
                     buffers: &[wgpu::VertexBufferLayout {
-                        array_stride: MeshVertex::stride() as u64,
+                        array_stride: Mesh2DVertex::stride() as u64,
                         step_mode: wgpu::VertexStepMode::Vertex,
-                        attributes: &MeshVertex::attributes(),
+                        attributes: &Mesh2DVertex::attributes(),
                     }],
                 },
                 primitive: wgpu::PrimitiveState {

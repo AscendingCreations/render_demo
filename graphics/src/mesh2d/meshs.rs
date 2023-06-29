@@ -1,5 +1,5 @@
 use crate::{
-    AscendingError, BufferLayout, DrawOrder, GpuRenderer, Index, MeshVertex,
+    AscendingError, BufferLayout, DrawOrder, GpuRenderer, Index, Mesh2DVertex,
     OrderedIndex, OtherError, Vec2, Vec3, Vec4, VertexBuilder, WorldBounds,
 };
 use cosmic_text::Color;
@@ -26,11 +26,11 @@ impl DrawMode {
     }
 }
 
-pub struct Mesh {
+pub struct Mesh2D {
     pub position: Vec3,
     pub size: Vec2,
     pub color: Color,
-    pub vertices: Vec<MeshVertex>,
+    pub vertices: Vec<Mesh2DVertex>,
     pub indices: Vec<u32>,
     pub vbo_store_id: Index,
     pub order: DrawOrder,
@@ -40,7 +40,7 @@ pub struct Mesh {
     pub changed: bool,
 }
 
-impl Mesh {
+impl Mesh2D {
     pub fn new(renderer: &mut GpuRenderer) -> Self {
         Self {
             position: Vec3::default(),
@@ -56,7 +56,7 @@ impl Mesh {
         }
     }
 
-    pub fn from_builder(&mut self, builder: MeshBuilder) {
+    pub fn from_builder(&mut self, builder: Mesh2DBuilder) {
         self.position =
             Vec3::new(builder.bounds.x, builder.bounds.y, builder.z);
         self.size = Vec2::new(
@@ -102,8 +102,9 @@ impl Mesh {
 
     pub fn create_quad(&mut self, renderer: &mut GpuRenderer) {
         if let Some(store) = renderer.get_buffer_mut(&self.vbo_store_id) {
-            let mut vertex_bytes =
-                Vec::with_capacity(self.vertices.len() * MeshVertex::stride());
+            let mut vertex_bytes = Vec::with_capacity(
+                self.vertices.len() * Mesh2DVertex::stride(),
+            );
             let mut index_bytes = Vec::with_capacity(self.indices.len() * 4);
 
             for vertex in &self.vertices {
@@ -144,14 +145,14 @@ impl Mesh {
 
 //MeshBuilder based on ggez Meshbuilder.
 #[derive(Debug, Clone)]
-pub struct MeshBuilder {
-    buffer: tess::geometry_builder::VertexBuffers<MeshVertex, u32>,
+pub struct Mesh2DBuilder {
+    buffer: tess::geometry_builder::VertexBuffers<Mesh2DVertex, u32>,
     bounds: Vec4,
     z: f32,
     high_index: u32,
 }
 
-impl Default for MeshBuilder {
+impl Default for Mesh2DBuilder {
     fn default() -> Self {
         Self {
             buffer: tess::VertexBuffers::new(),
@@ -162,7 +163,7 @@ impl Default for MeshBuilder {
     }
 }
 
-impl MeshBuilder {
+impl Mesh2DBuilder {
     pub fn new() -> Self {
         Self::default()
     }
@@ -338,8 +339,8 @@ impl MeshBuilder {
         vb: V,
     ) -> Result<&mut Self, AscendingError>
     where
-        V: tess::StrokeVertexConstructor<MeshVertex>
-            + tess::FillVertexConstructor<MeshVertex>,
+        V: tess::StrokeVertexConstructor<Mesh2DVertex>
+            + tess::FillVertexConstructor<Mesh2DVertex>,
     {
         {
             assert!(points.len() > 1);

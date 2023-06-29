@@ -17,7 +17,7 @@ where
     pub rects: Rect,
     pub animation: Image,
     pub map: Map,
-    pub mesh: [Mesh; 2],
+    pub mesh: [Mesh2D; 2],
     /// Atlas Groups for Textures in GPU
     pub image_atlas: AtlasGroup,
     pub map_atlas: AtlasGroup,
@@ -29,7 +29,7 @@ where
     pub sprite_renderer: ImageRenderer,
     pub rects_renderer: RectRenderer,
     pub map_renderer: MapRenderer,
-    pub mesh_renderer: MeshRenderer,
+    pub mesh_renderer: Mesh2DRenderer,
 }
 
 impl<Controls> State<Controls>
@@ -119,11 +119,6 @@ where
 
         pass.render_widgets(renderer, ui_buffer, &self.system);
 
-        pass.render_meshs(
-            renderer,
-            &self.mesh_renderer,
-            &self.mesh_atlas,
-            &self.system,
-        );
+        pass.render_2dmeshs(renderer, &self.mesh_renderer, &self.system);
     }
 }

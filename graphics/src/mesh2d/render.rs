@@ -1,14 +1,14 @@
 use crate::{
-    AsBufferPass, AscendingError, AtlasGroup, GpuBuffer, GpuRenderer, Mesh,
-    MeshRenderPipeline, MeshVertex, OrderedIndex, SetBuffers, System,
+    AsBufferPass, AscendingError, GpuBuffer, GpuRenderer, Mesh2D,
+    Mesh2DRenderPipeline, Mesh2DVertex, OrderedIndex, SetBuffers, System,
 };
 
-pub struct MeshRenderer {
-    pub vbos: GpuBuffer<MeshVertex>,
+pub struct Mesh2DRenderer {
+    pub vbos: GpuBuffer<Mesh2DVertex>,
 }
 
 //TODO: Update this to take in instance buffer index too.
-impl MeshRenderer {
+impl Mesh2DRenderer {
     pub fn new(renderer: &mut GpuRenderer) -> Result<Self, AscendingError> {
         Ok(Self {
             vbos: GpuBuffer::new(renderer.gpu_device()),
@@ -27,37 +27,39 @@ impl MeshRenderer {
         self.vbos.finalize(renderer);
     }
 
-    pub fn mesh_update(&mut self, mesh: &mut Mesh, renderer: &mut GpuRenderer) {
+    pub fn mesh_update(
+        &mut self,
+        mesh: &mut Mesh2D,
+        renderer: &mut GpuRenderer,
+    ) {
         let index = mesh.update(renderer);
 
         self.add_buffer_store(renderer, index);
     }
 }
 
-pub trait RenderMesh<'a, 'b, Controls>
+pub trait RenderMesh2D<'a, 'b, Controls>
 where
     'b: 'a,
     Controls: camera::controls::Controls,
 {
-    fn render_meshs(
+    fn render_2dmeshs(
         &mut self,
         renderer: &'b GpuRenderer,
-        buffer: &'b MeshRenderer,
-        atlas_group: &'b AtlasGroup,
+        buffer: &'b Mesh2DRenderer,
         system: &'b System<Controls>,
     );
 }
 
-impl<'a, 'b, Controls> RenderMesh<'a, 'b, Controls> for wgpu::RenderPass<'a>
+impl<'a, 'b, Controls> RenderMesh2D<'a, 'b, Controls> for wgpu::RenderPass<'a>
 where
     'b: 'a,
     Controls: camera::controls::Controls,
 {
-    fn render_meshs(
+    fn render_2dmeshs(
         &mut self,
         renderer: &'b GpuRenderer,
-        buffer: &'b MeshRenderer,
-        atlas_group: &'b AtlasGroup,
+        buffer: &'b Mesh2DRenderer,
         system: &'b System<Controls>,
     ) {
         //TODO Add new mesh handler to cycle correct buffers with index id's
@@ -65,7 +67,7 @@ where
         if !buffer.vbos.buffers.is_empty() {
             self.set_buffers(buffer.vbos.as_buffer_pass());
             self.set_pipeline(
-                renderer.get_pipelines(MeshRenderPipeline).unwrap(),
+                renderer.get_pipelines(Mesh2DRenderPipeline).unwrap(),
             );
             let mut scissor_is_default = true;
             let mut index_pos = 0;

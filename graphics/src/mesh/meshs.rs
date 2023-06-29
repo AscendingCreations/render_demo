@@ -1,19 +1,40 @@
 use crate::{
-    Allocation, AscendingError, AtlasGroup, DrawOrder, GpuRenderer, Index,
-    MeshInstance, MeshOrderIndex, MeshVertex, OrderedIndex, OtherError,
-    Texture, Vec2, Vec3, Vec4, WorldBounds,
+    AscendingError, BufferLayout, DrawOrder, GpuRenderer, Index, MeshVertex,
+    OrderedIndex, OtherError, Vec2, Vec3, Vec4, VertexBuilder, WorldBounds,
 };
 use cosmic_text::Color;
+use lyon::{
+    lyon_tessellation::{FillOptions, StrokeOptions},
+    math::Point as LPoint,
+    path::Polygon,
+    tessellation as tess,
+};
+
+#[derive(Debug, Copy, Clone)]
+pub enum DrawMode {
+    Stroke(StrokeOptions),
+    Fill(FillOptions),
+}
+
+impl DrawMode {
+    pub fn stroke(width: f32) -> DrawMode {
+        DrawMode::Stroke(StrokeOptions::default().with_line_width(width))
+    }
+
+    pub fn fill() -> DrawMode {
+        DrawMode::Fill(FillOptions::default())
+    }
+}
 
 pub struct Mesh {
     pub position: Vec3,
     pub size: Vec2,
     pub color: Color,
-    pub image: Option<Allocation>,
-    pub image_uv: Vec4,
+    pub vertices: Vec<MeshVertex>,
+    pub indices: Vec<u32>,
     pub vbo_store_id: Index,
-    pub ibo_store_id: Index,
     pub order: DrawOrder,
+    pub high_index: u32,
     pub bounds: Option<WorldBounds>,
     // if anything got updated we need to update the buffers too.
     pub changed: bool,
@@ -25,43 +46,37 @@ impl Mesh {
             position: Vec3::default(),
             size: Vec2::default(),
             color: Color::rgba(255, 255, 255, 255),
-            image: None,
-            image_uv: Vec4::default(),
             vbo_store_id: renderer.new_buffer(),
-            ibo_store_id: renderer.new_buffer(),
             order: DrawOrder::default(),
             bounds: None,
             changed: true,
+            vertices: Vec::new(),
+            indices: Vec::new(),
+            high_index: 0,
         }
+    }
+
+    pub fn from_builder(&mut self, builder: MeshBuilder) {
+        self.position =
+            Vec3::new(builder.bounds.x, builder.bounds.y, builder.z);
+        self.size = Vec2::new(
+            builder.bounds.z - builder.bounds.x,
+            builder.bounds.w - builder.bounds.y,
+        );
+        self.vertices.extend_from_slice(&builder.buffer.vertices);
+        self.indices.extend_from_slice(&builder.buffer.indices);
+        self.bounds = Some(WorldBounds::new(
+            builder.bounds.x,
+            builder.bounds.y,
+            builder.bounds.z,
+            builder.bounds.w,
+            builder.bounds.w - builder.bounds.y,
+        ));
+        self.high_index = builder.high_index;
     }
 
     pub fn set_color(&mut self, color: Color) -> &mut Self {
         self.color = color;
-        self.changed = true;
-        self
-    }
-
-    pub fn set_texture(
-        &mut self,
-        renderer: &GpuRenderer,
-        atlas: &mut AtlasGroup,
-        path: String,
-    ) -> Result<&mut Self, AscendingError> {
-        let allocation = Texture::from_file(path)?
-            .group_upload(atlas, renderer)
-            .ok_or_else(|| OtherError::new("failed to upload image"))?;
-
-        let rect = allocation.rect();
-
-        self.image_uv = Vec4::new(0.0, 0.0, rect.2 as f32, rect.3 as f32);
-        self.image = Some(allocation);
-        self.changed = true;
-        Ok(self)
-    }
-
-    //Set the Rendering Offset of the container.
-    pub fn set_image_uv(&mut self, uv: Vec4) -> &mut Self {
-        self.image_uv = uv;
         self.changed = true;
         self
     }
@@ -86,28 +101,21 @@ impl Mesh {
     }
 
     pub fn create_quad(&mut self, renderer: &mut GpuRenderer) {
-        let containter_tex = match self.image {
-            Some(allocation) => allocation,
-            None => return,
-        };
-
-        let (u, v, width, height) = containter_tex.rect();
-        let _image_data = [
-            self.image_uv.x + u as f32,
-            self.image_uv.y + v as f32,
-            self.image_uv.z.min(width as f32),
-            self.image_uv.w.min(height as f32),
-        ];
-
-        //TODO Cycle through each vertex created to get correct information.
-        let buffer = MeshVertex {
-            position: self.position.to_array(),
-            uv: [self.position.x, self.position.y],
-            color: self.color.0,
-        };
-
         if let Some(store) = renderer.get_buffer_mut(&self.vbo_store_id) {
-            store.store = bytemuck::bytes_of(&buffer).to_vec();
+            let mut vertex_bytes =
+                Vec::with_capacity(self.vertices.len() * MeshVertex::stride());
+            let mut index_bytes = Vec::with_capacity(self.indices.len() * 4);
+
+            for vertex in &self.vertices {
+                vertex_bytes.append(&mut bytemuck::bytes_of(vertex).to_vec());
+            }
+
+            for index in &self.indices {
+                index_bytes.append(&mut bytemuck::bytes_of(index).to_vec());
+            }
+
+            store.store = vertex_bytes;
+            store.indexs = index_bytes;
             store.bounds = self.bounds;
             store.changed = true;
         }
@@ -116,47 +124,366 @@ impl Mesh {
     }
 
     // used to check and update the ShapeVertex array.
-    pub fn update(&mut self, renderer: &mut GpuRenderer) -> MeshOrderIndex {
+    pub fn update(&mut self, renderer: &mut GpuRenderer) -> OrderedIndex {
         // if points added or any data changed recalculate paths.
         if self.changed {
             self.create_quad(renderer);
             self.changed = false;
         }
 
-        MeshOrderIndex {
-            vbo: OrderedIndex::new(self.order, self.vbo_store_id),
-            ibo: OrderedIndex::new(self.order, self.ibo_store_id),
-        }
+        OrderedIndex::new(self.order, self.vbo_store_id, self.high_index)
     }
 
-    /*pub fn check_mouse_bounds(&self, mouse_pos: Vec2) -> bool {
-        if let Some(radius) = self.radius {
-            let pos = [self.position.x, self.position.y];
+    pub fn check_mouse_bounds(&self, mouse_pos: Vec2) -> bool {
+        mouse_pos[0] > self.position.x
+            && mouse_pos[0] < self.position.x + self.size.x
+            && mouse_pos[1] > self.position.y
+            && mouse_pos[1] < self.position.y + self.size.y
+    }
+}
 
-            let inner_size =
-                [self.size.x - radius * 2.0, self.size.y - radius * 2.0];
-            let top_left = [pos[0] + radius, pos[1] + radius];
-            let bottom_right =
-                [top_left[0] + inner_size[0], top_left[1] + inner_size[1]];
+//MeshBuilder based on ggez Meshbuilder.
+#[derive(Debug, Clone)]
+pub struct MeshBuilder {
+    buffer: tess::geometry_builder::VertexBuffers<MeshVertex, u32>,
+    bounds: Vec4,
+    z: f32,
+    high_index: u32,
+}
 
-            let top_left_distance =
-                [top_left[0] - mouse_pos.x, top_left[1] - mouse_pos.y];
-            let bottom_right_distance =
-                [mouse_pos.x - bottom_right[0], mouse_pos.y - bottom_right[1]];
-
-            let dist = [
-                top_left_distance[0].max(bottom_right_distance[0]).max(0.0),
-                top_left_distance[1].max(bottom_right_distance[1]).max(0.0),
-            ];
-
-            let dist = (dist[0] * dist[0] + dist[1] * dist[1]).sqrt();
-
-            dist < radius
-        } else {
-            mouse_pos[0] > self.position.x
-                && mouse_pos[0] < self.position.x + self.size.x
-                && mouse_pos[1] > self.position.y
-                && mouse_pos[1] < self.position.y + self.size.y
+impl Default for MeshBuilder {
+    fn default() -> Self {
+        Self {
+            buffer: tess::VertexBuffers::new(),
+            bounds: Vec4::new(0.0, 0.0, 0.0, 0.0),
+            z: 1.0,
+            high_index: 0,
         }
-    }*/
+    }
+}
+
+impl MeshBuilder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn finalize(mut self) -> Self {
+        let [minx, miny, maxx, maxy, minz] = self.buffer.vertices.iter().fold(
+            [f32::MAX, f32::MAX, f32::MIN, f32::MIN, 1.0],
+            |[minx, miny, maxx, maxy, minz], vert| {
+                let [x, y, z] = vert.position;
+                [
+                    minx.min(x),
+                    miny.min(y),
+                    maxx.max(x),
+                    maxy.max(y),
+                    minz.min(z),
+                ]
+            },
+        );
+
+        let high_index = self
+            .buffer
+            .indices
+            .iter()
+            .fold(0, |max, index| max.max(*index));
+
+        self.z = minz;
+        self.bounds = Vec4::new(minx, miny, maxx, maxy);
+        self.high_index = high_index;
+        self
+    }
+
+    pub fn line(
+        &mut self,
+        points: &[Vec2],
+        z: f32,
+        width: f32,
+        color: Color,
+    ) -> Result<&mut Self, AscendingError> {
+        self.polyline(DrawMode::stroke(width), points, z, color)
+    }
+
+    pub fn circle(
+        &mut self,
+        mode: DrawMode,
+        point: Vec2,
+        radius: f32,
+        tolerance: f32,
+        z: f32,
+        color: Color,
+    ) -> Result<&mut Self, AscendingError> {
+        assert!(tolerance > 0.0, "Tolerances <= 0 are invalid");
+        {
+            let buffers = &mut self.buffer;
+            let vb = VertexBuilder { z, color };
+            match mode {
+                DrawMode::Fill(fill_options) => {
+                    let mut tessellator = tess::FillTessellator::new();
+                    tessellator.tessellate_circle(
+                        tess::math::point(point.x, point.y),
+                        radius,
+                        &fill_options.with_tolerance(tolerance),
+                        &mut tess::BuffersBuilder::new(buffers, vb),
+                    )?;
+                }
+                DrawMode::Stroke(options) => {
+                    let mut tessellator = tess::StrokeTessellator::new();
+                    tessellator.tessellate_circle(
+                        tess::math::point(point.x, point.y),
+                        radius,
+                        &options.with_tolerance(tolerance),
+                        &mut tess::BuffersBuilder::new(buffers, vb),
+                    )?;
+                }
+            };
+        }
+        Ok(self)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn ellipse(
+        &mut self,
+        mode: DrawMode,
+        point: Vec2,
+        radius1: f32,
+        radius2: f32,
+        tolerance: f32,
+        z: f32,
+        color: Color,
+    ) -> Result<&mut Self, AscendingError> {
+        assert!(tolerance > 0.0, "Tolerances <= 0 are invalid");
+        {
+            let buffers = &mut self.buffer;
+            let vb = VertexBuilder { z, color };
+            match mode {
+                DrawMode::Fill(fill_options) => {
+                    let builder = &mut tess::BuffersBuilder::new(buffers, vb);
+                    let mut tessellator = tess::FillTessellator::new();
+                    tessellator.tessellate_ellipse(
+                        tess::math::point(point.x, point.y),
+                        tess::math::vector(radius1, radius2),
+                        tess::math::Angle { radians: 0.0 },
+                        tess::path::Winding::Positive,
+                        &fill_options.with_tolerance(tolerance),
+                        builder,
+                    )?;
+                }
+                DrawMode::Stroke(options) => {
+                    let builder = &mut tess::BuffersBuilder::new(buffers, vb);
+                    let mut tessellator = tess::StrokeTessellator::new();
+                    tessellator.tessellate_ellipse(
+                        tess::math::point(point.x, point.y),
+                        tess::math::vector(radius1, radius2),
+                        tess::math::Angle { radians: 0.0 },
+                        tess::path::Winding::Positive,
+                        &options.with_tolerance(tolerance),
+                        builder,
+                    )?;
+                }
+            };
+        }
+        Ok(self)
+    }
+
+    pub fn polyline(
+        &mut self,
+        mode: DrawMode,
+        points: &[Vec2],
+        z: f32,
+        color: Color,
+    ) -> Result<&mut Self, AscendingError> {
+        if points.len() < 2 {
+            return Err(AscendingError::Other(OtherError::new(
+                "MeshBuilder::polyline() got a list of < 2 points",
+            )));
+        }
+
+        self.polyline_inner(mode, points, false, z, color)
+    }
+
+    pub fn polygon(
+        &mut self,
+        mode: DrawMode,
+        points: &[Vec2],
+        z: f32,
+        color: Color,
+    ) -> Result<&mut Self, AscendingError> {
+        if points.len() < 3 {
+            return Err(AscendingError::Other(OtherError::new(
+                "MeshBuilder::polygon() got a list of < 3 points",
+            )));
+        }
+
+        self.polyline_inner(mode, points, true, z, color)
+    }
+
+    fn polyline_inner(
+        &mut self,
+        mode: DrawMode,
+        points: &[Vec2],
+        is_closed: bool,
+        z: f32,
+        color: Color,
+    ) -> Result<&mut Self, AscendingError> {
+        let vb = VertexBuilder { z, color };
+        self.polyline_with_vertex_builder(mode, points, is_closed, vb)
+    }
+
+    pub fn polyline_with_vertex_builder<V>(
+        &mut self,
+        mode: DrawMode,
+        points: &[Vec2],
+        is_closed: bool,
+        vb: V,
+    ) -> Result<&mut Self, AscendingError>
+    where
+        V: tess::StrokeVertexConstructor<MeshVertex>
+            + tess::FillVertexConstructor<MeshVertex>,
+    {
+        {
+            assert!(points.len() > 1);
+            let buffers = &mut self.buffer;
+            let points: Vec<LPoint> = points
+                .iter()
+                .cloned()
+                .map(|p| {
+                    let mint_point: mint::Point2<f32> = p.into();
+                    tess::math::point(mint_point.x, mint_point.y)
+                })
+                .collect();
+            let polygon = Polygon {
+                points: &points,
+                closed: is_closed,
+            };
+            match mode {
+                DrawMode::Fill(options) => {
+                    let builder = &mut tess::BuffersBuilder::new(buffers, vb);
+                    let tessellator = &mut tess::FillTessellator::new();
+                    tessellator
+                        .tessellate_polygon(polygon, &options, builder)?;
+                }
+                DrawMode::Stroke(options) => {
+                    let builder = &mut tess::BuffersBuilder::new(buffers, vb);
+                    let tessellator = &mut tess::StrokeTessellator::new();
+                    tessellator
+                        .tessellate_polygon(polygon, &options, builder)?;
+                }
+            };
+        }
+        Ok(self)
+    }
+
+    pub fn rectangle(
+        &mut self,
+        mode: DrawMode,
+        bounds: Vec4,
+        z: f32,
+        color: Color,
+    ) -> Result<&mut Self, AscendingError> {
+        {
+            let buffers = &mut self.buffer;
+            let rect = tess::math::Box2D::from_origin_and_size(
+                tess::math::point(bounds.x, bounds.y),
+                tess::math::size(bounds.z, bounds.w),
+            );
+            let vb = VertexBuilder { z, color };
+            match mode {
+                DrawMode::Fill(fill_options) => {
+                    let builder = &mut tess::BuffersBuilder::new(buffers, vb);
+                    let mut tessellator = tess::FillTessellator::new();
+                    tessellator.tessellate_rectangle(
+                        &rect,
+                        &fill_options,
+                        builder,
+                    )?;
+                }
+                DrawMode::Stroke(options) => {
+                    let builder = &mut tess::BuffersBuilder::new(buffers, vb);
+                    let mut tessellator = tess::StrokeTessellator::new();
+                    tessellator
+                        .tessellate_rectangle(&rect, &options, builder)?;
+                }
+            };
+        }
+        Ok(self)
+    }
+
+    pub fn rounded_rectangle(
+        &mut self,
+        mode: DrawMode,
+        bounds: Vec4,
+        z: f32,
+        radius: f32,
+        color: Color,
+    ) -> Result<&mut Self, AscendingError> {
+        {
+            let buffers = &mut self.buffer;
+            let rect = tess::math::Box2D::from_origin_and_size(
+                tess::math::point(bounds.x, bounds.y),
+                tess::math::size(bounds.z, bounds.w),
+            );
+            let radii = tess::path::builder::BorderRadii::new(radius);
+            let vb = VertexBuilder { z, color };
+            let mut path_builder = tess::path::Path::builder();
+            path_builder.add_rounded_rectangle(
+                &rect,
+                &radii,
+                tess::path::Winding::Positive,
+            );
+            let path = path_builder.build();
+
+            match mode {
+                DrawMode::Fill(fill_options) => {
+                    let builder = &mut tess::BuffersBuilder::new(buffers, vb);
+                    let mut tessellator = tess::FillTessellator::new();
+                    tessellator.tessellate_path(
+                        &path,
+                        &fill_options,
+                        builder,
+                    )?;
+                }
+                DrawMode::Stroke(options) => {
+                    let builder = &mut tess::BuffersBuilder::new(buffers, vb);
+                    let mut tessellator = tess::StrokeTessellator::new();
+                    tessellator.tessellate_path(&path, &options, builder)?;
+                }
+            };
+        }
+        Ok(self)
+    }
+
+    pub fn triangles(
+        &mut self,
+        triangles: &[Vec2],
+        z: f32,
+        color: Color,
+    ) -> Result<&mut Self, AscendingError> {
+        {
+            if (triangles.len() % 3) != 0 {
+                return Err(AscendingError::Other(OtherError::new(
+                    "Called MeshBuilder::triangles() with points that have a length not a multiple of 3.",
+                )));
+            }
+            let tris = triangles
+                .iter()
+                .cloned()
+                .map(|p| lyon::math::point(p.x, p.y))
+                .collect::<Vec<_>>();
+            let tris = tris.chunks(3);
+            let vb = VertexBuilder { z, color };
+            for tri in tris {
+                assert!(tri.len() == 3);
+                let first_index: u32 =
+                    self.buffer.vertices.len().try_into().unwrap();
+                self.buffer.vertices.push(vb.new_vertex(tri[0]));
+                self.buffer.vertices.push(vb.new_vertex(tri[1]));
+                self.buffer.vertices.push(vb.new_vertex(tri[2]));
+                self.buffer.indices.push(first_index);
+                self.buffer.indices.push(first_index + 1);
+                self.buffer.indices.push(first_index + 2);
+            }
+        }
+        Ok(self)
+    }
 }

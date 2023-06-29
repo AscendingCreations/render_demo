@@ -1,6 +1,6 @@
 use crate::{
-    BufferLayout, GpuDevice, LayoutStorage, MeshInstance, MeshVertex,
-    PipeLineLayout, SystemLayout, TextureLayout,
+    BufferLayout, GpuDevice, LayoutStorage, MeshVertex, PipeLineLayout,
+    SystemLayout,
 };
 use bytemuck::{Pod, Zeroable};
 
@@ -19,40 +19,32 @@ impl PipeLineLayout for MeshRenderPipeline {
             wgpu::ShaderModuleDescriptor {
                 label: Some("Shader"),
                 source: wgpu::ShaderSource::Wgsl(
-                    include_str!("../shaders/guishader.wgsl").into(),
+                    include_str!("../shaders/meshshader.wgsl").into(),
                 ),
             },
         );
 
         let system_layout = layouts.create_layout(gpu_device, SystemLayout);
-        let texture_layout = layouts.create_layout(gpu_device, TextureLayout);
 
         // Create the render pipeline.
         gpu_device.device().create_render_pipeline(
             &wgpu::RenderPipelineDescriptor {
-                label: Some("Shape render pipeline"),
+                label: Some("Mesh render pipeline"),
                 layout: Some(&gpu_device.device().create_pipeline_layout(
                     &wgpu::PipelineLayoutDescriptor {
                         label: Some("render_pipeline_layout"),
-                        bind_group_layouts: &[&system_layout, &texture_layout],
+                        bind_group_layouts: &[&system_layout],
                         push_constant_ranges: &[],
                     },
                 )),
                 vertex: wgpu::VertexState {
                     module: &shader,
                     entry_point: "vertex",
-                    buffers: &[
-                        wgpu::VertexBufferLayout {
-                            array_stride: MeshVertex::stride() as u64,
-                            step_mode: wgpu::VertexStepMode::Vertex,
-                            attributes: &MeshVertex::attributes(),
-                        },
-                        wgpu::VertexBufferLayout {
-                            array_stride: MeshInstance::stride() as u64,
-                            step_mode: wgpu::VertexStepMode::Instance,
-                            attributes: &MeshInstance::attributes(),
-                        },
-                    ],
+                    buffers: &[wgpu::VertexBufferLayout {
+                        array_stride: MeshVertex::stride() as u64,
+                        step_mode: wgpu::VertexStepMode::Vertex,
+                        attributes: &MeshVertex::attributes(),
+                    }],
                 },
                 primitive: wgpu::PrimitiveState {
                     topology: wgpu::PrimitiveTopology::TriangleList,

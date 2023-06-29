@@ -30,6 +30,7 @@ generational_array = "0.1.1"
 ritehash = "0.2.0"
 hecs = "0.10.3"
 glam = { version = "0.24.0", features = ["bytemuck", "mint"] }
+lyon = "1.0.1"
 
 [workspace.dependencies.naga]
 git = "https://github.com/gfx-rs/naga"

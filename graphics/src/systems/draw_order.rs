@@ -1,4 +1,4 @@
-use crate::{BufferDetails, Vec3};
+use crate::Vec3;
 use generational_array::GenerationalIndex;
 use std::cmp::Ordering;
 
@@ -46,7 +46,8 @@ impl DrawOrder {
 pub struct OrderedIndex {
     pub(crate) order: DrawOrder,
     pub(crate) index: Index,
-    pub(crate) render_details: BufferDetails,
+    pub(crate) index_count: u32,
+    pub(crate) index_max: u32,
 }
 
 impl PartialOrd for OrderedIndex {
@@ -70,11 +71,12 @@ impl Ord for OrderedIndex {
 }
 
 impl OrderedIndex {
-    pub fn new(order: DrawOrder, index: Index) -> Self {
+    pub fn new(order: DrawOrder, index: Index, index_max: u32) -> Self {
         Self {
             order,
             index,
-            render_details: Default::default(),
+            index_count: 0,
+            index_max,
         }
     }
 }

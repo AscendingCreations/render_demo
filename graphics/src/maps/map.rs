@@ -179,8 +179,8 @@ impl Map {
         }
 
         (
-            OrderedIndex::new(self.order, self.lowerstore_id),
-            OrderedIndex::new(self.order, self.upperstore_id),
+            OrderedIndex::new(self.order, self.lowerstore_id, 0),
+            OrderedIndex::new(self.order, self.upperstore_id, 0),
         )
     }
 }

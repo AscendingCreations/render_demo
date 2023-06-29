@@ -13,8 +13,7 @@ mod vbo;
 
 pub use bounds::WorldBounds;
 pub use buffer::{
-    AsBufferPass, Buffer, BufferData, BufferDetails, BufferLayout, BufferPass,
-    BufferStore,
+    AsBufferPass, Buffer, BufferData, BufferLayout, BufferPass, BufferStore,
 };
 pub use device::*;
 pub use draw_order::{DrawOrder, Index, OrderedIndex};

@@ -1,11 +1,12 @@
 use crate::{BufferData, BufferLayout};
+use cosmic_text::Color;
+use lyon::{math::Point as LPoint, tessellation as tess};
 use std::iter;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct MeshVertex {
     pub position: [f32; 3],
-    pub uv: [f32; 2],
     pub color: u32,
 }
 
@@ -13,7 +14,6 @@ impl Default for MeshVertex {
     fn default() -> Self {
         Self {
             position: [0.0; 3],
-            uv: [0.0; 2],
             color: 0,
         }
     }
@@ -25,8 +25,7 @@ impl BufferLayout for MeshVertex {
     }
 
     fn attributes() -> Vec<wgpu::VertexAttribute> {
-        wgpu::vertex_attr_array![1 => Float32x3, 2 => Float32x2, 3 => Uint32]
-            .to_vec()
+        wgpu::vertex_attr_array![0 => Float32x3, 1 => Uint32].to_vec()
     }
 
     //default set as large enough to contain 1_000 vertices.
@@ -54,56 +53,41 @@ impl BufferLayout for MeshVertex {
     }
 
     fn stride() -> usize {
-        std::mem::size_of::<[f32; 6]>()
+        std::mem::size_of::<[f32; 4]>()
     }
 }
 
-#[repr(C)]
-#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct MeshInstance {
-    pub layer: u32,
-    pub image_uv: [f32; 4],
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub struct VertexBuilder {
+    pub z: f32,
+    pub color: Color,
 }
 
-impl Default for MeshInstance {
-    fn default() -> Self {
-        Self {
-            layer: 0,
-            image_uv: [0.0; 4],
+impl VertexBuilder {
+    pub fn new_vertex(self, position: LPoint) -> MeshVertex {
+        MeshVertex {
+            position: [position.x, position.y, self.z],
+            color: self.color.0,
         }
     }
 }
 
-impl BufferLayout for MeshInstance {
-    fn is_bounded() -> bool {
-        true
-    }
-
-    fn attributes() -> Vec<wgpu::VertexAttribute> {
-        wgpu::vertex_attr_array![1 => Uint32, 2 => Float32x4].to_vec()
-    }
-
-    //default set as large enough to contain 1_000 vertices.
-    fn default_buffer() -> BufferData {
-        Self::with_capacity(1_000, 0)
-    }
-
-    fn with_capacity(
-        vertex_capacity: usize,
-        index_capacity: usize,
-    ) -> BufferData {
-        let instance_arr: Vec<MeshInstance> =
-            iter::repeat(MeshInstance::default())
-                .take(vertex_capacity)
-                .collect();
-
-        BufferData {
-            vertexs: bytemuck::cast_slice(&instance_arr).to_vec(),
-            ..Default::default()
+impl tess::StrokeVertexConstructor<MeshVertex> for VertexBuilder {
+    fn new_vertex(&mut self, vertex: tess::StrokeVertex) -> MeshVertex {
+        let position = vertex.position();
+        MeshVertex {
+            position: [position.x, position.y, self.z],
+            color: self.color.0,
         }
     }
+}
 
-    fn stride() -> usize {
-        std::mem::size_of::<[f32; 5]>()
+impl tess::FillVertexConstructor<MeshVertex> for VertexBuilder {
+    fn new_vertex(&mut self, vertex: tess::FillVertex) -> MeshVertex {
+        let position = vertex.position();
+        MeshVertex {
+            position: [position.x, position.y, self.z],
+            color: self.color.0,
+        }
     }
 }

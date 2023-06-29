@@ -1,24 +1,16 @@
 use crate::{
-    AsBufferPass, AscendingError, AtlasGroup, GpuBuffer, GpuRenderer,
-    InstanceBuffer, Mesh, MeshInstance, MeshRenderPipeline, MeshVertex,
-    OrderedIndex, System,
+    AsBufferPass, AscendingError, AtlasGroup, GpuBuffer, GpuRenderer, Mesh,
+    MeshRenderPipeline, MeshVertex, OrderedIndex, SetBuffers, System,
 };
 
 pub struct MeshRenderer {
-    pub instances: InstanceBuffer<MeshInstance>,
     pub vbos: GpuBuffer<MeshVertex>,
-}
-
-pub struct MeshOrderIndex {
-    pub vbo: OrderedIndex,
-    pub ibo: OrderedIndex,
 }
 
 //TODO: Update this to take in instance buffer index too.
 impl MeshRenderer {
     pub fn new(renderer: &mut GpuRenderer) -> Result<Self, AscendingError> {
         Ok(Self {
-            instances: InstanceBuffer::new(renderer.gpu_device()),
             vbos: GpuBuffer::new(renderer.gpu_device()),
         })
     }
@@ -26,14 +18,12 @@ impl MeshRenderer {
     pub fn add_buffer_store(
         &mut self,
         renderer: &mut GpuRenderer,
-        index: MeshOrderIndex,
+        index: OrderedIndex,
     ) {
-        self.instances.add_buffer_store(renderer, index.ibo);
-        self.vbos.add_buffer_store(renderer, index.vbo);
+        self.vbos.add_buffer_store(renderer, index);
     }
 
     pub fn finalize(&mut self, renderer: &mut GpuRenderer) {
-        self.instances.finalize(renderer);
         self.vbos.finalize(renderer);
     }
 
@@ -71,19 +61,18 @@ where
         system: &'b System<Controls>,
     ) {
         //TODO Add new mesh handler to cycle correct buffers with index id's
-        /*
-        if buffer.vbos.count() > 0 {
-            self.set_buffers(buffer.vbos.as_buffer_send());
-            self.set_bind_group(1, &atlas_group.texture.bind_group, &[]);
-            self.set_vertex_buffer(1, buffer.instances.instances(None));
+
+        if !buffer.vbos.buffers.is_empty() {
+            self.set_buffers(buffer.vbos.as_buffer_pass());
             self.set_pipeline(
                 renderer.get_pipelines(MeshRenderPipeline).unwrap(),
             );
             let mut scissor_is_default = true;
+            let mut index_pos = 0;
+            let mut base_vertex = 0;
 
-            for i in 0..buffer.buffer.count() {
-                if let Some(Some(bounds)) = buffer.buffer.bounds.get(i as usize)
-                {
+            for (i, details) in buffer.vbos.buffers.iter().enumerate() {
+                if let Some(Some(bounds)) = buffer.vbos.bounds.get(i) {
                     let bounds = system.world_to_screen(false, bounds);
 
                     self.set_scissor_rect(
@@ -106,10 +95,13 @@ where
                 // Indexs can always start at 0 per mesh data.
                 // Base vertex is the Addition to the Index
                 self.draw_indexed(
-                    0..StaticBufferObject::index_count(),
-                    0,
-                    i..i + 1,
+                    index_pos..index_pos + details.count,
+                    base_vertex, //i as i32 * details.max,
+                    0..1,
                 );
+
+                base_vertex += details.max as i32 + 1;
+                index_pos += details.count;
             }
 
             //Gotta set it back otherwise it will clip everything after it...
@@ -121,6 +113,6 @@ where
                     system.screen_size[1] as u32,
                 );
             }
-        }*/
+        }
     }
 }

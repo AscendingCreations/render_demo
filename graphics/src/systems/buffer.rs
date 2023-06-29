@@ -28,13 +28,6 @@ pub struct BufferData {
     pub indexs: Vec<u8>,
 }
 
-//need this to render each mesh as an instance.
-#[derive(Default, Copy, Clone, PartialEq, Eq)]
-pub struct BufferDetails {
-    pub vertex_count: usize,
-    pub index_count: usize,
-}
-
 pub struct Buffer<K: BufferLayout> {
     pub buffer: wgpu::Buffer,
     pub count: usize,

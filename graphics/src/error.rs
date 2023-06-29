@@ -36,5 +36,7 @@ pub enum AscendingError {
     #[error("Image atlas has no more space.")]
     AtlasFull,
     #[error(transparent)]
+    LyonTessellation(#[from] lyon::lyon_tessellation::TessellationError),
+    #[error(transparent)]
     Other(#[from] OtherError),
 }

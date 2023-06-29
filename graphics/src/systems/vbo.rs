@@ -1,15 +1,20 @@
 use crate::{
-    AsBufferPass, Buffer, BufferData, BufferDetails, BufferLayout, BufferPass,
-    GpuDevice, GpuRenderer, OrderedIndex, WorldBounds,
+    AsBufferPass, Buffer, BufferData, BufferLayout, BufferPass, GpuDevice,
+    GpuRenderer, OrderedIndex, WorldBounds,
 };
 use std::ops::Range;
 
 //This Holds onto all the Vertexs Compressed into a byte array.
 //This is Used for objects that need more advanced VBO/IBO other wise use the Instance buffers.
 
+pub struct IndexDetails {
+    pub count: u32,
+    pub max: u32,
+}
+
 pub struct GpuBuffer<K: BufferLayout> {
     unprocessed: Vec<OrderedIndex>,
-    pub buffers: Vec<BufferDetails>,
+    pub buffers: Vec<IndexDetails>,
     pub vertex_buffer: Buffer<K>,
     vertex_needed: usize,
     pub index_buffer: Buffer<K>,
@@ -59,10 +64,7 @@ impl<K: BufferLayout> GpuBuffer<K> {
             self.vertex_needed += store.store.len();
             self.index_needed += store.indexs.len();
 
-            index.render_details = BufferDetails {
-                vertex_count: store.store.len() / K::stride(),
-                index_count: store.indexs.len() / 4,
-            };
+            index.index_count = store.indexs.len() as u32 / 4;
 
             self.unprocessed.push(index);
         }
@@ -146,9 +148,13 @@ impl<K: BufferLayout> GpuBuffer<K> {
                 }
             }
 
-            self.buffers.push(buf.render_details);
+            self.buffers.push(IndexDetails {
+                count: buf.index_count,
+                max: buf.index_max,
+            });
         }
 
+        self.unprocessed.clear();
         self.vertex_needed = 0;
         self.index_needed = 0;
     }

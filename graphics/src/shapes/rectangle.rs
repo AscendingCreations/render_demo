@@ -229,7 +229,7 @@ impl Rect {
             self.changed = false;
         }
 
-        OrderedIndex::new(self.order, self.store_id)
+        OrderedIndex::new(self.order, self.store_id, 0)
     }
 
     pub fn check_mouse_bounds(&self, mouse_pos: Vec2) -> bool {

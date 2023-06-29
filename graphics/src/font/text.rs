@@ -304,7 +304,7 @@ impl Text {
             self.create_quad(cache, atlas, renderer)?;
         }
 
-        Ok(OrderedIndex::new(self.order, self.store_id))
+        Ok(OrderedIndex::new(self.order, self.store_id, 0))
     }
 
     pub fn check_mouse_bounds(&self, mouse_pos: Vec2) -> bool {

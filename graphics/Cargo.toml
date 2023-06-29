@@ -32,3 +32,4 @@ generational_array.workspace = true
 ritehash.workspace = true
 lru.workspace = true
 glam.workspace = true
+lyon.workspace = true

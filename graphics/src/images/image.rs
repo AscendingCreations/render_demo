@@ -93,6 +93,6 @@ impl Image {
             self.create_quad(renderer);
         }
 
-        OrderedIndex::new(self.order, self.store_id)
+        OrderedIndex::new(self.order, self.store_id, 0)
     }
 }

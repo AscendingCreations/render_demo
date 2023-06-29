@@ -137,7 +137,7 @@ async fn main() -> Result<(), AscendingError> {
             wgpu::TextureFormat::Rgba8UnormSrgb,
         ))
     })
-    .take(3)
+    .take(4)
     .collect();
 
     let text_atlas = TextAtlas::new(&mut renderer).unwrap();
@@ -167,6 +167,7 @@ async fn main() -> Result<(), AscendingError> {
     let text_renderer = TextRenderer::new(&mut renderer).unwrap();
     let sprite_renderer = ImageRenderer::new(&mut renderer).unwrap();
     let mut map_renderer = MapRenderer::new(&mut renderer, 81).unwrap();
+    let mesh_renderer = MeshRenderer::new(&mut renderer).unwrap();
 
     let mut size = renderer.size();
 
@@ -298,6 +299,54 @@ async fn main() -> Result<(), AscendingError> {
     UI::<Messages>::set_action(&mut world, button, UiFlags::CanFocus);
     UI::<Messages>::set_action(&mut world, button, UiFlags::MoveAble);
 
+    let mut builder = MeshBuilder::new();
+
+    builder
+        .circle(
+            DrawMode::Fill(FillOptions::DEFAULT),
+            Vec2::new(100.0, 100.0),
+            60.0,
+            0.5,
+            1.0,
+            Color::rgba(0, 0, 255, 255),
+        )
+        .unwrap();
+    builder
+        .circle(
+            DrawMode::Stroke(StrokeOptions::DEFAULT),
+            Vec2::new(100.0, 100.0),
+            60.0,
+            0.5,
+            1.0,
+            Color::rgba(255, 255, 255, 255),
+        )
+        .unwrap();
+
+    let mut builder2 = MeshBuilder::new();
+
+    builder2
+        .circle(
+            DrawMode::Fill(FillOptions::DEFAULT),
+            Vec2::new(200.0, 200.0),
+            60.0,
+            0.5,
+            1.0,
+            Color::rgba(0, 0, 255, 255),
+        )
+        .unwrap();
+    builder2
+        .circle(
+            DrawMode::Stroke(StrokeOptions::DEFAULT),
+            Vec2::new(200.0, 200.0),
+            60.0,
+            0.5,
+            1.0,
+            Color::rgba(255, 255, 255, 255),
+        )
+        .unwrap();
+    let mut mesh = [Mesh::new(&mut renderer), Mesh::new(&mut renderer)];
+    mesh[0].from_builder(builder.finalize());
+    mesh[1].from_builder(builder2.finalize());
     renderer.window().set_visible(true);
 
     let mut state = State {
@@ -314,6 +363,9 @@ async fn main() -> Result<(), AscendingError> {
         sprite_renderer,
         text_atlas,
         text_renderer,
+        mesh,
+        mesh_atlas: atlases.remove(0),
+        mesh_renderer,
     };
 
     let mut bindings = Bindings::<Action, Axis>::new();
@@ -423,6 +475,12 @@ async fn main() -> Result<(), AscendingError> {
             .rects_renderer
             .rect_update(&mut state.rects, &mut renderer);
         state.rects_renderer.finalize(&mut renderer);
+
+        state.mesh.iter_mut().for_each(|mesh| {
+            state.mesh_renderer.mesh_update(mesh, &mut renderer);
+        });
+
+        state.mesh_renderer.finalize(&mut renderer);
 
         ui.event_draw(&mut world, &mut ui_buffer, &mut renderer, &frame_time)
             .unwrap();

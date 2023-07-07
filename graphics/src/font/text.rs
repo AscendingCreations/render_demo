@@ -2,7 +2,9 @@ use crate::{
     AscendingError, Color, DrawOrder, GpuRenderer, Index, OrderedIndex,
     TextAtlas, TextVertex, Vec2, Vec3, WorldBounds,
 };
-use cosmic_text::{Attrs, Buffer, Metrics, SwashCache, SwashContent};
+use cosmic_text::{
+    Attrs, Buffer, Cursor, Metrics, SwashCache, SwashContent, Wrap,
+};
 
 pub struct Text {
     pub buffer: Buffer,
@@ -13,6 +15,14 @@ pub struct Text {
     pub bounds: Option<WorldBounds>,
     pub store_id: Index,
     pub order: DrawOrder,
+    /// Cursor the shaping is set too.
+    pub cursor: Cursor,
+    /// line the shaping is set too.
+    pub line: i32,
+    /// set scroll to render too.
+    pub scroll: i32,
+    /// Word Wrap Type. Default is Wrap::Word.
+    pub wrap: Wrap,
     /// if the shader should render with the camera's view.
     pub use_camera: bool,
     /// if anything got updated we need to update the buffers too.
@@ -26,10 +36,9 @@ impl Text {
         atlas: &mut TextAtlas,
         renderer: &mut GpuRenderer,
     ) -> Result<(), AscendingError> {
-        let mut text_buf = Vec::with_capacity(64 * 4);
+        let mut text_buf = Vec::with_capacity(128);
 
         for run in self.buffer.layout_runs() {
-            let line_y = run.line_y;
             for glyph in run.glyphs.iter() {
                 let physical_glyph = glyph.physical((0., 0.), 1.0);
 
@@ -113,7 +122,7 @@ impl Text {
                         + self.offsets.y
                         + self.size.y
                         + physical_glyph.y as f32
-                        - line_y),
+                        - run.line_y),
                 );
 
                 let color = is_color
@@ -194,6 +203,7 @@ impl Text {
 
         self.order = DrawOrder::new(false, &self.pos, 1);
         self.changed = false;
+        self.buffer.set_redraw(false);
         Ok(())
     }
 
@@ -217,6 +227,10 @@ impl Text {
             changed: true,
             default_color: Color::rgba(0, 0, 0, 255),
             use_camera: false,
+            cursor: Cursor::default(),
+            wrap: Wrap::Word,
+            line: 0,
+            scroll: 0,
         }
     }
 
@@ -234,6 +248,92 @@ impl Text {
             cosmic_text::Shaping::Advanced,
         );
         self.changed = true;
+        self
+    }
+
+    /// For more advanced shaping and usage. Use set_changed() to set if you need it to make changes or not.
+    /// This will not set the change to true. when changes are made you must set changed to true.
+    pub fn get_text_buffer(&mut self) -> &mut Buffer {
+        &mut self.buffer
+    }
+
+    /// cursor shaping sets the scroll.
+    pub fn shape_until_cursor(
+        &mut self,
+        renderer: &mut GpuRenderer,
+        cursor: Cursor,
+    ) -> &mut Self {
+        if self.cursor != cursor || self.changed {
+            self.cursor = cursor;
+            self.line = 0;
+            self.changed = true;
+            self.buffer
+                .shape_until_cursor(&mut renderer.font_sys, cursor);
+            self.scroll = self.buffer.scroll();
+        }
+
+        self
+    }
+
+    /// Line shaping does not use scroll or cursor for shaping.
+    pub fn shape_until(
+        &mut self,
+        renderer: &mut GpuRenderer,
+        line: i32,
+    ) -> &mut Self {
+        if self.line != line || self.changed {
+            self.cursor = Cursor::default();
+            self.line = line;
+            self.changed = true;
+            self.buffer.shape_until(&mut renderer.font_sys, line);
+        }
+
+        self
+    }
+
+    /// Does not use cursor or line but will use the last set scroll.
+    pub fn shape_until_scroll(
+        &mut self,
+        renderer: &mut GpuRenderer,
+    ) -> &mut Self {
+        if self.changed {
+            self.buffer.shape_until_scroll(&mut renderer.font_sys);
+        }
+
+        self
+    }
+
+    pub fn set_scroll(
+        &mut self,
+        renderer: &mut GpuRenderer,
+        scroll: i32,
+    ) -> &mut Self {
+        if self.scroll != scroll {
+            self.scroll = scroll;
+            self.buffer.set_scroll(scroll);
+            self.changed = true;
+            self.buffer.shape_until_scroll(&mut renderer.font_sys);
+        }
+
+        self
+    }
+
+    pub fn set_change(&mut self, changed: bool) -> &mut Self {
+        self.changed = changed;
+        self
+    }
+
+    pub fn set_wrap(
+        &mut self,
+        renderer: &mut GpuRenderer,
+        wrap: Wrap,
+    ) -> &mut Self {
+        if self.wrap != wrap {
+            self.wrap = wrap;
+            self.buffer.set_wrap(&mut renderer.font_sys, wrap);
+            self.changed = true;
+        }
+
         self
     }
 

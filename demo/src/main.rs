@@ -344,6 +344,14 @@ async fn main() -> Result<(), AscendingError> {
             Color::rgba(255, 255, 255, 255),
         )
         .unwrap();
+    builder2
+        .polyline(
+            DrawMode::Stroke(StrokeOptions::DEFAULT),
+            &[Vec2::new(200.0, 200.0), Vec2::new(400.0, 400.0)],
+            1.0,
+            Color::rgba(255, 255, 255, 255),
+        )
+        .unwrap();
     let mut mesh = [Mesh2D::new(&mut renderer), Mesh2D::new(&mut renderer)];
     mesh[0].from_builder(builder.finalize());
     mesh[1].from_builder(builder2.finalize());

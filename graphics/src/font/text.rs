@@ -26,81 +26,77 @@ impl Text {
         atlas: &mut TextAtlas,
         renderer: &mut GpuRenderer,
     ) -> Result<(), AscendingError> {
-        for run in self.buffer.layout_runs() {
-            for glyph in run.glyphs.iter() {
-                if atlas.text.atlas.get(&glyph.cache_key).is_some()
-                    || atlas.emoji.atlas.get(&glyph.cache_key).is_some()
-                {
-                    continue;
-                }
-
-                let image = cache
-                    .get_image_uncached(&mut renderer.font_sys, glyph.cache_key)
-                    .unwrap();
-                let bitmap = image.data;
-                let is_color = match image.content {
-                    SwashContent::Color => true,
-                    SwashContent::Mask => false,
-                    SwashContent::SubpixelMask => false,
-                };
-
-                let width = image.placement.width;
-                let height = image.placement.height;
-
-                if width > 0 && height > 0 {
-                    if is_color {
-                        let _ = atlas
-                            .emoji
-                            .atlas
-                            .upload(
-                                glyph.cache_key,
-                                &bitmap,
-                                width,
-                                height,
-                                Vec2::new(
-                                    image.placement.left as f32,
-                                    image.placement.top as f32,
-                                ),
-                                renderer,
-                            )
-                            .ok_or(AscendingError::AtlasFull)?;
-                    } else {
-                        let _ = atlas
-                            .text
-                            .atlas
-                            .upload(
-                                glyph.cache_key,
-                                &bitmap,
-                                width,
-                                height,
-                                Vec2::new(
-                                    image.placement.left as f32,
-                                    image.placement.top as f32,
-                                ),
-                                renderer,
-                            )
-                            .ok_or(AscendingError::AtlasFull)?;
-                    }
-                }
-            }
-        }
-
         let mut text_buf = Vec::with_capacity(64 * 4);
 
         for run in self.buffer.layout_runs() {
             let line_y = run.line_y;
-
             for glyph in run.glyphs.iter() {
+                let physical_glyph = glyph.physical((0., 0.), 1.0);
+
                 let (allocation, is_color) = if let Some(allocation) =
-                    atlas.text.atlas.peek(&glyph.cache_key)
+                    atlas.text.atlas.get(&physical_glyph.cache_key)
                 {
                     (allocation, false)
                 } else if let Some(allocation) =
-                    atlas.emoji.atlas.peek(&glyph.cache_key)
+                    atlas.emoji.atlas.get(&physical_glyph.cache_key)
                 {
                     (allocation, true)
                 } else {
-                    continue;
+                    let image = cache
+                        .get_image_uncached(
+                            &mut renderer.font_sys,
+                            physical_glyph.cache_key,
+                        )
+                        .unwrap();
+                    let bitmap = image.data;
+                    let is_color = match image.content {
+                        SwashContent::Color => true,
+                        SwashContent::Mask => false,
+                        SwashContent::SubpixelMask => false,
+                    };
+
+                    let width = image.placement.width;
+                    let height = image.placement.height;
+
+                    if width > 0 && height > 0 {
+                        if is_color {
+                            let allocation = atlas
+                                .emoji
+                                .atlas
+                                .upload(
+                                    physical_glyph.cache_key,
+                                    &bitmap,
+                                    width,
+                                    height,
+                                    Vec2::new(
+                                        image.placement.left as f32,
+                                        image.placement.top as f32,
+                                    ),
+                                    renderer,
+                                )
+                                .ok_or(AscendingError::AtlasFull)?;
+                            (allocation, is_color)
+                        } else {
+                            let allocation = atlas
+                                .text
+                                .atlas
+                                .upload(
+                                    physical_glyph.cache_key,
+                                    &bitmap,
+                                    width,
+                                    height,
+                                    Vec2::new(
+                                        image.placement.left as f32,
+                                        image.placement.top as f32,
+                                    ),
+                                    renderer,
+                                )
+                                .ok_or(AscendingError::AtlasFull)?;
+                            (allocation, is_color)
+                        }
+                    } else {
+                        continue;
+                    }
                 };
 
                 let position = allocation.data;
@@ -111,12 +107,12 @@ impl Text {
                 let (mut x, mut y) = (
                     (self.pos.x
                         + self.offsets.x
-                        + glyph.x_int as f32
+                        + physical_glyph.x as f32
                         + position.x),
                     (self.pos.y
                         + self.offsets.y
                         + self.size.y
-                        + glyph.y_int as f32
+                        + physical_glyph.y as f32
                         - line_y),
                 );
 

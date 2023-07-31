@@ -57,7 +57,7 @@ impl<K: BufferLayout> GpuBuffer<K> {
 
     pub fn add_buffer_store(
         &mut self,
-        renderer: &mut GpuRenderer,
+        renderer: &GpuRenderer,
         mut index: OrderedIndex,
     ) {
         if let Some(store) = renderer.get_buffer(&index.index) {

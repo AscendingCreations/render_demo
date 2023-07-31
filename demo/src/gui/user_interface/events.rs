@@ -2,7 +2,7 @@ use crate::{
     Actions, FrameTime, GpuRenderer, Handle, Identity, Parent, SystemEvent,
     UIBuffer, UiFlags, Widget, WidgetAny, WorldBounds, UI,
 };
-use graphics::*;
+use gpu_graphics::*;
 use hecs::World;
 use slab::Slab;
 use std::{
@@ -25,7 +25,7 @@ use winit::{
 impl<Message> UI<Message> {
     pub fn event_draw(
         &mut self,
-        world: &mut World,
+        world: &World,
         ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
         time: &FrameTime,

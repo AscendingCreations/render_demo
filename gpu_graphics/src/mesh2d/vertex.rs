@@ -8,6 +8,7 @@ use std::iter;
 pub struct Mesh2DVertex {
     pub position: [f32; 3],
     pub color: u32,
+    pub camera: u32,
 }
 
 impl Default for Mesh2DVertex {
@@ -15,6 +16,7 @@ impl Default for Mesh2DVertex {
         Self {
             position: [0.0; 3],
             color: 0,
+            camera: 0,
         }
     }
 }
@@ -25,7 +27,8 @@ impl BufferLayout for Mesh2DVertex {
     }
 
     fn attributes() -> Vec<wgpu::VertexAttribute> {
-        wgpu::vertex_attr_array![0 => Float32x3, 1 => Uint32].to_vec()
+        wgpu::vertex_attr_array![0 => Float32x3, 1 => Uint32, 2 => Uint32]
+            .to_vec()
     }
 
     //default set as large enough to contain 1_000 vertices.
@@ -53,7 +56,7 @@ impl BufferLayout for Mesh2DVertex {
     }
 
     fn stride() -> usize {
-        std::mem::size_of::<[f32; 4]>()
+        std::mem::size_of::<[f32; 5]>()
     }
 }
 
@@ -61,6 +64,7 @@ impl BufferLayout for Mesh2DVertex {
 pub struct VertexBuilder {
     pub z: f32,
     pub color: Color,
+    pub camera: bool,
 }
 
 impl VertexBuilder {
@@ -68,6 +72,7 @@ impl VertexBuilder {
         Mesh2DVertex {
             position: [position.x, position.y, self.z],
             color: self.color.0,
+            camera: u32::from(self.camera),
         }
     }
 }
@@ -78,6 +83,7 @@ impl tess::StrokeVertexConstructor<Mesh2DVertex> for VertexBuilder {
         Mesh2DVertex {
             position: [position.x, position.y, self.z],
             color: self.color.0,
+            camera: u32::from(self.camera),
         }
     }
 }
@@ -88,6 +94,7 @@ impl tess::FillVertexConstructor<Mesh2DVertex> for VertexBuilder {
         Mesh2DVertex {
             position: [position.x, position.y, self.z],
             color: self.color.0,
+            camera: u32::from(self.camera),
         }
     }
 }

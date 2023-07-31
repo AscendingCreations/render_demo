@@ -3,7 +3,7 @@ use std::iter;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct RectVertex {
+pub struct UiVertex {
     pub position: [f32; 3],
     pub size: [f32; 2],
     pub border_width: f32,
@@ -14,7 +14,7 @@ pub struct RectVertex {
     pub radius: f32,
 }
 
-impl Default for RectVertex {
+impl Default for UiVertex {
     fn default() -> Self {
         Self {
             position: [0.0; 3],
@@ -29,7 +29,7 @@ impl Default for RectVertex {
     }
 }
 
-impl BufferLayout for RectVertex {
+impl BufferLayout for UiVertex {
     fn is_bounded() -> bool {
         true
     }
@@ -48,7 +48,7 @@ impl BufferLayout for RectVertex {
         vertex_capacity: usize,
         _index_capacity: usize,
     ) -> BufferData {
-        let instance_arr: Vec<RectVertex> = iter::repeat(RectVertex::default())
+        let instance_arr: Vec<UiVertex> = iter::repeat(UiVertex::default())
             .take(vertex_capacity)
             .collect();
 

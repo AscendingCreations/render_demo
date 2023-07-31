@@ -1,77 +1,80 @@
 use crate::{
-    AsBufferPass, AscendingError, AtlasGroup, GpuRenderer, InstanceBuffer,
-    OrderedIndex, Rect, RectVertex, RectsRenderPipeline, SetBuffers,
-    StaticBufferObject, System,
+    AsBufferPass, AscendingError, GpuBuffer, GpuRenderer, Mesh2D,
+    Mesh2DRenderPipeline, Mesh2DVertex, OrderedIndex, SetBuffers, System,
 };
 
-pub struct RectRenderer {
-    pub buffer: InstanceBuffer<RectVertex>,
+pub struct Mesh2DRenderer {
+    pub vbos: GpuBuffer<Mesh2DVertex>,
 }
 
-impl RectRenderer {
-    pub fn new(renderer: &mut GpuRenderer) -> Result<Self, AscendingError> {
+//TODO: Update this to take in instance buffer index too.
+impl Mesh2DRenderer {
+    pub fn new(renderer: &GpuRenderer) -> Result<Self, AscendingError> {
         Ok(Self {
-            buffer: InstanceBuffer::new(renderer.gpu_device()),
+            vbos: GpuBuffer::new(renderer.gpu_device()),
         })
     }
 
     pub fn add_buffer_store(
         &mut self,
-        renderer: &mut GpuRenderer,
+        renderer: &GpuRenderer,
         index: OrderedIndex,
     ) {
-        self.buffer.add_buffer_store(renderer, index);
+        self.vbos.add_buffer_store(renderer, index);
     }
 
     pub fn finalize(&mut self, renderer: &mut GpuRenderer) {
-        self.buffer.finalize(renderer)
+        self.vbos.finalize(renderer);
     }
 
-    pub fn rect_update(&mut self, rect: &mut Rect, renderer: &mut GpuRenderer) {
-        let index = rect.update(renderer);
+    pub fn mesh_update(
+        &mut self,
+        mesh: &mut Mesh2D,
+        renderer: &mut GpuRenderer,
+    ) {
+        let index = mesh.update(renderer);
 
         self.add_buffer_store(renderer, index);
     }
 }
 
-pub trait RenderRects<'a, 'b, Controls>
+pub trait RenderMesh2D<'a, 'b, Controls>
 where
     'b: 'a,
     Controls: camera::controls::Controls,
 {
-    fn render_rects(
+    fn render_2dmeshs(
         &mut self,
         renderer: &'b GpuRenderer,
-        buffer: &'b RectRenderer,
-        atlas_group: &'b AtlasGroup,
+        buffer: &'b Mesh2DRenderer,
         system: &'b System<Controls>,
     );
 }
 
-impl<'a, 'b, Controls> RenderRects<'a, 'b, Controls> for wgpu::RenderPass<'a>
+impl<'a, 'b, Controls> RenderMesh2D<'a, 'b, Controls> for wgpu::RenderPass<'a>
 where
     'b: 'a,
     Controls: camera::controls::Controls,
 {
-    fn render_rects(
+    fn render_2dmeshs(
         &mut self,
         renderer: &'b GpuRenderer,
-        buffer: &'b RectRenderer,
-        atlas_group: &'b AtlasGroup,
+        buffer: &'b Mesh2DRenderer,
         system: &'b System<Controls>,
     ) {
-        if buffer.buffer.count() > 0 {
-            self.set_buffers(renderer.buffer_object.as_buffer_pass());
-            self.set_bind_group(1, &atlas_group.texture.bind_group, &[]);
-            self.set_vertex_buffer(1, buffer.buffer.instances(None));
+        //TODO Add new mesh handler to cycle correct buffers with index id's
+
+        if !buffer.vbos.buffers.is_empty() {
+            self.set_buffers(buffer.vbos.as_buffer_pass());
             self.set_pipeline(
-                renderer.get_pipelines(RectsRenderPipeline).unwrap(),
+                renderer.get_pipelines(Mesh2DRenderPipeline).unwrap(),
             );
             let mut scissor_is_default = true;
+            let mut index_pos = 0;
+            let mut base_vertex = 0;
 
-            for i in 0..buffer.buffer.count() {
-                if let Some(Some(bounds)) = buffer.buffer.bounds.get(i as usize)
-                {
+            for (i, details) in buffer.vbos.buffers.iter().enumerate() {
+                if let Some(Some(bounds)) = buffer.vbos.bounds.get(i) {
                     let bounds = system.world_to_screen(false, bounds);
 
                     self.set_scissor_rect(
@@ -91,11 +94,16 @@ where
                     scissor_is_default = true;
                 };
 
+                // Indexs can always start at 0 per mesh data.
+                // Base vertex is the Addition to the Index
                 self.draw_indexed(
-                    0..StaticBufferObject::index_count(),
-                    0,
-                    i..i + 1,
+                    index_pos..index_pos + details.count,
+                    base_vertex, //i as i32 * details.max,
+                    0..1,
                 );
+
+                base_vertex += details.max as i32 + 1;
+                index_pos += details.count;
             }
 
             //Gotta set it back otherwise it will clip everything after it...

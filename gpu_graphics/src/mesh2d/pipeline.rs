@@ -19,7 +19,7 @@ impl PipeLineLayout for Mesh2DRenderPipeline {
             wgpu::ShaderModuleDescriptor {
                 label: Some("Shader"),
                 source: wgpu::ShaderSource::Wgsl(
-                    include_str!("../shaders/meshshader.wgsl").into(),
+                    include_str!("../shaders/2dmeshshader.wgsl").into(),
                 ),
             },
         );

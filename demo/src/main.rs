@@ -7,7 +7,7 @@ use camera::{
 use cosmic_text::{
     Action as TextAction, Attrs, Buffer, FontSystem, Metrics, Style, SwashCache,
 };
-use graphics::*;
+use gpu_graphics::*;
 use hecs::World;
 use input::{Bindings, FrameTime, InputHandler};
 use log::{error, info, warn, Level, LevelFilter, Metadata, Record};
@@ -23,6 +23,7 @@ use std::{
     rc::Rc,
     time::Duration,
 };
+use wgpu::InstanceDescriptor;
 use winit::{
     dpi::PhysicalSize,
     event::*,
@@ -163,11 +164,11 @@ async fn main() -> Result<(), AscendingError> {
     sprites[0].pos.z = 5.0;
     sprites[0].color = Color::rgba(255, 255, 255, 120);
 
-    let rects_renderer = RectRenderer::new(&mut renderer).unwrap();
-    let text_renderer = TextRenderer::new(&mut renderer).unwrap();
-    let sprite_renderer = ImageRenderer::new(&mut renderer).unwrap();
+    let rects_renderer = UiRenderer::new(&renderer).unwrap();
+    let text_renderer = TextRenderer::new(&renderer).unwrap();
+    let sprite_renderer = ImageRenderer::new(&renderer).unwrap();
     let mut map_renderer = MapRenderer::new(&mut renderer, 81).unwrap();
-    let mesh_renderer = Mesh2DRenderer::new(&mut renderer).unwrap();
+    let mesh_renderer = Mesh2DRenderer::new(&renderer).unwrap();
 
     let mut size = renderer.size();
 
@@ -222,7 +223,7 @@ async fn main() -> Result<(), AscendingError> {
     animation.switch_time = 300;
     animation.animate = true;
 
-    let mut rects = Rect {
+    let mut rects = UiRect {
         position: Vec3::new(150.0, 150.0, 1.0),
         size: Vec2::new(132.0, 32.0),
         border_width: 2.0,
@@ -295,9 +296,9 @@ async fn main() -> Result<(), AscendingError> {
     let button = ui.add_widget(&mut world, None, button);
     let _label = ui.add_widget(&mut world, Some(button), label);
 
-    UI::<Messages>::set_action(&mut world, button, UiFlags::AlwaysUseable);
-    UI::<Messages>::set_action(&mut world, button, UiFlags::CanFocus);
-    UI::<Messages>::set_action(&mut world, button, UiFlags::MoveAble);
+    UI::<Messages>::set_action(&world, button, UiFlags::AlwaysUseable);
+    UI::<Messages>::set_action(&world, button, UiFlags::CanFocus);
+    UI::<Messages>::set_action(&world, button, UiFlags::MoveAble);
 
     let mut builder = Mesh2DBuilder::new();
 
@@ -379,7 +380,7 @@ async fn main() -> Result<(), AscendingError> {
     let mut bindings = Bindings::<Action, Axis>::new();
     bindings.insert_action(
         Action::Quit,
-        vec![winit::event::VirtualKeyCode::Q.into()].into_iter(),
+        vec![winit::event::VirtualKeyCode::Q.into()],
     );
     let mut input_handler = InputHandler::new(bindings);
 
@@ -490,7 +491,7 @@ async fn main() -> Result<(), AscendingError> {
 
         state.mesh_renderer.finalize(&mut renderer);
 
-        ui.event_draw(&mut world, &mut ui_buffer, &mut renderer, &frame_time)
+        ui.event_draw(&world, &mut ui_buffer, &mut renderer, &frame_time)
             .unwrap();
         // Start encoding commands.
         let mut encoder = renderer.device().create_command_encoder(

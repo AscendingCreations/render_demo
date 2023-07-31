@@ -67,6 +67,7 @@ impl Image {
         let instance = ImageVertex {
             position: self.pos.to_array(),
             hw: self.hw.to_array(),
+            #[allow(clippy::tuple_array_conversions)]
             tex_data: [u, v, width, height],
             color: self.color.0,
             frames: self.frames.to_array(),

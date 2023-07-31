@@ -1,5 +1,5 @@
 use crate::{SystemEvent, UIBuffer, WidgetEvent, UI};
-use graphics::*;
+use gpu_graphics::*;
 use hecs::Entity;
 use input::FrameTime;
 use std::{

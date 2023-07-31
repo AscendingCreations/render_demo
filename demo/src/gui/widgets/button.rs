@@ -3,7 +3,7 @@ use crate::{
     SystemEvent, UIBuffer, UiField, UiFlags, Widget, WidgetEvent, WorldBounds,
     UI,
 };
-use graphics::*;
+use gpu_graphics::*;
 
 pub struct Button<Message> {
     identity: Identity,
@@ -19,7 +19,7 @@ pub struct Button<Message> {
     border_over_color: Color,
     border_clicked_color: Color,
     border_color: Color,
-    shape: Rect,
+    shape: UiRect,
 }
 
 impl<Message> Button<Message> {
@@ -37,7 +37,7 @@ impl<Message> Button<Message> {
              + Sync
              + 'static),
     ) -> Button<Message> {
-        let mut shape = Rect::new(renderer);
+        let mut shape = UiRect::new(renderer);
 
         shape
             .set_color(

@@ -1,12 +1,11 @@
 use crate::{
     Allocation, AscendingError, AtlasGroup, DrawOrder, GpuRenderer, Index,
-    OrderedIndex, OtherError, RectVertex, Texture, Vec2, Vec3, Vec4,
-    WorldBounds,
+    OrderedIndex, OtherError, Texture, UiVertex, Vec2, Vec3, Vec4, WorldBounds,
 };
 use cosmic_text::Color;
 use image::{self, ImageBuffer};
 
-pub struct Rect {
+pub struct UiRect {
     pub position: Vec3,
     pub size: Vec2,
     pub border_width: f32,
@@ -22,7 +21,7 @@ pub struct Rect {
     pub changed: bool,
 }
 
-impl Rect {
+impl UiRect {
     pub fn new(renderer: &mut GpuRenderer) -> Self {
         Self {
             position: Vec3::default(),
@@ -201,7 +200,7 @@ impl Rect {
             self.border_uv.w.min(height as f32),
         ];
 
-        let buffer = RectVertex {
+        let buffer = UiVertex {
             position: self.position.to_array(),
             size: self.size.to_array(),
             border_width: self.border_width,

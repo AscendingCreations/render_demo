@@ -1,5 +1,5 @@
 use crate::{Handle, Identity, UIBuffer, Value, Widget, UI};
-use graphics::*;
+use gpu_graphics::*;
 use input::FrameTime;
 use std::any::Any;
 use std::marker::PhantomData;

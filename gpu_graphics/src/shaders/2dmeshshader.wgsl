@@ -29,6 +29,7 @@ struct VertexInput {
     @builtin(vertex_index) vertex_idx: u32,
     @location(0) position: vec3<f32>,
     @location(1) color: u32,
+    @location(2) use_camera: u32,
 };
 
 struct VertexOutput {
@@ -52,7 +53,12 @@ fn vertex(
     var result: VertexOutput;
     var pos = vertex.position;
 
-    result.clip_position = camera.proj * vec4<f32>(pos, 1.0);
+    if (vertex.use_camera == 1u) {
+        result.clip_position = (camera.proj * camera.view) * vec4<f32>(pos, 1.0);
+    } else {
+        result.clip_position = camera.proj * vec4<f32>(pos, 1.0);
+    }
+
     result.color = unpack_color(vertex.color);
     return result;
 }

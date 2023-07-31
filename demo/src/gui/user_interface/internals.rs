@@ -2,7 +2,7 @@ use crate::{
     Actions, FrameTime, Handle, Hidden, Identity, Parent, SystemEvent,
     UIBuffer, UiFlags, Widget, WidgetAny, WidgetEvent, UI,
 };
-use graphics::*;
+use gpu_graphics::*;
 use hecs::{With, Without, World};
 use slab::Slab;
 use std::{
@@ -168,11 +168,7 @@ impl<Message> UI<Message> {
         }
     }
 
-    pub(crate) fn widget_usable(
-        &self,
-        world: &mut World,
-        control: Handle,
-    ) -> bool {
+    pub(crate) fn widget_usable(&self, world: &World, control: Handle) -> bool {
         let actions = world
             .get::<&Actions>(control.get_key())
             .expect("Widget is missing its actions?");
@@ -658,7 +654,7 @@ impl<Message> UI<Message> {
 
     pub(crate) fn widget_is_focused(
         &mut self,
-        world: &mut World,
+        world: &World,
         control: Handle,
     ) -> bool {
         let action = world
@@ -827,7 +823,7 @@ impl<Message> UI<Message> {
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn widget_position_update(
         &mut self,
-        world: &mut World,
+        world: &World,
         ui_buffer: &mut UIBuffer,
         renderer: &mut GpuRenderer,
         control: Handle,

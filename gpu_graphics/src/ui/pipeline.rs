@@ -1,14 +1,14 @@
 use crate::{
-    BufferLayout, GpuDevice, LayoutStorage, PipeLineLayout, RectVertex,
-    StaticBufferObject, SystemLayout, TextureLayout,
+    BufferLayout, GpuDevice, LayoutStorage, PipeLineLayout, StaticBufferObject,
+    SystemLayout, TextureLayout, UiVertex,
 };
 use bytemuck::{Pod, Zeroable};
 
 #[repr(C)]
 #[derive(Clone, Copy, Hash, Pod, Zeroable)]
-pub struct RectsRenderPipeline;
+pub struct UiRenderPipeline;
 
-impl PipeLineLayout for RectsRenderPipeline {
+impl PipeLineLayout for UiRenderPipeline {
     fn create_layout(
         &self,
         gpu_device: &mut GpuDevice,
@@ -50,9 +50,9 @@ impl PipeLineLayout for RectsRenderPipeline {
                             ],
                         },
                         wgpu::VertexBufferLayout {
-                            array_stride: RectVertex::stride() as u64,
+                            array_stride: UiVertex::stride() as u64,
                             step_mode: wgpu::VertexStepMode::Instance,
-                            attributes: &RectVertex::attributes(),
+                            attributes: &UiVertex::attributes(),
                         },
                     ],
                 },

@@ -1,5 +1,5 @@
 [package]
-name = "ascending_graphics"
+name = "ascending_gpu_graphics"
 version = "0.1.0"
 authors = ["S.J.R. van Schaik", "Andrew Wheeler <genusistimelord@gmail.com>"]
 license = "MIT OR Apache-2.0"

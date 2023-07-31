@@ -1,6 +1,6 @@
 use crate::UI;
 use cosmic_text::{CacheKey, FontSystem};
-use graphics::*;
+use gpu_graphics::*;
 use std::collections::HashMap;
 use winit::event::MouseButton;
 
@@ -14,7 +14,7 @@ where
     pub system: System<Controls>,
     /// Data stores for render types
     pub sprites: Vec<Image>,
-    pub rects: Rect,
+    pub rects: UiRect,
     pub animation: Image,
     pub map: Map,
     pub mesh: [Mesh2D; 2],
@@ -27,7 +27,7 @@ where
     /// Rendering Buffers and other shared data.
     pub text_renderer: TextRenderer,
     pub sprite_renderer: ImageRenderer,
-    pub rects_renderer: RectRenderer,
+    pub rects_renderer: UiRenderer,
     pub map_renderer: MapRenderer,
     pub mesh_renderer: Mesh2DRenderer,
 }

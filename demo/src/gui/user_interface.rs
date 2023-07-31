@@ -2,7 +2,7 @@ use crate::{
     Actions, AnyData, BoundID, Event, FrameTime, GpuDevice, Handle, Hidden,
     Identity, Parent, UIBuffer, UiFlags, Widget, WidgetAny, WidgetBounds,
 };
-use graphics::*;
+use gpu_graphics::*;
 use hecs::{Entity, World};
 use slab::Slab;
 use std::{
@@ -57,7 +57,7 @@ impl<Message: 'static> UI<Message> {
         }
     }
 
-    pub fn set_action(world: &mut World, handle: Handle, action: UiFlags) {
+    pub fn set_action(world: &World, handle: Handle, action: UiFlags) {
         let mut actions = world
             .get::<&mut Actions>(handle.get_key())
             .expect("Widget is missing its actions?");
@@ -174,7 +174,7 @@ impl<Message: 'static> UI<Message> {
 
     pub fn get_widget<'a>(
         &mut self,
-        world: &'a mut World,
+        world: &'a World,
         handle: Handle,
     ) -> hecs::Ref<'a, WidgetAny<Message>> {
         world
@@ -184,7 +184,7 @@ impl<Message: 'static> UI<Message> {
 
     pub fn get_widget_mut<'a>(
         &mut self,
-        world: &'a mut World,
+        world: &'a World,
         handle: Handle,
     ) -> hecs::RefMut<'a, WidgetAny<Message>> {
         world

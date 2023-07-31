@@ -218,7 +218,7 @@ impl GpuRenderer {
             &mut self.device,
             &mut self.layout_storage,
             surface_format,
-            crate::RectsRenderPipeline,
+            crate::UiRenderPipeline,
         );
 
         self.pipeline_storage.create_pipeline(

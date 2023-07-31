@@ -36,7 +36,8 @@ impl Text {
         atlas: &mut TextAtlas,
         renderer: &mut GpuRenderer,
     ) -> Result<(), AscendingError> {
-        let mut text_buf = Vec::with_capacity(128);
+        let count: usize = self.buffer.lines.iter().map(|line| line.text().len()).sum();
+        let mut text_buf = Vec::with_capacity(count);
 
         for run in self.buffer.layout_runs() {
             for glyph in run.glyphs.iter() {

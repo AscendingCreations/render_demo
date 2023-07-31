@@ -150,6 +150,7 @@ pub struct Mesh2DBuilder {
     bounds: Vec4,
     z: f32,
     high_index: u32,
+    use_camera: bool,
 }
 
 impl Default for Mesh2DBuilder {
@@ -159,6 +160,7 @@ impl Default for Mesh2DBuilder {
             bounds: Vec4::new(0.0, 0.0, 0.0, 0.0),
             z: 1.0,
             high_index: 0,
+            use_camera: false,
         }
     }
 }
@@ -166,6 +168,13 @@ impl Default for Mesh2DBuilder {
 impl Mesh2DBuilder {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn with_camera() -> Self {
+        Self {
+            use_camera: true,
+            ..Self::default()
+        }
     }
 
     pub fn finalize(mut self) -> Self {
@@ -217,7 +226,11 @@ impl Mesh2DBuilder {
         assert!(tolerance > 0.0, "Tolerances <= 0 are invalid");
         {
             let buffers = &mut self.buffer;
-            let vb = VertexBuilder { z, color };
+            let vb = VertexBuilder {
+                z,
+                color,
+                camera: self.use_camera,
+            };
             match mode {
                 DrawMode::Fill(fill_options) => {
                     let mut tessellator = tess::FillTessellator::new();
@@ -256,7 +269,11 @@ impl Mesh2DBuilder {
         assert!(tolerance > 0.0, "Tolerances <= 0 are invalid");
         {
             let buffers = &mut self.buffer;
-            let vb = VertexBuilder { z, color };
+            let vb = VertexBuilder {
+                z,
+                color,
+                camera: self.use_camera,
+            };
             match mode {
                 DrawMode::Fill(fill_options) => {
                     let builder = &mut tess::BuffersBuilder::new(buffers, vb);
@@ -327,7 +344,11 @@ impl Mesh2DBuilder {
         z: f32,
         color: Color,
     ) -> Result<&mut Self, AscendingError> {
-        let vb = VertexBuilder { z, color };
+        let vb = VertexBuilder {
+            z,
+            color,
+            camera: self.use_camera,
+        };
         self.polyline_with_vertex_builder(mode, points, is_closed, vb)
     }
 
@@ -388,7 +409,11 @@ impl Mesh2DBuilder {
                 tess::math::point(bounds.x, bounds.y),
                 tess::math::size(bounds.z, bounds.w),
             );
-            let vb = VertexBuilder { z, color };
+            let vb = VertexBuilder {
+                z,
+                color,
+                camera: self.use_camera,
+            };
             match mode {
                 DrawMode::Fill(fill_options) => {
                     let builder = &mut tess::BuffersBuilder::new(buffers, vb);
@@ -425,7 +450,11 @@ impl Mesh2DBuilder {
                 tess::math::size(bounds.z, bounds.w),
             );
             let radii = tess::path::builder::BorderRadii::new(radius);
-            let vb = VertexBuilder { z, color };
+            let vb = VertexBuilder {
+                z,
+                color,
+                camera: self.use_camera,
+            };
             let mut path_builder = tess::path::Path::builder();
             path_builder.add_rounded_rectangle(
                 &rect,
@@ -472,7 +501,11 @@ impl Mesh2DBuilder {
                 .map(|p| lyon::math::point(p.x, p.y))
                 .collect::<Vec<_>>();
             let tris = tris.chunks(3);
-            let vb = VertexBuilder { z, color };
+            let vb = VertexBuilder {
+                z,
+                color,
+                camera: self.use_camera,
+            };
             for tri in tris {
                 assert!(tri.len() == 3);
                 let first_index: u32 =

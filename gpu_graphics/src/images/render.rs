@@ -8,7 +8,7 @@ pub struct ImageRenderer {
 }
 
 impl ImageRenderer {
-    pub fn new(renderer: &mut GpuRenderer) -> Result<Self, AscendingError> {
+    pub fn new(renderer: &GpuRenderer) -> Result<Self, AscendingError> {
         Ok(Self {
             buffer: InstanceBuffer::new(renderer.gpu_device()),
         })
@@ -16,7 +16,7 @@ impl ImageRenderer {
 
     pub fn add_buffer_store(
         &mut self,
-        renderer: &mut GpuRenderer,
+        renderer: &GpuRenderer,
         index: OrderedIndex,
     ) {
         self.buffer.add_buffer_store(renderer, index);

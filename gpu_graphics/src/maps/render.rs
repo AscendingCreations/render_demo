@@ -40,7 +40,7 @@ impl MapRenderer {
 
     pub fn add_buffer_store(
         &mut self,
-        renderer: &mut GpuRenderer,
+        renderer: &GpuRenderer,
         index: (OrderedIndex, OrderedIndex),
     ) {
         self.maplower_buffer.add_buffer_store(renderer, index.0);

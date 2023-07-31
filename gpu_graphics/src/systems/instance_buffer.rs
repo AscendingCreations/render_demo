@@ -31,7 +31,7 @@ impl<K: BufferLayout> InstanceBuffer<K> {
 
     pub fn add_buffer_store(
         &mut self,
-        renderer: &mut GpuRenderer,
+        renderer: &GpuRenderer,
         index: OrderedIndex,
     ) {
         if let Some(store) = renderer.get_buffer(&index.index) {

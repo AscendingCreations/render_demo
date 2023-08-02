@@ -7,7 +7,7 @@ use camera::{
 use cosmic_text::{
     Action as TextAction, Attrs, Buffer, FontSystem, Metrics, Style, SwashCache,
 };
-use gpu_graphics::*;
+use graphics::*;
 use hecs::World;
 use input::{Bindings, FrameTime, InputHandler};
 use log::{error, info, warn, Level, LevelFilter, Metadata, Record};

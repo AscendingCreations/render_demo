@@ -1,6 +1,6 @@
 use crate::UI;
 use cosmic_text::{CacheKey, FontSystem};
-use gpu_graphics::*;
+use graphics::*;
 use std::collections::HashMap;
 use winit::event::MouseButton;
 

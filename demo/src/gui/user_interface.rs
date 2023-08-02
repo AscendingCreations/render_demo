@@ -2,9 +2,8 @@ use crate::{
     Actions, AnyData, BoundID, Event, FrameTime, GpuDevice, Handle, Hidden,
     Identity, Parent, UIBuffer, UiFlags, Widget, WidgetAny, WidgetBounds,
 };
-use gpu_graphics::*;
+use graphics::*;
 use hecs::{Entity, World};
-use slab::Slab;
 use std::{
     any::Any,
     cell::{Ref, RefCell, RefMut},

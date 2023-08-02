@@ -3,7 +3,7 @@ use crate::{
     SystemEvent, UIBuffer, UiField, UiFlags, Widget, WidgetEvent, WorldBounds,
     UI,
 };
-use gpu_graphics::*;
+use graphics::*;
 
 pub struct Button<Message> {
     identity: Identity,

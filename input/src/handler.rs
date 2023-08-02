@@ -24,6 +24,8 @@ where
     /// The set of mouse buttons that are currently pressed down.
     mouse_buttons: HashSet<winit::event::MouseButton>,
     /// The current mouse position.
+    physical_mouse_position: Option<PhysicalPosition<f64>>,
+    /// The current mouse position.
     mouse_position: Option<(f32, f32)>,
     /// The last recorded mouse position.
     last_mouse_position: Option<(f32, f32)>,
@@ -160,6 +162,10 @@ where
         self.mouse_position
     }
 
+    pub fn physical_mouse_position(&self) -> Option<PhysicalPosition<f64>> {
+        self.physical_mouse_position
+    }
+
     pub fn mouse_wheel_value(&self, axis: MouseAxis) -> f32 {
         match axis {
             MouseAxis::Horizontal => self.mouse_wheel.0,
@@ -173,6 +179,7 @@ where
             keys: HashSet::new(),
             scan_codes: HashSet::new(),
             mouse_buttons: HashSet::new(),
+            physical_mouse_position: None,
             mouse_position: None,
             last_mouse_position: None,
             mouse_delta: (0.0, 0.0),
@@ -215,6 +222,8 @@ where
                     position: PhysicalPosition { x, y },
                     ..
                 } => {
+                    self.physical_mouse_position =
+                        Some(PhysicalPosition { x: *x, y: *y });
                     self.mouse_position =
                         Some(((*x as f32) * hidpi, (*y as f32) * hidpi));
                 }

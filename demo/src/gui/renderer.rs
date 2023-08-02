@@ -3,7 +3,7 @@ use crate::{
     TextAtlas, TextRenderPipeline, TextVertex, UiRenderer, Vec2,
 };
 use cosmic_text::{CacheKey, FontSystem};
-use gpu_graphics::*;
+use graphics::*;
 use std::collections::HashMap;
 
 pub struct UIBuffer {

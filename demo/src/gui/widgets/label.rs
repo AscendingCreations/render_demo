@@ -4,7 +4,7 @@ use crate::{
     UI,
 };
 use cosmic_text::{Align, Attrs};
-use gpu_graphics::*;
+use graphics::*;
 
 pub struct Label {
     identity: Identity,

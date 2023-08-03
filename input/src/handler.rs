@@ -5,8 +5,8 @@ use std::collections::HashSet;
 use std::hash::Hash;
 use winit::dpi::PhysicalPosition;
 use winit::event::{
-    DeviceEvent, ElementState, Event, KeyboardInput, MouseScrollDelta,
-    WindowEvent,
+    DeviceEvent, ElementState, Event, KeyboardInput, ModifiersState,
+    MouseScrollDelta, WindowEvent,
 };
 use winit::window::Window;
 
@@ -33,6 +33,8 @@ where
     mouse_delta: (f64, f64),
     /// The current state of the mouse wheel.
     mouse_wheel: (f32, f32),
+    //key modifiers.
+    modifiers: ModifiersState,
 }
 
 impl<ActionId, AxisId> InputHandler<ActionId, AxisId>
@@ -162,6 +164,10 @@ where
         self.mouse_position
     }
 
+    pub fn modifiers(&self) -> ModifiersState {
+        self.modifiers
+    }
+
     pub fn physical_mouse_position(&self) -> Option<PhysicalPosition<f64>> {
         self.physical_mouse_position
     }
@@ -184,6 +190,7 @@ where
             last_mouse_position: None,
             mouse_delta: (0.0, 0.0),
             mouse_wheel: (0.0, 0.0),
+            modifiers: ModifiersState::default(),
         }
     }
 
@@ -231,6 +238,9 @@ where
                     self.keys.clear();
                     self.scan_codes.clear();
                     self.mouse_buttons.clear();
+                }
+                WindowEvent::ModifiersChanged(new_modifiers) => {
+                    self.modifiers = *new_modifiers;
                 }
                 _ => (),
             },

@@ -31,11 +31,20 @@ use winit::{
     window::WindowBuilder,
 };
 
+use graphics::iced_wgpu::{Backend, Renderer, Settings};
+use graphics::iced_winit::{
+    conversion,
+    core::{mouse, renderer, Color as iced_color, Size},
+    futures,
+    runtime::{program, Debug},
+    style::Theme,
+    winit, Clipboard,
+};
+
 mod gamestate;
-mod gui;
+mod ui;
 
 use gamestate::*;
-use gui::*;
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
 enum Action {
@@ -78,11 +87,6 @@ impl log::Log for MyLogger {
         }
     }
     fn flush(&self) {}
-}
-
-#[derive(Clone)]
-pub enum Messages {
-    ButtonClick(Identity, (MouseButton, bool, ModifiersState)),
 }
 
 #[tokio::main]
@@ -164,7 +168,6 @@ async fn main() -> Result<(), AscendingError> {
     sprites[0].pos.z = 5.0;
     sprites[0].color = Color::rgba(255, 255, 255, 120);
 
-    let rects_renderer = UiRenderer::new(&renderer).unwrap();
     let text_renderer = TextRenderer::new(&renderer).unwrap();
     let sprite_renderer = ImageRenderer::new(&renderer).unwrap();
     let mut map_renderer = MapRenderer::new(&mut renderer, 81).unwrap();
@@ -223,29 +226,6 @@ async fn main() -> Result<(), AscendingError> {
     animation.switch_time = 300;
     animation.animate = true;
 
-    let mut rects = UiRect {
-        position: Vec3::new(150.0, 150.0, 1.0),
-        size: Vec2::new(132.0, 32.0),
-        border_width: 2.0,
-        radius: Some(5.0),
-        changed: true,
-        container: None,
-        container_uv: Vec4::default(),
-        border: None,
-        order: DrawOrder::default(),
-        border_uv: Vec4::default(),
-        bounds: None,
-        store_id: renderer.new_buffer(),
-    };
-
-    rects
-        .set_color(&renderer, &mut atlases[2], Color::rgba(255, 255, 0, 255))
-        .set_border_color(
-            &renderer,
-            &mut atlases[2],
-            Color::rgba(0, 0, 0, 255),
-        );
-
     let scale = renderer.window().current_monitor().unwrap().scale_factor();
 
     let mut text = Text::new(
@@ -255,50 +235,8 @@ async fn main() -> Result<(), AscendingError> {
         Vec2::new(190.0, 32.0),
     );
 
-    let mut ui_buffer = UIBuffer::new(&mut renderer)?;
-
     text.set_buffer_size(&mut renderer, size.width as i32, size.height as i32)
         .set_bounds(Some(WorldBounds::new(0.0, 0.0, 190.0, 32.0, 1.0)));
-
-    let mut world = World::new();
-    let mut ui = UI::<Messages>::new();
-    let button = Button::new(
-        &mut ui_buffer,
-        &mut renderer,
-        Identity {
-            name: "button".to_string(),
-            id: 1,
-        },
-        Vec3::new(60.0, 300.0, 1.1),
-        Vec2::new(155.0, 25.0),
-        1.0,
-        Some(5.0),
-        Messages::ButtonClick,
-    );
-
-    let mut label = Label::new(
-        &mut renderer,
-        Identity {
-            name: "label".to_string(),
-            id: 1,
-        },
-        Some(Metrics::new(16.0, 16.0).scale(scale as f32)),
-        Vec3::new(60.0, 300.0, 1.0),
-        Vec2::new(150.0, 25.0),
-        "私を押してください".to_string(),
-        Attrs::new(),
-    );
-
-    label
-        .set_default_color(Color::rgba(255, 255, 255, 255))
-        .set_offset(Vec2::new(5.0, -5.0));
-
-    let button = ui.add_widget(&mut world, None, button);
-    let _label = ui.add_widget(&mut world, Some(button), label);
-
-    UI::<Messages>::set_action(&world, button, UiFlags::AlwaysUseable);
-    UI::<Messages>::set_action(&world, button, UiFlags::CanFocus);
-    UI::<Messages>::set_action(&world, button, UiFlags::MoveAble);
 
     let mut builder = Mesh2DBuilder::new();
 
@@ -356,6 +294,22 @@ async fn main() -> Result<(), AscendingError> {
     let mut mesh = [Mesh2D::new(&mut renderer), Mesh2D::new(&mut renderer)];
     mesh[0].from_builder(builder.finalize());
     mesh[1].from_builder(builder2.finalize());
+
+    let mut debug = Debug::new();
+    let mut iced_renderer = Renderer::new(Backend::new(
+        renderer.device(),
+        renderer.queue(),
+        Settings::default(),
+        renderer.surface_format(),
+    ));
+
+    let iced_controls = ui::Controls::new();
+    let mut iced_state = program::State::new(
+        iced_controls,
+        system.iced_view().logical_size(),
+        &mut iced_renderer,
+        &mut debug,
+    );
     renderer.window().set_visible(true);
 
     let mut state = State {
@@ -366,9 +320,6 @@ async fn main() -> Result<(), AscendingError> {
         map,
         map_renderer,
         map_atlas: atlases.remove(0),
-        rects,
-        rects_renderer,
-        rects_atlas: atlases.remove(0),
         sprite_renderer,
         text_atlas,
         text_renderer,
@@ -387,7 +338,12 @@ async fn main() -> Result<(), AscendingError> {
     let mut frame_time = FrameTime::new();
     let mut time = 0.0f32;
     let mut fps = 0u32;
+
+    //let mut modifiers = ModifiersState::default();
+    let mut clipboard = Clipboard::connect(renderer.window());
     //let mut mouse_pos = Vec2::default();
+
+    let mut debug = Debug::new();
 
     #[allow(deprecated)]
     event_loop.run(move |event, _, control_flow| {
@@ -401,13 +357,37 @@ async fn main() -> Result<(), AscendingError> {
                     *control_flow = ControlFlow::Exit;
                 }
             }
+            Event::MainEventsCleared => {
+                if !iced_state.is_queue_empty() {
+                    // We update iced
+                    let _ = iced_state.update(
+                        state.system.iced_view().logical_size(),
+                        input_handler
+                            .physical_mouse_position()
+                            .map(|p| {
+                                conversion::cursor_position(
+                                    p,
+                                    state.system.iced_view().scale_factor(),
+                                )
+                            })
+                            .map(mouse::Cursor::Available)
+                            .unwrap_or(mouse::Cursor::Unavailable),
+                        &mut iced_renderer,
+                        &Theme::Dark,
+                        &renderer::Style {
+                            text_color: iced_color::WHITE,
+                        },
+                        &mut clipboard,
+                        &mut debug,
+                    );
+
+                    // and request a redraw
+                    renderer.window().request_redraw();
+                    return;
+                }
+            }
             _ => {}
         }
-
-        /*if state.rects.check_mouse_bounds(mouse_pos) {
-            println!("Within the Shape: {id}");
-            id += 1;
-        }*/
 
         let new_size = renderer.size();
         let inner_size = renderer.window().inner_size();
@@ -421,21 +401,16 @@ async fn main() -> Result<(), AscendingError> {
         }
 
         input_handler.update(renderer.window(), &event, 1.0);
-        let events = ui.handle_events(
-            &mut world,
-            &mut ui_buffer,
-            &mut renderer,
-            &event,
-            1.0,
-        );
 
-        for event in events {
-            state.event(&mut ui, &mut renderer, event);
+        if let Event::WindowEvent { ref event, .. } = &event {
+            if let Some(event) = graphics::iced_winit::conversion::window_event(
+                event,
+                renderer.window().scale_factor(),
+                input_handler.modifiers(),
+            ) {
+                iced_state.queue_event(event);
+            }
         }
-        /*mouse_pos = {
-            let pos = input_handler.mouse_position().unwrap_or((0.0, 0.0));
-            Vec2::new(pos.0, size.height - pos.1)
-        };*/
 
         if !renderer.update(&event).unwrap() {
             return;
@@ -480,19 +455,12 @@ async fn main() -> Result<(), AscendingError> {
         state.text_renderer.finalize(&mut renderer);
         state.map_renderer.map_update(&mut state.map, &mut renderer);
         state.map_renderer.finalize(&mut renderer);
-        state
-            .rects_renderer
-            .rect_update(&mut state.rects, &mut renderer);
-        state.rects_renderer.finalize(&mut renderer);
-
         state.mesh.iter_mut().for_each(|mesh| {
             state.mesh_renderer.mesh_update(mesh, &mut renderer);
         });
 
         state.mesh_renderer.finalize(&mut renderer);
 
-        ui.event_draw(&world, &mut ui_buffer, &mut renderer, &frame_time)
-            .unwrap();
         // Start encoding commands.
         let mut encoder = renderer.device().create_command_encoder(
             &wgpu::CommandEncoderDescriptor {
@@ -500,8 +468,22 @@ async fn main() -> Result<(), AscendingError> {
             },
         );
 
-        // Run the render pass.
-        state.render(&renderer, &mut encoder, &ui_buffer);
+        // Run the render pass. for the games renderer
+        state.render(&renderer, &mut encoder);
+
+        // Run the render pass for iced GUI renderer.
+        iced_renderer.with_primitives(|backend, primitive| {
+            backend.present(
+                renderer.device(),
+                renderer.queue(),
+                &mut encoder,
+                None,
+                renderer.frame_buffer().as_ref().expect("no frame view?"),
+                primitive,
+                state.system.iced_view(),
+                &debug.overlay(),
+            );
+        });
 
         // Submit our command queue.
         renderer.queue().submit(std::iter::once(encoder.finish()));
@@ -522,10 +504,14 @@ async fn main() -> Result<(), AscendingError> {
         frame_time.update();
         renderer.present().unwrap();
 
+        renderer.window_mut().set_cursor_icon(
+            iced_winit::conversion::mouse_interaction(
+                iced_state.mouse_interaction(),
+            ),
+        );
+
         state.image_atlas.trim();
-        state.rects_atlas.trim();
         state.map_atlas.trim();
         state.text_atlas.trim();
-        ui_buffer.atlas_trim();
     })
 }

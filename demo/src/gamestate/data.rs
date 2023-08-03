@@ -1,10 +1,7 @@
-use crate::UI;
 use cosmic_text::{CacheKey, FontSystem};
 use graphics::*;
 use std::collections::HashMap;
 use winit::event::MouseButton;
-
-use crate::gui::RenderWidgets;
 
 pub struct State<Controls>
 where
@@ -14,45 +11,23 @@ where
     pub system: System<Controls>,
     /// Data stores for render types
     pub sprites: Vec<Image>,
-    pub rects: UiRect,
+
     pub animation: Image,
     pub map: Map,
     pub mesh: [Mesh2D; 2],
     /// Atlas Groups for Textures in GPU
     pub image_atlas: AtlasGroup,
     pub map_atlas: AtlasGroup,
-    pub rects_atlas: AtlasGroup,
     pub text_atlas: TextAtlas,
     pub mesh_atlas: AtlasGroup,
     /// Rendering Buffers and other shared data.
     pub text_renderer: TextRenderer,
     pub sprite_renderer: ImageRenderer,
-    pub rects_renderer: UiRenderer,
     pub map_renderer: MapRenderer,
     pub mesh_renderer: Mesh2DRenderer,
 }
 
-impl<Controls> State<Controls>
-where
-    Controls: camera::controls::Controls,
-{
-    pub fn event(
-        &mut self,
-        _ui: &mut UI<crate::Messages>,
-        _renderer: &mut GpuRenderer,
-        event: crate::Messages,
-    ) {
-        match event {
-            crate::Messages::ButtonClick(_id, (btn, clicked, _modifier)) => {
-                if btn == MouseButton::Left && clicked {
-                    println!("Pressed");
-                }
-            }
-        }
-    }
-}
-
-impl<Controls> Pass<crate::UIBuffer> for State<Controls>
+impl<Controls> Pass for State<Controls>
 where
     Controls: camera::controls::Controls,
 {
@@ -60,7 +35,6 @@ where
         &mut self,
         renderer: &GpuRenderer,
         encoder: &mut wgpu::CommandEncoder,
-        ui_buffer: &crate::UIBuffer,
     ) {
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("render pass"),
@@ -116,8 +90,6 @@ where
             &self.rects_atlas,
             &self.system,
         );*/
-
-        pass.render_widgets(renderer, ui_buffer, &self.system);
 
         pass.render_2dmeshs(renderer, &self.mesh_renderer, &self.system);
     }

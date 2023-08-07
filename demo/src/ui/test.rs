@@ -1,6 +1,6 @@
 use graphics::iced_wgpu::Renderer;
 use graphics::iced_widget::{
-    button, column, row, slider, text, text_input, Column, Row, Text,
+    button, column, container, row, slider, text, text_input, Column, Row, Text,
 };
 use graphics::iced_winit::core::{Alignment, Color, Element, Length};
 use graphics::iced_winit::runtime::{Command, Program};
@@ -82,34 +82,37 @@ impl Program for Controls {
                 .step(0.01),
             );
 
-        Row::new()
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .align_items(Alignment::Start)
-            .push(
-                Column::new()
-                    .width(Length::Fill)
-                    .align_items(Alignment::Start)
-                    .push(
-                        Column::new()
-                            .padding(10)
-                            .spacing(10)
-                            .push(
-                                Text::new("Background color")
-                                    .style(Color::WHITE),
-                            )
-                            .push(sliders)
-                            .push(
-                                Text::new(format!("{background_color:?}"))
-                                    .size(14)
-                                    .style(Color::WHITE),
-                            )
-                            .push(
-                                text_input("Placeholder", text)
-                                    .on_input(Message::TextChanged),
-                            ),
-                    ),
-            )
-            .into()
+        container(
+            Row::new()
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .align_items(Alignment::Start)
+                .push(
+                    Column::new()
+                        .width(Length::Fill)
+                        .align_items(Alignment::End)
+                        .push(
+                            Column::new()
+                                .padding(10)
+                                .spacing(10)
+                                .push(
+                                    Text::new("Background color")
+                                        .style(Color::WHITE),
+                                )
+                                .push(sliders)
+                                .push(
+                                    Text::new(format!("{background_color:?}"))
+                                        .size(14)
+                                        .style(Color::WHITE),
+                                )
+                                .push(
+                                    text_input("Placeholder", text)
+                                        .on_input(Message::TextChanged),
+                                ),
+                        ),
+                ),
+        )
+        .max_height(300)
+        .into()
     }
 }

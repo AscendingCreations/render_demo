@@ -56,6 +56,7 @@ pub struct Map {
     /// its render position. within the screen.
     pub pos: Vec2,
     /// image is for modifying the Buffer R = Texture location, G = Texture layer, B = Hue, A = Alpha
+    /// This is a special texture file for use to render each tile in the shader.
     pub image: ImageBuffer<image::Rgba<u32>, Vec<u32>>,
     /// set to know the image array ID within the shader.
     pub layer: u32,
@@ -137,6 +138,9 @@ impl Map {
         }
     }
 
+    // this sets the tile's Id within the texture, 
+    //layer within the texture array and Alpha for its transparency.
+    // This allows us to loop through the tiles Shader side efficiently. 
     pub fn set_tile(
         &mut self,
         pos: (u32, u32, u32),

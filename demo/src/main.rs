@@ -59,16 +59,19 @@ enum Axis {
     Pitch,
 }
 
+// creates a static global logger type for setting the logger
 static MY_LOGGER: MyLogger = MyLogger(Level::Debug);
 
 struct MyLogger(pub Level);
 
 impl log::Log for MyLogger {
+    // checks if it can log these types of events.
     fn enabled(&self, metadata: &Metadata) -> bool {
         metadata.level() <= self.0
     }
 
-    //This logs to a panic file
+    // This logs to a panic file. This is so we can see
+    // Errors and such if a program crashes in full render mode.
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
             let msg = format!("{} - {}\n", record.level(), record.args());
@@ -91,51 +94,80 @@ impl log::Log for MyLogger {
 
 #[tokio::main]
 async fn main() -> Result<(), AscendingError> {
+    // Create logger to output to a File
     log::set_logger(&MY_LOGGER).unwrap();
+    // Set the Max level we accept logging to the file for.
     log::set_max_level(LevelFilter::Info);
 
     info!("starting up");
 
+    // This allows us to take control of panic!() so we can send it to a file via the logger.
     panic::set_hook(Box::new(|panic_info| {
         let bt = Backtrace::new();
 
         error!("PANIC: {}, BACKTRACE: {:?}", panic_info, bt);
     }));
 
+    // Starts an event gathering type for the window.
     let event_loop = EventLoop::new();
+
+    // Builds the Windows that will be rendered too.
     let window = WindowBuilder::new()
         .with_title("Demo")
         .with_inner_size(PhysicalSize::new(800, 600))
         .with_visible(false)
         .build(&event_loop)
         .unwrap();
+
+    // Generates an Instance for WGPU. Sets WGPU to be allowed on all possible supported backends
+    // These are DX12, DX11, Vulkan, Metal and Gles. if none of these work on a system they cant
+    // play the game basically.
     let instance = wgpu::Instance::default();
+
+    // Starts the Font System so we cna get loaded fonts.
     let font_system = FontSystem::new();
 
+    // This is used to ensure the GPU can load this surface type.
+    let compatible_surface =
+        unsafe { instance.create_surface(&window).unwrap() };
+
+    // This creates the Window Struct and Device struct that holds all the rendering information
+    // we need to render to the screen. Window holds most of the window information including
+    // the surface type. device includes the queue and GPU device for rendering.
     let (gpu_window, gpu_device) = instance
         .create_device(
             window,
             &wgpu::RequestAdapterOptions {
+                // High performance mode says to use Dedicated Graphics devices first.
+                // Low power is APU graphic devices First.
                 power_preference: wgpu::PowerPreference::HighPerformance,
-                compatible_surface: None,
+                compatible_surface: Some(&compatible_surface),
                 force_fallback_adapter: false,
             },
+            // used to deturmine if we need special limits or features for our backends.
             &wgpu::DeviceDescriptor {
                 features: wgpu::Features::default(),
                 limits: wgpu::Limits::default(),
                 label: None,
             },
             None,
+            // How we are presenting the screen which causes it to either clip to a FPS limit or be unlimited.
             wgpu::PresentMode::AutoVsync,
         )
         .await
         .unwrap();
 
+    // This creates our renderer type. for easy passing of window, device and font system.
+    // plan to make this even easier to create.
     let mut renderer = GpuRenderer::new(gpu_window, gpu_device, font_system);
+
+    // Creates the shader rendering pipelines for each renderer.
     renderer.create_pipelines(renderer.surface_format());
 
+    // we print the GPU it decided to use here for testing purposes.
     println!("{:?}", renderer.adapter().get_info());
 
+    // We generate Texture atlases to use with out types.
     let mut atlases: Vec<AtlasGroup> = iter::from_fn(|| {
         Some(AtlasGroup::new(
             &mut renderer,
@@ -145,7 +177,13 @@ async fn main() -> Result<(), AscendingError> {
     .take(4)
     .collect();
 
+    // we generate the Text atlas seperatly since it contains a special texture that only has the red color to it.
+    // and another for emojicons.
     let text_atlas = TextAtlas::new(&mut renderer).unwrap();
+
+    // This is how we load a image into a atlas/Texture. It returns the location of the image
+    // within the texture. its x, y, w, h.  Texture loads the file. group_uploads sends it to the Texture
+    // renderer is used to upload it to the GPU when done.
     let allocation = Texture::from_file("images/Female_1.png")?
         .group_upload(&mut atlases[0], &renderer)
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
@@ -156,6 +194,11 @@ async fn main() -> Result<(), AscendingError> {
     let y = 0.0;
 
     for _i in 0..2 {
+        // I named this image simply because it can do a lot of different animations etc, but technically
+        // Image is sprite and I am thinking of renaming this to make it easier for you and others.
+        // Image is mostly the backend render type used to render it to the screen. Im unsure though how
+        // To name this atm to keep it seperated from Sprite that would contain most of the actual not rendering
+        // data needed.
         let mut sprite = Image::new(Some(allocation), &mut renderer, 1);
         sprite.pos = Vec3::new(x, y, 5.1);
         sprite.hw = Vec2::new(48.0, 48.0);
@@ -168,13 +211,17 @@ async fn main() -> Result<(), AscendingError> {
     sprites[0].pos.z = 5.0;
     sprites[0].color = Color::rgba(255, 255, 255, 120);
 
+    // We establish the different renderers here to load their data up to use them.
     let text_renderer = TextRenderer::new(&renderer).unwrap();
     let sprite_renderer = ImageRenderer::new(&renderer).unwrap();
     let mut map_renderer = MapRenderer::new(&mut renderer, 81).unwrap();
     let mesh_renderer = Mesh2DRenderer::new(&renderer).unwrap();
 
+    // get the screen size.
     let mut size = renderer.size();
 
+    // setup our system which includes Camera and projection as well as our controls.
+    // for the camera.
     let system = System::new(
         &mut renderer,
         Projection::Orthographic {
@@ -189,6 +236,7 @@ async fn main() -> Result<(), AscendingError> {
         [size.width, size.height],
     );
 
+    // We make a new Map to render here.
     let mut map = Map::new(&mut renderer);
 
     (0..32).for_each(|x| {
@@ -226,8 +274,10 @@ async fn main() -> Result<(), AscendingError> {
     animation.switch_time = 300;
     animation.animate = true;
 
+    // get the Scale factor the pc currently is using for upscaling or downscaling the rendering.
     let scale = renderer.window().current_monitor().unwrap().scale_factor();
 
+    // create a Text rendering object.
     let mut text = Text::new(
         &mut renderer,
         Some(Metrics::new(16.0, 16.0).scale(scale as f32)),
@@ -238,6 +288,7 @@ async fn main() -> Result<(), AscendingError> {
     text.set_buffer_size(&mut renderer, size.width as i32, size.height as i32)
         .set_bounds(Some(WorldBounds::new(0.0, 0.0, 190.0, 32.0, 1.0)));
 
+    // Start the process of building a shape.
     let mut builder = Mesh2DBuilder::new();
 
     builder
@@ -295,7 +346,10 @@ async fn main() -> Result<(), AscendingError> {
     mesh[0].from_builder(builder.finalize());
     mesh[1].from_builder(builder2.finalize());
 
+    // iceds debugger start up
     let mut debug = Debug::new();
+
+    // setup the renderer for iced for UI rendering.
     let mut iced_renderer = Renderer::new(Backend::new(
         renderer.device(),
         renderer.queue(),
@@ -303,15 +357,22 @@ async fn main() -> Result<(), AscendingError> {
         renderer.surface_format(),
     ));
 
+    // start up iceds controls for keyboard etc entry.
     let iced_controls = ui::Controls::new();
+
+    // Start your program up with the UI you want to render with.
     let mut iced_state = program::State::new(
         iced_controls,
         system.iced_view().logical_size(),
         &mut iced_renderer,
         &mut debug,
     );
+
+    // Allow the window to be seen. hiding it then making visible speeds up
+    // load times.
     renderer.window().set_visible(true);
 
+    // add everything into our convience type for quicker access and passing.
     let mut state = State {
         system,
         sprites,
@@ -328,25 +389,26 @@ async fn main() -> Result<(), AscendingError> {
         mesh_renderer,
     };
 
+    // Create the mouse/keyboard bindings for our stuff.
     let mut bindings = Bindings::<Action, Axis>::new();
     bindings.insert_action(
         Action::Quit,
         vec![winit::event::VirtualKeyCode::Q.into()],
     );
+
+    // set bindings and create our own input handler.
     let mut input_handler = InputHandler::new(bindings);
 
     let mut frame_time = FrameTime::new();
     let mut time = 0.0f32;
     let mut fps = 0u32;
 
-    //let mut modifiers = ModifiersState::default();
+    // this is for Copy paste stuff within Iced.
     let mut clipboard = Clipboard::connect(renderer.window());
-    //let mut mouse_pos = Vec2::default();
-
-    let mut debug = Debug::new();
 
     #[allow(deprecated)]
     event_loop.run(move |event, _, control_flow| {
+        // we check for the first batch of events to ensure we dont need to stop rendering here first.
         match event {
             Event::WindowEvent {
                 ref event,
@@ -389,9 +451,11 @@ async fn main() -> Result<(), AscendingError> {
             _ => {}
         }
 
+        // get the current window size so we can see if we need to resize the renderer.
         let new_size = renderer.size();
         let inner_size = renderer.window().inner_size();
 
+        // if our rendering size is zero stop rendering to avoid errors.
         if new_size.width == 0.0
             || new_size.height == 0.0
             || inner_size.width == 0
@@ -400,8 +464,10 @@ async fn main() -> Result<(), AscendingError> {
             return;
         }
 
+        // update our inputs.
         input_handler.update(renderer.window(), &event, 1.0);
 
+        // handle the GUI events here.
         if let Event::WindowEvent { ref event, .. } = &event {
             if let Some(event) = graphics::iced_winit::conversion::window_event(
                 event,
@@ -412,6 +478,7 @@ async fn main() -> Result<(), AscendingError> {
             }
         }
 
+        // update our renderer based on events here
         if !renderer.update(&event).unwrap() {
             return;
         }
@@ -419,6 +486,7 @@ async fn main() -> Result<(), AscendingError> {
         if size != new_size {
             size = new_size;
 
+            // Reset screen size for the Surface here.
             state.system.set_projection(Projection::Orthographic {
                 left: 0.0,
                 right: new_size.width,
@@ -431,23 +499,35 @@ async fn main() -> Result<(), AscendingError> {
             renderer.update_depth_texture();
         }
 
+        // check if out close action was hit for esc
         if input_handler.is_action_down(&Action::Quit) {
             *control_flow = ControlFlow::Exit;
         }
 
         let seconds = frame_time.seconds();
+        // update our systems data to the gpu. this is the Camera in the shaders.
         state.system.update(&renderer, &frame_time);
+
+        // update our systems data to the gpu. this is the Screen in the shaders.
         state
             .system
             .update_screen(&renderer, [new_size.width, new_size.height]);
 
+        // This adds the Image data to the Buffer for rendering.
         state.sprites.iter_mut().for_each(|sprite| {
             state.sprite_renderer.image_update(sprite, &mut renderer);
         });
+
         state
             .sprite_renderer
             .image_update(&mut state.animation, &mut renderer);
+
+        // this cycles all the Image's in the Image buffer by first putting them in rendering order
+        // and then uploading them to the GPU if they have moved or changed in any way. clears the
+        // Image buffer for the next render pass. Image buffer only holds the ID's and Sortign info
+        // of the finalized Indicies of each Image.
         state.sprite_renderer.finalize(&mut renderer);
+
         state
             .text_renderer
             .text_update(&mut text, &mut state.text_atlas, &mut renderer)
@@ -461,7 +541,8 @@ async fn main() -> Result<(), AscendingError> {
 
         state.mesh_renderer.finalize(&mut renderer);
 
-        // Start encoding commands.
+        // Start encoding commands. this stores all the rendering calls for execution when
+        // finish is called.
         let mut encoder = renderer.device().create_command_encoder(
             &wgpu::CommandEncoderDescriptor {
                 label: Some("command encoder"),
@@ -485,7 +566,8 @@ async fn main() -> Result<(), AscendingError> {
             );
         });
 
-        // Submit our command queue.
+        // Submit our command queue. for it to upload all the changes that were made.
+        // Also tells the system to begin running the commands on the GPU.
         renderer.queue().submit(std::iter::once(encoder.finish()));
 
         if time < seconds {
@@ -510,6 +592,8 @@ async fn main() -> Result<(), AscendingError> {
             ),
         );
 
+        // These clear the Last used image tags.
+        //Can be used later to auto unload things not used anymore if ram/gpu ram becomes a issue.
         state.image_atlas.trim();
         state.map_atlas.trim();
         state.text_atlas.trim();

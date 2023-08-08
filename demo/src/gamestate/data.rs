@@ -70,26 +70,19 @@ where
         pass.set_bind_group(0, self.system.bind_group(), &[]);
         // Lets set the Reusable Vertices and Indicies here.
         // This is used for each Renderer, Should be more performant since it is shared.
-        /*pass.set_vertex_buffer(0, renderer.buffer_object.vertices());
+        pass.set_vertex_buffer(0, renderer.buffer_object.vertices());
         pass.set_index_buffer(
             renderer.buffer_object.indices(),
             wgpu::IndexFormat::Uint16,
-        );*/
+        );
 
-        //pass.render_lower_maps(renderer, &self.map_renderer, &self.map_atlas);
+        pass.render_lower_maps(renderer, &self.map_renderer, &self.map_atlas);
 
-        //pass.render_image(renderer, &self.sprite_renderer, &self.image_atlas);
+        pass.render_image(renderer, &self.sprite_renderer, &self.image_atlas);
 
-        //pass.render_upper_maps(renderer, &self.map_renderer, &self.map_atlas);
+        pass.render_upper_maps(renderer, &self.map_renderer, &self.map_atlas);
 
         pass.render_text(renderer, &self.text_renderer, &self.text_atlas);
-
-        /*pass.render_rects(
-            renderer,
-            &self.rects_renderer,
-            &self.rects_atlas,
-            &self.system,
-        );*/
 
         pass.render_2dmeshs(renderer, &self.mesh_renderer, &self.system);
     }

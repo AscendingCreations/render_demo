@@ -128,7 +128,7 @@ where
         #[cfg(feature = "iced")]
         let iced_view = Viewport::with_physical_size(
             Size::new(screen_size[0] as u32, screen_size[1] as u32),
-            camera.scale().into(),
+            1.0,
         );
 
         // Create the camera uniform.

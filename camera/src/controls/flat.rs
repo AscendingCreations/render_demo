@@ -60,7 +60,11 @@ impl Controls for FlatControls {
 
         if changed {
             self.view = Mat4::IDENTITY
-                * Mat4::from_scale(Vec3::new(self.settings.zoom, self.settings.zoom, self.settings.zoom));
+                * Mat4::from_scale(Vec3::new(
+                    self.settings.zoom,
+                    self.settings.zoom,
+                    self.settings.zoom,
+                ));
         }
 
         self.changed = false;

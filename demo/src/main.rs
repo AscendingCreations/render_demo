@@ -124,17 +124,14 @@ async fn main() -> Result<(), AscendingError> {
     // play the game basically.
     let instance = wgpu::Instance::default();
 
-    // Starts the Font System so we cna get loaded fonts.
-    let font_system = FontSystem::new();
-
-    // This is used to ensure the GPU can load this surface type.
+    // This is used to ensure the GPU can load the correct.
     let compatible_surface =
         unsafe { instance.create_surface(&window).unwrap() };
-
     // This creates the Window Struct and Device struct that holds all the rendering information
     // we need to render to the screen. Window holds most of the window information including
     // the surface type. device includes the queue and GPU device for rendering.
-    let (gpu_window, gpu_device) = instance
+    // This then adds gpu_window and gpu_device and creates our renderer type. for easy passing of window, device and font system.
+    let mut renderer = instance
         .create_device(
             window,
             &wgpu::RequestAdapterOptions {
@@ -142,6 +139,7 @@ async fn main() -> Result<(), AscendingError> {
                 // Low power is APU graphic devices First.
                 power_preference: wgpu::PowerPreference::HighPerformance,
                 compatible_surface: Some(&compatible_surface),
+                // we will never use this as this forces us to use an alternative renderer.
                 force_fallback_adapter: false,
             },
             // used to deturmine if we need special limits or features for our backends.
@@ -156,13 +154,6 @@ async fn main() -> Result<(), AscendingError> {
         )
         .await
         .unwrap();
-
-    // This creates our renderer type. for easy passing of window, device and font system.
-    // plan to make this even easier to create.
-    let mut renderer = GpuRenderer::new(gpu_window, gpu_device, font_system);
-
-    // Creates the shader rendering pipelines for each renderer.
-    renderer.create_pipelines(renderer.surface_format());
 
     // we print the GPU it decided to use here for testing purposes.
     println!("{:?}", renderer.adapter().get_info());
@@ -447,6 +438,8 @@ async fn main() -> Result<(), AscendingError> {
                     renderer.window().request_redraw();
                     return;
                 }
+
+                renderer.window().request_redraw();
             }
             _ => {}
         }

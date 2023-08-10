@@ -138,9 +138,9 @@ impl Map {
         }
     }
 
-    // this sets the tile's Id within the texture, 
+    // this sets the tile's Id within the texture,
     //layer within the texture array and Alpha for its transparency.
-    // This allows us to loop through the tiles Shader side efficiently. 
+    // This allows us to loop through the tiles Shader side efficiently.
     pub fn set_tile(
         &mut self,
         pos: (u32, u32, u32),

@@ -1,4 +1,4 @@
-use crate::AscendingError;
+use crate::{AscendingError, GpuRenderer};
 use async_trait::async_trait;
 use std::path::Path;
 use wgpu::TextureFormat;
@@ -160,7 +160,7 @@ pub trait AdapterExt {
         device_descriptor: &wgpu::DeviceDescriptor,
         trace_path: Option<&Path>,
         present_mode: wgpu::PresentMode,
-    ) -> Result<(GpuWindow, GpuDevice), AscendingError>;
+    ) -> Result<GpuRenderer, AscendingError>;
 }
 
 #[async_trait]
@@ -172,7 +172,7 @@ impl AdapterExt for wgpu::Adapter {
         device_descriptor: &wgpu::DeviceDescriptor,
         trace_path: Option<&Path>,
         present_mode: wgpu::PresentMode,
-    ) -> Result<(GpuWindow, GpuDevice), AscendingError> {
+    ) -> Result<GpuRenderer, AscendingError> {
         let size = window.inner_size();
 
         let (device, queue) =
@@ -197,8 +197,7 @@ impl AdapterExt for wgpu::Adapter {
         };
 
         surface.configure(&device, &surface_config);
-
-        Ok((
+        let mut renderer = GpuRenderer::new(
             GpuWindow {
                 adapter: self,
                 surface,
@@ -208,7 +207,11 @@ impl AdapterExt for wgpu::Adapter {
                 surface_config,
             },
             GpuDevice { device, queue },
-        ))
+        );
+
+        // Creates the shader rendering pipelines for each renderer.
+        renderer.create_pipelines(renderer.surface_format());
+        Ok(renderer)
     }
 }
 
@@ -221,7 +224,7 @@ pub trait InstanceExt {
         device_descriptor: &wgpu::DeviceDescriptor,
         trace_path: Option<&Path>,
         present_mode: wgpu::PresentMode,
-    ) -> Result<(GpuWindow, GpuDevice), AscendingError>;
+    ) -> Result<GpuRenderer, AscendingError>;
 }
 
 #[async_trait]
@@ -233,7 +236,7 @@ impl InstanceExt for wgpu::Instance {
         device_descriptor: &wgpu::DeviceDescriptor,
         trace_path: Option<&Path>,
         present_mode: wgpu::PresentMode,
-    ) -> Result<(GpuWindow, GpuDevice), AscendingError> {
+    ) -> Result<GpuRenderer, AscendingError> {
         let adapter =
             self.request_adapter(request_adapter_options).await.unwrap();
         adapter

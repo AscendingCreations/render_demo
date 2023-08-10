@@ -46,11 +46,7 @@ where
 }
 
 impl GpuRenderer {
-    pub fn new(
-        window: GpuWindow,
-        device: GpuDevice,
-        font_sys: FontSystem,
-    ) -> Self {
+    pub fn new(window: GpuWindow, device: GpuDevice) -> Self {
         let buffer_object = StaticBufferObject::create_buffer(&device);
         let depth_buffer = window.create_depth_texture(&device);
 
@@ -63,7 +59,7 @@ impl GpuRenderer {
             depthbuffer: depth_buffer,
             framebuffer: None,
             frame: None,
-            font_sys,
+            font_sys: FontSystem::new(),
             buffer_object,
         }
     }
@@ -154,6 +150,14 @@ impl GpuRenderer {
 
     pub fn queue(&self) -> &wgpu::Queue {
         &self.device.queue
+    }
+
+    pub fn font_sys(&self) -> &FontSystem {
+        &self.font_sys
+    }
+
+    pub fn font_sys_mut(&mut self) -> &mut FontSystem {
+        &mut self.font_sys
     }
 
     pub fn new_buffer(&mut self) -> Index {

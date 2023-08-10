@@ -1,29 +1,15 @@
-struct Camera {
+struct Global {
     view: mat4x4<f32>,
     proj: mat4x4<f32>,
     eye: vec3<f32>,
     scale: f32,
-};
-
-struct Time {
-    seconds: f32,
-};
-
-struct Screen {
     size: vec2<f32>,
+    seconds: f32,
 };
 
 @group(0)
 @binding(0)
-var<uniform> camera: Camera;
-
-@group(0)
-@binding(1)
-var<uniform> time: Time;
-
-@group(0)
-@binding(2)
-var<uniform> screen: Screen;
+var<uniform> global: Global;
 
 struct VertexInput {
     @builtin(vertex_index) vertex_idx: u32,
@@ -107,9 +93,9 @@ fn vertex(
     }
 
     if (vertex.use_camera == 1u) {
-        result.clip_position = (camera.proj * camera.view) * vec4<f32>(pos, 1.0);
+        result.clip_position = (global.proj * global.view) * vec4<f32>(pos, 1.0);
     } else {
-        result.clip_position = camera.proj * vec4<f32>(pos, 1.0);
+        result.clip_position = global.proj * vec4<f32>(pos, 1.0);
     }
 
     result.tex_data = tex_data;
@@ -130,7 +116,7 @@ fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
     var yframes = vertex.frames[0];
 
     if (vertex.animate > 0u) {
-        let id = time.seconds / (f32(vertex.time) / 1000.0);
+        let id = global.seconds / (f32(vertex.time) / 1000.0);
         let frame = u32(floor(id % f32(xframes)));
 
         if (vertex.frames[1] > 0u) {

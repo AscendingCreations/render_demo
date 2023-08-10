@@ -23,41 +23,17 @@ impl Layout for SystemLayout {
         gpu_device.device().create_bind_group_layout(
             &wgpu::BindGroupLayoutDescriptor {
                 label: Some("system_bind_group_layout"),
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::VERTEX
-                            | wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX
+                        | wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
                     },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::VERTEX
-                            | wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 2,
-                        visibility: wgpu::ShaderStages::VERTEX
-                            | wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                ],
+                    count: None,
+                }],
             },
         )
     }
@@ -85,10 +61,10 @@ pub struct TimeUniform {
 pub struct System<Controls: camera::controls::Controls> {
     camera: camera::Camera<Controls>,
     pub screen_size: [f32; 2],
-    camera_buffer: wgpu::Buffer,
-    time_buffer: wgpu::Buffer,
-    screen_buffer: wgpu::Buffer,
+    global_buffer: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
+    camera_offset: usize,
+    screen_offset: usize,
     #[cfg(feature = "iced")]
     iced_view: Viewport,
 }
@@ -121,8 +97,6 @@ where
     ) -> Self {
         let mut camera = camera::Camera::new(projection, controls);
 
-        // FIXME: think more about the initial state of the camera.
-        // Update the camera.
         camera.update(0.0);
 
         #[cfg(feature = "iced")]
@@ -148,29 +122,20 @@ where
             size: screen_size.into(),
         };
 
+        let mut camera_bytes = camera_info.as_std140().as_bytes().to_vec();
+        let mut time_bytes = time_info.as_std140().as_bytes().to_vec();
+        let mut screen_bytes = screen_info.as_std140().as_bytes().to_vec();
+        let camera_offset = camera_bytes.len();
+        let screen_offset = screen_bytes.len();
+
+        camera_bytes.append(&mut screen_bytes);
+        camera_bytes.append(&mut time_bytes);
+
         // Create the uniform buffers.
-        let camera_buffer = renderer.device().create_buffer_init(
+        let global_buffer = renderer.device().create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("camera buffer"),
-                contents: camera_info.as_std140().as_bytes(),
-                usage: wgpu::BufferUsages::UNIFORM
-                    | wgpu::BufferUsages::COPY_DST,
-            },
-        );
-
-        let time_buffer = renderer.device().create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("time buffer"),
-                contents: time_info.as_std140().as_bytes(),
-                usage: wgpu::BufferUsages::UNIFORM
-                    | wgpu::BufferUsages::COPY_DST,
-            },
-        );
-
-        let screen_buffer = renderer.device().create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Screen buffer"),
-                contents: screen_info.as_std140().as_bytes(),
+                contents: &camera_bytes,
                 usage: wgpu::BufferUsages::UNIFORM
                     | wgpu::BufferUsages::COPY_DST,
             },
@@ -185,29 +150,19 @@ where
                 .device()
                 .create_bind_group(&wgpu::BindGroupDescriptor {
                     layout: &layout,
-                    entries: &[
-                        wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: camera_buffer.as_entire_binding(),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 1,
-                            resource: time_buffer.as_entire_binding(),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 2,
-                            resource: screen_buffer.as_entire_binding(),
-                        },
-                    ],
+                    entries: &[wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: global_buffer.as_entire_binding(),
+                    }],
                     label: Some("system_bind_group"),
                 });
 
         Self {
             camera,
             screen_size,
-            camera_buffer,
-            time_buffer,
-            screen_buffer,
+            global_buffer,
+            camera_offset,
+            screen_offset,
             bind_group,
             #[cfg(feature = "iced")]
             iced_view,
@@ -241,7 +196,7 @@ where
             };
 
             renderer.queue().write_buffer(
-                &self.camera_buffer,
+                &self.global_buffer,
                 0,
                 camera_info.as_std140().as_bytes(),
             );
@@ -252,8 +207,8 @@ where
         };
 
         renderer.queue().write_buffer(
-            &self.time_buffer,
-            0,
+            &self.global_buffer,
+            self.camera_offset as u64 + self.screen_offset as u64,
             time_info.as_std140().as_bytes(),
         );
     }
@@ -273,8 +228,8 @@ where
             self.set_iced_view_size(screen_size);
 
             renderer.queue().write_buffer(
-                &self.screen_buffer,
-                0,
+                &self.global_buffer,
+                self.camera_offset as u64,
                 screen_info.as_std140().as_bytes(),
             );
         }

@@ -53,9 +53,9 @@ impl MapRenderer {
     }
 
     pub fn map_update(&mut self, map: &mut Map, renderer: &mut GpuRenderer) {
-        let index = map.update(renderer, &mut self.map_textures);
-
-        self.add_buffer_store(renderer, index);
+        if let Some(index) = map.update(renderer, &mut self.map_textures) {
+            self.add_buffer_store(renderer, index);
+        }
     }
 
     pub fn get_unused_id(&mut self) -> Option<u32> {

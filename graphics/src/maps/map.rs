@@ -1,6 +1,6 @@
 use crate::{
-    DrawOrder, GpuRenderer, Index, MapTextures, MapVertex, OrderedIndex, Vec2,
-    Vec3,
+    DrawOrder, GpuRenderer, Index, MapRenderer, MapTextures, MapVertex,
+    OrderedIndex, Vec2, Vec3,
 };
 use image::{self, ImageBuffer};
 
@@ -55,19 +55,24 @@ pub struct Map {
     ///pub world_pos: Vec3,
     /// its render position. within the screen.
     pub pos: Vec2,
-    /// image is for modifying the Buffer R = Texture location, G = Texture layer, B = Hue, A = Alpha
+    /// image is for modifying the Buffer R = Texture location, G = Texture layer, B = None, A = Alpha
     /// This is a special texture file for use to render each tile in the shader.
     pub image: ImageBuffer<image::Rgba<u32>, Vec<u32>>,
     /// set to know the image array ID within the shader.
-    pub layer: u32,
+    pub layer: Option<u32>,
     /// vertex array in bytes. Does not need to get changed exept on map switch and location change.
     pub lowerstore_id: Index,
     /// vertex array in bytes for fringe layers.
     pub upperstore_id: Index,
+    /// the draw order of the maps. created when update is called.
     pub order: DrawOrder,
     /// Count of how many Filled Tiles Exist. this is to optimize out empty maps in rendering.
     pub filled_tiles: [u8; MapLayers::Count as usize],
     /// if the image changed we need to reupload it to the texture.
+    /// we can also use this to deturmine if we want to unload the map from the
+    /// GPU or not. set to false if its been updated and a layer is_some().
+    /// if false and added to a map texture array and layer is_some() it will upload
+    /// the data into the texture. if true skips updating and uploading if layer is_some().
     pub img_changed: bool,
     /// if the location or map array id changed. to rebuild the vertex buffer.
     pub changed: bool,
@@ -88,7 +93,7 @@ impl Map {
             let map_vertex = MapVertex {
                 position: [self.pos.x, self.pos.y, z], //2,3
                 hw: [512.0, 512.0],
-                layer: self.layer as i32,
+                layer: self.layer.unwrap() as i32,
             };
 
             if i >= 6 {
@@ -116,17 +121,13 @@ impl Map {
     /// Sets the map rendering objects layer so it's texture data can be written to the MapTexture.
     /// If you are using a ton of preloaded maps You only need to run this when you need to render it.
     /// You can only store so many of these in the layer. so it will return None if all layers are in use.
-    pub fn init_texture_layer(
-        &mut self,
-        map_texture: &mut MapRenderer,
-    ) -> Option<u32> {
-        let layer = map_texture.get_unused_id();
+    pub fn init_texture_layer(&mut self, map_texture: &mut MapRenderer) {
+        self.layer = map_texture.get_unused_id();
+    }
 
-        if let Some(l) = layer {
-            self.layer = l;
-        }
-
-        layer
+    /// Used to check if the map has a texture layer or not. Can help decide if we want to load it into the GPU or not.
+    pub fn has_layer(&self) -> bool {
+        self.layer.is_some()
     }
 
     pub fn get_tile(&mut self, x: u32, y: u32) -> (u32, u32, u32, u32) {
@@ -143,7 +144,7 @@ impl Map {
 
         Self {
             pos: Vec2::default(),
-            layer: 0,
+            layer: None,
             lowerstore_id: renderer.new_buffer(),
             upperstore_id: renderer.new_buffer(),
             filled_tiles: [0; MapLayers::Count as usize],
@@ -187,20 +188,24 @@ impl Map {
         &mut self,
         renderer: &mut GpuRenderer,
         map_textures: &mut MapTextures,
-    ) -> (OrderedIndex, OrderedIndex) {
-        // if pos or tex_pos or color changed.
-        if self.img_changed {
-            map_textures.update(renderer, self.layer, self.image.as_raw());
-            self.img_changed = false;
-        }
+    ) -> Option<(OrderedIndex, OrderedIndex)> {
+        if let Some(layer) = self.layer {
+            // if pos or tex_pos or color changed.
+            if self.img_changed {
+                map_textures.update(renderer, layer, self.image.as_raw());
+                self.img_changed = false;
+            }
 
-        if self.changed {
-            self.create_quad(renderer);
-        }
+            if self.changed {
+                self.create_quad(renderer);
+            }
 
-        (
-            OrderedIndex::new(self.order, self.lowerstore_id, 0),
-            OrderedIndex::new(self.order, self.upperstore_id, 0),
-        )
+            Some((
+                OrderedIndex::new(self.order, self.lowerstore_id, 0),
+                OrderedIndex::new(self.order, self.upperstore_id, 0),
+            ))
+        } else {
+            None
+        }
     }
 }

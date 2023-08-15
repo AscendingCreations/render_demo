@@ -247,8 +247,7 @@ async fn main() -> Result<(), AscendingError> {
             .ok_or_else(|| OtherError::new("failed to upload image"))?;
     }
 
-    map.layer = map_renderer
-        .get_unused_id()
+    map.init_texture_layer(MapRenderer)
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
 
     let allocation = Texture::from_file("images/anim/0.png")?

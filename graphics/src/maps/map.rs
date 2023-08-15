@@ -113,6 +113,22 @@ impl Map {
         self.changed = false;
     }
 
+    /// Sets the map rendering objects layer so it's texture data can be written to the MapTexture.
+    /// If you are using a ton of preloaded maps You only need to run this when you need to render it.
+    /// You can only store so many of these in the layer. so it will return None if all layers are in use.
+    pub fn init_texture_layer(
+        &mut self,
+        map_texture: &mut MapRenderer,
+    ) -> Option<u32> {
+        let layer = map_texture.get_unused_id();
+
+        if let Some(l) = layer {
+            self.layer = l;
+        }
+
+        layer
+    }
+
     pub fn get_tile(&mut self, x: u32, y: u32) -> (u32, u32, u32, u32) {
         if x >= 32 || y >= 256 {
             return (0, 0, 0, 0);

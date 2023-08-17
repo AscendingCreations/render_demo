@@ -275,10 +275,10 @@ async fn main() -> Result<(), AscendingError> {
     );
 
     text.set_buffer_size(&mut renderer, size.width as i32, size.height as i32)
-        .set_bounds(Some(WorldBounds::new(0.0, 0.0, 190.0, 32.0, 1.0)));
+        .set_bounds(Some(Bounds::new(0.0, 0.0, 190.0, 32.0)));
 
     // Start the process of building a shape.
-    let mut builder = Mesh2DBuilder::new();
+    let mut builder = Mesh2DBuilder::default();
 
     builder
         .circle(
@@ -301,7 +301,7 @@ async fn main() -> Result<(), AscendingError> {
         )
         .unwrap();
 
-    let mut builder2 = Mesh2DBuilder::new();
+    let mut builder2 = Mesh2DBuilder::default();
 
     builder2
         .circle(

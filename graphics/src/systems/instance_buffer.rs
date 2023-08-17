@@ -1,13 +1,10 @@
-use crate::{
-    Buffer, BufferLayout, GpuDevice, GpuRenderer, OrderedIndex, WorldBounds,
-};
+use crate::{Buffer, BufferLayout, GpuDevice, GpuRenderer, OrderedIndex};
 use std::ops::Range;
 
 //This Holds onto all the instances Compressed into a byte array.
 pub struct InstanceBuffer<K: BufferLayout> {
     pub buffers: Vec<OrderedIndex>,
     pub buffer: Buffer<K>,
-    pub bounds: Vec<Option<WorldBounds>>,
     // this is a calculation of the buffers size when being marked as ready to add into the buffer.
     needed_size: usize,
 }
@@ -24,7 +21,6 @@ impl<K: BufferLayout> InstanceBuffer<K> {
                 wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
                 Some("Instance Buffer"),
             ),
-            bounds: Vec::new(),
             needed_size: 0,
         }
     }
@@ -44,7 +40,6 @@ impl<K: BufferLayout> InstanceBuffer<K> {
     pub fn finalize(&mut self, renderer: &mut GpuRenderer) {
         let mut changed = false;
         let mut pos = 0;
-        let mut cleared = false;
 
         if self.needed_size > self.buffer.max {
             self.resize(renderer.gpu_device(), self.needed_size / K::stride());
@@ -56,7 +51,7 @@ impl<K: BufferLayout> InstanceBuffer<K> {
 
         self.buffers.sort();
 
-        for (id, buf) in self.buffers.iter().enumerate() {
+        for buf in &self.buffers {
             let mut write_buffer = false;
             let old_pos = pos as u64;
 
@@ -64,15 +59,6 @@ impl<K: BufferLayout> InstanceBuffer<K> {
                 let range = pos..pos + store.store.len();
 
                 if store.store_pos != range || changed || store.changed {
-                    if K::is_bounded() {
-                        if !cleared {
-                            self.bounds.truncate(id);
-                            cleared = true;
-                        }
-
-                        self.bounds.push(store.bounds);
-                    }
-
                     store.store_pos = range;
                     store.changed = false;
                     write_buffer = true

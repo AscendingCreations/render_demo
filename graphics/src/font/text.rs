@@ -1,6 +1,6 @@
 use crate::{
-    AscendingError, Color, DrawOrder, GpuRenderer, Index, OrderedIndex,
-    TextAtlas, TextVertex, Vec2, Vec3, WorldBounds,
+    AscendingError, Bounds, Color, DrawOrder, GpuRenderer, Index, OrderedIndex,
+    TextAtlas, TextVertex, Vec2, Vec3,
 };
 use cosmic_text::{
     Attrs, Buffer, Cursor, Metrics, SwashCache, SwashContent, Wrap,
@@ -12,7 +12,7 @@ pub struct Text {
     pub size: Vec2,
     pub offsets: Vec2,
     pub default_color: Color,
-    pub bounds: Option<WorldBounds>,
+    pub bounds: Option<Bounds>,
     pub store_id: Index,
     pub order: DrawOrder,
     /// Cursor the shaping is set too.
@@ -339,7 +339,7 @@ impl Text {
         self
     }
 
-    pub fn set_bounds(&mut self, bounds: Option<WorldBounds>) -> &mut Self {
+    pub fn set_bounds(&mut self, bounds: Option<Bounds>) -> &mut Self {
         self.bounds = bounds;
         self.changed = true;
         self

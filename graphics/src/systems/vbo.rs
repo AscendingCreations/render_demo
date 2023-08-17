@@ -1,6 +1,6 @@
 use crate::{
     AsBufferPass, Buffer, BufferData, BufferLayout, BufferPass, GpuDevice,
-    GpuRenderer, OrderedIndex, WorldBounds,
+    GpuRenderer, OrderedIndex,
 };
 use std::ops::Range;
 
@@ -19,7 +19,6 @@ pub struct GpuBuffer<K: BufferLayout> {
     vertex_needed: usize,
     pub index_buffer: Buffer<K>,
     index_needed: usize,
-    pub bounds: Vec<Option<WorldBounds>>,
 }
 
 impl<'a, K: BufferLayout> AsBufferPass<'a> for GpuBuffer<K> {
@@ -51,7 +50,6 @@ impl<K: BufferLayout> GpuBuffer<K> {
                 Some("Index Buffer"),
             ),
             index_needed: 0,
-            bounds: Vec::new(),
         }
     }
 
@@ -71,8 +69,7 @@ impl<K: BufferLayout> GpuBuffer<K> {
     }
 
     pub fn finalize(&mut self, renderer: &mut GpuRenderer) {
-        let (mut changed, mut vertex_pos, mut index_pos, mut cleared) =
-            (false, 0, 0, false);
+        let (mut changed, mut vertex_pos, mut index_pos) = (false, 0, 0);
 
         if self.vertex_needed > self.vertex_buffer.max
             || self.index_needed > self.index_buffer.max
@@ -91,7 +88,7 @@ impl<K: BufferLayout> GpuBuffer<K> {
         self.unprocessed.sort();
         self.buffers.clear();
 
-        for (id, buf) in self.unprocessed.iter().enumerate() {
+        for buf in &self.unprocessed {
             let mut write_vertex = false;
             let mut write_index = false;
             let old_vertex_pos = vertex_pos as u64;
@@ -102,15 +99,6 @@ impl<K: BufferLayout> GpuBuffer<K> {
                 let index_range = index_pos..index_pos + store.indexs.len();
 
                 if store.store_pos != vertex_range || changed || store.changed {
-                    if K::is_bounded() {
-                        if !cleared {
-                            self.bounds.truncate(id);
-                            cleared = true;
-                        }
-
-                        self.bounds.push(store.bounds);
-                    }
-
                     store.store_pos = vertex_range;
                     write_vertex = true
                 }

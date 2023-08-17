@@ -84,6 +84,6 @@ where
 
         pass.render_text(renderer, &self.text_renderer, &self.text_atlas);
 
-        pass.render_2dmeshs(renderer, &self.mesh_renderer, &self.system);
+        pass.render_2dmeshs(renderer, &self.mesh_renderer);
     }
 }

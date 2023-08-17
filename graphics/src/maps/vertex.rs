@@ -21,10 +21,6 @@ impl Default for MapVertex {
 }
 
 impl BufferLayout for MapVertex {
-    fn is_bounded() -> bool {
-        false
-    }
-
     fn attributes() -> Vec<wgpu::VertexAttribute> {
         wgpu::vertex_attr_array![1 => Float32x3, 2 => Float32x2, 3 => Sint32]
             .to_vec()

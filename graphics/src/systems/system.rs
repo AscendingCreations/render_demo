@@ -253,7 +253,6 @@ where
         self.camera.view()
     }
 
-    ///Y does not calculate correctly here...
     pub fn projected_world_to_screen(
         &self,
         scale: bool,

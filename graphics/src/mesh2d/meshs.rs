@@ -1,6 +1,6 @@
 use crate::{
     AscendingError, BufferLayout, DrawOrder, GpuRenderer, Index, Mesh2DVertex,
-    OrderedIndex, OtherError, Vec2, Vec3, Vec4, VertexBuilder, WorldBounds,
+    OrderedIndex, OtherError, Vec2, Vec3, Vec4, VertexBuilder,
 };
 use cosmic_text::Color;
 use lyon::{
@@ -35,7 +35,6 @@ pub struct Mesh2D {
     pub vbo_store_id: Index,
     pub order: DrawOrder,
     pub high_index: u32,
-    pub bounds: Option<WorldBounds>,
     // if anything got updated we need to update the buffers too.
     pub changed: bool,
 }
@@ -48,7 +47,6 @@ impl Mesh2D {
             color: Color::rgba(255, 255, 255, 255),
             vbo_store_id: renderer.new_buffer(),
             order: DrawOrder::default(),
-            bounds: None,
             changed: true,
             vertices: Vec::new(),
             indices: Vec::new(),
@@ -65,25 +63,11 @@ impl Mesh2D {
         );
         self.vertices.extend_from_slice(&builder.buffer.vertices);
         self.indices.extend_from_slice(&builder.buffer.indices);
-        self.bounds = Some(WorldBounds::new(
-            builder.bounds.x,
-            builder.bounds.y,
-            builder.bounds.z,
-            builder.bounds.w,
-            builder.bounds.w - builder.bounds.y,
-        ));
         self.high_index = builder.high_index;
     }
 
     pub fn set_color(&mut self, color: Color) -> &mut Self {
         self.color = color;
-        self.changed = true;
-        self
-    }
-
-    //This sets how a object should be Clip manipulated. Width and/or Height as 0 means unlimited.
-    pub fn set_bounds(&mut self, bounds: Option<WorldBounds>) -> &mut Self {
-        self.bounds = bounds;
         self.changed = true;
         self
     }
@@ -117,7 +101,6 @@ impl Mesh2D {
 
             store.store = vertex_bytes;
             store.indexs = index_bytes;
-            store.bounds = self.bounds;
             store.changed = true;
         }
 
@@ -166,10 +149,6 @@ impl Default for Mesh2DBuilder {
 }
 
 impl Mesh2DBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     pub fn with_camera() -> Self {
         Self {
             use_camera: true,
@@ -197,9 +176,8 @@ impl Mesh2DBuilder {
             .indices
             .iter()
             .fold(0, |max, index| max.max(*index));
-
-        self.z = minz;
         self.bounds = Vec4::new(minx, miny, maxx, maxy);
+        self.z = minz;
         self.high_index = high_index;
         self
     }

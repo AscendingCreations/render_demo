@@ -1,8 +1,7 @@
 use crate::Vec3;
 
-///This is the location within the World that the Clipping should take place.
-/// Height is needed for any Scissoring within the Window as Window only scissors
-/// in Windows Locations and not World locations.
+/// This is the location within the World.
+/// Height is needed to map world to the correct mouse coords.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct WorldBounds {
     pub left: f32,
@@ -83,6 +82,37 @@ impl Default for WorldBounds {
             right: 2_147_483_600.0,
             top: 2_147_483_600.0,
             height: 1.0,
+        }
+    }
+}
+
+/// This is the bounds used to clip Text.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct Bounds {
+    pub left: f32,
+    pub bottom: f32,
+    pub right: f32,
+    pub top: f32,
+}
+
+impl Bounds {
+    pub fn new(left: f32, bottom: f32, right: f32, top: f32) -> Self {
+        Self {
+            left,
+            bottom,
+            right,
+            top,
+        }
+    }
+}
+
+impl Default for Bounds {
+    fn default() -> Self {
+        Self {
+            left: 0.0,
+            bottom: 0.0,
+            right: 2_147_483_600.0,
+            top: 2_147_483_600.0,
         }
     }
 }

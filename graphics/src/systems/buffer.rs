@@ -1,4 +1,4 @@
-use crate::{GpuDevice, WorldBounds};
+use crate::GpuDevice;
 use std::{marker::PhantomData, ops::Range};
 use wgpu::util::DeviceExt;
 
@@ -6,8 +6,6 @@ use wgpu::util::DeviceExt;
 pub struct BufferStore {
     pub store: Vec<u8>,
     pub indexs: Vec<u8>,
-    //bounds and height to reverse the clipping for Windows Scissor routine.
-    pub bounds: Option<WorldBounds>,
     pub changed: bool,
     pub store_pos: Range<usize>,
     pub index_pos: Range<usize>,
@@ -72,7 +70,6 @@ impl<K: BufferLayout> Buffer<K> {
 }
 
 pub trait BufferLayout {
-    fn is_bounded() -> bool;
     ///WGPU's Shader Attributes
     fn attributes() -> Vec<wgpu::VertexAttribute>;
 

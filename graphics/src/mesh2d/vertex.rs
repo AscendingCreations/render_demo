@@ -22,10 +22,6 @@ impl Default for Mesh2DVertex {
 }
 
 impl BufferLayout for Mesh2DVertex {
-    fn is_bounded() -> bool {
-        true
-    }
-
     fn attributes() -> Vec<wgpu::VertexAttribute> {
         wgpu::vertex_attr_array![0 => Float32x3, 1 => Uint32, 2 => Uint32]
             .to_vec()

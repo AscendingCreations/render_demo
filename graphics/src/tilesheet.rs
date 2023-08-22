@@ -44,21 +44,6 @@ impl TileSheet {
                 0,
                 renderer,
             )?;
-
-            let mut image: RgbaImage = ImageBuffer::new(tilesize, tilesize);
-
-            for (_x, _y, pixel) in image.enumerate_pixels_mut() {
-                *pixel = image::Rgba([0, 0, 0, 255]);
-            }
-
-            atlas.upload(
-                "black".to_owned(),
-                image.as_bytes(),
-                tilesize,
-                tilesize,
-                0,
-                renderer,
-            )?;
         }
 
         for id in 0..tilecount {
@@ -84,39 +69,28 @@ impl TileSheet {
                     image.put_pixel(x, y, pixel);
                 }
             }
+            // we upload the tile regardless this avoid tilesheet issues later.
+            let name: String = format!("{}-{}", texture.name(), id);
+            let allocation = atlas.upload(
+                name,
+                image.as_bytes(),
+                tilesize,
+                tilesize,
+                0,
+                renderer,
+            )?;
 
             if image.enumerate_pixels().all(|p| p.2 .0[3] == 0) {
                 // lets use our only Blank tile. this will always be the first loaded.
+                // We use this when tiles are empty to avoid issues later when we do use
+                // these spots for other tiles.
                 tilesheet.tiles.push(Tile {
                     x: tilex,
                     y: tiley,
                     layer: 0,
                     id: 0,
                 })
-
-                // lets make sure its not pure black too.
-            } else if image.enumerate_pixels().all(|p| {
-                p.2 .0[0] == 0
-                    && p.2 .0[1] == 0
-                    && p.2 .0[2] == 0
-                    && p.2 .0[4] == 255
-            }) {
-                tilesheet.tiles.push(Tile {
-                    x: tilex,
-                    y: tiley,
-                    layer: 0,
-                    id: 1,
-                })
             } else {
-                let name: String = format!("{}-{}", texture.name(), id);
-                let allocation = atlas.upload(
-                    name,
-                    image.as_bytes(),
-                    tilesize,
-                    tilesize,
-                    0,
-                    renderer,
-                )?;
                 let (posx, posy) = allocation.position();
                 tilesheet.tiles.push(Tile {
                     x: tilex,
@@ -150,21 +124,6 @@ impl TileSheet {
             let image: RgbaImage = ImageBuffer::new(tilesize, tilesize);
             atlas.upload(
                 "Empty".to_owned(),
-                image.as_bytes(),
-                tilesize,
-                tilesize,
-                0,
-                renderer,
-            )?;
-
-            let mut image: RgbaImage = ImageBuffer::new(tilesize, tilesize);
-
-            for (_x, _y, pixel) in image.enumerate_pixels_mut() {
-                *pixel = image::Rgba([0, 0, 0, 255]);
-            }
-
-            atlas.upload(
-                "black".to_owned(),
                 image.as_bytes(),
                 tilesize,
                 tilesize,

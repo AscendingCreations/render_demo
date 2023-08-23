@@ -15,6 +15,7 @@ pub struct Tile {
 //We can use this for editor loading and just as a precursor.
 pub struct TileSheet {
     pub tiles: Vec<Tile>,
+    pub texture: Texture,
 }
 
 impl TileSheet {
@@ -28,15 +29,13 @@ impl TileSheet {
             (texture.size().0 / tilesize) * (texture.size().1 / tilesize);
         let sheet_width = texture.size().0 / tilesize;
         let atlas_width = atlas.atlas.extent.width / tilesize;
-        let mut tilesheet = TileSheet {
-            tiles: Vec::with_capacity(tilecount as usize),
-        };
         let sheet_image: RgbaImage = ImageBuffer::from_raw(
             texture.size().0,
             texture.size().1,
-            texture.bytes().to_vec(),
+            texture.bytes.to_owned(),
         )
         .unwrap_or(ImageBuffer::new(texture.size().0, texture.size().1));
+        let mut tiles = Vec::with_capacity(tilecount as usize);
 
         // lets check this to add in the empty tile set first if nothing else yet exists.
         // Also lets add the black tile.
@@ -84,7 +83,7 @@ impl TileSheet {
                 // lets use our only Blank tile. this will always be the first loaded.
                 // We use this when tiles are empty to avoid issues later when we do use
                 // these spots for other tiles.
-                tilesheet.tiles.push(Tile {
+                tiles.push(Tile {
                     x: tilex,
                     y: tiley,
                     layer: 0,
@@ -92,7 +91,7 @@ impl TileSheet {
                 })
             } else {
                 let (posx, posy) = allocation.position();
-                tilesheet.tiles.push(Tile {
+                tiles.push(Tile {
                     x: tilex,
                     y: tiley,
                     layer: allocation.layer,
@@ -103,7 +102,10 @@ impl TileSheet {
 
         // We return as Some(tilesheet) this allows us to check above upon
         // upload if a tile failed to get added or not due to no more room.
-        Some(tilesheet)
+        Some(TileSheet {
+            tiles: Vec::with_capacity(tilecount as usize),
+            texture,
+        })
     }
 
     pub fn upload(
@@ -118,7 +120,7 @@ impl TileSheet {
         let sheet_image: RgbaImage = ImageBuffer::from_raw(
             texture.size().0,
             texture.size().1,
-            texture.bytes().to_vec(),
+            texture.bytes.to_owned(),
         )
         .unwrap_or(ImageBuffer::new(texture.size().0, texture.size().1));
 

@@ -7,10 +7,10 @@ use std::{
     path::Path,
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Texture {
     name: String,
-    bytes: Vec<u8>,
+    pub bytes: Vec<u8>,
     size: (u32, u32),
 }
 

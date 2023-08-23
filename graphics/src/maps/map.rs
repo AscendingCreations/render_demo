@@ -68,6 +68,7 @@ pub struct Map {
     pub order: DrawOrder,
     /// Count of how many Filled Tiles Exist. this is to optimize out empty maps in rendering.
     pub filled_tiles: [u8; MapLayers::Count as usize],
+    pub tilesize: u32,
     /// if the image changed we need to reupload it to the texture.
     /// we can also use this to deturmine if we want to unload the map from the
     /// GPU or not. set to false if its been updated and a layer is_some().
@@ -92,8 +93,9 @@ impl Map {
 
             let map_vertex = MapVertex {
                 position: [self.pos.x, self.pos.y, z], //2,3
-                hw: [512.0, 512.0],
+                hw: [32.0 * self.tilesize as f32, 32.0 * self.tilesize as f32],
                 layer: self.layer.unwrap() as i32,
+                tilesize: self.tilesize,
             };
 
             if i >= 6 {
@@ -139,7 +141,7 @@ impl Map {
         (data[0], data[1], data[2], data[3])
     }
 
-    pub fn new(renderer: &mut GpuRenderer) -> Self {
+    pub fn new(renderer: &mut GpuRenderer, tilesize: u32) -> Self {
         let image = ImageBuffer::new(32, 256);
 
         Self {
@@ -150,6 +152,7 @@ impl Map {
             filled_tiles: [0; MapLayers::Count as usize],
             image,
             order: DrawOrder::default(),
+            tilesize,
             img_changed: true,
             changed: true,
         }

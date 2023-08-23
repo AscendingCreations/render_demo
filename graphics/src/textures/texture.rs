@@ -1,4 +1,6 @@
-use crate::{Allocation, AscendingError, Atlas, AtlasGroup, GpuRenderer};
+use crate::{
+    Allocation, AscendingError, Atlas, AtlasGroup, GpuRenderer, TileSheet,
+};
 use image::{DynamicImage, GenericImageView, ImageFormat};
 use std::{
     io::{Error, ErrorKind},
@@ -65,6 +67,24 @@ impl Texture {
     ) -> Option<Allocation> {
         let (width, height) = self.size;
         atlas.upload(self.name.clone(), &self.bytes, width, height, 0, renderer)
+    }
+
+    pub fn new_tilesheet(
+        self,
+        atlas: &mut AtlasGroup,
+        renderer: &GpuRenderer,
+        tilesize: u32,
+    ) -> Option<TileSheet> {
+        TileSheet::new(self, renderer, atlas, tilesize)
+    }
+
+    pub fn tilesheet_upload(
+        self,
+        atlas: &mut AtlasGroup,
+        renderer: &GpuRenderer,
+        tilesize: u32,
+    ) -> Option<()> {
+        TileSheet::upload(self, renderer, atlas, tilesize)
     }
 
     pub fn group_upload(

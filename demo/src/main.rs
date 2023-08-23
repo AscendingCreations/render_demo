@@ -228,7 +228,7 @@ async fn main() -> Result<(), AscendingError> {
     );
 
     // We make a new Map to render here.
-    let mut map = Map::new(&mut renderer);
+    let mut map = Map::new(&mut renderer, 20);
 
     (0..32).for_each(|x| {
         (0..32).for_each(|y| {
@@ -241,11 +241,11 @@ async fn main() -> Result<(), AscendingError> {
     map.set_tile((0, 0, 1), 2, 0, 255);
     map.pos = Vec2::new(0.0, 0.0);
 
-    for i in 0..3 {
-        let _ = Texture::from_file(format!("images/tiles/{i}.png"))?
-            .group_upload(&mut atlases[1], &renderer)
-            .ok_or_else(|| OtherError::new("failed to upload image"))?;
-    }
+    let tilesheet = Texture::from_file(format!("images/tiles/1.png"))?
+        .new_tilesheet(&mut atlases[1], &renderer, 20)
+        .ok_or_else(|| OtherError::new("failed to upload tiles"))?;
+
+    println!("tilesheet: {:?}", tilesheet);
 
     map.init_texture_layer(&mut map_renderer);
 

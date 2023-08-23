@@ -17,6 +17,7 @@ struct VertexInput {
     @location(1) position: vec3<f32>,
     @location(2) hw: vec2<f32>,
     @location(3) layer: i32,
+    @location(4) tilesize: u32,
 };
 
 struct VertexOutput {
@@ -24,6 +25,8 @@ struct VertexOutput {
     @location(0) tex_coords: vec2<f32>,
     @location(1) zpos: f32,
     @location(2) layer: i32,
+    @location(3) tilesize: u32,
+    @location(4) texture_width: u32,
 };
 
 @group(1)
@@ -40,6 +43,7 @@ fn vertex(
     var result: VertexOutput;
     var pos = vertex.position;
     let v = vertex.vertex_idx % 4u;
+    let size = textureDimensions(tex);
 
     switch v {
         case 1u: {
@@ -63,6 +67,9 @@ fn vertex(
     result.zpos = pos.z;
     result.clip_position =  (global.proj * global.view) * vec4<f32>(pos, 1.0);
     result.layer = vertex.layer;
+    result.tilesize = vertex.tilesize;
+    result.texture_width = u32(size.x);
+
     return result;
 }
 
@@ -73,11 +80,13 @@ var maptex: texture_2d_array<u32>;
 // Fragment shader
 @fragment
 fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
+    let total_tiles = vertex.texture_width / vertex.tilesize;
     let yoffset = abs((i32(vertex.zpos) - 8) * 32);
     let coords = vec3<i32> (i32(vertex.tex_coords.x + .5), i32(vertex.tex_coords.y + .5), vertex.layer);
-    let tile_pos = vec2<i32>(coords.x / 16, (coords.y / 16) + yoffset);
+    let tile_pos = vec2<i32>(coords.x / i32(vertex.tilesize), (coords.y / i32(vertex.tilesize)) + yoffset);
     let tile = textureLoad(maptex, tile_pos.xy, coords.z, 0);
-    let pos = vec2<i32>(i32(tile.r % 128u) * 16 + (coords.x % 16), i32(tile.r / 128u) * 16 + (coords.y % 16));
+    let pos = vec2<i32>(i32(tile.r % total_tiles) * i32(vertex.tilesize) + i32(coords.x % i32(vertex.tilesize)), 
+        i32(tile.r / total_tiles) * i32(vertex.tilesize) + i32(coords.y % i32(vertex.tilesize)));
     let object_color = textureLoad(tex, pos.xy, i32(tile.g), 0);
     let alpha = object_color.a * (f32(tile.a) / 255.0);
 

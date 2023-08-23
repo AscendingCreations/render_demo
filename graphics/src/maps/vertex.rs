@@ -8,6 +8,7 @@ pub struct MapVertex {
     pub position: [f32; 3],
     pub hw: [f32; 2],
     pub layer: i32,
+    pub tilesize: u32,
 }
 
 impl Default for MapVertex {
@@ -16,13 +17,14 @@ impl Default for MapVertex {
             position: [0.0; 3],
             hw: [0.0; 2],
             layer: 0,
+            tilesize: 0,
         }
     }
 }
 
 impl BufferLayout for MapVertex {
     fn attributes() -> Vec<wgpu::VertexAttribute> {
-        wgpu::vertex_attr_array![1 => Float32x3, 2 => Float32x2, 3 => Sint32]
+        wgpu::vertex_attr_array![1 => Float32x3, 2 => Float32x2, 3 => Sint32, 4 => Uint32]
             .to_vec()
     }
 
@@ -46,6 +48,6 @@ impl BufferLayout for MapVertex {
     }
 
     fn stride() -> usize {
-        std::mem::size_of::<[f32; 6]>()
+        std::mem::size_of::<[f32; 7]>()
     }
 }

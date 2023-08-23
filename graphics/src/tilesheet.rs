@@ -3,6 +3,7 @@ use image::{self, EncodableLayout, ImageBuffer, RgbaImage};
 
 //used to map the tile in the tilesheet back visually
 //this is only needed for the Editor.
+#[derive(Debug, Default)]
 pub struct Tile {
     pub x: u32,
     pub y: u32,
@@ -10,6 +11,7 @@ pub struct Tile {
     pub id: u32,
 }
 
+#[derive(Debug, Default)]
 //We can use this for editor loading and just as a precursor.
 pub struct TileSheet {
     pub tiles: Vec<Tile>,
@@ -25,16 +27,20 @@ impl TileSheet {
         let tilecount =
             (texture.size().0 / tilesize) * (texture.size().1 / tilesize);
         let sheet_width = texture.size().0 / tilesize;
-        let sheet_height = texture.size().1 / tilesize;
         let atlas_width = atlas.atlas.extent.width / tilesize;
         let mut tilesheet = TileSheet {
             tiles: Vec::with_capacity(tilecount as usize),
         };
-        let bytes = texture.bytes();
+        let sheet_image: RgbaImage = ImageBuffer::from_raw(
+            texture.size().0,
+            texture.size().1,
+            texture.bytes().to_vec(),
+        )
+        .unwrap_or(ImageBuffer::new(texture.size().0, texture.size().1));
 
         // lets check this to add in the empty tile set first if nothing else yet exists.
         // Also lets add the black tile.
-        if atlas.atlas.cache.len() == 0 {
+        if atlas.atlas.cache.is_empty() {
             let image: RgbaImage = ImageBuffer::new(tilesize, tilesize);
             atlas.upload(
                 "Empty".to_owned(),
@@ -51,22 +57,16 @@ impl TileSheet {
             // get its location to remap it back visually.
             let (tilex, tiley) = (
                 ((id % sheet_width) * tilesize),
-                ((id / sheet_height) * tilesize),
+                ((id / sheet_width) * tilesize),
             );
 
             // lets create the tile from the texture.
             for y in 0..tilesize {
                 for x in 0..tilesize {
-                    let pos = (((id % sheet_width) * tilesize + (x * 4))
-                        * ((id / sheet_height) * tilesize + y))
-                        as usize;
-                    let pixel = image::Rgba::<u8>([
-                        bytes[pos],
-                        bytes[pos + 1],
-                        bytes[pos + 2],
-                        bytes[pos + 3],
-                    ]);
-                    image.put_pixel(x, y, pixel);
+                    let posx = (id % sheet_width) * tilesize + x;
+                    let posy = (id / sheet_width) * tilesize + y;
+                    let pixel = sheet_image.get_pixel(posx, posy);
+                    image.put_pixel(x, y, *pixel);
                 }
             }
             // we upload the tile regardless this avoid tilesheet issues later.
@@ -115,12 +115,16 @@ impl TileSheet {
         let tilecount =
             (texture.size().0 / tilesize) * (texture.size().1 / tilesize);
         let sheet_width = texture.size().0 / tilesize;
-        let sheet_height = texture.size().1 / tilesize;
-        let bytes = texture.bytes();
+        let sheet_image: RgbaImage = ImageBuffer::from_raw(
+            texture.size().0,
+            texture.size().1,
+            texture.bytes().to_vec(),
+        )
+        .unwrap_or(ImageBuffer::new(texture.size().0, texture.size().1));
 
         // lets check this to add in the empty tile set first if nothing else yet exists.
         // Also lets add the black tile.
-        if atlas.atlas.cache.len() == 0 {
+        if atlas.atlas.cache.is_empty() {
             let image: RgbaImage = ImageBuffer::new(tilesize, tilesize);
             atlas.upload(
                 "Empty".to_owned(),
@@ -138,16 +142,10 @@ impl TileSheet {
             // lets create the tile from the texture.
             for y in 0..tilesize {
                 for x in 0..tilesize {
-                    let pos = (((id % sheet_width) * tilesize + (x * 4))
-                        * ((id / sheet_height) * tilesize + y))
-                        as usize;
-                    let pixel = image::Rgba::<u8>([
-                        bytes[pos],
-                        bytes[pos + 1],
-                        bytes[pos + 2],
-                        bytes[pos + 3],
-                    ]);
-                    image.put_pixel(x, y, pixel);
+                    let posx = (id % sheet_width) * tilesize + x;
+                    let posy = (id / sheet_width) * tilesize + y;
+                    let pixel = sheet_image.get_pixel(posx, posy);
+                    image.put_pixel(x, y, *pixel);
                 }
             }
 

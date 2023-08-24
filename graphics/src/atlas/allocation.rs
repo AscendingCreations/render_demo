@@ -1,4 +1,4 @@
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Allocation<Data: Copy + Default = i32> {
     pub allocation: guillotiere::Allocation,
     pub layer: usize,

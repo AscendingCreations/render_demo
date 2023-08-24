@@ -1,14 +1,14 @@
-use crate::{AtlasGroup, GpuRenderer, Texture};
+use crate::{Allocation, AtlasGroup, GpuRenderer, Texture};
 use image::{self, EncodableLayout, ImageBuffer, RgbaImage};
 
 //used to map the tile in the tilesheet back visually
 //this is only needed for the Editor.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Tile {
     pub x: u32,
     pub y: u32,
-    pub layer: usize,
     pub id: u32,
+    pub allocation: Allocation,
 }
 
 #[derive(Debug, Default)]
@@ -39,7 +39,9 @@ impl TileSheet {
 
         // lets check this to add in the empty tile set first if nothing else yet exists.
         // Also lets add the black tile.
-        if atlas.atlas.cache.is_empty() {
+        let empty = if let Some(empty) = atlas.get(&"Empty".to_owned()) {
+            empty
+        } else {
             let image: RgbaImage = ImageBuffer::new(tilesize, tilesize);
             atlas.upload(
                 "Empty".to_owned(),
@@ -48,8 +50,8 @@ impl TileSheet {
                 tilesize,
                 0,
                 renderer,
-            )?;
-        }
+            )?
+        };
 
         for id in 0..tilecount {
             let mut image: RgbaImage = ImageBuffer::new(tilesize, tilesize);
@@ -86,16 +88,16 @@ impl TileSheet {
                 tiles.push(Tile {
                     x: tilex,
                     y: tiley,
-                    layer: 0,
                     id: 0,
+                    allocation: empty.clone(),
                 })
             } else {
                 let (posx, posy) = allocation.position();
                 tiles.push(Tile {
                     x: tilex,
                     y: tiley,
-                    layer: allocation.layer,
                     id: (posx / tilesize) + ((posy / tilesize) * atlas_width),
+                    allocation,
                 })
             }
         }

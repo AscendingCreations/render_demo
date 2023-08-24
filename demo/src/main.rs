@@ -4,9 +4,7 @@ use camera::{
     controls::{Controls, FlatControls, FlatSettings},
     Projection,
 };
-use cosmic_text::{
-    Action as TextAction, Attrs, Buffer, FontSystem, Metrics, Style, SwashCache,
-};
+use cosmic_text::{Attrs, Metrics};
 use graphics::*;
 use hecs::World;
 use input::{Bindings, FrameTime, InputHandler};
@@ -23,7 +21,6 @@ use std::{
     rc::Rc,
     time::Duration,
 };
-use wgpu::InstanceDescriptor;
 use winit::{
     dpi::PhysicalSize,
     event::*,
@@ -565,7 +562,7 @@ async fn main() -> Result<(), AscendingError> {
             text.set_text(
                 &mut renderer,
                 &format!("生活,삶,जिंदगी 😀 FPS: {fps} \nhello"),
-                cosmic_text::Attrs::new(),
+                Attrs::new(),
             );
             fps = 0u32;
             time = seconds + 1.0;

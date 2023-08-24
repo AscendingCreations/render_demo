@@ -43,4 +43,24 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
     pub fn trim(&mut self) {
         self.atlas.trim();
     }
+
+    pub fn clear(&mut self) {
+        self.atlas.clear();
+    }
+
+    pub fn promote(&mut self, key: U) {
+        self.atlas.promote(key);
+    }
+
+    pub fn peek(&mut self, key: &U) -> Option<&Allocation<Data>> {
+        self.atlas.peek(key)
+    }
+
+    pub fn contains(&mut self, key: &U) -> bool {
+        self.atlas.contains(key)
+    }
+
+    pub fn get(&mut self, key: &U) -> Option<Allocation<Data>> {
+        self.atlas.get(key)
+    }
 }

@@ -16,7 +16,7 @@ pub struct FlatSettings {
 
 impl Default for FlatSettings {
     fn default() -> Self {
-        Self { zoom: 1.5 }
+        Self { zoom: 1.0 }
     }
 }
 

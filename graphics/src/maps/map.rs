@@ -123,8 +123,8 @@ impl Map {
     /// Sets the map rendering objects layer so it's texture data can be written to the MapTexture.
     /// If you are using a ton of preloaded maps You only need to run this when you need to render it.
     /// You can only store so many of these in the layer. so it will return None if all layers are in use.
-    pub fn init_texture_layer(&mut self, map_texture: &mut MapRenderer) {
-        self.layer = map_texture.get_unused_id();
+    pub fn init_texture_layer(&mut self, map_renderer: &mut MapRenderer) {
+        self.layer = map_renderer.get_unused_id();
     }
 
     /// Used to check if the map has a texture layer or not. Can help decide if we want to load it into the GPU or not.

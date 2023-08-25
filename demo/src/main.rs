@@ -220,7 +220,7 @@ async fn main() -> Result<(), AscendingError> {
             near: 1.0,
             far: -100.0,
         },
-        FlatControls::new(FlatSettings::default()),
+        FlatControls::new(FlatSettings { zoom: 1.5 }),
         [size.width, size.height],
     );
 

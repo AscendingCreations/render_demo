@@ -34,5 +34,5 @@ pub use iced_wgpu;
 #[cfg(feature = "iced")]
 pub use iced_widget;
 
-#[cfg(feature = "iced_aw")]
+#[cfg(feature = "additional_widgets")]
 pub use iced_aw;

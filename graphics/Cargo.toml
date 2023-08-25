@@ -8,10 +8,10 @@ resolver = "2"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["iced", "iced_aw"]
+default = ["iced", "additional_widgets"]
 # Enable Iced GUI framework.
 iced = ["iced_wgpu", "iced_winit", "iced_widget", "iced_renderer"]
-iced_aw = ["iced_aw"]
+additional_widgets = ["iced_aw"]
 
 [dependencies]
 async-trait.workspace = true

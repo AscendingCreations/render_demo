@@ -202,7 +202,7 @@ async fn main() -> Result<(), AscendingError> {
     // We establish the different renderers here to load their data up to use them.
     let text_renderer = TextRenderer::new(&renderer).unwrap();
     let sprite_renderer = ImageRenderer::new(&renderer).unwrap();
-    let mut map_renderer = MapRenderer::new(&mut renderer, 81).unwrap();
+    let map_renderer = MapRenderer::new(&mut renderer, 81).unwrap();
     let mesh_renderer = Mesh2DRenderer::new(&renderer).unwrap();
 
     // get the screen size.
@@ -229,22 +229,48 @@ async fn main() -> Result<(), AscendingError> {
 
     (0..32).for_each(|x| {
         (0..32).for_each(|y| {
-            map.set_tile((x, y, 0), 1, 0, 255);
+            map.set_tile(
+                (x, y, 0),
+                TileData {
+                    texture_id: 1,
+                    texture_layer: 0,
+                    color: Color::rgba(255, 255, 255, 255),
+                },
+            )
         });
     });
 
-    map.set_tile((1, 31, 1), 2, 0, 255);
-    map.set_tile((1, 30, 6), 2, 0, 180);
-    map.set_tile((0, 0, 1), 2, 0, 255);
-    map.pos = Vec2::new(0.0, 0.0);
+    map.set_tile(
+        (1, 31, 1),
+        TileData {
+            texture_id: 2,
+            texture_layer: 0,
+            color: Color::rgba(255, 255, 255, 255),
+        },
+    );
+    map.set_tile(
+        (1, 30, 6),
+        TileData {
+            texture_id: 2,
+            texture_layer: 0,
+            color: Color::rgba(255, 255, 255, 180),
+        },
+    );
+    map.set_tile(
+        (0, 0, 1),
+        TileData {
+            texture_id: 2,
+            texture_layer: 0,
+            color: Color::rgba(255, 255, 255, 255),
+        },
+    );
+    map.pos = Vec2::new(0.0, 640.0);
 
     let tilesheet = Texture::from_file(format!("images/tiles/1.png"))?
         .new_tilesheet(&mut atlases[1], &renderer, 20)
         .ok_or_else(|| OtherError::new("failed to upload tiles"))?;
 
     println!("tilesheet: {:?}", tilesheet);
-
-    map.init_texture_layer(&mut map_renderer);
 
     let allocation = Texture::from_file("images/anim/0.png")?
         .group_upload(&mut atlases[0], &renderer)

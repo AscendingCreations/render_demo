@@ -52,26 +52,27 @@ fn vertex(
     var pos = vertex.position;
     let v = vertex.vertex_idx % 4u;
     let size = textureDimensions(tex);
-    let total_tiles = size.x / u32(vertex.tilesize);
-    let tileposx = f32(u32(vertex.texture_id) % total_tiles);
-    let tileposy = f32(u32(vertex.texture_id) / total_tiles);
+    let fsize = vec2<f32> (f32(size.x), f32(size.y));
+    let total_tiles = u32(size.x / u32(vertex.tilesize));
+    let tileposx = f32(u32(vertex.texture_id) % total_tiles) * vertex.tilesize;
+    let tileposy = f32(u32(vertex.texture_id) / total_tiles) * vertex.tilesize;
 
     switch v {
         case 1u: {
-            result.uv = vec2<f32>(tileposx + vertex.tilesize, tileposy + vertex.tilesize);
+            result.uv = vec2<f32>(tileposx + vertex.tilesize, tileposy + vertex.tilesize) / fsize;
             pos.x += vertex.tilesize;
         }
         case 2u: {
-            result.uv = vec2<f32>(tileposx + vertex.tilesize, tileposy);
+            result.uv = vec2<f32>(tileposx + vertex.tilesize, tileposy) / fsize;
             pos.x += vertex.tilesize;
             pos.y += vertex.tilesize;
         }
         case 3u: {
-            result.uv = vec2<f32>(tileposx, tileposy);
+            result.uv = vec2<f32>(tileposx, tileposy) / fsize;
             pos.y += vertex.tilesize;
         }
         default: {
-            result.uv = vec2<f32>(tileposx, tileposy + vertex.tilesize);
+            result.uv = vec2<f32>(tileposx, tileposy + vertex.tilesize) / fsize;
         }
     }
 

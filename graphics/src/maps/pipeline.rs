@@ -1,6 +1,6 @@
 use crate::{
-    BufferLayout, GpuDevice, LayoutStorage, MapLayout, MapVertex,
-    PipeLineLayout, StaticBufferObject, SystemLayout, TextureLayout,
+    BufferLayout, GpuDevice, LayoutStorage, MapVertex, PipeLineLayout,
+    StaticBufferObject, SystemLayout, TextureLayout,
 };
 use bytemuck::{Pod, Zeroable};
 
@@ -26,7 +26,6 @@ impl PipeLineLayout for MapRenderPipeline {
 
         let system_layout = layouts.create_layout(gpu_device, SystemLayout);
         let texture_layout = layouts.create_layout(gpu_device, TextureLayout);
-        let map_layout = layouts.create_layout(gpu_device, MapLayout);
 
         // Create the render pipeline.
         gpu_device.device().create_render_pipeline(
@@ -35,11 +34,7 @@ impl PipeLineLayout for MapRenderPipeline {
                 layout: Some(&gpu_device.device().create_pipeline_layout(
                     &wgpu::PipelineLayoutDescriptor {
                         label: Some("Map_render_pipeline_layout"),
-                        bind_group_layouts: &[
-                            &system_layout,
-                            &texture_layout,
-                            &map_layout,
-                        ],
+                        bind_group_layouts: &[&system_layout, &texture_layout],
                         push_constant_ranges: &[],
                     },
                 )),
@@ -73,7 +68,7 @@ impl PipeLineLayout for MapRenderPipeline {
                 depth_stencil: Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth32Float,
                     depth_write_enabled: true,
-                    depth_compare: wgpu::CompareFunction::Less,
+                    depth_compare: wgpu::CompareFunction::LessEqual,
                     stencil: wgpu::StencilState::default(),
                     bias: wgpu::DepthBiasState::default(),
                 }),

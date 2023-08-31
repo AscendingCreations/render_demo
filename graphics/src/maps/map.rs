@@ -22,12 +22,12 @@ pub enum MapLayers {
 impl MapLayers {
     pub fn indexed_layerz(layer: u32) -> f32 {
         match layer {
-            0 => 8.0,
-            1 => 7.0,
-            2 => 6.0,
-            3 => 5.0,
-            4 => 4.0,
-            5 => 3.0,
+            0 => 9.0,
+            1 => 8.0,
+            2 => 7.0,
+            3 => 6.0,
+            4 => 5.0,
+            5 => 4.0,
             6 => 2.0,
             _ => 1.0,
         }
@@ -36,12 +36,12 @@ impl MapLayers {
     pub fn layerz(layer: MapLayers) -> f32 {
         // for use with Player Z map done shader side.
         match layer {
-            MapLayers::Ground => 8.0,
-            MapLayers::Mask => 7.0,
-            MapLayers::Mask2 => 6.0,
-            MapLayers::Anim1 => 5.0,
-            MapLayers::Anim2 => 4.0,
-            MapLayers::Anim3 => 3.0,
+            MapLayers::Ground => 9.0,
+            MapLayers::Mask => 8.0,
+            MapLayers::Mask2 => 7.0,
+            MapLayers::Anim1 => 6.0,
+            MapLayers::Anim2 => 5.0,
+            MapLayers::Anim3 => 4.0,
             MapLayers::Fringe => 2.0,
             MapLayers::Fringe2 | MapLayers::Count => 1.0,
         }

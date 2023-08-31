@@ -188,7 +188,7 @@ async fn main() -> Result<(), AscendingError> {
         // To name this atm to keep it seperated from Sprite that would contain most of the actual not rendering
         // data needed.
         let mut sprite = Image::new(Some(allocation), &mut renderer, 1);
-        sprite.pos = Vec3::new(x, y, 5.1);
+        sprite.pos = Vec3::new(x, y, 3.1);
         sprite.hw = Vec2::new(48.0, 48.0);
         sprite.uv = Vec4::new(48.0, 96.0, 48.0, 48.0);
         sprite.color = Color::rgba(255, 255, 255, 255);
@@ -196,13 +196,13 @@ async fn main() -> Result<(), AscendingError> {
         x += 12.0;
     }
 
-    sprites[0].pos.z = 5.0;
+    sprites[0].pos.z = 3.0;
     sprites[0].color = Color::rgba(255, 255, 255, 120);
 
     // We establish the different renderers here to load their data up to use them.
     let text_renderer = TextRenderer::new(&renderer).unwrap();
     let sprite_renderer = ImageRenderer::new(&renderer).unwrap();
-    let mut map_renderer = MapRenderer::new(&mut renderer, 81).unwrap();
+    let map_renderer = MapRenderer::new(&mut renderer, 81).unwrap();
     let mesh_renderer = Mesh2DRenderer::new(&renderer).unwrap();
 
     // get the screen size.
@@ -229,22 +229,49 @@ async fn main() -> Result<(), AscendingError> {
 
     (0..32).for_each(|x| {
         (0..32).for_each(|y| {
-            map.set_tile((x, y, 0), 1, 0, 255);
+            map.set_tile(
+                (x, y, 0),
+                TileData {
+                    texture_id: 1,
+                    texture_layer: 0,
+                    color: Color::rgba(255, 255, 255, 255),
+                },
+            )
         });
     });
 
-    map.set_tile((1, 31, 1), 2, 0, 255);
-    map.set_tile((1, 30, 6), 2, 0, 180);
-    map.set_tile((0, 0, 1), 2, 0, 255);
+    map.set_tile(
+        (2, 1, 1),
+        TileData {
+            texture_id: 2,
+            texture_layer: 0,
+            color: Color::rgba(255, 255, 255, 255),
+        },
+    );
+    map.set_tile(
+        (1, 1, 6),
+        TileData {
+            texture_id: 2,
+            texture_layer: 0,
+            color: Color::rgba(255, 255, 255, 255),
+        },
+    );
+    map.set_tile(
+        (0, 0, 1),
+        TileData {
+            texture_id: 2,
+            texture_layer: 0,
+            color: Color::rgba(255, 255, 255, 255),
+        },
+    );
     map.pos = Vec2::new(0.0, 0.0);
+    map.can_render = true;
 
     let tilesheet = Texture::from_file(format!("images/tiles/1.png"))?
         .new_tilesheet(&mut atlases[1], &renderer, 20)
         .ok_or_else(|| OtherError::new("failed to upload tiles"))?;
 
     println!("tilesheet: {:?}", tilesheet);
-
-    map.init_texture_layer(&mut map_renderer);
 
     let allocation = Texture::from_file("images/anim/0.png")?
         .group_upload(&mut atlases[0], &renderer)
@@ -523,11 +550,11 @@ async fn main() -> Result<(), AscendingError> {
         state.text_renderer.finalize(&mut renderer);
         state.map_renderer.map_update(&mut state.map, &mut renderer);
         state.map_renderer.finalize(&mut renderer);
-        state.mesh.iter_mut().for_each(|mesh| {
+        /*  state.mesh.iter_mut().for_each(|mesh| {
             state.mesh_renderer.mesh_update(mesh, &mut renderer);
         });
 
-        state.mesh_renderer.finalize(&mut renderer);
+        state.mesh_renderer.finalize(&mut renderer);*/
 
         // Start encoding commands. this stores all the rendering calls for execution when
         // finish is called.
@@ -541,7 +568,7 @@ async fn main() -> Result<(), AscendingError> {
         state.render(&renderer, &mut encoder);
 
         // Run the render pass for iced GUI renderer.
-        iced_renderer.with_primitives(|backend, primitive| {
+        /* iced_renderer.with_primitives(|backend, primitive| {
             backend.present(
                 renderer.device(),
                 renderer.queue(),
@@ -552,7 +579,7 @@ async fn main() -> Result<(), AscendingError> {
                 state.system.iced_view(),
                 &debug.overlay(),
             );
-        });
+        });*/
 
         // Submit our command queue. for it to upload all the changes that were made.
         // Also tells the system to begin running the commands on the GPU.

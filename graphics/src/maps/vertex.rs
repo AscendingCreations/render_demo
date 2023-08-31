@@ -6,31 +6,33 @@ use std::iter;
 /// 4 of these per each layer.
 pub struct MapVertex {
     pub position: [f32; 3],
-    pub hw: [f32; 2],
-    pub layer: i32,
-    pub tilesize: u32,
+    pub tilesize: f32,
+    pub texture_id: f32,
+    pub texture_layer: f32,
+    pub color: u32,
 }
 
 impl Default for MapVertex {
     fn default() -> Self {
         Self {
             position: [0.0; 3],
-            hw: [0.0; 2],
-            layer: 0,
-            tilesize: 0,
+            tilesize: 0.0,
+            texture_id: 0.0,
+            texture_layer: 0.0,
+            color: 0,
         }
     }
 }
 
 impl BufferLayout for MapVertex {
     fn attributes() -> Vec<wgpu::VertexAttribute> {
-        wgpu::vertex_attr_array![1 => Float32x3, 2 => Float32x2, 3 => Sint32, 4 => Uint32]
+        wgpu::vertex_attr_array![1 => Float32x3, 2 => Float32, 3 => Float32, 4 => Float32, 5 => Uint32]
             .to_vec()
     }
 
-    ///default set as large enough to contain 720 map layers.
+    /// default set as 8,192 tile per map.
     fn default_buffer() -> BufferData {
-        Self::with_capacity(720, 0)
+        Self::with_capacity(8_192, 0)
     }
 
     fn with_capacity(

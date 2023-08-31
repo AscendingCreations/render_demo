@@ -63,8 +63,6 @@ pub struct System<Controls: camera::controls::Controls> {
     pub screen_size: [f32; 2],
     global_buffer: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
-    camera_offset: usize,
-    screen_offset: usize,
     #[cfg(feature = "iced")]
     iced_view: Viewport,
 }
@@ -125,8 +123,6 @@ where
         let mut camera_bytes = camera_info.as_std140().as_bytes().to_vec();
         let mut time_bytes = time_info.as_std140().as_bytes().to_vec();
         let mut screen_bytes = screen_info.as_std140().as_bytes().to_vec();
-        let camera_offset = camera_bytes.len();
-        let screen_offset = screen_bytes.len();
 
         camera_bytes.append(&mut screen_bytes);
         camera_bytes.append(&mut time_bytes);
@@ -161,8 +157,6 @@ where
             camera,
             screen_size,
             global_buffer,
-            camera_offset,
-            screen_offset,
             bind_group,
             #[cfg(feature = "iced")]
             iced_view,
@@ -208,7 +202,7 @@ where
 
         renderer.queue().write_buffer(
             &self.global_buffer,
-            self.camera_offset as u64 + self.screen_offset as u64,
+            152,
             time_info.as_std140().as_bytes(),
         );
     }
@@ -229,7 +223,7 @@ where
 
             renderer.queue().write_buffer(
                 &self.global_buffer,
-                self.camera_offset as u64,
+                144,
                 screen_info.as_std140().as_bytes(),
             );
         }

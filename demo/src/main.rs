@@ -363,12 +363,16 @@ async fn main() -> Result<(), AscendingError> {
     let mut debug = Debug::new();
 
     // setup the renderer for iced for UI rendering.
-    let mut iced_renderer = Renderer::new(Backend::new(
-        renderer.device(),
-        renderer.queue(),
-        Settings::default(),
-        renderer.surface_format(),
-    ));
+    let mut iced_renderer = Renderer::new(
+        Backend::new(
+            renderer.device(),
+            renderer.queue(),
+            Settings::default(),
+            renderer.surface_format(),
+        ),
+        iced_winit::core::Font::DEFAULT,
+        iced_winit::core::Pixels(16.0),
+    );
 
     // start up iceds controls for keyboard etc entry.
     let iced_controls = ui::Controls::new();
@@ -568,7 +572,7 @@ async fn main() -> Result<(), AscendingError> {
         state.render(&renderer, &mut encoder);
 
         // Run the render pass for iced GUI renderer.
-        /* iced_renderer.with_primitives(|backend, primitive| {
+        iced_renderer.with_primitives(|backend, primitive| {
             backend.present(
                 renderer.device(),
                 renderer.queue(),
@@ -579,7 +583,7 @@ async fn main() -> Result<(), AscendingError> {
                 state.system.iced_view(),
                 &debug.overlay(),
             );
-        });*/
+        });
 
         // Submit our command queue. for it to upload all the changes that were made.
         // Also tells the system to begin running the commands on the GPU.

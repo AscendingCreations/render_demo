@@ -32,6 +32,7 @@ hecs = "0.10.3"
 glam = { version = "0.24.1", features = ["bytemuck", "mint"] }
 lyon = "1.0.1"
 #softbuffer = "0.3.0"
+slab = "0.4.9"
 
 [workspace.dependencies.naga]
 #git = "https://github.com/gfx-rs/naga"

@@ -3,10 +3,22 @@ use bytemuck::{Pod, Zeroable};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct AreaLightData {
+pub struct AreaLightRaw {
     pub pos: [f32; 2],
     pub color: u32,
     pub max_distance: f32,
+    pub animate: u32,
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct DirectionalLightRaw {
+    pub pos: [f32; 2],
+    pub color: u32,
+    pub max_distance: f32,
+    pub max_radius: f32,
+    pub smoothness: f32,
+    pub angle: f32,
     pub animate: u32,
 }
 
@@ -47,16 +59,4 @@ impl Layout for LightLayout {
             },
         )
     }
-}
-
-#[repr(C)]
-#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct DirectionalLightData {
-    pub pos: [f32; 2],
-    pub color: u32,
-    pub max_distance: f32,
-    pub max_radius: f32,
-    pub smoothness: f32,
-    pub angle: f32,
-    pub animate: u32,
 }

@@ -13,6 +13,8 @@ pub struct AreaLight {
     pub animate: u32,
 }
 
+impl AreaLight {}
+
 pub struct DirectionalLight {
     pub pos: Vec2,
     pub color: Color,
@@ -124,11 +126,18 @@ impl Lights {
     }
 
     /// used to check and update the vertex array.
-    pub fn update(&mut self, renderer: &mut GpuRenderer) -> OrderedIndex {
+    pub fn update(
+        &mut self,
+        renderer: &mut GpuRenderer,
+        areas: &mut wgpu::Buffer,
+        dirs: &mut wgpu::Buffer,
+    ) -> OrderedIndex {
         // if pos or tex_pos or color changed.
         if self.changed {
             self.create_quad(renderer);
         }
+
+        if self.areas_changed {}
 
         OrderedIndex::new(self.order, self.store_id, 0)
     }

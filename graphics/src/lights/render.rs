@@ -18,7 +18,7 @@ impl LightRenderer {
         let area_buffer = renderer.device().create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Area Light buffer"),
-                contents: &[0; 40000],
+                contents: &[0; 40000], //2000
                 usage: wgpu::BufferUsages::UNIFORM
                     | wgpu::BufferUsages::COPY_DST,
             },
@@ -27,7 +27,7 @@ impl LightRenderer {
         let dir_buffer = renderer.device().create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Directional Light buffer"),
-                contents: &[0; 64000],
+                contents: &[0; 64000], //2000
                 usage: wgpu::BufferUsages::UNIFORM
                     | wgpu::BufferUsages::COPY_DST,
             },
@@ -52,7 +52,7 @@ impl LightRenderer {
                             resource: dir_buffer.as_entire_binding(),
                         },
                     ],
-                    label: Some("system_bind_group"),
+                    label: Some("lights_bind_group"),
                 });
 
         Ok(Self {
@@ -80,7 +80,11 @@ impl LightRenderer {
         lights: &mut Lights,
         renderer: &mut GpuRenderer,
     ) {
-        let index = lights.update(renderer);
+        let index = lights.update(
+            renderer,
+            &mut self.area_buffer,
+            &mut self.dir_buffer,
+        );
 
         self.add_buffer_store(renderer, index);
     }
@@ -107,7 +111,7 @@ where
         buffer: &'b LightRenderer,
     ) {
         if buffer.buffer.count() > 0 {
-            //self.set_bind_group(1, &atlas.texture.bind_group, &[]);
+            self.set_bind_group(1, &buffer.bind_group, &[]);
             self.set_vertex_buffer(1, buffer.buffer.instances(None));
             self.set_pipeline(
                 renderer.get_pipelines(LightRenderPipeline).unwrap(),

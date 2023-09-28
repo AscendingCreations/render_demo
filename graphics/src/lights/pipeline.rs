@@ -1,6 +1,6 @@
 use crate::{
-    BufferLayout, GpuDevice, ImageVertex, LayoutStorage, PipeLineLayout,
-    StaticBufferObject, SystemLayout, TextureLayout,
+    BufferLayout, GpuDevice, LayoutStorage, LightLayout, LightsVertex,
+    PipeLineLayout, StaticBufferObject, SystemLayout,
 };
 use bytemuck::{Pod, Zeroable};
 
@@ -25,16 +25,15 @@ impl PipeLineLayout for LightRenderPipeline {
         );
 
         let system_layout = layouts.create_layout(gpu_device, SystemLayout);
-        let texture_layout = layouts.create_layout(gpu_device, TextureLayout);
-
+        let light_layout = layouts.create_layout(gpu_device, LightLayout);
         // Create the render pipeline.
         gpu_device.device().create_render_pipeline(
             &wgpu::RenderPipelineDescriptor {
-                label: Some("Image render pipeline"),
+                label: Some("Lights render pipeline"),
                 layout: Some(&gpu_device.device().create_pipeline_layout(
                     &wgpu::PipelineLayoutDescriptor {
                         label: Some("render_pipeline_layout"),
-                        bind_group_layouts: &[&system_layout, &texture_layout],
+                        bind_group_layouts: &[&system_layout, &light_layout],
                         push_constant_ranges: &[],
                     },
                 )),
@@ -50,9 +49,9 @@ impl PipeLineLayout for LightRenderPipeline {
                             ],
                         },
                         wgpu::VertexBufferLayout {
-                            array_stride: ImageVertex::stride() as u64,
+                            array_stride: LightsVertex::stride() as u64,
                             step_mode: wgpu::VertexStepMode::Instance,
-                            attributes: &ImageVertex::attributes(),
+                            attributes: &LightsVertex::attributes(),
                         },
                     ],
                 },

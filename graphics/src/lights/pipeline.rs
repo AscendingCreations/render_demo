@@ -19,7 +19,7 @@ impl PipeLineLayout for LightRenderPipeline {
             wgpu::ShaderModuleDescriptor {
                 label: Some("Shader"),
                 source: wgpu::ShaderSource::Wgsl(
-                    include_str!("../shaders/imageshader.wgsl").into(),
+                    include_str!("../shaders/lightshader.wgsl").into(),
                 ),
             },
         );

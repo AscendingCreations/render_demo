@@ -1,6 +1,8 @@
+use std::mem;
+
 use crate::{
-    Color, DrawOrder, GpuRenderer, Index, LightsVertex, OrderedIndex, Vec2,
-    Vec3,
+    AreaLightRaw, Color, DirectionalLightRaw, DrawOrder, GpuRenderer, Index,
+    LightsVertex, OrderedIndex, Vec2, Vec3,
 };
 use slab::Slab;
 
@@ -10,10 +12,19 @@ pub struct AreaLight {
     pub pos: Vec2,
     pub color: Color,
     pub max_distance: f32,
-    pub animate: u32,
+    pub animate: bool,
 }
 
-impl AreaLight {}
+impl AreaLight {
+    fn to_raw(&self) -> AreaLightRaw {
+        AreaLightRaw {
+            pos: self.pos.to_array(),
+            color: self.color.0,
+            max_distance: self.max_distance,
+            animate: u32::from(self.animate),
+        }
+    }
+}
 
 pub struct DirectionalLight {
     pub pos: Vec2,
@@ -22,7 +33,21 @@ pub struct DirectionalLight {
     pub max_radius: f32,
     pub smoothness: f32,
     pub angle: f32,
-    pub animate: u32,
+    pub animate: bool,
+}
+
+impl DirectionalLight {
+    fn to_raw(&self) -> DirectionalLightRaw {
+        DirectionalLightRaw {
+            pos: self.pos.to_array(),
+            color: self.color.0,
+            max_distance: self.max_distance,
+            animate: u32::from(self.animate),
+            max_radius: self.max_radius,
+            smoothness: self.smoothness,
+            angle: self.angle,
+        }
+    }
 }
 
 /// rendering data for world Light and all Lights.
@@ -137,7 +162,30 @@ impl Lights {
             self.create_quad(renderer);
         }
 
-        if self.areas_changed {}
+        if self.areas_changed {
+            for (i, (_key, light)) in self.area_lights.iter().enumerate() {
+                renderer.queue().write_buffer(
+                    areas,
+                    (i * mem::size_of::<AreaLightRaw>()) as wgpu::BufferAddress,
+                    bytemuck::bytes_of(&light.to_raw()),
+                );
+            }
+
+            self.areas_changed = false;
+        }
+
+        if self.directionals_changed {
+            for (i, (_key, dir)) in self.directional_lights.iter().enumerate() {
+                renderer.queue().write_buffer(
+                    dirs,
+                    (i * mem::size_of::<DirectionalLightRaw>())
+                        as wgpu::BufferAddress,
+                    bytemuck::bytes_of(&dir.to_raw()),
+                );
+            }
+
+            self.directionals_changed = false;
+        }
 
         OrderedIndex::new(self.order, self.store_id, 0)
     }

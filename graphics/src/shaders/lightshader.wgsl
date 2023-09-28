@@ -1,6 +1,7 @@
 struct Global {
     view: mat4x4<f32>,
     proj: mat4x4<f32>,
+    inverse_proj: mat4x4<f32>,
     eye: vec3<f32>,
     scale: f32,
     size: vec2<f32>,
@@ -76,23 +77,21 @@ fn vertex(
 
     switch v {
         case 1u: {
-            result.tex_coords = global.proj * vec4<f32>(global.size.x, global.size.y, 1.0, 1.0);
             result.clip_position = global.proj * vec4<f32>(global.size.x, 0.0, 1.0, 1.0);
         }
         case 2u: {
-            result.tex_coords = global.proj * vec4<f32>(global.size.x, 0.0, 1.0, 1.0);
             result.clip_position = global.proj * vec4<f32>(global.size.x, global.size.y, 1.0, 1.0);
         }
         case 3u: {
-            result.tex_coords = global.proj * vec4<f32>(0.0, 0.0, 1.0, 1.0);
             result.clip_position = global.proj * vec4<f32>(0.0, global.size.y, 1.0, 1.0);
         }
         default: {
-            result.tex_coords = global.proj * vec4<f32>(0.0, global.size.y, 1.0, 1.0);
             result.clip_position = global.proj * vec4<f32>(0.0, 0.0, 1.0, 1.0);
         }
     }
 
+    result.tex_coords = global.inverse_proj * result.clip_position;
+    result.tex_coords = result.tex_coords / result.tex_coords.w;
     result.col = vertex.world_color;
     result.enable_lights = vertex.enable_lights;
     result.dir_count = vertex.dir_count;
@@ -106,9 +105,9 @@ fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
     var col = vertex.col;
 
     if (vertex.enable_lights > 0u) {
-        for(var i = 0u; i < min(vertex.area_count, c_area_lights); i += 1u) {
-            let light = u_areas[i];
-            let pos = (global.proj * global.view) * vec4<f32>(light.pos.x, light.pos.y, 1.0, 1.0);
+        //for(var i = 0u; i < min(vertex.area_count, c_area_lights); i += 1u) {
+            let light = u_areas[0];
+            let pos = vec4<f32>(light.pos.x, light.pos.y, 1.0, 1.0);
 
             var max_distance = light.max_distance;
 
@@ -117,10 +116,11 @@ fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
             }
     
             let dist = distance(vertex.tex_coords.xy, pos.xy);
-            let value = 1.0 - smoothstep(-1.0, max_distance, dist);
+            let value = smoothstep(0.8, max_distance, dist);
             let color2 = col;
-            col = mix(color2, unpack_color(light.color), vec4<f32>(value));
-        }
+
+            col = mix(unpack_color(light.color), color2, vec4<f32>(value));
+       // }
     } 
 
     if (col.a <= 0.0) {

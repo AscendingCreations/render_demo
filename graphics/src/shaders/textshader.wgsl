@@ -1,6 +1,7 @@
 struct Global {
     view: mat4x4<f32>,
     proj: mat4x4<f32>,
+    inverse_proj: mat4x4<f32>,
     eye: vec3<f32>,
     scale: f32,
     size: vec2<f32>,

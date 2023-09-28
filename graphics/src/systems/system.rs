@@ -43,6 +43,7 @@ impl Layout for SystemLayout {
 pub struct CameraUniform {
     view: mint::ColumnMatrix4<f32>,
     proj: mint::ColumnMatrix4<f32>,
+    inverse_proj: mint::ColumnMatrix4<f32>,
     eye: mint::Vector3<f32>,
     scale: f32,
 }
@@ -106,12 +107,16 @@ where
         // Create the camera uniform.
         let proj = camera.projection();
         let view = camera.view();
+        let mat_proj: Mat4 = proj.clone().into();
+        let mat_view: Mat4 = view.clone().into();
+        let inverse_proj: Mat4 = (mat_proj * mat_view).inverse();
         let eye: mint::Vector3<f32> = camera.eye().into();
         let scale = camera.scale();
 
         let camera_info = CameraUniform {
             view,
             proj,
+            inverse_proj: inverse_proj.into(),
             eye,
             scale,
         };
@@ -179,12 +184,18 @@ where
         if self.camera.update(frame_time.delta_seconds()) {
             let proj = self.camera.projection();
             let view = self.camera.view();
+            let mat_proj: Mat4 = proj.clone().into();
+            let mat_view: Mat4 = view.clone().into();
+            let inverse_proj: Mat4 = (mat_proj * mat_view).inverse();
+            //inverse_proj = inverse_proj.inverse();
+
             let eye: mint::Vector3<f32> = self.camera.eye().into();
             let scale = self.camera.scale();
 
             let camera_info = CameraUniform {
                 view,
                 proj,
+                inverse_proj: inverse_proj.into(),
                 eye,
                 scale,
             };
@@ -202,7 +213,7 @@ where
 
         renderer.queue().write_buffer(
             &self.global_buffer,
-            152,
+            216,
             time_info.as_std140().as_bytes(),
         );
     }
@@ -223,7 +234,7 @@ where
 
             renderer.queue().write_buffer(
                 &self.global_buffer,
-                144,
+                208,
                 screen_info.as_std140().as_bytes(),
             );
         }

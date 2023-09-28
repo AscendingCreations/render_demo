@@ -389,13 +389,13 @@ async fn main() -> Result<(), AscendingError> {
 
     let mut lights = Lights::new(&mut renderer, 0);
 
-    lights.world_color = Vec4::new(0.0, 0.0, 0.0, 0.9);
+    lights.world_color = Vec4::new(0.0, 0.0, 0.0, 0.98);
     lights.enable_lights = true;
 
     lights.insert_area_light(AreaLight {
-        pos: Vec2::new(96.0, 96.0),
-        color: Color::rgba(150, 0, 0, 100),
-        max_distance: 20.0,
+        pos: Vec2::new(128.0, 128.0),
+        color: Color::rgba(150, 0, 0, 10),
+        max_distance: 64.0,
         animate: false,
     });
     // Allow the window to be seen. hiding it then making visible speeds up

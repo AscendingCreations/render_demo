@@ -1,65 +1,90 @@
+use std::{iter, mem};
+
 use crate::{
-    AscendingError, GpuRenderer, InstanceBuffer, LightLayout,
-    LightRenderPipeline, Lights, LightsVertex, OrderedIndex,
-    StaticBufferObject,
+    AreaLightLayout, AreaLightRaw, AscendingError, DirLightLayout,
+    DirectionalLightRaw, GpuRenderer, InstanceBuffer, LightRenderPipeline,
+    Lights, LightsVertex, OrderedIndex, StaticBufferObject,
 };
 
-use wgpu::util::DeviceExt;
+use wgpu::util::{align_to, DeviceExt};
 
 pub struct LightRenderer {
     pub buffer: InstanceBuffer<LightsVertex>,
     area_buffer: wgpu::Buffer,
     dir_buffer: wgpu::Buffer,
-    bind_group: wgpu::BindGroup,
+    area_bind_group: wgpu::BindGroup,
+    dir_bind_group: wgpu::BindGroup,
 }
 
 impl LightRenderer {
     pub fn new(renderer: &mut GpuRenderer) -> Result<Self, AscendingError> {
+        let area_alignment: usize =
+            align_to(mem::size_of::<AreaLightRaw>(), 32) as usize;
+        let dir_alignment: usize =
+            align_to(mem::size_of::<DirectionalLightRaw>(), 32) as usize;
+
+        let area: Vec<u8> =
+            iter::repeat(0u8).take(2000 * area_alignment).collect();
+
         let area_buffer = renderer.device().create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Area Light buffer"),
-                contents: &[0; 40000], //2000
+                contents: &area, //2000
                 usage: wgpu::BufferUsages::UNIFORM
                     | wgpu::BufferUsages::COPY_DST,
             },
         );
+
+        let dirs: Vec<u8> =
+            iter::repeat(0u8).take(2000 * dir_alignment).collect();
 
         let dir_buffer = renderer.device().create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Directional Light buffer"),
-                contents: &[0; 64000], //2000
+                contents: &dirs, //2000
                 usage: wgpu::BufferUsages::UNIFORM
                     | wgpu::BufferUsages::COPY_DST,
             },
         );
 
-        // Create the bind group layout for the camera.
-        let layout = renderer.create_layout(LightLayout);
+        // Create the bind group layout for the area lights.
+        let layout = renderer.create_layout(AreaLightLayout);
 
         // Create the bind group.
-        let bind_group =
+        let area_bind_group =
             renderer
                 .device()
                 .create_bind_group(&wgpu::BindGroupDescriptor {
                     layout: &layout,
-                    entries: &[
-                        wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: area_buffer.as_entire_binding(),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 1,
-                            resource: dir_buffer.as_entire_binding(),
-                        },
-                    ],
-                    label: Some("lights_bind_group"),
+                    entries: &[wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: area_buffer.as_entire_binding(),
+                    }],
+                    label: Some("area_lights_bind_group"),
+                });
+
+        // Create the bind group layout for the directional lights.
+        let layout = renderer.create_layout(DirLightLayout);
+
+        // Create the bind group.
+        let dir_bind_group =
+            renderer
+                .device()
+                .create_bind_group(&wgpu::BindGroupDescriptor {
+                    layout: &layout,
+                    entries: &[wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: dir_buffer.as_entire_binding(),
+                    }],
+                    label: Some("dir_lights_bind_group"),
                 });
 
         Ok(Self {
             buffer: InstanceBuffer::new(renderer.gpu_device()),
             dir_buffer,
             area_buffer,
-            bind_group,
+            area_bind_group,
+            dir_bind_group,
         })
     }
 
@@ -111,7 +136,8 @@ where
         buffer: &'b LightRenderer,
     ) {
         if buffer.buffer.count() > 0 {
-            self.set_bind_group(1, &buffer.bind_group, &[]);
+            self.set_bind_group(1, &buffer.area_bind_group, &[]);
+            self.set_bind_group(2, &buffer.dir_bind_group, &[]);
             self.set_vertex_buffer(1, buffer.buffer.instances(None));
             self.set_pipeline(
                 renderer.get_pipelines(LightRenderPipeline).unwrap(),

@@ -5,6 +5,7 @@ use camera::{
     Projection,
 };
 use cosmic_text::{Attrs, Metrics};
+use glam::vec4;
 use graphics::*;
 use hecs::World;
 use input::{Bindings, FrameTime, InputHandler};
@@ -188,7 +189,7 @@ async fn main() -> Result<(), AscendingError> {
         // To name this atm to keep it seperated from Sprite that would contain most of the actual not rendering
         // data needed.
         let mut sprite = Image::new(Some(allocation), &mut renderer, 1);
-        sprite.pos = Vec3::new(x, y, 3.1);
+        sprite.pos = Vec3::new(x, y, 4.1);
         sprite.hw = Vec2::new(48.0, 48.0);
         sprite.uv = Vec4::new(48.0, 96.0, 48.0, 48.0);
         sprite.color = Color::rgba(255, 255, 255, 255);
@@ -196,7 +197,7 @@ async fn main() -> Result<(), AscendingError> {
         x += 12.0;
     }
 
-    sprites[0].pos.z = 3.0;
+    sprites[0].pos.z = 4.0;
     sprites[0].color = Color::rgba(255, 255, 255, 120);
 
     // We establish the different renderers here to load their data up to use them.
@@ -204,6 +205,7 @@ async fn main() -> Result<(), AscendingError> {
     let sprite_renderer = ImageRenderer::new(&renderer).unwrap();
     let map_renderer = MapRenderer::new(&mut renderer, 81).unwrap();
     let mesh_renderer = Mesh2DRenderer::new(&renderer).unwrap();
+    let light_renderer = LightRenderer::new(&mut renderer).unwrap();
 
     // get the screen size.
     let mut size = renderer.size();
@@ -385,6 +387,17 @@ async fn main() -> Result<(), AscendingError> {
         &mut debug,
     );
 
+    let mut lights = Lights::new(&mut renderer, 0);
+
+    lights.world_color = Vec4::new(0.0, 0.0, 0.0, 0.9);
+    lights.enable_lights = true;
+
+    lights.insert_area_light(AreaLight {
+        pos: Vec2::new(96.0, 96.0),
+        color: Color::rgba(150, 0, 0, 100),
+        max_distance: 20.0,
+        animate: false,
+    });
     // Allow the window to be seen. hiding it then making visible speeds up
     // load times.
     renderer.window().set_visible(true);
@@ -404,6 +417,8 @@ async fn main() -> Result<(), AscendingError> {
         mesh,
         mesh_atlas: atlases.remove(0),
         mesh_renderer,
+        lights,
+        light_renderer,
     };
 
     // Create the mouse/keyboard bindings for our stuff.
@@ -554,6 +569,11 @@ async fn main() -> Result<(), AscendingError> {
         state.text_renderer.finalize(&mut renderer);
         state.map_renderer.map_update(&mut state.map, &mut renderer);
         state.map_renderer.finalize(&mut renderer);
+
+        state
+            .light_renderer
+            .lights_update(&mut state.lights, &mut renderer);
+        state.light_renderer.finalize(&mut renderer);
         /*  state.mesh.iter_mut().for_each(|mesh| {
             state.mesh_renderer.mesh_update(mesh, &mut renderer);
         });

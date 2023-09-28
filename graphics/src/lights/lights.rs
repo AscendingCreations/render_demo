@@ -2,9 +2,10 @@ use std::mem;
 
 use crate::{
     AreaLightRaw, Color, DirectionalLightRaw, DrawOrder, GpuRenderer, Index,
-    LightsVertex, OrderedIndex, Vec2, Vec3,
+    LightsVertex, OrderedIndex, Vec2, Vec3, Vec4,
 };
 use slab::Slab;
+use wgpu::util::align_to;
 
 pub const MAX_LIGHTS: usize = 2000;
 
@@ -52,7 +53,7 @@ impl DirectionalLight {
 
 /// rendering data for world Light and all Lights.
 pub struct Lights {
-    pub world_color: Color,
+    pub world_color: Vec4,
     pub enable_lights: bool,
     pub store_id: Index,
     pub order: DrawOrder,
@@ -70,7 +71,7 @@ pub struct Lights {
 impl Lights {
     pub fn new(renderer: &mut GpuRenderer, render_layer: u32) -> Self {
         Self {
-            world_color: Color::rgba(255, 255, 255, 0),
+            world_color: Vec4::new(1.0, 1.0, 1.0, 0.0),
             enable_lights: false,
             store_id: renderer.new_buffer(),
             order: DrawOrder::default(),
@@ -87,7 +88,7 @@ impl Lights {
 
     pub fn create_quad(&mut self, renderer: &mut GpuRenderer) {
         let instance = LightsVertex {
-            world_color: self.world_color.0,
+            world_color: self.world_color.to_array(),
             enable_lights: u32::from(self.enable_lights),
             dir_count: self.directional_lights.len() as u32,
             area_count: self.area_lights.len() as u32,
@@ -163,10 +164,12 @@ impl Lights {
         }
 
         if self.areas_changed {
+            let area_alignment: usize =
+                align_to(mem::size_of::<AreaLightRaw>(), 32) as usize;
             for (i, (_key, light)) in self.area_lights.iter().enumerate() {
                 renderer.queue().write_buffer(
                     areas,
-                    (i * mem::size_of::<AreaLightRaw>()) as wgpu::BufferAddress,
+                    (i * area_alignment) as wgpu::BufferAddress,
                     bytemuck::bytes_of(&light.to_raw()),
                 );
             }
@@ -175,11 +178,12 @@ impl Lights {
         }
 
         if self.directionals_changed {
+            let dir_alignment: usize =
+                align_to(mem::size_of::<DirectionalLightRaw>(), 32) as usize;
             for (i, (_key, dir)) in self.directional_lights.iter().enumerate() {
                 renderer.queue().write_buffer(
                     dirs,
-                    (i * mem::size_of::<DirectionalLightRaw>())
-                        as wgpu::BufferAddress,
+                    (i * dir_alignment) as wgpu::BufferAddress,
                     bytemuck::bytes_of(&dir.to_raw()),
                 );
             }

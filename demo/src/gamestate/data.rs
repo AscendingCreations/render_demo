@@ -11,7 +11,7 @@ where
     pub system: System<Controls>,
     /// Data stores for render types
     pub sprites: Vec<Image>,
-
+    pub lights: Lights,
     pub animation: Image,
     pub map: Map,
     pub mesh: [Mesh2D; 2],
@@ -24,6 +24,7 @@ where
     pub text_renderer: TextRenderer,
     pub sprite_renderer: ImageRenderer,
     pub map_renderer: MapRenderer,
+    pub light_renderer: LightRenderer,
     pub mesh_renderer: Mesh2DRenderer,
 }
 
@@ -83,6 +84,8 @@ where
         pass.render_upper_maps(renderer, &self.map_renderer, &self.map_atlas);
 
         pass.render_text(renderer, &self.text_renderer, &self.text_atlas);
+
+        pass.render_lights(renderer, &self.light_renderer);
 
         pass.render_2dmeshs(renderer, &self.mesh_renderer);
     }

@@ -224,6 +224,13 @@ impl GpuRenderer {
             surface_format,
             crate::Mesh2DRenderPipeline,
         );
+
+        self.pipeline_storage.create_pipeline(
+            &mut self.device,
+            &mut self.layout_storage,
+            surface_format,
+            crate::LightRenderPipeline,
+        );
     }
 
     pub fn get_pipelines<K: PipeLineLayout>(

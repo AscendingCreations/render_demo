@@ -1,6 +1,6 @@
 use crate::{
-    BufferLayout, GpuDevice, LayoutStorage, LightLayout, LightsVertex,
-    PipeLineLayout, StaticBufferObject, SystemLayout,
+    AreaLightLayout, BufferLayout, DirLightLayout, GpuDevice, LayoutStorage,
+    LightsVertex, PipeLineLayout, StaticBufferObject, SystemLayout,
 };
 use bytemuck::{Pod, Zeroable};
 
@@ -25,7 +25,10 @@ impl PipeLineLayout for LightRenderPipeline {
         );
 
         let system_layout = layouts.create_layout(gpu_device, SystemLayout);
-        let light_layout = layouts.create_layout(gpu_device, LightLayout);
+        let area_light_layout =
+            layouts.create_layout(gpu_device, AreaLightLayout);
+        let dir_light_layout =
+            layouts.create_layout(gpu_device, DirLightLayout);
         // Create the render pipeline.
         gpu_device.device().create_render_pipeline(
             &wgpu::RenderPipelineDescriptor {
@@ -33,7 +36,11 @@ impl PipeLineLayout for LightRenderPipeline {
                 layout: Some(&gpu_device.device().create_pipeline_layout(
                     &wgpu::PipelineLayoutDescriptor {
                         label: Some("render_pipeline_layout"),
-                        bind_group_layouts: &[&system_layout, &light_layout],
+                        bind_group_layouts: &[
+                            &system_layout,
+                            &area_light_layout,
+                            &dir_light_layout,
+                        ],
                         push_constant_ranges: &[],
                     },
                 )),

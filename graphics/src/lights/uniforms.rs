@@ -24,38 +24,53 @@ pub struct DirectionalLightRaw {
 
 #[repr(C)]
 #[derive(Clone, Copy, Hash, Pod, Zeroable)]
-pub struct LightLayout;
+pub struct AreaLightLayout;
 
-impl Layout for LightLayout {
+impl Layout for AreaLightLayout {
     fn create_layout(
         &self,
         gpu_device: &mut GpuDevice,
     ) -> wgpu::BindGroupLayout {
         gpu_device.device().create_bind_group_layout(
             &wgpu::BindGroupLayoutDescriptor {
-                label: Some("light_bind_group_layout"),
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
+                label: Some("area_light_bind_group_layout"),
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
                     },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
+                    count: None,
+                }],
+            },
+        )
+    }
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Hash, Pod, Zeroable)]
+pub struct DirLightLayout;
+
+impl Layout for DirLightLayout {
+    fn create_layout(
+        &self,
+        gpu_device: &mut GpuDevice,
+    ) -> wgpu::BindGroupLayout {
+        gpu_device.device().create_bind_group_layout(
+            &wgpu::BindGroupLayoutDescriptor {
+                label: Some("dir_light_bind_group_layout"),
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
                     },
-                ],
+                    count: None,
+                }],
             },
         )
     }

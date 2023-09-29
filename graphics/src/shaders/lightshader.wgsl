@@ -125,7 +125,6 @@ fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
             }
 
             let dist = distance(pos.xy, vertex.tex_coords.xy);
-            let d = dist;
             let cutoff = max(0.1, max_distance);
             let value = fade(dist, 0.0, 1.0, cutoff, light.dither);
             let color2 = col; 

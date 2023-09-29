@@ -389,7 +389,7 @@ async fn main() -> Result<(), AscendingError> {
 
     let mut lights = Lights::new(&mut renderer, 0);
 
-    lights.world_color = Vec4::new(0.0, 0.0, 0.0, 0.98);
+    lights.world_color = Vec4::new(0.0, 0.0, 0.0, 0.998);
     lights.enable_lights = true;
 
     lights.insert_area_light(AreaLight {

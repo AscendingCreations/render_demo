@@ -116,10 +116,12 @@ fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
             }
     
             let dist = distance(vertex.tex_coords.xy, pos.xy);
-            let value = smoothstep(0.8, max_distance, dist);
-            let color2 = col;
+            let d = min(1.0, dist / max_distance);
+            let value = pow(1.0 - pow(d, 2.0), 2.0) / (1.0 + pow(d, 2.0));
+            //let value2 = clamp(value, 0.0, 1.0);
+            let color2 = col; 
 
-            col = mix(unpack_color(light.color), color2, vec4<f32>(value));
+            col = mix(color2,unpack_color(light.color), vec4<f32>(value));
        // }
     } 
 

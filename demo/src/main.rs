@@ -394,9 +394,29 @@ async fn main() -> Result<(), AscendingError> {
 
     lights.insert_area_light(AreaLight {
         pos: Vec2::new(128.0, 128.0),
-        color: Color::rgba(255, 255, 0, 5),
+        color: Color::rgba(255, 0, 0, 20),
         max_distance: 64.0,
-        animate: false,
+        animate: true,
+        anim_speed: 5.0,
+        dither: 5.0,
+    });
+
+    lights.insert_area_light(AreaLight {
+        pos: Vec2::new(196.0, 128.0),
+        color: Color::rgba(255, 255, 0, 20),
+        max_distance: 64.0,
+        animate: true,
+        anim_speed: 5.0,
+        dither: 2.0,
+    });
+
+    lights.insert_area_light(AreaLight {
+        pos: Vec2::new(128.0, 175.0),
+        color: Color::rgba(255, 255, 0, 20),
+        max_distance: 64.0,
+        animate: true,
+        anim_speed: 15.0,
+        dither: 2.0,
     });
     // Allow the window to be seen. hiding it then making visible speeds up
     // load times.

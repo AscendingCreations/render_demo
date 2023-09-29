@@ -3,7 +3,8 @@ use std::{iter, mem};
 use crate::{
     AreaLightLayout, AreaLightRaw, AscendingError, DirLightLayout,
     DirectionalLightRaw, GpuRenderer, InstanceBuffer, LightRenderPipeline,
-    Lights, LightsVertex, OrderedIndex, StaticBufferObject,
+    Lights, LightsVertex, OrderedIndex, StaticBufferObject, MAX_AREA_LIGHTS,
+    MAX_DIR_LIGHTS,
 };
 
 use wgpu::util::{align_to, DeviceExt};
@@ -18,13 +19,16 @@ pub struct LightRenderer {
 
 impl LightRenderer {
     pub fn new(renderer: &mut GpuRenderer) -> Result<Self, AscendingError> {
+        // The size + Padding == 32.
         let area_alignment: usize =
             align_to(mem::size_of::<AreaLightRaw>(), 32) as usize;
+        // The size + Padding == 48.
         let dir_alignment: usize =
-            align_to(mem::size_of::<DirectionalLightRaw>(), 32) as usize;
+            align_to(mem::size_of::<DirectionalLightRaw>(), 48) as usize;
 
-        let area: Vec<u8> =
-            iter::repeat(0u8).take(2000 * area_alignment).collect();
+        let area: Vec<u8> = iter::repeat(0u8)
+            .take(MAX_AREA_LIGHTS * area_alignment)
+            .collect();
 
         let area_buffer = renderer.device().create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
@@ -35,8 +39,9 @@ impl LightRenderer {
             },
         );
 
-        let dirs: Vec<u8> =
-            iter::repeat(0u8).take(2000 * dir_alignment).collect();
+        let dirs: Vec<u8> = iter::repeat(0u8)
+            .take(MAX_DIR_LIGHTS * dir_alignment)
+            .collect();
 
         let dir_buffer = renderer.device().create_buffer_init(
             &wgpu::util::BufferInitDescriptor {

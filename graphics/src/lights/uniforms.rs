@@ -7,6 +7,8 @@ pub struct AreaLightRaw {
     pub pos: [f32; 2],
     pub color: u32,
     pub max_distance: f32,
+    pub anim_speed: f32,
+    pub dither: f32,
     pub animate: u32,
 }
 

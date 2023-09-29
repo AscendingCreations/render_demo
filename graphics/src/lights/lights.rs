@@ -7,12 +7,15 @@ use crate::{
 use slab::Slab;
 use wgpu::util::align_to;
 
-pub const MAX_LIGHTS: usize = 2000;
+pub const MAX_AREA_LIGHTS: usize = 2_000;
+pub const MAX_DIR_LIGHTS: usize = 1_365;
 
 pub struct AreaLight {
     pub pos: Vec2,
     pub color: Color,
     pub max_distance: f32,
+    pub anim_speed: f32,
+    pub dither: f32,
     pub animate: bool,
 }
 
@@ -22,6 +25,8 @@ impl AreaLight {
             pos: self.pos.to_array(),
             color: self.color.0,
             max_distance: self.max_distance,
+            dither: self.dither,
+            anim_speed: self.anim_speed,
             animate: u32::from(self.animate),
         }
     }
@@ -76,8 +81,8 @@ impl Lights {
             store_id: renderer.new_buffer(),
             order: DrawOrder::default(),
             render_layer,
-            area_lights: Slab::with_capacity(MAX_LIGHTS),
-            directional_lights: Slab::with_capacity(MAX_LIGHTS),
+            area_lights: Slab::with_capacity(MAX_AREA_LIGHTS),
+            directional_lights: Slab::with_capacity(MAX_DIR_LIGHTS),
             area_count: 0,
             dir_count: 0,
             changed: true,
@@ -104,7 +109,7 @@ impl Lights {
     }
 
     pub fn insert_area_light(&mut self, light: AreaLight) -> Option<usize> {
-        if self.area_lights.len() + 1 >= MAX_LIGHTS {
+        if self.area_lights.len() + 1 >= MAX_AREA_LIGHTS {
             return None;
         }
 
@@ -128,7 +133,7 @@ impl Lights {
         &mut self,
         light: DirectionalLight,
     ) -> Option<usize> {
-        if self.directional_lights.len() + 1 >= MAX_LIGHTS {
+        if self.directional_lights.len() + 1 >= MAX_DIR_LIGHTS {
             return None;
         }
 
@@ -179,7 +184,7 @@ impl Lights {
 
         if self.directionals_changed {
             let dir_alignment: usize =
-                align_to(mem::size_of::<DirectionalLightRaw>(), 32) as usize;
+                align_to(mem::size_of::<DirectionalLightRaw>(), 48) as usize;
             for (i, (_key, dir)) in self.directional_lights.iter().enumerate() {
                 renderer.queue().write_buffer(
                     dirs,

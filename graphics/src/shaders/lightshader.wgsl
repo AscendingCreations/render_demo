@@ -12,8 +12,9 @@ struct AreaLights {
     pos: vec2<f32>,
     color: u32,
     max_distance: f32,
+    anim_speed: f32,
+    dither: f32,
     animate: u32,
-    padding: vec3<f32>,
 };
 
 
@@ -50,14 +51,14 @@ struct VertexOutput {
 };
 
 const c_area_lights: u32 = 2000u;
-const c_dir_lights: u32 = 2000u;
+const c_dir_lights: u32 = 1365u;
 
 @group(1)
 @binding(0)
-var<uniform> u_areas: array<AreaLights, 2000>;
+var<uniform> u_areas: array<AreaLights, c_area_lights>;
 @group(2)
 @binding(0)
-var<uniform> u_dirs: array<DirLights, 2000>;
+var<uniform> u_dirs: array<DirLights, c_dir_lights>;
 
 fn unpack_color(color: u32) -> vec4<f32> {
     return vec4<f32>(
@@ -99,15 +100,20 @@ fn vertex(
     return result;
 }
 
+fn fade(d: f32, x0: f32, x1: f32, c: f32, w: f32) -> f32 {
+   let w1 = max(0.000001, w);
+   let sD = 1.0 / (1.0 + exp(-(c-d)/w1));
+   return x1 - (x0 + (x1 - x0)*(1.0 - sD));
+}
+
 // Fragment shader
 @fragment
 fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
     var col = vertex.col;
 
     if (vertex.enable_lights > 0u) {
-        
-        //for(var i = 0u; i < min(vertex.area_count, c_area_lights); i += 1u) {
-            let light = u_areas[0];
+        for(var i = 0u; i < min(vertex.area_count, c_area_lights); i += 1u) {
+            let light = u_areas[i];
             let light_color = unpack_color(light.color);
             let light_color2 = vec4<f32>(light_color.rgb, 0.05);
             let pos = vec4<f32>(light.pos.x, light.pos.y, 1.0, 1.0);
@@ -115,20 +121,16 @@ fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
             var max_distance = light.max_distance;
 
             if (light.animate > 0u) {
-                max_distance = light.max_distance - 0.015 * sin(global.seconds);
+                max_distance = light.max_distance - (2.0 * sin(global.seconds * light.anim_speed));
             }
 
-
             let dist = distance(pos.xy, vertex.tex_coords.xy);
-            let d = min(1.0, dist / max_distance);
-            let d2 = min(0.0, dist  / max_distance * 0.5 );
-            let value = pow(1.0 - pow(d, 2.0), 2.0) / (1.0 + pow(d, 2.0));
-            let value2 = pow(1.0 - pow(d2, 2.0), 2.0) / (1.0 + pow(d2, 2.0));
-            //let value2 = clamp(value + 0.1, 0.0, 1.0);
+            let d = dist;
+            let cutoff = max(0.1, max_distance);
+            let value = fade(dist, 0.0, 1.0, cutoff, light.dither);
             let color2 = col; 
-            let color3 = mix(color2, light_color, vec4<f32>(value));
-            col = mix(color3, light_color2, vec4<f32>(d2));
-       // }
+            col = mix(color2, light_color, vec4<f32>(value));
+        }
     } 
 
     if (col.a <= 0.0) {

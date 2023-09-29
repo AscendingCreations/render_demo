@@ -392,7 +392,7 @@ async fn main() -> Result<(), AscendingError> {
     lights.world_color = Vec4::new(0.0, 0.0, 0.0, 0.998);
     lights.enable_lights = true;
 
-    lights.insert_area_light(AreaLight {
+    /* lights.insert_area_light(AreaLight {
         pos: Vec2::new(128.0, 128.0),
         color: Color::rgba(255, 0, 0, 20),
         max_distance: 64.0,
@@ -417,7 +417,19 @@ async fn main() -> Result<(), AscendingError> {
         animate: true,
         anim_speed: 15.0,
         dither: 2.0,
+    });*/
+
+    lights.insert_directional_light(DirectionalLight {
+        pos: Vec2::new(128.0, 128.0),
+        color: Color::rgba(255, 255, 0, 20),
+        max_distance: 90.0,
+        max_width: 45.0,
+        anim_speed: 2.0,
+        angle: 270.0,
+        dither: 4.0,
+        animate: false,
     });
+
     // Allow the window to be seen. hiding it then making visible speeds up
     // load times.
     renderer.window().set_visible(true);

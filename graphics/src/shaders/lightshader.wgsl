@@ -22,10 +22,12 @@ struct DirLights {
     pos: vec2<f32>,
     color: u32,
     max_distance: f32,
-    max_radius: f32,
-    smoothness: f32,
+    max_width: f32,
+    anim_speed: f32,
     angle: f32,
+    dither: f32,
     animate: u32,
+    padding: vec2<f32>,
 };
 
 @group(0)
@@ -106,6 +108,55 @@ fn fade(d: f32, x0: f32, x1: f32, c: f32, w: f32) -> f32 {
    return x1 - (x0 + (x1 - x0)*(1.0 - sD));
 }
 
+fn normalize_360(angle: f32) -> f32 {
+    return angle % 360.0;
+}
+
+fn normalize_180(angle: f32) -> f32 {
+    let angle2 = normalize_360(angle);
+    if angle2 > 180.0 {
+        return angle2 - 360.0;
+    } else {
+        if angle2 < -180.0 {
+           return angle2 + 360.0;
+        } else {
+            return angle2;
+        }
+    }
+}
+
+fn within_range(testAngle: f32, a: f32, b: f32 ) -> bool {
+    let a1 = a - testAngle;
+    let b1 = b - testAngle;
+
+    let a2 = normalize_180( a1 );
+    let b2 = normalize_180( b1 );
+
+    if ( a2 * b2 >= 0.0 ) {
+        return false;
+    } else {
+        return abs( a2 - b2 ) < 180.0;
+    }
+}
+
+fn flash_light(light_pos: vec2<f32>, pixel_pos: vec2<f32>, dir: f32, w_angle: f32, range: f32, dither: f32) -> f32 {
+    let s_angle = dir - (w_angle / 2.0);
+    let e_angle = dir + (w_angle / 2.0);
+    let deg = normalize_360(atan2(pixel_pos.y - light_pos.y, pixel_pos.x - light_pos.x) * 180.0 / 3.14159265);
+
+    if (within_range(deg, s_angle, e_angle)) {
+        let d = distance(light_pos, pixel_pos);
+
+        if (d > range) {
+            return 0.0;
+        }
+
+        return fade(d, 0.0, 1.0, range, dither);
+    }
+
+    return 0.0;
+}
+
 // Fragment shader
 @fragment
 fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
@@ -115,12 +166,23 @@ fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
         for(var i = 0u; i < min(vertex.area_count, c_area_lights); i += 1u) {
             let light = u_areas[i];
             let light_color = unpack_color(light.color);
-            let light_color2 = vec4<f32>(light_color.rgb, 0.05);
-            let pos = vec4<f32>(light.pos.x, light.pos.y, 1.0, 1.0);
+            let pos = vec2<f32>(light.pos.x, light.pos.y);
             let max_distance = light.max_distance - (f32(light.animate) *(2.0 * sin(global.seconds * light.anim_speed)));
             let dist = distance(pos.xy, vertex.tex_coords.xy);
             let cutoff = max(0.1, max_distance);
             let value = fade(dist, 0.0, 1.0, cutoff, light.dither);
+            let color2 = col; 
+            col = mix(color2, light_color, vec4<f32>(value));
+        }
+
+        for(var i = 0u; i < min(vertex.dir_count, c_dir_lights); i += 1u) {
+            let light = u_dirs[i];
+            let light_color = unpack_color(light.color);
+            let max_distance = light.max_distance - (f32(light.animate) *(2.0 * sin(global.seconds * light.anim_speed)));
+            let dist_cutoff = max(0.1, max_distance);
+            let max_width = light.max_width - (f32(light.animate) *(1.0 * sin(global.seconds * light.anim_speed)));
+            let width_cutoff = max(0.1, max_width);
+            let value = flash_light(light.pos, vertex.tex_coords.xy, light.angle, width_cutoff, dist_cutoff, light.dither);
             let color2 = col; 
             col = mix(color2, light_color, vec4<f32>(value));
         }

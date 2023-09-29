@@ -18,9 +18,10 @@ pub struct DirectionalLightRaw {
     pub pos: [f32; 2],
     pub color: u32,
     pub max_distance: f32,
-    pub max_radius: f32,
-    pub smoothness: f32,
+    pub max_width: f32,
+    pub anim_speed: f32,
     pub angle: f32,
+    pub dither: f32,
     pub animate: u32,
 }
 

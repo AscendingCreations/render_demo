@@ -36,9 +36,10 @@ pub struct DirectionalLight {
     pub pos: Vec2,
     pub color: Color,
     pub max_distance: f32,
-    pub max_radius: f32,
-    pub smoothness: f32,
+    pub max_width: f32,
+    pub anim_speed: f32,
     pub angle: f32,
+    pub dither: f32,
     pub animate: bool,
 }
 
@@ -49,8 +50,9 @@ impl DirectionalLight {
             color: self.color.0,
             max_distance: self.max_distance,
             animate: u32::from(self.animate),
-            max_radius: self.max_radius,
-            smoothness: self.smoothness,
+            max_width: self.max_width,
+            anim_speed: self.anim_speed,
+            dither: self.dither,
             angle: self.angle,
         }
     }

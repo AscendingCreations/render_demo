@@ -105,8 +105,11 @@ fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
     var col = vertex.col;
 
     if (vertex.enable_lights > 0u) {
+        
         //for(var i = 0u; i < min(vertex.area_count, c_area_lights); i += 1u) {
             let light = u_areas[0];
+            let light_color = unpack_color(light.color);
+            let light_color2 = vec4<f32>(light_color.rgb, 0.05);
             let pos = vec4<f32>(light.pos.x, light.pos.y, 1.0, 1.0);
 
             var max_distance = light.max_distance;
@@ -114,14 +117,17 @@ fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
             if (light.animate > 0u) {
                 max_distance = light.max_distance - 0.015 * sin(global.seconds);
             }
-    
-            let dist = distance(vertex.tex_coords.xy, pos.xy);
-            let d = min(1.0, dist / max_distance);
-            let value = pow(1.0 - pow(d, 2.0), 2.0) / (1.0 + pow(d, 2.0));
-            //let value2 = clamp(value, 0.0, 1.0);
-            let color2 = col; 
 
-            col = mix(color2,unpack_color(light.color), vec4<f32>(value));
+
+            let dist = distance(pos.xy, vertex.tex_coords.xy);
+            let d = min(1.0, dist / max_distance);
+            let d2 = min(0.0, dist  / max_distance * 0.5 );
+            let value = pow(1.0 - pow(d, 2.0), 2.0) / (1.0 + pow(d, 2.0));
+            let value2 = pow(1.0 - pow(d2, 2.0), 2.0) / (1.0 + pow(d2, 2.0));
+            //let value2 = clamp(value + 0.1, 0.0, 1.0);
+            let color2 = col; 
+            let color3 = mix(color2, light_color, vec4<f32>(value));
+            col = mix(color3, light_color2, vec4<f32>(d2));
        // }
     } 
 

@@ -394,7 +394,7 @@ async fn main() -> Result<(), AscendingError> {
 
     lights.insert_area_light(AreaLight {
         pos: Vec2::new(128.0, 128.0),
-        color: Color::rgba(150, 0, 0, 10),
+        color: Color::rgba(255, 255, 0, 5),
         max_distance: 64.0,
         animate: false,
     });

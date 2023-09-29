@@ -117,13 +117,7 @@ fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
             let light_color = unpack_color(light.color);
             let light_color2 = vec4<f32>(light_color.rgb, 0.05);
             let pos = vec4<f32>(light.pos.x, light.pos.y, 1.0, 1.0);
-
-            var max_distance = light.max_distance;
-
-            if (light.animate > 0u) {
-                max_distance = light.max_distance - (2.0 * sin(global.seconds * light.anim_speed));
-            }
-
+            let max_distance = light.max_distance - (f32(light.animate) *(2.0 * sin(global.seconds * light.anim_speed)));
             let dist = distance(pos.xy, vertex.tex_coords.xy);
             let cutoff = max(0.1, max_distance);
             let value = fade(dist, 0.0, 1.0, cutoff, light.dither);

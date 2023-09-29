@@ -396,7 +396,7 @@ async fn main() -> Result<(), AscendingError> {
         pos: Vec2::new(128.0, 128.0),
         color: Color::rgba(255, 0, 0, 20),
         max_distance: 64.0,
-        animate: true,
+        animate: false,
         anim_speed: 5.0,
         dither: 5.0,
     });
@@ -405,7 +405,7 @@ async fn main() -> Result<(), AscendingError> {
         pos: Vec2::new(196.0, 128.0),
         color: Color::rgba(255, 255, 0, 20),
         max_distance: 64.0,
-        animate: true,
+        animate: false,
         anim_speed: 5.0,
         dither: 2.0,
     });

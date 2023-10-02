@@ -408,25 +408,25 @@ async fn main() -> Result<(), AscendingError> {
         animate: false,
         anim_speed: 5.0,
         dither: 2.0,
-    });
-
-    lights.insert_area_light(AreaLight {
-        pos: Vec2::new(128.0, 175.0),
-        color: Color::rgba(255, 255, 0, 20),
-        max_distance: 64.0,
-        animate: true,
-        anim_speed: 15.0,
-        dither: 2.0,
     });*/
 
+    lights.insert_area_light(AreaLight {
+        pos: Vec2::new(24.0, 24.0),
+        color: Color::rgba(255, 255, 0, 20),
+        max_distance: 20.0,
+        animate: false,
+        anim_speed: 5.0,
+        dither: 0.5,
+    });
+
     lights.insert_directional_light(DirectionalLight {
-        pos: Vec2::new(128.0, 128.0),
+        pos: Vec2::new(24.0, 24.0),
         color: Color::rgba(255, 255, 0, 20),
         max_distance: 90.0,
-        max_width: 45.0,
+        max_width: 10.0,
         anim_speed: 2.0,
-        angle: 270.0,
-        dither: 4.0,
+        angle: 90.0,
+        dither: 6.0,
         animate: false,
     });
 

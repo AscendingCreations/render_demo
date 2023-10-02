@@ -167,7 +167,7 @@ fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
             let light = u_areas[i];
             let light_color = unpack_color(light.color);
             let pos = vec2<f32>(light.pos.x, light.pos.y);
-            let max_distance = light.max_distance - (f32(light.animate) *(2.0 * sin(global.seconds * light.anim_speed)));
+            let max_distance = light.max_distance - (f32(light.animate) *(1.0 * sin(global.seconds * light.anim_speed)));
             let dist = distance(pos.xy, vertex.tex_coords.xy);
             let cutoff = max(0.1, max_distance);
             let value = fade(dist, 0.0, 1.0, cutoff, light.dither);
@@ -178,7 +178,7 @@ fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
         for(var i = 0u; i < min(vertex.dir_count, c_dir_lights); i += 1u) {
             let light = u_dirs[i];
             let light_color = unpack_color(light.color);
-            let max_distance = light.max_distance - (f32(light.animate) *(2.0 * sin(global.seconds * light.anim_speed)));
+            let max_distance = light.max_distance - (f32(light.animate) *(1.0 * sin(global.seconds * light.anim_speed)));
             let dist_cutoff = max(0.1, max_distance);
             let max_width = light.max_width - (f32(light.animate) *(1.0 * sin(global.seconds * light.anim_speed)));
             let width_cutoff = max(0.1, max_width);

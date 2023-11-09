@@ -49,7 +49,7 @@ where
                         b: 0.5,
                         a: 1.0,
                     }),
-                    store: true,
+                    store: wgpu::StoreOp::Store,
                 },
             })],
             depth_stencil_attachment: Some(
@@ -57,14 +57,16 @@ where
                     view: renderer.depth_buffer(),
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(1.0),
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     }),
                     stencil_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(0),
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     }),
                 },
             ),
+            timestamp_writes: None,
+            occlusion_query_set: None,
         });
 
         // Lets set the System's Shader information here, mostly Camera, Size and Time
@@ -85,7 +87,7 @@ where
 
         pass.render_text(renderer, &self.text_renderer, &self.text_atlas);
 
-        pass.render_lights(renderer, &self.light_renderer);
+        //pass.render_lights(renderer, &self.light_renderer);
 
         pass.render_2dmeshs(renderer, &self.mesh_renderer);
     }

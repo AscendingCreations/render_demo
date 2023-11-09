@@ -22,6 +22,7 @@ use std::{
     rc::Rc,
     time::Duration,
 };
+use wgpu::{Backends, Dx12Compiler, InstanceDescriptor, InstanceFlags};
 use winit::{
     dpi::PhysicalSize,
     event::*,
@@ -120,11 +121,18 @@ async fn main() -> Result<(), AscendingError> {
     // Generates an Instance for WGPU. Sets WGPU to be allowed on all possible supported backends
     // These are DX12, DX11, Vulkan, Metal and Gles. if none of these work on a system they cant
     // play the game basically.
-    let instance = wgpu::Instance::default();
+    let instance = wgpu::Instance::new(InstanceDescriptor {
+        backends: Backends::DX12,
+        flags: InstanceFlags::default(),
+        dx12_shader_compiler: Dx12Compiler::default(),
+        gles_minor_version: wgpu::Gles3MinorVersion::Version2,
+    });
 
     // This is used to ensure the GPU can load the correct.
     let compatible_surface =
         unsafe { instance.create_surface(&window).unwrap() };
+
+    print!("{:?}", &compatible_surface);
     // This creates the Window Struct and Device struct that holds all the rendering information
     // we need to render to the screen. Window holds most of the window information including
     // the surface type. device includes the queue and GPU device for rendering.
@@ -273,7 +281,7 @@ async fn main() -> Result<(), AscendingError> {
         .new_tilesheet(&mut atlases[1], &renderer, 20)
         .ok_or_else(|| OtherError::new("failed to upload tiles"))?;
 
-    println!("tilesheet: {:?}", tilesheet);
+    //println!("tilesheet: {:?}", tilesheet);
 
     let allocation = Texture::from_file("images/anim/0.png")?
         .group_upload(&mut atlases[0], &renderer)

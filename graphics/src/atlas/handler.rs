@@ -210,7 +210,7 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
         let extent = wgpu::Extent3d {
             width: limits.max_texture_dimension_3d,
             height: limits.max_texture_dimension_3d,
-            depth_or_array_layers: 1,
+            depth_or_array_layers: 2,
         };
 
         let texture =
@@ -241,7 +241,10 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
         Self {
             texture,
             texture_view,
-            layers: vec![Layer::new(limits.max_texture_dimension_3d)],
+            layers: vec![
+                Layer::new(limits.max_texture_dimension_3d),
+                Layer::new(limits.max_texture_dimension_3d),
+            ],
             extent,
             cache: LruCache::unbounded(),
             last_used: HashSet::default(),

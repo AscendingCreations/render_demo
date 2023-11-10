@@ -52,7 +52,6 @@ impl GpuWindow {
         self.surface_config.width = size.width;
         self.surface
             .configure(gpu_device.device(), &self.surface_config);
-        self.surface_format = wgpu::TextureFormat::Bgra8UnormSrgb;
         self.size = PhysicalSize::new(size.width as f32, size.height as f32);
 
         Ok(())

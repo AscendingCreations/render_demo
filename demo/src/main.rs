@@ -122,10 +122,10 @@ async fn main() -> Result<(), AscendingError> {
     // These are DX12, DX11, Vulkan, Metal and Gles. if none of these work on a system they cant
     // play the game basically.
     let instance = wgpu::Instance::new(InstanceDescriptor {
-        backends: Backends::DX12,
+        backends: Backends::GL,
         flags: InstanceFlags::default(),
         dx12_shader_compiler: Dx12Compiler::default(),
-        gles_minor_version: wgpu::Gles3MinorVersion::Version2,
+        gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
     });
 
     // This is used to ensure the GPU can load the correct.
@@ -632,7 +632,7 @@ async fn main() -> Result<(), AscendingError> {
         state.render(&renderer, &mut encoder);
 
         // Run the render pass for iced GUI renderer.
-        iced_renderer.with_primitives(|backend, primitive| {
+        /*  iced_renderer.with_primitives(|backend, primitive| {
             backend.present(
                 renderer.device(),
                 renderer.queue(),
@@ -643,7 +643,7 @@ async fn main() -> Result<(), AscendingError> {
                 state.system.iced_view(),
                 &debug.overlay(),
             );
-        });
+        });*/
 
         // Submit our command queue. for it to upload all the changes that were made.
         // Also tells the system to begin running the commands on the GPU.

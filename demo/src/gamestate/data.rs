@@ -87,7 +87,7 @@ where
 
         pass.render_text(renderer, &self.text_renderer, &self.text_atlas);
 
-        //pass.render_lights(renderer, &self.light_renderer);
+        pass.render_lights(renderer, &self.light_renderer);
 
         pass.render_2dmeshs(renderer, &self.mesh_renderer);
     }

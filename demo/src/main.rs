@@ -632,7 +632,7 @@ async fn main() -> Result<(), AscendingError> {
         state.render(&renderer, &mut encoder);
 
         // Run the render pass for iced GUI renderer.
-        /*  iced_renderer.with_primitives(|backend, primitive| {
+        iced_renderer.with_primitives(|backend, primitive| {
             backend.present(
                 renderer.device(),
                 renderer.queue(),
@@ -643,7 +643,7 @@ async fn main() -> Result<(), AscendingError> {
                 state.system.iced_view(),
                 &debug.overlay(),
             );
-        });*/
+        });
 
         // Submit our command queue. for it to upload all the changes that were made.
         // Also tells the system to begin running the commands on the GPU.

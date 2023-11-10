@@ -182,18 +182,33 @@ impl AdapterExt for wgpu::Adapter {
         let caps = surface.get_capabilities(&self);
 
         println!("{:?}", caps.formats);
-        if !caps.formats.contains(&TextureFormat::Bgra8UnormSrgb) {
-            panic!("Your Rendering Device does not support Bgra8UnormSrgb")
-        }
 
+        let rgba = caps
+            .formats
+            .iter()
+            .position(|v| *v == TextureFormat::Rgba8UnormSrgb);
+        let bgra = caps
+            .formats
+            .iter()
+            .position(|v| *v == TextureFormat::Bgra8UnormSrgb);
+
+        let format = if let Some(pos) = rgba {
+            caps.formats[pos]
+        } else if let Some(pos) = bgra {
+            caps.formats[pos]
+        } else {
+            panic!("Your Rendering Device does not support Bgra8UnormSrgb or Rgba8UnormSrgb");
+        };
+
+        println!("surface format: {:?}", format);
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: wgpu::TextureFormat::Bgra8UnormSrgb,
+            format,
             width: size.width,
             height: size.height,
             present_mode,
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
-            view_formats: vec![wgpu::TextureFormat::Bgra8UnormSrgb],
+            view_formats: vec![format],
         };
 
         surface.configure(&device, &surface_config);
@@ -202,7 +217,7 @@ impl AdapterExt for wgpu::Adapter {
                 adapter: self,
                 surface,
                 window,
-                surface_format: wgpu::TextureFormat::Bgra8UnormSrgb,
+                surface_format: format,
                 size: PhysicalSize::new(size.width as f32, size.height as f32),
                 surface_config,
             },

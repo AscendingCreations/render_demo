@@ -277,7 +277,7 @@ async fn main() -> Result<(), AscendingError> {
     map.pos = Vec2::new(0.0, 0.0);
     map.can_render = true;
 
-    let tilesheet = Texture::from_file(format!("images/tiles/1.png"))?
+    let _tilesheet = Texture::from_file(format!("images/tiles/1.png"))?
         .new_tilesheet(&mut atlases[1], &renderer, 20)
         .ok_or_else(|| OtherError::new("failed to upload tiles"))?;
 

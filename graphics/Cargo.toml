@@ -40,8 +40,8 @@ lru.workspace = true
 glam.workspace = true
 lyon.workspace = true
 slab.workspace = true
-iced_winit = {git = "https://github.com/genusistimelord/iced.git", optional = true}
-iced_wgpu =  {git = "https://github.com/genusistimelord/iced.git", optional = true}
-iced_widget =  {git = "https://github.com/genusistimelord/iced.git", optional = true}
-iced_renderer = {git = "https://github.com/genusistimelord/iced.git", optional = true, features = ["geometry", "image", "wgpu"]}
+iced_winit = {git = "https://github.com/iced-rs/iced.git", optional = true}
+iced_wgpu =  {git = "https://github.com/iced-rs/iced.git", optional = true}
+iced_widget =  {git = "https://github.com/iced-rs/iced.git", optional = true}
+iced_renderer = {git = "https://github.com/iced-rs/iced.git", optional = true, features = ["geometry", "image", "wgpu"]}
 iced_aw = {git = "https://github.com/iced-rs/iced_aw.git", version = "0.7.0", branch = "beta", optional = true }

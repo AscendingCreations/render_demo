@@ -309,7 +309,8 @@ async fn main() -> Result<(), AscendingError> {
     );
 
     text.set_buffer_size(&mut renderer, size.width as i32, size.height as i32)
-        .set_bounds(Some(Bounds::new(0.0, 0.0, 190.0, 32.0)));
+        .set_bounds(Some(Bounds::new(0.0, 0.0, 190.0, 32.0)))
+        .set_default_color(Color::rgba(255, 255, 255, 255));
 
     // Start the process of building a shape.
     let mut builder = Mesh2DBuilder::default();
@@ -638,6 +639,7 @@ async fn main() -> Result<(), AscendingError> {
                 renderer.queue(),
                 &mut encoder,
                 None,
+                renderer.surface_format(),
                 renderer.frame_buffer().as_ref().expect("no frame view?"),
                 primitive,
                 state.system.iced_view(),

@@ -46,6 +46,6 @@ features = ["span", "validate", "wgsl-in"]
 #features = ["angle"]
 version = "0.18.0"
 
-[patch."https://github.com/iced-rs/iced.git"]
-iced_renderer = { git = "https://github.com/genusistimelord/iced.git" }
-iced_widget = { git = "https://github.com/genusistimelord/iced.git"}
+#[patch."https://github.com/iced-rs/iced.git"]
+#iced_renderer = { git = "https://github.com/genusistimelord/iced.git" }
+#iced_widget = { git = "https://github.com/genusistimelord/iced.git"}

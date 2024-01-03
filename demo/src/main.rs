@@ -6,7 +6,7 @@ use camera::{
 };
 use cosmic_text::{Attrs, Metrics};
 use glam::vec4;
-use graphics::*;
+use graphics::{iced_winit::core::window, *};
 use hecs::World;
 use input::{Bindings, FrameTime, InputHandler};
 use log::{error, info, warn, Level, LevelFilter, Metadata, Record};
@@ -122,7 +122,7 @@ async fn main() -> Result<(), AscendingError> {
     // These are DX12, DX11, Vulkan, Metal and Gles. if none of these work on a system they cant
     // play the game basically.
     let instance = wgpu::Instance::new(InstanceDescriptor {
-        backends: Backends::GL,
+        backends: Backends::all(),
         flags: InstanceFlags::default(),
         dx12_shader_compiler: Dx12Compiler::default(),
         gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
@@ -398,7 +398,7 @@ async fn main() -> Result<(), AscendingError> {
 
     let mut lights = Lights::new(&mut renderer, 0);
 
-    lights.world_color = Vec4::new(0.0, 0.0, 0.0, 0.998);
+    lights.world_color = Vec4::new(0.0, 0.0, 0.0, 0.995);
     lights.enable_lights = true;
 
     /* lights.insert_area_light(AreaLight {
@@ -428,17 +428,40 @@ async fn main() -> Result<(), AscendingError> {
         dither: 0.5,
     });
 
+    lights.insert_area_light(AreaLight {
+        pos: Vec2::new(100.0, 100.0),
+        color: Color::rgba(255, 255, 0, 20),
+        max_distance: 20.0,
+        animate: true,
+        anim_speed: 5.0,
+        dither: 0.8,
+    });
+
     lights.insert_directional_light(DirectionalLight {
         pos: Vec2::new(24.0, 24.0),
+        color: Color::rgba(255, 255, 0, 20),
+        max_distance: 90.0,
+        max_width: 15.0,
+        anim_speed: 2.0,
+        angle: 90.0,
+        dither: 6.0,
+        fade_distance: 5.0,
+        edge_fade_distance: 0.5,
+        animate: false,
+    });
+
+    lights.insert_directional_light(DirectionalLight {
+        pos: Vec2::new(150.0, 150.0),
         color: Color::rgba(255, 255, 0, 20),
         max_distance: 90.0,
         max_width: 10.0,
         anim_speed: 2.0,
         angle: 90.0,
         dither: 6.0,
-        animate: false,
+        fade_distance: 4.0,
+        edge_fade_distance: 0.6,
+        animate: true,
     });
-
     // Allow the window to be seen. hiding it then making visible speeds up
     // load times.
     renderer.window().set_visible(true);
@@ -543,8 +566,13 @@ async fn main() -> Result<(), AscendingError> {
         input_handler.update(renderer.window(), &event, 1.0);
 
         // handle the GUI events here.
-        if let Event::WindowEvent { ref event, .. } = &event {
+        if let Event::WindowEvent {
+            window_id: _,
+            ref event,
+        } = &event
+        {
             if let Some(event) = graphics::iced_winit::conversion::window_event(
+                window::Id::MAIN,
                 event,
                 renderer.window().scale_factor(),
                 input_handler.modifiers(),

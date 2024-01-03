@@ -40,6 +40,8 @@ pub struct DirectionalLight {
     pub anim_speed: f32,
     pub angle: f32,
     pub dither: f32,
+    pub fade_distance: f32,
+    pub edge_fade_distance: f32,
     pub animate: bool,
 }
 
@@ -54,6 +56,8 @@ impl DirectionalLight {
             anim_speed: self.anim_speed,
             dither: self.dither,
             angle: self.angle,
+            fade_distance: self.fade_distance,
+            edge_fade_distance: self.edge_fade_distance,
         }
     }
 }

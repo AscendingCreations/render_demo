@@ -22,6 +22,8 @@ pub struct DirectionalLightRaw {
     pub anim_speed: f32,
     pub angle: f32,
     pub dither: f32,
+    pub fade_distance: f32,
+    pub edge_fade_distance: f32,
     pub animate: u32,
 }
 

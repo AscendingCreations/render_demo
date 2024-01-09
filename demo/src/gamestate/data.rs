@@ -76,7 +76,7 @@ where
         pass.set_vertex_buffer(0, renderer.buffer_object.vertices());
         pass.set_index_buffer(
             renderer.buffer_object.indices(),
-            wgpu::IndexFormat::Uint16,
+            wgpu::IndexFormat::Uint32,
         );
 
         pass.render_lower_maps(renderer, &self.map_renderer, &self.map_atlas);

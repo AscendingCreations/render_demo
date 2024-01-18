@@ -1,6 +1,6 @@
 use crate::{AscendingError, GpuRenderer};
 use async_trait::async_trait;
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 use wgpu::TextureFormat;
 use winit::{
     dpi::PhysicalSize,
@@ -27,8 +27,8 @@ impl GpuDevice {
 ///Handles the Window, Adapter and Surface information.
 pub struct GpuWindow {
     pub(crate) adapter: wgpu::Adapter,
-    pub(crate) surface: wgpu::Surface,
-    pub(crate) window: Window,
+    pub(crate) surface: wgpu::Surface<'static>,
+    pub(crate) window: Arc<Window>,
     pub(crate) surface_format: wgpu::TextureFormat,
     pub(crate) size: PhysicalSize<f32>,
     pub(crate) surface_config: wgpu::SurfaceConfiguration,
@@ -113,9 +113,9 @@ impl GpuWindow {
         &self.window
     }
 
-    pub fn window_mut(&mut self) -> &mut Window {
+    /*pub fn window_mut(&mut self) -> &mut Window {
         &mut self.window
-    }
+    }*/
 
     pub fn create_depth_texture(
         &self,
@@ -152,7 +152,7 @@ pub trait AdapterExt {
     async fn create_renderer(
         self,
         instance: &wgpu::Instance,
-        window: Window,
+        window: Arc<Window>,
         device_descriptor: &wgpu::DeviceDescriptor,
         trace_path: Option<&Path>,
         present_mode: wgpu::PresentMode,
@@ -164,7 +164,7 @@ impl AdapterExt for wgpu::Adapter {
     async fn create_renderer(
         self,
         instance: &wgpu::Instance,
-        window: Window,
+        window: Arc<Window>,
         device_descriptor: &wgpu::DeviceDescriptor,
         trace_path: Option<&Path>,
         present_mode: wgpu::PresentMode,
@@ -174,7 +174,7 @@ impl AdapterExt for wgpu::Adapter {
         let (device, queue) =
             self.request_device(device_descriptor, trace_path).await?;
 
-        let surface = unsafe { instance.create_surface(&window).unwrap() };
+        let surface = instance.create_surface(window.clone()).unwrap();
         let caps = surface.get_capabilities(&self);
 
         println!("{:?}", caps.formats);
@@ -205,6 +205,7 @@ impl AdapterExt for wgpu::Adapter {
             present_mode,
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
             view_formats: vec![format],
+            desired_maximum_frame_latency: 2,
         };
 
         surface.configure(&device, &surface_config);
@@ -230,7 +231,7 @@ impl AdapterExt for wgpu::Adapter {
 pub trait InstanceExt {
     async fn create_device(
         &self,
-        window: Window,
+        window: Arc<Window>,
         request_adapter_options: &wgpu::RequestAdapterOptions,
         device_descriptor: &wgpu::DeviceDescriptor,
         trace_path: Option<&Path>,
@@ -242,7 +243,7 @@ pub trait InstanceExt {
 impl InstanceExt for wgpu::Instance {
     async fn create_device(
         &self,
-        window: Window,
+        window: Arc<Window>,
         request_adapter_options: &wgpu::RequestAdapterOptions,
         device_descriptor: &wgpu::DeviceDescriptor,
         trace_path: Option<&Path>,

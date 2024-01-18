@@ -118,9 +118,9 @@ impl GpuRenderer {
         &self.window.window
     }
 
-    pub fn window_mut(&mut self) -> &mut Window {
+    /*pub fn window_mut(&mut self) -> &mut Window {
         &mut self.window.window
-    }
+    }*/
 
     pub fn update_depth_texture(&mut self) {
         self.depthbuffer = self.window.create_depth_texture(&self.device);

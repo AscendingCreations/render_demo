@@ -20,6 +20,7 @@ use std::{
     iter, panic,
     path::PathBuf,
     rc::Rc,
+    sync::Arc,
     time::Duration,
 };
 use wgpu::{Backends, Dx12Compiler, InstanceDescriptor, InstanceFlags};
@@ -99,12 +100,14 @@ async fn main() -> Result<(), AscendingError> {
     let event_loop = EventLoop::new()?;
 
     // Builds the Windows that will be rendered too.
-    let window = WindowBuilder::new()
-        .with_title("Demo")
-        .with_inner_size(PhysicalSize::new(800, 600))
-        .with_visible(false)
-        .build(&event_loop)
-        .unwrap();
+    let window = Arc::new(
+        WindowBuilder::new()
+            .with_title("Demo")
+            .with_inner_size(PhysicalSize::new(800, 600))
+            .with_visible(false)
+            .build(&event_loop)
+            .unwrap(),
+    );
 
     // Generates an Instance for WGPU. Sets WGPU to be allowed on all possible supported backends
     // These are DX12, DX11, Vulkan, Metal and Gles. if none of these work on a system they cant
@@ -117,8 +120,7 @@ async fn main() -> Result<(), AscendingError> {
     });
 
     // This is used to ensure the GPU can load the correct.
-    let compatible_surface =
-        unsafe { instance.create_surface(&window).unwrap() };
+    let compatible_surface = instance.create_surface(window.clone()).unwrap();
 
     print!("{:?}", &compatible_surface);
     // This creates the Window Struct and Device struct that holds all the rendering information
@@ -138,8 +140,8 @@ async fn main() -> Result<(), AscendingError> {
             },
             // used to deturmine if we need special limits or features for our backends.
             &wgpu::DeviceDescriptor {
-                features: wgpu::Features::default(),
-                limits: wgpu::Limits::default(),
+                required_features: wgpu::Features::default(),
+                required_limits: wgpu::Limits::default(),
                 label: None,
             },
             None,

@@ -24,7 +24,7 @@ pub use tilesheet::*;
 
 pub use glam::{Vec2, Vec3, Vec4};
 
-#[cfg(feature = "iced")]
+/*#[cfg(feature = "iced")]
 pub use iced_renderer;
 
 #[cfg(feature = "iced")]
@@ -37,4 +37,4 @@ pub use iced_wgpu;
 pub use iced_widget;
 
 #[cfg(feature = "additional_widgets")]
-pub use iced_aw;
+pub use iced_aw;*/

@@ -250,6 +250,7 @@ where
         );
     }
 
+    #[cfg(feature = "iced")]
     pub fn iced_view(&self) -> &Viewport {
         &self.iced_view
     }

@@ -6,7 +6,7 @@ use camera::{
 };
 use cosmic_text::{Attrs, Metrics};
 use glam::vec4;
-use graphics::{iced_winit::core::window, *};
+use graphics::*;
 use hecs::World;
 use input::{Bindings, FrameTime, InputHandler, Key};
 use log::{error, info, warn, Level, LevelFilter, Metadata, Record};
@@ -30,19 +30,7 @@ use winit::{
     window::WindowBuilder,
 };
 
-use graphics::iced_wgpu::{Backend, Renderer, Settings};
-use graphics::iced_winit::{
-    conversion,
-    core::{mouse, renderer, Color as iced_color, Size},
-    futures,
-    runtime::{program, Debug},
-    style::Theme,
-    winit, Clipboard,
-};
-
 mod gamestate;
-mod ui;
-
 use gamestate::*;
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
@@ -370,32 +358,6 @@ async fn main() -> Result<(), AscendingError> {
     mesh[0].from_builder(builder.finalize());
     mesh[1].from_builder(builder2.finalize());
 
-    // iceds debugger start up
-    let mut debug = Debug::new();
-
-    // setup the renderer for iced for UI rendering.
-    let mut iced_renderer = Renderer::new(
-        Backend::new(
-            renderer.device(),
-            renderer.queue(),
-            Settings::default(),
-            renderer.surface_format(),
-        ),
-        iced_winit::core::Font::DEFAULT,
-        iced_winit::core::Pixels(16.0),
-    );
-
-    // start up iceds controls for keyboard etc entry.
-    let iced_controls = ui::Controls::new();
-
-    // Start your program up with the UI you want to render with.
-    let mut iced_state = program::State::new(
-        iced_controls,
-        system.iced_view().logical_size(),
-        &mut iced_renderer,
-        &mut debug,
-    );
-
     let mut lights = Lights::new(&mut renderer, 0);
 
     lights.world_color = Vec4::new(0.0, 0.0, 0.0, 0.995);
@@ -478,9 +440,6 @@ async fn main() -> Result<(), AscendingError> {
     let mut time = 0.0f32;
     let mut fps = 0u32;
 
-    // this is for Copy paste stuff within Iced.
-    let mut clipboard = Clipboard::connect(renderer.window());
-
     #[allow(deprecated)]
     event_loop.run(move |event, elwt| {
         // we check for the first batch of events to ensure we dont need to stop rendering here first.
@@ -496,34 +455,6 @@ async fn main() -> Result<(), AscendingError> {
                 }
             }
             Event::AboutToWait => {
-                if !iced_state.is_queue_empty() {
-                    // We update iced
-                    let _ = iced_state.update(
-                        state.system.iced_view().logical_size(),
-                        input_handler
-                            .physical_mouse_position()
-                            .map(|p| {
-                                conversion::cursor_position(
-                                    p,
-                                    state.system.iced_view().scale_factor(),
-                                )
-                            })
-                            .map(mouse::Cursor::Available)
-                            .unwrap_or(mouse::Cursor::Unavailable),
-                        &mut iced_renderer,
-                        &Theme::Dark,
-                        &renderer::Style {
-                            text_color: iced_color::WHITE,
-                        },
-                        &mut clipboard,
-                        &mut debug,
-                    );
-
-                    // and request a redraw
-                    renderer.window().request_redraw();
-                    return;
-                }
-
                 renderer.window().request_redraw();
             }
             _ => {}
@@ -544,22 +475,6 @@ async fn main() -> Result<(), AscendingError> {
 
         // update our inputs.
         input_handler.update(renderer.window(), &event, 1.0);
-
-        // handle the GUI events here.
-        if let Event::WindowEvent {
-            window_id: _,
-            ref event,
-        } = &event
-        {
-            if let Some(event) = graphics::iced_winit::conversion::window_event(
-                window::Id::MAIN,
-                event.clone(),
-                renderer.window().scale_factor(),
-                input_handler.modifiers(),
-            ) {
-                iced_state.queue_event(event);
-            }
-        }
 
         // update our renderer based on events here
         if !renderer.update(&event).unwrap() {
@@ -641,21 +556,6 @@ async fn main() -> Result<(), AscendingError> {
         // Run the render pass. for the games renderer
         state.render(&renderer, &mut encoder);
 
-        // Run the render pass for iced GUI renderer.
-        iced_renderer.with_primitives(|backend, primitive| {
-            backend.present(
-                renderer.device(),
-                renderer.queue(),
-                &mut encoder,
-                None,
-                renderer.surface_format(),
-                renderer.frame_buffer().as_ref().expect("no frame view?"),
-                primitive,
-                state.system.iced_view(),
-                &debug.overlay(),
-            );
-        });
-
         // Submit our command queue. for it to upload all the changes that were made.
         // Also tells the system to begin running the commands on the GPU.
         renderer.queue().submit(std::iter::once(encoder.finish()));
@@ -676,11 +576,11 @@ async fn main() -> Result<(), AscendingError> {
         frame_time.update();
         renderer.present().unwrap();
 
-        renderer.window_mut().set_cursor_icon(
+        /*renderer.window_mut().set_cursor_icon(
             iced_winit::conversion::mouse_interaction(
                 iced_state.mouse_interaction(),
             ),
-        );
+        );*/
 
         // These clear the Last used image tags.
         //Can be used later to auto unload things not used anymore if ram/gpu ram becomes a issue.

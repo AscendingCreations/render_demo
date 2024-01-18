@@ -8,10 +8,10 @@ resolver = "2"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["iced", "additional_widgets"]
+default = []
 # Enable Iced GUI framework.
-iced = ["iced_wgpu", "iced_winit", "iced_widget", "iced_renderer"]
-additional_widgets = ["iced_aw"]
+#iced = ["iced_wgpu", "iced_winit", "iced_widget", "iced_renderer"]
+#additional_widgets = ["iced_aw"]
 
 [dependencies]
 async-trait.workspace = true
@@ -40,8 +40,8 @@ lru.workspace = true
 glam.workspace = true
 lyon.workspace = true
 slab.workspace = true
-iced_winit = {git = "https://github.com/iced-rs/iced.git", optional = true}
-iced_wgpu =  {git = "https://github.com/iced-rs/iced.git", optional = true}
-iced_widget =  {git = "https://github.com/iced-rs/iced.git", optional = true}
-iced_renderer = {git = "https://github.com/iced-rs/iced.git", optional = true, features = ["geometry", "image", "wgpu"]}
-iced_aw = {git = "https://github.com/iced-rs/iced_aw.git", version = "0.7.0", branch = "updates", optional = true }
+#iced_winit = {git = "https://github.com/iced-rs/iced.git", optional = true}
+#iced_wgpu =  {git = "https://github.com/iced-rs/iced.git", optional = true}
+#iced_widget =  {git = "https://github.com/iced-rs/iced.git", optional = true}
+#iced_renderer = {git = "https://github.com/iced-rs/iced.git", optional = true, features = ["geometry", "image", "wgpu"]}
+#iced_aw = {git = "https://github.com/iced-rs/iced_aw.git", version = "0.7.0", branch = "updates", optional = true }

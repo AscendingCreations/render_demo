@@ -1,14 +1,16 @@
 use super::axis::{Axis, MouseAxis};
 use super::bindings::Bindings;
 use super::button::Button;
-use std::collections::HashSet;
+use super::{Key, Location};
+use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use winit::dpi::PhysicalPosition;
-use winit::event::{
-    DeviceEvent, ElementState, Event, KeyboardInput, ModifiersState,
-    MouseScrollDelta, WindowEvent,
-};
+use winit::event::KeyEvent;
 use winit::window::Window;
+use winit::{
+    event::{DeviceEvent, ElementState, Event, MouseScrollDelta, WindowEvent},
+    keyboard::{self, ModifiersState},
+};
 
 pub struct InputHandler<ActionId, AxisId>
 where
@@ -18,9 +20,7 @@ where
     /// The bindings.
     bindings: Bindings<ActionId, AxisId>,
     /// The set of keys that are currently pressed down by their virtual key code.
-    keys: HashSet<winit::event::VirtualKeyCode>,
-    /// The set of keys that are currently pressed down by their scan code.
-    scan_codes: HashSet<u32>,
+    keys: HashMap<Key, Location>,
     /// The set of mouse buttons that are currently pressed down.
     mouse_buttons: HashSet<winit::event::MouseButton>,
     /// The current mouse position.
@@ -85,13 +85,12 @@ where
     pub fn is_button_down(&self, button: Button) -> bool {
         match button {
             Button::Key(key) => self.is_key_down(key),
-            Button::ScanCode(scan_code) => self.is_scan_code_down(scan_code),
             Button::Mouse(button) => self.is_mouse_button_down(button),
         }
     }
 
-    pub fn is_key_down(&self, key: winit::event::VirtualKeyCode) -> bool {
-        self.keys.contains(&key)
+    pub fn is_key_down(&self, key: Key) -> bool {
+        self.keys.contains_key(&key)
     }
 
     pub fn is_mouse_button_down(
@@ -99,10 +98,6 @@ where
         button: winit::event::MouseButton,
     ) -> bool {
         self.mouse_buttons.contains(&button)
-    }
-
-    pub fn is_scan_code_down(&self, scan_code: u32) -> bool {
-        self.scan_codes.contains(&scan_code)
     }
 
     fn map_axis_value(&self, axis: &Axis) -> f32 {
@@ -182,8 +177,7 @@ where
     pub fn new(bindings: Bindings<ActionId, AxisId>) -> Self {
         Self {
             bindings,
-            keys: HashSet::new(),
-            scan_codes: HashSet::new(),
+            keys: HashMap::new(),
             mouse_buttons: HashSet::new(),
             physical_mouse_position: None,
             mouse_position: None,
@@ -201,21 +195,32 @@ where
                 window_id,
             } if window_id == window.id() => match event {
                 WindowEvent::KeyboardInput {
-                    input:
-                        KeyboardInput {
+                    event:
+                        KeyEvent {
                             state,
-                            virtual_keycode: Some(key_code),
-                            scancode,
+                            logical_key,
+                            location,
                             ..
                         },
                     ..
                 } => {
+                    let key = match logical_key {
+                        keyboard::Key::Named(name) => Key::Named(*name),
+                        keyboard::Key::Character(str) => {
+                            let chars: Vec<char> = str.chars().collect();
+
+                            if let Some(c) = chars.first() {
+                                Key::Character(*c)
+                            } else {
+                                return;
+                            }
+                        }
+                        _ => return,
+                    };
                     if *state == ElementState::Pressed {
-                        self.keys.insert(*key_code);
-                        self.scan_codes.insert(*scancode);
+                        self.keys.insert(key, *location);
                     } else {
-                        self.keys.remove(key_code);
-                        self.scan_codes.remove(scancode);
+                        self.keys.remove(&key);
                     }
                 }
                 WindowEvent::MouseInput { state, button, .. } => {
@@ -236,11 +241,10 @@ where
                 }
                 WindowEvent::Focused(false) => {
                     self.keys.clear();
-                    self.scan_codes.clear();
                     self.mouse_buttons.clear();
                 }
                 WindowEvent::ModifiersChanged(new_modifiers) => {
-                    self.modifiers = *new_modifiers;
+                    self.modifiers = new_modifiers.state();
                 }
                 _ => (),
             },

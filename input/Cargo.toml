@@ -12,3 +12,4 @@ resolver = "2"
 ordered-float.workspace = true
 serde.workspace = true
 winit.workspace = true
+smol_str.workspace = true

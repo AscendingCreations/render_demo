@@ -81,31 +81,28 @@ impl GpuWindow {
             } if *window_id == self.window.id() => match event {
                 WindowEvent::Resized(physical_size) => {
                     self.resize(gpu_device, *physical_size)?;
+                    self.window.request_redraw();
                 }
-                WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                    self.resize(gpu_device, **new_inner_size)?;
+                WindowEvent::RedrawRequested => {
+                    match self.surface.get_current_texture() {
+                        Ok(frame) => return Ok(Some(frame)),
+                        Err(wgpu::SurfaceError::Lost) => {
+                            let size = PhysicalSize::new(
+                                self.size.width as u32,
+                                self.size.height as u32,
+                            );
+                            self.resize(gpu_device, size)?;
+                        }
+                        Err(wgpu::SurfaceError::Outdated) => {
+                            return Ok(None);
+                        }
+                        Err(e) => return Err(AscendingError::from(e)),
+                    }
+
+                    self.window.request_redraw();
                 }
                 _ => (),
             },
-            Event::RedrawRequested(_) => {
-                match self.surface.get_current_texture() {
-                    Ok(frame) => return Ok(Some(frame)),
-                    Err(wgpu::SurfaceError::Lost) => {
-                        let size = PhysicalSize::new(
-                            self.size.width as u32,
-                            self.size.height as u32,
-                        );
-                        self.resize(gpu_device, size)?;
-                    }
-                    Err(wgpu::SurfaceError::Outdated) => {
-                        return Ok(None);
-                    }
-                    Err(e) => return Err(AscendingError::from(e)),
-                }
-            }
-            Event::MainEventsCleared => {
-                self.window.request_redraw();
-            }
             _ => (),
         }
 

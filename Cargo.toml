@@ -9,7 +9,7 @@ crevice = "0.14.0"
 crevice-derive = "0.10.0"
 mint = "0.5.9"
 thiserror = "1.0.48"
-winit = { git = "https://github.com/iced-rs/winit.git", rev = "c52db2045d0a2f1b8d9923870de1d4ab1994146e", features = ["serde"] }
+winit = { git = "https://github.com/iced-rs/winit.git", rev = "b91e39ece2c0d378c3b80da7f3ab50e17bb798a5", features = ["serde", "rwh_05"] }
 #winit = { version = "0.28.6", features = ["serde"] }
 image = "0.24.7"
 tokio = { version = "1.32.0", features = ["full"] }
@@ -33,6 +33,7 @@ glam = { version = "0.24.1", features = ["bytemuck", "mint"] }
 lyon = "1.0.1"
 #softbuffer = "0.3.0"
 slab = "0.4.9"
+smol_str = "0.2"
 
 [workspace.dependencies.naga]
 #git = "https://github.com/gfx-rs/naga"

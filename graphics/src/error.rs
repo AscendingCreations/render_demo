@@ -39,4 +39,10 @@ pub enum AscendingError {
     LyonTessellation(#[from] lyon::lyon_tessellation::TessellationError),
     #[error(transparent)]
     Other(#[from] OtherError),
+    #[error(transparent)]
+    EventLoop(#[from] winit::error::EventLoopError),
+    #[error(transparent)]
+    EventLoopExternal(#[from] winit::error::ExternalError),
+    #[error(transparent)]
+    OsError(#[from] winit::error::OsError),
 }

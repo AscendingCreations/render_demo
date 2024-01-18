@@ -44,4 +44,4 @@ iced_winit = {git = "https://github.com/iced-rs/iced.git", optional = true}
 iced_wgpu =  {git = "https://github.com/iced-rs/iced.git", optional = true}
 iced_widget =  {git = "https://github.com/iced-rs/iced.git", optional = true}
 iced_renderer = {git = "https://github.com/iced-rs/iced.git", optional = true, features = ["geometry", "image", "wgpu"]}
-iced_aw = {git = "https://github.com/iced-rs/iced_aw.git", version = "0.7.0", optional = true }
+iced_aw = {git = "https://github.com/iced-rs/iced_aw.git", version = "0.7.0", branch = "updates", optional = true }

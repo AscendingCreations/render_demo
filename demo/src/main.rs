@@ -8,7 +8,7 @@ use cosmic_text::{Attrs, Metrics};
 use glam::vec4;
 use graphics::{iced_winit::core::window, *};
 use hecs::World;
-use input::{Bindings, FrameTime, InputHandler};
+use input::{Bindings, FrameTime, InputHandler, Key};
 use log::{error, info, warn, Level, LevelFilter, Metadata, Record};
 use naga::{front::wgsl, valid::Validator};
 use serde::{Deserialize, Serialize};
@@ -108,7 +108,7 @@ async fn main() -> Result<(), AscendingError> {
     }));
 
     // Starts an event gathering type for the window.
-    let event_loop = EventLoop::new();
+    let event_loop = EventLoop::new()?;
 
     // Builds the Windows that will be rendered too.
     let window = WindowBuilder::new()
@@ -401,24 +401,6 @@ async fn main() -> Result<(), AscendingError> {
     lights.world_color = Vec4::new(0.0, 0.0, 0.0, 0.995);
     lights.enable_lights = true;
 
-    /* lights.insert_area_light(AreaLight {
-        pos: Vec2::new(128.0, 128.0),
-        color: Color::rgba(255, 0, 0, 20),
-        max_distance: 64.0,
-        animate: false,
-        anim_speed: 5.0,
-        dither: 5.0,
-    });
-
-    lights.insert_area_light(AreaLight {
-        pos: Vec2::new(196.0, 128.0),
-        color: Color::rgba(255, 255, 0, 20),
-        max_distance: 64.0,
-        animate: false,
-        anim_speed: 5.0,
-        dither: 2.0,
-    });*/
-
     lights.insert_area_light(AreaLight {
         pos: Vec2::new(24.0, 24.0),
         color: Color::rgba(255, 255, 0, 20),
@@ -487,10 +469,7 @@ async fn main() -> Result<(), AscendingError> {
 
     // Create the mouse/keyboard bindings for our stuff.
     let mut bindings = Bindings::<Action, Axis>::new();
-    bindings.insert_action(
-        Action::Quit,
-        vec![winit::event::VirtualKeyCode::Q.into()],
-    );
+    bindings.insert_action(Action::Quit, vec![Key::Character('q').into()]);
 
     // set bindings and create our own input handler.
     let mut input_handler = InputHandler::new(bindings);
@@ -503,7 +482,7 @@ async fn main() -> Result<(), AscendingError> {
     let mut clipboard = Clipboard::connect(renderer.window());
 
     #[allow(deprecated)]
-    event_loop.run(move |event, _, control_flow| {
+    event_loop.run(move |event, elwt| {
         // we check for the first batch of events to ensure we dont need to stop rendering here first.
         match event {
             Event::WindowEvent {
@@ -512,10 +491,11 @@ async fn main() -> Result<(), AscendingError> {
                 ..
             } if window_id == renderer.window().id() => {
                 if let WindowEvent::CloseRequested = *event {
-                    *control_flow = ControlFlow::Exit;
+                    println!("The close button was pressed; stopping");
+                    elwt.exit();
                 }
             }
-            Event::MainEventsCleared => {
+            Event::AboutToWait => {
                 if !iced_state.is_queue_empty() {
                     // We update iced
                     let _ = iced_state.update(
@@ -573,7 +553,7 @@ async fn main() -> Result<(), AscendingError> {
         {
             if let Some(event) = graphics::iced_winit::conversion::window_event(
                 window::Id::MAIN,
-                event,
+                event.clone(),
                 renderer.window().scale_factor(),
                 input_handler.modifiers(),
             ) {
@@ -604,7 +584,8 @@ async fn main() -> Result<(), AscendingError> {
 
         // check if out close action was hit for esc
         if input_handler.is_action_down(&Action::Quit) {
-            *control_flow = ControlFlow::Exit;
+            println!("The close button was pressed; stopping");
+            elwt.exit();
         }
 
         let seconds = frame_time.seconds();
@@ -706,5 +687,7 @@ async fn main() -> Result<(), AscendingError> {
         state.image_atlas.trim();
         state.map_atlas.trim();
         state.text_atlas.trim();
-    })
+    })?;
+
+    Ok(())
 }

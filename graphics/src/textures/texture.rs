@@ -22,15 +22,11 @@ impl Texture {
     pub fn from_file(path: impl AsRef<Path>) -> Result<Self, AscendingError> {
         let name = path
             .as_ref()
-            .file_name()
+            .to_str()
             .ok_or_else(|| {
-                Error::new(ErrorKind::Other, "could not get filename")
-            })?
-            .to_os_string()
-            .into_string()
-            .map_err(|_| {
                 Error::new(ErrorKind::Other, "could not convert name to String")
-            })?;
+            })?
+            .to_owned();
 
         Ok(Self::from_image(name, image::open(path)?))
     }

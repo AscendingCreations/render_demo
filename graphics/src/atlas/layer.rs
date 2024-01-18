@@ -10,4 +10,8 @@ impl Layer {
             allocator: Allocator::new(size),
         }
     }
+
+    pub fn deallocate(&mut self, allocation: guillotiere::Allocation) {
+        self.allocator.deallocate(allocation)
+    }
 }

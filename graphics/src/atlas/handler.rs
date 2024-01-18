@@ -253,6 +253,15 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
         }
     }
 
+    pub fn remove(&mut self, key: &U) -> Option<()> {
+        let allocation = self.cache.pop(key)?;
+        self.last_used.remove(&key);
+        self.layers
+            .get_mut(allocation.layer)?
+            .deallocate(allocation.allocation);
+        Some(())
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn upload(
         &mut self,

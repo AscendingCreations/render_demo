@@ -28,7 +28,7 @@ use winit::{
     dpi::PhysicalSize,
     event::*,
     event_loop::{ControlFlow, EventLoop},
-    window::WindowBuilder,
+    window::{WindowBuilder, WindowButtons},
 };
 
 mod gamestate;
@@ -105,6 +105,11 @@ async fn main() -> Result<(), AscendingError> {
             .with_title("Demo")
             .with_inner_size(PhysicalSize::new(800, 600))
             .with_visible(false)
+            .with_enabled_buttons({
+                let mut buttons = WindowButtons::all();
+                buttons.remove(WindowButtons::MAXIMIZE);
+                buttons
+            })
             .build(&event_loop)
             .unwrap(),
     );

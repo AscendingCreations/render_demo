@@ -253,6 +253,12 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
         }
     }
 
+    /**
+     * Removing will leave anything using the texture inable to load the correct texture if
+     * a new texture is loaded in the olds place.
+     * TODO Redo texture system so texture allocations are not held by the images but instead
+     * TODO are held by the system so we can reload images later on if they got unloaded.
+     **/
     pub fn remove(&mut self, key: &U) -> Option<()> {
         let allocation = self.cache.pop(key)?;
         self.last_used.remove(&key);

@@ -164,6 +164,7 @@ async fn main() -> Result<(), AscendingError> {
         Some(AtlasGroup::new(
             &mut renderer,
             wgpu::TextureFormat::Rgba8UnormSrgb,
+            true,
         ))
     })
     .take(4)
@@ -521,12 +522,18 @@ async fn main() -> Result<(), AscendingError> {
 
         // This adds the Image data to the Buffer for rendering.
         state.sprites.iter_mut().for_each(|sprite| {
-            state.sprite_renderer.image_update(sprite, &mut renderer);
+            state.sprite_renderer.image_update(
+                sprite,
+                &mut renderer,
+                &mut state.image_atlas.atlas,
+            );
         });
 
-        state
-            .sprite_renderer
-            .image_update(&mut state.animation, &mut renderer);
+        state.sprite_renderer.image_update(
+            &mut state.animation,
+            &mut renderer,
+            &mut state.image_atlas.atlas,
+        );
 
         // this cycles all the Image's in the Image buffer by first putting them in rendering order
         // and then uploading them to the GPU if they have moved or changed in any way. clears the

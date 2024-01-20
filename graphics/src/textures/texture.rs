@@ -60,9 +60,25 @@ impl Texture {
         &self,
         atlas: &mut Atlas,
         renderer: &GpuRenderer,
-    ) -> Option<Allocation> {
+    ) -> Option<usize> {
         let (width, height) = self.size;
         atlas.upload(self.name.clone(), &self.bytes, width, height, 0, renderer)
+    }
+
+    pub fn upload_with_alloc(
+        &self,
+        atlas: &mut Atlas,
+        renderer: &GpuRenderer,
+    ) -> Option<(usize, Allocation)> {
+        let (width, height) = self.size;
+        atlas.upload_with_alloc(
+            self.name.clone(),
+            &self.bytes,
+            width,
+            height,
+            0,
+            renderer,
+        )
     }
 
     pub fn new_tilesheet(
@@ -76,20 +92,37 @@ impl Texture {
 
     pub fn tilesheet_upload(
         self,
+        tilesheet: &mut TileSheet,
         atlas: &mut AtlasGroup,
         renderer: &GpuRenderer,
         tilesize: u32,
     ) -> Option<()> {
-        TileSheet::upload(self, renderer, atlas, tilesize)
+        tilesheet.upload(self, renderer, atlas, tilesize)
     }
 
     pub fn group_upload(
         &self,
         atlas_group: &mut AtlasGroup,
         renderer: &GpuRenderer,
-    ) -> Option<Allocation> {
+    ) -> Option<usize> {
         let (width, height) = self.size;
         atlas_group.atlas.upload(
+            self.name.clone(),
+            &self.bytes,
+            width,
+            height,
+            0,
+            renderer,
+        )
+    }
+
+    pub fn group_upload_with_alloc(
+        &self,
+        atlas_group: &mut AtlasGroup,
+        renderer: &GpuRenderer,
+    ) -> Option<(usize, Allocation)> {
+        let (width, height) = self.size;
+        atlas_group.atlas.upload_with_alloc(
             self.name.clone(),
             &self.bytes,
             width,

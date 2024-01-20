@@ -14,8 +14,9 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
     pub fn new(
         renderer: &mut GpuRenderer,
         format: wgpu::TextureFormat,
+        use_ref_count: bool,
     ) -> Self {
-        let atlas = Atlas::<U, Data>::new(renderer, format);
+        let atlas = Atlas::<U, Data>::new(renderer, format, use_ref_count);
 
         let texture = TextureGroup::from_view(
             renderer,
@@ -35,9 +36,23 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
         height: u32,
         data: Data,
         renderer: &GpuRenderer,
-    ) -> Option<Allocation<Data>> {
+    ) -> Option<usize> {
         self.atlas
             .upload(hash, bytes, width, height, data, renderer)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn upload_with_alloc(
+        &mut self,
+        hash: U,
+        bytes: &[u8],
+        width: u32,
+        height: u32,
+        data: Data,
+        renderer: &GpuRenderer,
+    ) -> Option<(usize, Allocation<Data>)> {
+        self.atlas
+            .upload_with_alloc(hash, bytes, width, height, data, renderer)
     }
 
     pub fn trim(&mut self) {
@@ -48,19 +63,35 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
         self.atlas.clear();
     }
 
-    pub fn promote(&mut self, key: U) {
-        self.atlas.promote(key);
+    pub fn promote(&mut self, id: usize) {
+        self.atlas.promote(id);
     }
 
-    pub fn peek(&mut self, key: &U) -> Option<&Allocation<Data>> {
-        self.atlas.peek(key)
+    pub fn promote_by_key(&mut self, key: U) {
+        self.atlas.promote_by_key(key);
     }
 
-    pub fn contains(&mut self, key: &U) -> bool {
-        self.atlas.contains(key)
+    pub fn peek(&mut self, id: usize) -> Option<&Allocation<Data>> {
+        self.atlas.peek(id)
     }
 
-    pub fn get(&mut self, key: &U) -> Option<Allocation<Data>> {
-        self.atlas.get(key)
+    pub fn peek_by_key(&mut self, key: &U) -> Option<&Allocation<Data>> {
+        self.atlas.peek_by_key(key)
+    }
+
+    pub fn contains(&mut self, id: usize) -> bool {
+        self.atlas.contains(id)
+    }
+
+    pub fn contains_key(&mut self, key: &U) -> bool {
+        self.atlas.contains_key(key)
+    }
+
+    pub fn get(&mut self, id: usize) -> Option<Allocation<Data>> {
+        self.atlas.get(id)
+    }
+
+    pub fn get_by_key(&mut self, key: &U) -> Option<Allocation<Data>> {
+        self.atlas.get_by_key(key)
     }
 }

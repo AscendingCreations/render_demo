@@ -40,6 +40,7 @@ lru.workspace = true
 glam.workspace = true
 lyon.workspace = true
 slab.workspace = true
+indexmap.workspace = true
 #iced_winit = {git = "https://github.com/iced-rs/iced.git", optional = true}
 #iced_wgpu =  {git = "https://github.com/iced-rs/iced.git", optional = true}
 #iced_widget =  {git = "https://github.com/iced-rs/iced.git", optional = true}

@@ -1,6 +1,8 @@
 use crate::{Allocation, GpuRenderer, Layer};
+use generational_array::{GenerationalArray, GenerationalIndex};
 use lru::LruCache;
 use std::{collections::HashSet, hash::Hash};
+
 
 pub struct Atlas<U: Hash + Eq + Clone = String, Data: Copy + Default = i32> {
     /// Texture in GRAM
@@ -11,6 +13,7 @@ pub struct Atlas<U: Hash + Eq + Clone = String, Data: Copy + Default = i32> {
     pub layers: Vec<Layer>,
     /// Holds the Original Texture Size and layer information.
     pub extent: wgpu::Extent3d,
+    pub store: GenerationalArray<Allocation<Data>>,
     /// File Paths or names to prevent duplicates.
     pub cache: LruCache<U, Allocation<Data>>,
     pub last_used: HashSet<U>,

@@ -71,11 +71,11 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
         self.atlas.promote_by_key(key);
     }
 
-    pub fn peek(&mut self, id: usize) -> Option<&Allocation<Data>> {
+    pub fn peek(&mut self, id: usize) -> Option<&(Allocation<Data>, U)> {
         self.atlas.peek(id)
     }
 
-    pub fn peek_by_key(&mut self, key: &U) -> Option<&Allocation<Data>> {
+    pub fn peek_by_key(&mut self, key: &U) -> Option<&(Allocation<Data>, U)> {
         self.atlas.peek_by_key(key)
     }
 

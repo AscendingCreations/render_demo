@@ -6,6 +6,37 @@ use std::{
     hash::Hash,
 };
 
+/**
+ * AtlasSet is used to hold and contain the data of many layers of a Atlas.
+ * Each Atlas keeps track of the allocations allowed. Each allocation is a
+ * given Width/Height as well as Position that a Texture image can fit within
+ * the atlas.
+ *
+ * We try to use Store to keep all Allocations localized so if they need to be
+ * unloaded, migrated or replaced then the system can prevent improper rendering
+ * using a outdated Allocation. We will also attempt to keep track of reference counts
+ * loading the Index and try to keep track of LRU cache and a list of last used Indexs.
+ * This will help reduce errors and can help to reduce Vram and Later Reduce Fragmentation
+ * of the Atlas.
+ *
+ * *******************************FRAGMENTATION********************************************
+ * Fragmentation of a Atlas is when you Deallocate and Allocate new image textures into the
+ * Atlas. As this occurs there is a possibility that Small spots that can not be used in the
+ * Atlas to appear. These small Sections might get merged into larger Sections upon Deallocation
+ * of neighboring Allocations, But in some Cases these might over run the Atlas cuasing use to
+ * use way more Vram than is needed. To fix this we must migrate all loaded Allocations to a new
+ * Atlas and either move the old atlas to the back of the list for reuse or unload it. We can accomplish
+ * knowing when to migrate the atlas by setting a deallocations_limit. We also can know when to unload a
+ * empty layer by using the layer_free_limit. This will allow us to control VRam usage.
+ *
+ * TODO Keep track of Indexs within an Atlas.
+ * TODO Create Migration Check function.
+ * TODO Add way to tell if any texture needs to migrate.
+ * TODO Add limitations to a migrating texture so we only move a bit at a time.
+ * TODO Add Ability to Tell user through API that Vertexs and Indicies need to be
+ * TODO reloaded upon migration changes.
+ *
+*/
 pub struct Atlas<U: Hash + Eq + Clone = String, Data: Copy + Default = i32> {
     /// Texture in GRAM
     pub texture: wgpu::Texture,
@@ -17,10 +48,14 @@ pub struct Atlas<U: Hash + Eq + Clone = String, Data: Copy + Default = i32> {
     pub extent: wgpu::Extent3d,
     /// Store the Allocations se we can easily remove and update them.
     /// use a Generation id to avoid conflict if users use older allocation id's.
-    pub store: Slab<Allocation<Data>>,
+    /// Also stores the Key associated with the Allocation.
+    pub store: Slab<(Allocation<Data>, U)>,
+    /// for key to index lookups.
     pub lookup: HashMap<U, usize>,
-    pub rev_lookup: HashMap<usize, U>,
     /// keeps a list of least used allocations so we can unload them when need be.
+    /// Also include the RefCount per ID lookup.
+    /// we use this to keep track of when Fonts need to be unloaded.
+    /// this only helps to get memory back but does not fix fragmentation of the Atlas.
     pub cache: LruCache<usize, usize>,
     /// List of allocations used in the last frame to ensure we dont unload what is
     /// in use.
@@ -122,7 +157,6 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
 
         self.store.clear();
         self.lookup.clear();
-        self.rev_lookup.clear();
         self.cache.clear();
         self.last_used.clear();
     }
@@ -144,7 +178,7 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
         self.last_used.insert(id);
     }
 
-    pub fn peek_by_key(&mut self, key: &U) -> Option<&Allocation<Data>> {
+    pub fn peek_by_key(&mut self, key: &U) -> Option<&(Allocation<Data>, U)> {
         if let Some(id) = self.lookup.get(&key) {
             self.store.get(*id)
         } else {
@@ -152,7 +186,7 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
         }
     }
 
-    pub fn peek(&mut self, id: usize) -> Option<&Allocation<Data>> {
+    pub fn peek(&mut self, id: usize) -> Option<&(Allocation<Data>, U)> {
         self.store.get(id)
     }
 
@@ -166,7 +200,7 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
 
     pub fn get_by_key(&mut self, key: &U) -> Option<Allocation<Data>> {
         let id = *self.lookup.get(key)?;
-        if let Some(allocation) = self.store.get(id) {
+        if let Some((allocation, _)) = self.store.get(id) {
             self.cache.promote(&id);
             self.last_used.insert(id);
             return Some(*allocation);
@@ -176,7 +210,7 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
     }
 
     pub fn get(&mut self, id: usize) -> Option<Allocation<Data>> {
-        if let Some(allocation) = self.store.get(id) {
+        if let Some((allocation, _)) = self.store.get(id) {
             self.cache.promote(&id);
             self.last_used.insert(id);
             return Some(*allocation);
@@ -311,7 +345,6 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
             ],
             store: Slab::new(),
             lookup: HashMap::new(),
-            rev_lookup: HashMap::new(),
             extent,
             cache: LruCache::unbounded(),
             last_used: HashSet::default(),
@@ -342,10 +375,9 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
             return None;
         }
 
-        let allocation = self.store.remove(id);
+        let (allocation, _) = self.store.remove(id);
         self.last_used.remove(&id);
         self.lookup.remove(key);
-        self.rev_lookup.remove(&id);
         self.layers
             .get_mut(allocation.layer)?
             .deallocate(id, allocation.allocation);
@@ -361,9 +393,8 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
             return None;
         }
 
-        let allocation = self.store.remove(id);
+        let (allocation, key) = self.store.remove(id);
         self.last_used.remove(&id);
-        let key = self.rev_lookup.remove(&id)?;
         self.lookup.remove(&key);
         self.layers
             .get_mut(allocation.layer)?
@@ -393,9 +424,8 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
             };
 
             self.upload_allocation(bytes, &allocation, renderer);
-            let id = self.store.insert(allocation);
-            self.lookup.insert(key.clone(), id);
-            self.rev_lookup.insert(id, key);
+            let id = self.store.insert((allocation, key.clone()));
+            self.lookup.insert(key, id);
             self.cache.push(id, 1);
             Some(id)
         }
@@ -412,7 +442,7 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
         renderer: &GpuRenderer,
     ) -> Option<(usize, Allocation<Data>)> {
         if let Some(&id) = self.lookup.get(&key) {
-            let allocation = self.store.get(id)?;
+            let (allocation, _) = self.store.get(id)?;
             Some((id, *allocation))
         } else {
             let allocation = {
@@ -424,9 +454,8 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
             };
 
             self.upload_allocation(bytes, &allocation, renderer);
-            let id = self.store.insert(allocation);
+            let id = self.store.insert((allocation, key.clone()));
             self.lookup.insert(key.clone(), id);
-            self.rev_lookup.insert(id, key);
             self.cache.push(id, 1);
             Some((id, allocation))
         }

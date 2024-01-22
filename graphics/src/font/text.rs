@@ -10,6 +10,7 @@ pub struct Text {
     pub buffer: Buffer,
     pub pos: Vec3,
     pub size: Vec2,
+    pub scale: f32,
     pub offsets: Vec2,
     pub default_color: Color,
     pub bounds: Option<Bounds>,
@@ -42,7 +43,13 @@ impl Text {
 
         for run in self.buffer.layout_runs() {
             for glyph in run.glyphs.iter() {
-                let physical_glyph = glyph.physical((0., 0.), 1.0);
+                let physical_glyph = glyph.physical(
+                    (
+                        self.pos.x + self.offsets.x,
+                        self.pos.y + self.offsets.y + self.size.y,
+                    ),
+                    self.scale,
+                );
 
                 let (allocation, is_color) = if let Some(allocation) =
                     atlas.text.atlas.get_by_key(&physical_glyph.cache_key)
@@ -116,15 +123,12 @@ impl Text {
                     (u as f32, v as f32, width as f32, height as f32);
 
                 let (mut x, mut y) = (
-                    (self.pos.x
-                        + self.offsets.x
-                        + physical_glyph.x as f32
-                        + position.x),
-                    (self.pos.y
-                        + self.offsets.y
-                        + self.size.y
-                        + physical_glyph.y as f32
-                        - run.line_y),
+                    physical_glyph.x as f32 + position.x,
+                    physical_glyph.y as f32 - (run.line_y * self.scale).round(), /*(self.pos.y
+                                                                                 + self.offsets.y
+                                                                                 + self.size.y
+                                                                                 + physical_glyph.y as f32
+                                                                                 - run.line_y - position.y),*/
                 );
 
                 let color = is_color
@@ -150,7 +154,7 @@ impl Text {
                     }
 
                     // Starts beyond bottom edge or ends beyond top edge
-                    let max_y = y + height;
+                    let max_y = y + height; //44
                     if y > bounds_max_y || max_y < bounds_min_y {
                         continue;
                     }
@@ -171,7 +175,7 @@ impl Text {
 
                     // Clip top edge
                     if y < bounds_min_y {
-                        height -= bounds_min_y;
+                        height -= bounds_min_y - y;
                         y = bounds_min_y;
                     }
 
@@ -214,6 +218,7 @@ impl Text {
         metrics: Option<Metrics>,
         pos: Vec3,
         size: Vec2,
+        scale: f32,
     ) -> Self {
         Self {
             buffer: Buffer::new(
@@ -233,6 +238,7 @@ impl Text {
             wrap: Wrap::Word,
             line: 0,
             scroll: 0,
+            scale,
         }
     }
 

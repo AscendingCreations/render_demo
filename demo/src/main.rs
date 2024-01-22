@@ -300,12 +300,13 @@ async fn main() -> Result<(), AscendingError> {
     let mut text = Text::new(
         &mut renderer,
         Some(Metrics::new(16.0, 16.0).scale(scale as f32)),
-        Vec3::new(0.0, 0.0, 1.0),
+        Vec3::new(0.0, 16.0, 1.0),
         Vec2::new(190.0, 32.0),
+        1.5,
     );
 
     text.set_buffer_size(&mut renderer, size.width as i32, size.height as i32)
-        .set_bounds(Some(Bounds::new(0.0, 0.0, 190.0, 32.0)))
+        .set_bounds(Some(Bounds::new(0.0, 0.0, 250.0, 66.0)))
         .set_default_color(Color::rgba(255, 255, 255, 255));
 
     // Start the process of building a shape.
@@ -575,11 +576,7 @@ async fn main() -> Result<(), AscendingError> {
         renderer.queue().submit(std::iter::once(encoder.finish()));
 
         if time < seconds {
-            text.set_text(
-                &mut renderer,
-                &format!("生活,삶,जिंदगी 😀 FPS: {fps} \nhello"),
-                Attrs::new(),
-            );
+            text.set_text(&mut renderer, &format!("helloyyui"), Attrs::new());
             fps = 0u32;
             time = seconds + 1.0;
         }

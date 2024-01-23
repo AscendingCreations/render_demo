@@ -1,7 +1,7 @@
 use crate::{
-    AsBufferPass, AscendingError, AtlasGroup, GpuRenderer, InstanceBuffer,
-    OrderedIndex, SetBuffers, StaticBufferObject, Text, TextRenderPipeline,
-    TextVertex, Vec2,
+    AsBufferPass, AscendingError, AtlasGroup, AtlasType, GpuRenderer,
+    InstanceBuffer, OrderedIndex, SetBuffers, StaticBufferObject, Text,
+    TextRenderPipeline, TextVertex, Vec2,
 };
 use cosmic_text::{CacheKey, SwashCache};
 

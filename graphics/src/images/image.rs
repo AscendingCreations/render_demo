@@ -1,6 +1,6 @@
 use crate::{
-    Atlas, Color, DrawOrder, GpuRenderer, ImageVertex, Index, OrderedIndex,
-    Vec2, Vec3, Vec4,
+    Atlas, AtlasType, Color, DrawOrder, GpuRenderer, ImageVertex, Index,
+    OrderedIndex, Vec2, Vec3, Vec4,
 };
 
 /// rendering data for all images.

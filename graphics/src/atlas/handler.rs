@@ -1,4 +1,4 @@
-use crate::{Allocation, GpuRenderer, Layer};
+use crate::{Allocation, AtlasType, GpuRenderer, Layer};
 use lru::LruCache;
 use slab::Slab;
 use std::{
@@ -150,75 +150,6 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
         None
     }
 
-    pub fn clear(&mut self) {
-        for layer in self.layers.iter_mut() {
-            layer.allocator.clear();
-        }
-
-        self.store.clear();
-        self.lookup.clear();
-        self.cache.clear();
-        self.last_used.clear();
-    }
-
-    //TODO Make function that checks for unloading and migrating.
-    pub fn trim(&mut self) {
-        self.last_used.clear();
-    }
-
-    pub fn promote_by_key(&mut self, key: U) {
-        if let Some(id) = self.lookup.get(&key) {
-            self.cache.promote(&id);
-            self.last_used.insert(*id);
-        }
-    }
-
-    pub fn promote(&mut self, id: usize) {
-        self.cache.promote(&id);
-        self.last_used.insert(id);
-    }
-
-    pub fn peek_by_key(&mut self, key: &U) -> Option<&(Allocation<Data>, U)> {
-        if let Some(id) = self.lookup.get(&key) {
-            self.store.get(*id)
-        } else {
-            None
-        }
-    }
-
-    pub fn peek(&mut self, id: usize) -> Option<&(Allocation<Data>, U)> {
-        self.store.get(id)
-    }
-
-    pub fn contains_key(&mut self, key: &U) -> bool {
-        self.lookup.contains_key(key)
-    }
-
-    pub fn contains(&mut self, id: usize) -> bool {
-        self.store.contains(id)
-    }
-
-    pub fn get_by_key(&mut self, key: &U) -> Option<Allocation<Data>> {
-        let id = *self.lookup.get(key)?;
-        if let Some((allocation, _)) = self.store.get(id) {
-            self.cache.promote(&id);
-            self.last_used.insert(id);
-            return Some(*allocation);
-        }
-
-        None
-    }
-
-    pub fn get(&mut self, id: usize) -> Option<Allocation<Data>> {
-        if let Some((allocation, _)) = self.store.get(id) {
-            self.cache.promote(&id);
-            self.last_used.insert(id);
-            return Some(*allocation);
-        }
-
-        None
-    }
-
     //TODO Add shrink that takes layers using a unload boolean and also promote each layers
     //TODO allocation layers to the new layer location. while removing the old empty layer.
     fn grow(&mut self, amount: usize, renderer: &GpuRenderer) {
@@ -358,109 +289,6 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
         }
     }
 
-    /**
-     * Removing will leave anything using the texture inable to load the correct texture if
-     * a new texture is loaded in the olds place.
-     * TODO Redo texture system so texture allocations are not held by the images but instead
-     * TODO are held by the system so we can reload images later on if they got unloaded.
-     *
-     * returns the layer id if removed otherwise None for everything else.
-     **/
-    pub fn remove_by_key(&mut self, key: &U) -> Option<usize> {
-        let id = *self.lookup.get(key)?;
-        let refcount = self.cache.pop(&id)?.saturating_sub(1);
-
-        if self.use_ref_count && refcount > 0 {
-            self.cache.push(id, refcount);
-            return None;
-        }
-
-        let (allocation, _) = self.store.remove(id);
-        self.last_used.remove(&id);
-        self.lookup.remove(key);
-        self.layers
-            .get_mut(allocation.layer)?
-            .deallocate(id, allocation.allocation);
-        Some(allocation.layer)
-    }
-
-    // returns the layer id if removed otherwise None for everything else.
-    pub fn remove(&mut self, id: usize) -> Option<usize> {
-        let refcount = self.cache.pop(&id)?.saturating_sub(1);
-
-        if self.use_ref_count && refcount > 0 {
-            self.cache.push(id, refcount);
-            return None;
-        }
-
-        let (allocation, key) = self.store.remove(id);
-        self.last_used.remove(&id);
-        self.lookup.remove(&key);
-        self.layers
-            .get_mut(allocation.layer)?
-            .deallocate(id, allocation.allocation);
-        Some(allocation.layer)
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub fn upload(
-        &mut self,
-        key: U,
-        bytes: &[u8],
-        width: u32,
-        height: u32,
-        data: Data,
-        renderer: &GpuRenderer,
-    ) -> Option<usize> {
-        if let Some(&id) = self.lookup.get(&key) {
-            Some(id)
-        } else {
-            let allocation = {
-                let nlayers = self.layers.len();
-                let allocation = self.allocate(width, height, data)?;
-                self.grow(self.layers.len() - nlayers, renderer);
-
-                allocation
-            };
-
-            self.upload_allocation(bytes, &allocation, renderer);
-            let id = self.store.insert((allocation, key.clone()));
-            self.lookup.insert(key, id);
-            self.cache.push(id, 1);
-            Some(id)
-        }
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub fn upload_with_alloc(
-        &mut self,
-        key: U,
-        bytes: &[u8],
-        width: u32,
-        height: u32,
-        data: Data,
-        renderer: &GpuRenderer,
-    ) -> Option<(usize, Allocation<Data>)> {
-        if let Some(&id) = self.lookup.get(&key) {
-            let (allocation, _) = self.store.get(id)?;
-            Some((id, *allocation))
-        } else {
-            let allocation = {
-                let nlayers = self.layers.len();
-                let allocation = self.allocate(width, height, data)?;
-                self.grow(self.layers.len() - nlayers, renderer);
-
-                allocation
-            };
-
-            self.upload_allocation(bytes, &allocation, renderer);
-            let id = self.store.insert((allocation, key.clone()));
-            self.lookup.insert(key.clone(), id);
-            self.cache.push(id, 1);
-            Some((id, allocation))
-        }
-    }
-
     fn upload_allocation(
         &mut self,
         buffer: &[u8],
@@ -500,5 +328,186 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
                 depth_or_array_layers: 1,
             },
         );
+    }
+}
+
+impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasType<U, Data>
+    for Atlas<U, Data>
+{
+    fn clear(&mut self) {
+        for layer in self.layers.iter_mut() {
+            layer.allocator.clear();
+        }
+
+        self.store.clear();
+        self.lookup.clear();
+        self.cache.clear();
+        self.last_used.clear();
+    }
+
+    //TODO Make function that checks for unloading and migrating.
+    fn trim(&mut self) {
+        self.last_used.clear();
+    }
+
+    fn promote_by_key(&mut self, key: U) {
+        if let Some(id) = self.lookup.get(&key) {
+            self.cache.promote(&id);
+            self.last_used.insert(*id);
+        }
+    }
+
+    fn promote(&mut self, id: usize) {
+        self.cache.promote(&id);
+        self.last_used.insert(id);
+    }
+
+    /// Get the ID of a image if it is loaded.
+    fn lookup(&self, key: &U) -> Option<usize> {
+        self.lookup.get(&key).map(|u| *u)
+    }
+
+    fn peek_by_key(&mut self, key: &U) -> Option<&(Allocation<Data>, U)> {
+        if let Some(id) = self.lookup.get(&key) {
+            self.store.get(*id)
+        } else {
+            None
+        }
+    }
+
+    fn peek(&mut self, id: usize) -> Option<&(Allocation<Data>, U)> {
+        self.store.get(id)
+    }
+
+    fn contains_key(&mut self, key: &U) -> bool {
+        self.lookup.contains_key(key)
+    }
+
+    fn contains(&mut self, id: usize) -> bool {
+        self.store.contains(id)
+    }
+
+    fn get_by_key(&mut self, key: &U) -> Option<Allocation<Data>> {
+        let id = *self.lookup.get(key)?;
+        if let Some((allocation, _)) = self.store.get(id) {
+            self.cache.promote(&id);
+            self.last_used.insert(id);
+            return Some(*allocation);
+        }
+
+        None
+    }
+
+    fn get(&mut self, id: usize) -> Option<Allocation<Data>> {
+        if let Some((allocation, _)) = self.store.get(id) {
+            self.cache.promote(&id);
+            self.last_used.insert(id);
+            return Some(*allocation);
+        }
+
+        None
+    }
+
+    /**
+     * Removing will leave anything using the texture inable to load the correct texture if
+     * a new texture is loaded in the olds place.
+     * TODO Redo texture system so texture allocations are not held by the images but instead
+     * TODO are held by the system so we can reload images later on if they got unloaded.
+     *
+     * returns the layer id if removed otherwise None for everything else.
+     **/
+    fn remove_by_key(&mut self, key: &U) -> Option<usize> {
+        let id = *self.lookup.get(key)?;
+        let refcount = self.cache.pop(&id)?.saturating_sub(1);
+
+        if self.use_ref_count && refcount > 0 {
+            self.cache.push(id, refcount);
+            return None;
+        }
+
+        let (allocation, _) = self.store.remove(id);
+        self.last_used.remove(&id);
+        self.lookup.remove(key);
+        self.layers
+            .get_mut(allocation.layer)?
+            .deallocate(id, allocation.allocation);
+        Some(allocation.layer)
+    }
+
+    // returns the layer id if removed otherwise None for everything else.
+    fn remove(&mut self, id: usize) -> Option<usize> {
+        let refcount = self.cache.pop(&id)?.saturating_sub(1);
+
+        if self.use_ref_count && refcount > 0 {
+            self.cache.push(id, refcount);
+            return None;
+        }
+
+        let (allocation, key) = self.store.remove(id);
+        self.last_used.remove(&id);
+        self.lookup.remove(&key);
+        self.layers
+            .get_mut(allocation.layer)?
+            .deallocate(id, allocation.allocation);
+        Some(allocation.layer)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn upload(
+        &mut self,
+        key: U,
+        bytes: &[u8],
+        width: u32,
+        height: u32,
+        data: Data,
+        renderer: &GpuRenderer,
+    ) -> Option<usize> {
+        if let Some(&id) = self.lookup.get(&key) {
+            Some(id)
+        } else {
+            let allocation = {
+                let nlayers = self.layers.len();
+                let allocation = self.allocate(width, height, data)?;
+                self.grow(self.layers.len() - nlayers, renderer);
+
+                allocation
+            };
+
+            self.upload_allocation(bytes, &allocation, renderer);
+            let id = self.store.insert((allocation, key.clone()));
+            self.lookup.insert(key, id);
+            self.cache.push(id, 1);
+            Some(id)
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn upload_with_alloc(
+        &mut self,
+        key: U,
+        bytes: &[u8],
+        width: u32,
+        height: u32,
+        data: Data,
+        renderer: &GpuRenderer,
+    ) -> Option<(usize, Allocation<Data>)> {
+        if let Some(&id) = self.lookup.get(&key) {
+            let (allocation, _) = self.store.get(id)?;
+            Some((id, *allocation))
+        } else {
+            let allocation = {
+                let nlayers = self.layers.len();
+                let allocation = self.allocate(width, height, data)?;
+                self.grow(self.layers.len() - nlayers, renderer);
+
+                allocation
+            };
+
+            self.upload_allocation(bytes, &allocation, renderer);
+            let id = self.store.insert((allocation, key.clone()));
+            self.lookup.insert(key.clone(), id);
+            self.cache.push(id, 1);
+            Some((id, allocation))
+        }
     }
 }

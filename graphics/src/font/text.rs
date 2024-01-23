@@ -1,6 +1,6 @@
 use crate::{
-    AscendingError, Bounds, Color, DrawOrder, GpuRenderer, Index, OrderedIndex,
-    TextAtlas, TextVertex, Vec2, Vec3,
+    AscendingError, AtlasType, Bounds, Color, DrawOrder, GpuRenderer, Index,
+    OrderedIndex, TextAtlas, TextVertex, Vec2, Vec3,
 };
 use cosmic_text::{
     Attrs, Buffer, Cursor, Metrics, SwashCache, SwashContent, Wrap,

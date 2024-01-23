@@ -1,4 +1,4 @@
-use crate::{Allocation, AtlasGroup, GpuRenderer, Texture};
+use crate::{Allocation, AtlasGroup, AtlasType, GpuRenderer, Texture};
 use image::{self, EncodableLayout, ImageBuffer, RgbaImage};
 
 //used to map the tile in the tilesheet back visually
@@ -106,10 +106,7 @@ impl TileSheet {
 
         // We return as Some(tilesheet) this allows us to check above upon
         // upload if a tile failed to get added or not due to no more room.
-        Some(TileSheet {
-            tiles: Vec::with_capacity(tilecount as usize),
-            texture,
-        })
+        Some(TileSheet { tiles, texture })
     }
 
     pub fn upload(

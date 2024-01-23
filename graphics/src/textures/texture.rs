@@ -1,5 +1,5 @@
 use crate::{
-    Allocation, AscendingError, Atlas, AtlasGroup, GpuRenderer, TileSheet,
+    Allocation, AscendingError, AtlasGroup, AtlasType, GpuRenderer, TileSheet,
 };
 use image::{DynamicImage, GenericImageView, ImageFormat};
 use std::{
@@ -31,6 +31,45 @@ impl Texture {
         Ok(Self::from_image(name, image::open(path)?))
     }
 
+    pub fn upload_from(
+        path: impl AsRef<Path>,
+        atlas: &mut impl AtlasType<String, i32>,
+        renderer: &GpuRenderer,
+    ) -> Option<usize> {
+        let name = path.as_ref().to_str()?.to_owned();
+
+        if let Some(id) = atlas.lookup(&name) {
+            Some(id)
+        } else {
+            let texture = Texture::from_file(path).ok()?;
+            let (width, height) = texture.size();
+            atlas.upload(name, texture.bytes(), width, height, 0, renderer)
+        }
+    }
+
+    pub fn upload_from_with_alloc(
+        path: impl AsRef<Path>,
+        atlas: &mut impl AtlasType<String, i32>,
+        renderer: &GpuRenderer,
+    ) -> Option<(usize, Allocation)> {
+        let name = path.as_ref().to_str()?.to_owned();
+
+        if let Some(id) = atlas.lookup(&name) {
+            atlas.peek(id).map(|(allocation, _)| (id, *allocation))
+        } else {
+            let texture = Texture::from_file(path).ok()?;
+            let (width, height) = texture.size();
+            atlas.upload_with_alloc(
+                name,
+                texture.bytes(),
+                width,
+                height,
+                0,
+                renderer,
+            )
+        }
+    }
+
     pub fn from_image(name: String, image: DynamicImage) -> Self {
         let size = image.dimensions();
         let bytes = image.into_rgba8().into_raw();
@@ -58,7 +97,7 @@ impl Texture {
 
     pub fn upload(
         &self,
-        atlas: &mut Atlas,
+        atlas: &mut impl AtlasType<String, i32>,
         renderer: &GpuRenderer,
     ) -> Option<usize> {
         let (width, height) = self.size;
@@ -67,7 +106,7 @@ impl Texture {
 
     pub fn upload_with_alloc(
         &self,
-        atlas: &mut Atlas,
+        atlas: &mut impl AtlasType<String, i32>,
         renderer: &GpuRenderer,
     ) -> Option<(usize, Allocation)> {
         let (width, height) = self.size;
@@ -98,38 +137,6 @@ impl Texture {
         tilesize: u32,
     ) -> Option<()> {
         tilesheet.upload(self, renderer, atlas, tilesize)
-    }
-
-    pub fn group_upload(
-        &self,
-        atlas_group: &mut AtlasGroup,
-        renderer: &GpuRenderer,
-    ) -> Option<usize> {
-        let (width, height) = self.size;
-        atlas_group.atlas.upload(
-            self.name.clone(),
-            &self.bytes,
-            width,
-            height,
-            0,
-            renderer,
-        )
-    }
-
-    pub fn group_upload_with_alloc(
-        &self,
-        atlas_group: &mut AtlasGroup,
-        renderer: &GpuRenderer,
-    ) -> Option<(usize, Allocation)> {
-        let (width, height) = self.size;
-        atlas_group.atlas.upload_with_alloc(
-            self.name.clone(),
-            &self.bytes,
-            width,
-            height,
-            0,
-            renderer,
-        )
     }
 
     pub fn name(&self) -> &str {

@@ -178,7 +178,7 @@ async fn main() -> Result<(), AscendingError> {
     // within the texture. its x, y, w, h.  Texture loads the file. group_uploads sends it to the Texture
     // renderer is used to upload it to the GPU when done.
     let allocation = Texture::from_file("images/Female_1.png")?
-        .group_upload(&mut atlases[0], &renderer)
+        .upload(&mut atlases[0], &renderer)
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
 
     let mut sprites = Vec::with_capacity(2001);
@@ -280,7 +280,7 @@ async fn main() -> Result<(), AscendingError> {
     //println!("tilesheet: {:?}", tilesheet);
 
     let allocation = Texture::from_file("images/anim/0.png")?
-        .group_upload(&mut atlases[0], &renderer)
+        .upload(&mut atlases[0], &renderer)
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
 
     let mut animation = Image::new(Some(allocation), &mut renderer, 2);

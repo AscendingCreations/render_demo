@@ -10,6 +10,42 @@ pub struct AtlasGroup<U: Hash + Eq + Clone = String, Data: Copy + Default = i32>
     pub texture: TextureGroup,
 }
 
+pub trait AtlasType<U: Hash + Eq + Clone, Data: Copy + Default> {
+    #[allow(clippy::too_many_arguments)]
+    fn upload(
+        &mut self,
+        hash: U,
+        bytes: &[u8],
+        width: u32,
+        height: u32,
+        data: Data,
+        renderer: &GpuRenderer,
+    ) -> Option<usize>;
+    #[allow(clippy::too_many_arguments)]
+    fn upload_with_alloc(
+        &mut self,
+        hash: U,
+        bytes: &[u8],
+        width: u32,
+        height: u32,
+        data: Data,
+        renderer: &GpuRenderer,
+    ) -> Option<(usize, Allocation<Data>)>;
+    fn lookup(&self, hash: &U) -> Option<usize>;
+    fn trim(&mut self);
+    fn clear(&mut self);
+    fn promote(&mut self, id: usize);
+    fn promote_by_key(&mut self, key: U);
+    fn peek(&mut self, id: usize) -> Option<&(Allocation<Data>, U)>;
+    fn peek_by_key(&mut self, key: &U) -> Option<&(Allocation<Data>, U)>;
+    fn contains(&mut self, id: usize) -> bool;
+    fn contains_key(&mut self, key: &U) -> bool;
+    fn get(&mut self, id: usize) -> Option<Allocation<Data>>;
+    fn get_by_key(&mut self, key: &U) -> Option<Allocation<Data>>;
+    fn remove_by_key(&mut self, key: &U) -> Option<usize>;
+    fn remove(&mut self, id: usize) -> Option<usize>;
+}
+
 impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
     pub fn new(
         renderer: &mut GpuRenderer,
@@ -26,9 +62,13 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
 
         Self { atlas, texture }
     }
+}
 
+impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasType<U, Data>
+    for AtlasGroup<U, Data>
+{
     #[allow(clippy::too_many_arguments)]
-    pub fn upload(
+    fn upload(
         &mut self,
         hash: U,
         bytes: &[u8],
@@ -42,7 +82,7 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn upload_with_alloc(
+    fn upload_with_alloc(
         &mut self,
         hash: U,
         bytes: &[u8],
@@ -55,43 +95,56 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
             .upload_with_alloc(hash, bytes, width, height, data, renderer)
     }
 
-    pub fn trim(&mut self) {
+    fn lookup(&self, hash: &U) -> Option<usize> {
+        self.atlas.lookup(hash)
+    }
+
+    fn trim(&mut self) {
         self.atlas.trim();
     }
 
-    pub fn clear(&mut self) {
+    fn clear(&mut self) {
         self.atlas.clear();
     }
 
-    pub fn promote(&mut self, id: usize) {
+    fn promote(&mut self, id: usize) {
         self.atlas.promote(id);
     }
 
-    pub fn promote_by_key(&mut self, key: U) {
+    fn promote_by_key(&mut self, key: U) {
         self.atlas.promote_by_key(key);
     }
 
-    pub fn peek(&mut self, id: usize) -> Option<&(Allocation<Data>, U)> {
+    fn peek(&mut self, id: usize) -> Option<&(Allocation<Data>, U)> {
         self.atlas.peek(id)
     }
 
-    pub fn peek_by_key(&mut self, key: &U) -> Option<&(Allocation<Data>, U)> {
+    fn peek_by_key(&mut self, key: &U) -> Option<&(Allocation<Data>, U)> {
         self.atlas.peek_by_key(key)
     }
 
-    pub fn contains(&mut self, id: usize) -> bool {
+    fn contains(&mut self, id: usize) -> bool {
         self.atlas.contains(id)
     }
 
-    pub fn contains_key(&mut self, key: &U) -> bool {
+    fn contains_key(&mut self, key: &U) -> bool {
         self.atlas.contains_key(key)
     }
 
-    pub fn get(&mut self, id: usize) -> Option<Allocation<Data>> {
+    fn get(&mut self, id: usize) -> Option<Allocation<Data>> {
         self.atlas.get(id)
     }
 
-    pub fn get_by_key(&mut self, key: &U) -> Option<Allocation<Data>> {
+    fn get_by_key(&mut self, key: &U) -> Option<Allocation<Data>> {
         self.atlas.get_by_key(key)
+    }
+
+    fn remove_by_key(&mut self, key: &U) -> Option<usize> {
+        self.atlas.remove_by_key(key)
+    }
+
+    // returns the layer id if removed otherwise None for everything else.
+    fn remove(&mut self, id: usize) -> Option<usize> {
+        self.atlas.remove(id)
     }
 }

@@ -1,5 +1,5 @@
 use crate::{
-    AscendingError, AtlasGroup, GpuRenderer, Image, ImageRenderPipeline,
+    AscendingError, Atlas, AtlasGroup, GpuRenderer, Image, ImageRenderPipeline,
     ImageVertex, InstanceBuffer, OrderedIndex, StaticBufferObject,
 };
 
@@ -30,8 +30,9 @@ impl ImageRenderer {
         &mut self,
         image: &mut Image,
         renderer: &mut GpuRenderer,
+        atlas: &mut Atlas,
     ) {
-        let index = image.update(renderer);
+        let index = image.update(renderer, atlas);
 
         self.add_buffer_store(renderer, index);
     }

@@ -1,6 +1,7 @@
 pub struct Allocator {
     allocator: guillotiere::AtlasAllocator,
     allocations: usize,
+    deallocations: usize,
 }
 
 impl Allocator {
@@ -20,16 +21,23 @@ impl Allocator {
 
     pub fn clear(&mut self) {
         self.allocator.clear();
+        self.allocations = 0;
+        self.deallocations = 0;
     }
 
     pub fn deallocate(&mut self, allocation: guillotiere::Allocation) {
         self.allocator.deallocate(allocation.id);
 
         self.allocations = self.allocations.saturating_sub(1);
+        self.deallocations = self.deallocations.saturating_add(1);
     }
 
     pub fn is_empty(&self) -> bool {
         self.allocations == 0
+    }
+
+    pub fn deallocations(&self) -> usize {
+        self.deallocations
     }
 
     pub fn new(size: u32) -> Self {
@@ -40,6 +48,7 @@ impl Allocator {
         Self {
             allocator,
             allocations: 0,
+            deallocations: 0,
         }
     }
 }

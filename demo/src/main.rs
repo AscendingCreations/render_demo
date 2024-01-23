@@ -164,6 +164,7 @@ async fn main() -> Result<(), AscendingError> {
         Some(AtlasGroup::new(
             &mut renderer,
             wgpu::TextureFormat::Rgba8UnormSrgb,
+            true,
         ))
     })
     .take(4)
@@ -301,10 +302,11 @@ async fn main() -> Result<(), AscendingError> {
         Some(Metrics::new(16.0, 16.0).scale(scale as f32)),
         Vec3::new(0.0, 0.0, 1.0),
         Vec2::new(190.0, 32.0),
+        1.0,
     );
 
     text.set_buffer_size(&mut renderer, size.width as i32, size.height as i32)
-        .set_bounds(Some(Bounds::new(0.0, 0.0, 190.0, 32.0)))
+        .set_bounds(Some(Bounds::new(0.0, 0.0, 250.0, 600.0)))
         .set_default_color(Color::rgba(255, 255, 255, 255));
 
     // Start the process of building a shape.
@@ -521,12 +523,18 @@ async fn main() -> Result<(), AscendingError> {
 
         // This adds the Image data to the Buffer for rendering.
         state.sprites.iter_mut().for_each(|sprite| {
-            state.sprite_renderer.image_update(sprite, &mut renderer);
+            state.sprite_renderer.image_update(
+                sprite,
+                &mut renderer,
+                &mut state.image_atlas.atlas,
+            );
         });
 
-        state
-            .sprite_renderer
-            .image_update(&mut state.animation, &mut renderer);
+        state.sprite_renderer.image_update(
+            &mut state.animation,
+            &mut renderer,
+            &mut state.image_atlas.atlas,
+        );
 
         // this cycles all the Image's in the Image buffer by first putting them in rendering order
         // and then uploading them to the GPU if they have moved or changed in any way. clears the
@@ -570,7 +578,7 @@ async fn main() -> Result<(), AscendingError> {
         if time < seconds {
             text.set_text(
                 &mut renderer,
-                &format!("生活,삶,जिंदगी 😀 FPS: {fps} \nhello"),
+                &format!("生活,삶,जिंदगी 😀 FPS: {fps} \nyhelloy"),
                 Attrs::new(),
             );
             fps = 0u32;

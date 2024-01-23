@@ -1,6 +1,6 @@
 use crate::{
-    Allocation, Color, DrawOrder, GpuRenderer, ImageVertex, Index,
-    OrderedIndex, Vec2, Vec3, Vec4,
+    Atlas, Color, DrawOrder, GpuRenderer, ImageVertex, Index, OrderedIndex,
+    Vec2, Vec3, Vec4,
 };
 
 /// rendering data for all images.
@@ -20,7 +20,7 @@ pub struct Image {
     pub animate: bool,
     pub use_camera: bool,
     /// Texture area location in Atlas.
-    pub texture: Option<Allocation>,
+    pub texture: Option<usize>,
     pub store_id: Index,
     pub order: DrawOrder,
     pub render_layer: u32,
@@ -30,7 +30,7 @@ pub struct Image {
 
 impl Image {
     pub fn new(
-        texture: Option<Allocation>,
+        texture: Option<usize>,
         renderer: &mut GpuRenderer,
         render_layer: u32,
     ) -> Self {
@@ -50,9 +50,19 @@ impl Image {
             changed: true,
         }
     }
-    pub fn create_quad(&mut self, renderer: &mut GpuRenderer) {
+    pub fn create_quad(
+        &mut self,
+        renderer: &mut GpuRenderer,
+        atlas: &mut Atlas,
+    ) {
         let allocation = match &self.texture {
-            Some(allocation) => allocation,
+            Some(id) => {
+                if let Some(allocation) = atlas.get(*id) {
+                    allocation
+                } else {
+                    return;
+                }
+            }
             None => return,
         };
 
@@ -88,10 +98,14 @@ impl Image {
     }
 
     /// used to check and update the vertex array.
-    pub fn update(&mut self, renderer: &mut GpuRenderer) -> OrderedIndex {
+    pub fn update(
+        &mut self,
+        renderer: &mut GpuRenderer,
+        atlas: &mut Atlas,
+    ) -> OrderedIndex {
         // if pos or tex_pos or color changed.
         if self.changed {
-            self.create_quad(renderer);
+            self.create_quad(renderer, atlas);
         }
 
         OrderedIndex::new(self.order, self.store_id, 0)

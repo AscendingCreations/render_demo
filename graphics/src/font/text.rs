@@ -125,12 +125,13 @@ impl Text {
                 let (mut x, mut y) = (
                     physical_glyph.x as f32 + position.x,
                     physical_glyph.y as f32
-                        - (run.line_y * self.scale).round()
-                        - position.y, /*(self.pos.y
-                                      + self.offsets.y
-                                      + self.size.y
-                                      + physical_glyph.y as f32
-                                      - run.line_y - position.y),*/
+                        + ((position.y - height)
+                            - (run.line_y * self.scale).round()),
+                    /*(self.pos.y
+                    + self.offsets.y
+                    + self.size.y
+                    + physical_glyph.y as f32
+                    - run.line_y - position.y),*/
                 );
 
                 let color = is_color

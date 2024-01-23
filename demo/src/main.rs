@@ -576,7 +576,7 @@ async fn main() -> Result<(), AscendingError> {
         renderer.queue().submit(std::iter::once(encoder.finish()));
 
         if time < seconds {
-            text.set_text(&mut renderer, &format!("helloyyui"), Attrs::new());
+            text.set_text(&mut renderer, &format!("yhelloyyui"), Attrs::new());
             fps = 0u32;
             time = seconds + 1.0;
         }

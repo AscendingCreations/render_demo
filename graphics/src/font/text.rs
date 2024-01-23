@@ -19,9 +19,9 @@ pub struct Text {
     /// Cursor the shaping is set too.
     pub cursor: Cursor,
     /// line the shaping is set too.
-    pub line: i32,
+    pub line: usize,
     /// set scroll to render too.
-    pub scroll: i32,
+    pub scroll: cosmic_text::Scroll,
     /// Word Wrap Type. Default is Wrap::Word.
     pub wrap: Wrap,
     /// if the shader should render with the camera's view.
@@ -124,11 +124,13 @@ impl Text {
 
                 let (mut x, mut y) = (
                     physical_glyph.x as f32 + position.x,
-                    physical_glyph.y as f32 - (run.line_y * self.scale).round(), /*(self.pos.y
-                                                                                 + self.offsets.y
-                                                                                 + self.size.y
-                                                                                 + physical_glyph.y as f32
-                                                                                 - run.line_y - position.y),*/
+                    physical_glyph.y as f32
+                        - (run.line_y * self.scale).round()
+                        - position.y, /*(self.pos.y
+                                      + self.offsets.y
+                                      + self.size.y
+                                      + physical_glyph.y as f32
+                                      - run.line_y - position.y),*/
                 );
 
                 let color = is_color
@@ -237,7 +239,7 @@ impl Text {
             cursor: Cursor::default(),
             wrap: Wrap::Word,
             line: 0,
-            scroll: 0,
+            scroll: cosmic_text::Scroll::default(),
             scale,
         }
     }
@@ -275,8 +277,11 @@ impl Text {
             self.cursor = cursor;
             self.line = 0;
             self.changed = true;
-            self.buffer
-                .shape_until_cursor(&mut renderer.font_sys, cursor);
+            self.buffer.shape_until_cursor(
+                &mut renderer.font_sys,
+                cursor,
+                false,
+            );
             self.scroll = self.buffer.scroll();
         }
 
@@ -287,15 +292,18 @@ impl Text {
     pub fn shape_until(
         &mut self,
         renderer: &mut GpuRenderer,
-        line: i32,
+        line: usize,
     ) -> &mut Self {
         if self.line != line || self.changed {
-            self.cursor = Cursor::default();
+            self.cursor = Cursor::new(line, 0);
             self.line = line;
             self.changed = true;
-            self.buffer.shape_until(&mut renderer.font_sys, line);
+            self.buffer.shape_until_cursor(
+                &mut renderer.font_sys,
+                self.cursor,
+                false,
+            );
         }
-
         self
     }
 
@@ -305,7 +313,8 @@ impl Text {
         renderer: &mut GpuRenderer,
     ) -> &mut Self {
         if self.changed {
-            self.buffer.shape_until_scroll(&mut renderer.font_sys);
+            self.buffer
+                .shape_until_scroll(&mut renderer.font_sys, false);
         }
 
         self
@@ -314,13 +323,14 @@ impl Text {
     pub fn set_scroll(
         &mut self,
         renderer: &mut GpuRenderer,
-        scroll: i32,
+        scroll: cosmic_text::Scroll,
     ) -> &mut Self {
         if self.scroll != scroll {
             self.scroll = scroll;
             self.buffer.set_scroll(scroll);
             self.changed = true;
-            self.buffer.shape_until_scroll(&mut renderer.font_sys);
+            self.buffer
+                .shape_until_scroll(&mut renderer.font_sys, false);
         }
 
         self

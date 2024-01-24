@@ -15,12 +15,15 @@ where
     pub animation: Image,
     pub map: Map,
     pub mesh: [Mesh2D; 2],
+    pub rect: Rect,
     /// Atlas Groups for Textures in GPU
-    pub image_atlas: AtlasGroup,
-    pub map_atlas: AtlasGroup,
+    pub image_atlas: AtlasSet,
+    pub ui_atlas: AtlasSet,
+    pub map_atlas: AtlasSet,
     pub text_atlas: TextAtlas,
-    pub mesh_atlas: AtlasGroup,
+    pub mesh_atlas: AtlasSet,
     /// Rendering Buffers and other shared data.
+    pub ui_renderer: RectRenderer,
     pub text_renderer: TextRenderer,
     pub sprite_renderer: ImageRenderer,
     pub map_renderer: MapRenderer,
@@ -90,5 +93,7 @@ where
         pass.render_text(renderer, &self.text_renderer, &self.text_atlas);
 
         pass.render_2dmeshs(renderer, &self.mesh_renderer);
+
+        pass.render_rects(renderer, &self.ui_renderer, &self.ui_atlas);
     }
 }

@@ -1,4 +1,4 @@
-use crate::{Allocation, AtlasGroup, GpuRenderer, Texture};
+use crate::{AtlasSet, GpuRenderer, Texture};
 use image::{self, EncodableLayout, ImageBuffer, RgbaImage};
 
 //used to map the tile in the tilesheet back visually
@@ -8,27 +8,26 @@ pub struct Tile {
     pub x: u32,
     pub y: u32,
     pub id: u32,
-    pub allocation: Allocation,
+    pub tex_id: usize,
 }
 
 #[derive(Debug, Default)]
 //We can use this for editor loading and just as a precursor.
 pub struct TileSheet {
     pub tiles: Vec<Tile>,
-    pub texture: Texture,
 }
 
 impl TileSheet {
     pub fn new(
         texture: Texture,
         renderer: &GpuRenderer,
-        atlas: &mut AtlasGroup,
+        atlas: &mut AtlasSet<String, i32>,
         tilesize: u32,
     ) -> Option<TileSheet> {
         let tilecount =
             (texture.size().0 / tilesize) * (texture.size().1 / tilesize);
         let sheet_width = texture.size().0 / tilesize;
-        let atlas_width = atlas.atlas.extent.width / tilesize;
+        let atlas_width = atlas.size().x / tilesize;
         let sheet_image: RgbaImage = ImageBuffer::from_raw(
             texture.size().0,
             texture.size().1,
@@ -39,20 +38,18 @@ impl TileSheet {
 
         // lets check this to add in the empty tile set first if nothing else yet exists.
         // Also lets add the black tile.
-        let empty = if let Some(empty) = atlas.get_by_key(&"Empty".to_owned()) {
+        let empty = if let Some(empty) = atlas.lookup(&"Empty".to_owned()) {
             empty
         } else {
             let image: RgbaImage = ImageBuffer::new(tilesize, tilesize);
-            let (_, allocation) = atlas.upload_with_alloc(
+            atlas.upload(
                 "Empty".to_owned(),
                 image.as_bytes(),
                 tilesize,
                 tilesize,
                 0,
                 renderer,
-            )?;
-
-            allocation
+            )?
         };
 
         for id in 0..tilecount {
@@ -74,7 +71,7 @@ impl TileSheet {
             }
             // we upload the tile regardless this avoid tilesheet issues later.
             let name: String = format!("{}-{}", texture.name(), id);
-            let (_, allocation) = atlas.upload_with_alloc(
+            let (tex_id, allocation) = atlas.upload_with_alloc(
                 name,
                 image.as_bytes(),
                 tilesize,
@@ -91,7 +88,7 @@ impl TileSheet {
                     x: tilex,
                     y: tiley,
                     id: 0,
-                    allocation: empty.clone(),
+                    tex_id: empty,
                 })
             } else {
                 let (posx, posy) = allocation.position();
@@ -99,29 +96,26 @@ impl TileSheet {
                     x: tilex,
                     y: tiley,
                     id: (posx / tilesize) + ((posy / tilesize) * atlas_width),
-                    allocation,
+                    tex_id,
                 })
             }
         }
 
         // We return as Some(tilesheet) this allows us to check above upon
         // upload if a tile failed to get added or not due to no more room.
-        Some(TileSheet {
-            tiles: Vec::with_capacity(tilecount as usize),
-            texture,
-        })
+        Some(TileSheet { tiles })
     }
 
     pub fn upload(
         &mut self,
         texture: Texture,
         renderer: &GpuRenderer,
-        atlas: &mut AtlasGroup,
+        atlas: &mut AtlasSet<String, i32>,
         tilesize: u32,
     ) -> Option<()> {
         let tilecount =
             (texture.size().0 / tilesize) * (texture.size().1 / tilesize);
-        let atlas_width = atlas.atlas.extent.width / tilesize;
+        let atlas_width = atlas.size().x / tilesize;
         let sheet_width = texture.size().0 / tilesize;
         let sheet_image: RgbaImage = ImageBuffer::from_raw(
             texture.size().0,
@@ -132,20 +126,18 @@ impl TileSheet {
 
         // lets check this to add in the empty tile set first if nothing else yet exists.
         // Also lets add the black tile.
-        let empty = if let Some(empty) = atlas.get_by_key(&"Empty".to_owned()) {
+        let empty = if let Some(empty) = atlas.lookup(&"Empty".to_owned()) {
             empty
         } else {
             let image: RgbaImage = ImageBuffer::new(tilesize, tilesize);
-            let (_, allocation) = atlas.upload_with_alloc(
+            atlas.upload(
                 "Empty".to_owned(),
                 image.as_bytes(),
                 tilesize,
                 tilesize,
                 0,
                 renderer,
-            )?;
-
-            allocation
+            )?
         };
 
         for id in 0..tilecount {
@@ -166,7 +158,7 @@ impl TileSheet {
             }
 
             let name: String = format!("{}-{}", texture.name(), id);
-            let (_, allocation) = atlas.upload_with_alloc(
+            let (tex_id, allocation) = atlas.upload_with_alloc(
                 name,
                 image.as_bytes(),
                 tilesize,
@@ -183,7 +175,7 @@ impl TileSheet {
                     x: tilex,
                     y: tiley,
                     id: 0,
-                    allocation: empty.clone(),
+                    tex_id: empty,
                 })
             } else {
                 let (posx, posy) = allocation.position();
@@ -191,7 +183,7 @@ impl TileSheet {
                     x: tilex,
                     y: tiley,
                     id: (posx / tilesize) + ((posy / tilesize) * atlas_width),
-                    allocation,
+                    tex_id,
                 })
             }
         }

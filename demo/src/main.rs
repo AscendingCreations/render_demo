@@ -160,8 +160,8 @@ async fn main() -> Result<(), AscendingError> {
     println!("{:?}", renderer.adapter().get_info());
 
     // We generate Texture atlases to use with out types.
-    let mut atlases: Vec<AtlasGroup> = iter::from_fn(|| {
-        Some(AtlasGroup::new(
+    let mut atlases: Vec<AtlasSet> = iter::from_fn(|| {
+        Some(AtlasSet::new(
             &mut renderer,
             wgpu::TextureFormat::Rgba8UnormSrgb,
             true,
@@ -178,7 +178,7 @@ async fn main() -> Result<(), AscendingError> {
     // within the texture. its x, y, w, h.  Texture loads the file. group_uploads sends it to the Texture
     // renderer is used to upload it to the GPU when done.
     let allocation = Texture::from_file("images/Female_1.png")?
-        .group_upload(&mut atlases[0], &renderer)
+        .upload(&mut atlases[0], &renderer)
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
 
     let mut sprites = Vec::with_capacity(2001);
@@ -210,6 +210,7 @@ async fn main() -> Result<(), AscendingError> {
     let map_renderer = MapRenderer::new(&mut renderer, 81).unwrap();
     let mesh_renderer = Mesh2DRenderer::new(&renderer).unwrap();
     let light_renderer = LightRenderer::new(&mut renderer).unwrap();
+    let ui_renderer = RectRenderer::new(&mut renderer).unwrap();
 
     // get the screen size.
     let mut size = renderer.size();
@@ -280,7 +281,7 @@ async fn main() -> Result<(), AscendingError> {
     //println!("tilesheet: {:?}", tilesheet);
 
     let allocation = Texture::from_file("images/anim/0.png")?
-        .group_upload(&mut atlases[0], &renderer)
+        .upload(&mut atlases[0], &renderer)
         .ok_or_else(|| OtherError::new("failed to upload image"))?;
 
     let mut animation = Image::new(Some(allocation), &mut renderer, 2);
@@ -419,6 +420,13 @@ async fn main() -> Result<(), AscendingError> {
     // load times.
     renderer.window().set_visible(true);
 
+    let mut rect = Rect::new(&mut renderer, 0);
+    rect.set_size(Vec2::new(32.0, 32.0))
+        .set_position(Vec3::new(40.0, 40.0, 1.0))
+        .set_radius(8.0)
+        .set_border_color(Color::rgba(0, 0, 0, 255))
+        .set_border_width(2.0);
+
     // add everything into our convience type for quicker access and passing.
     let mut state = State {
         system,
@@ -436,6 +444,9 @@ async fn main() -> Result<(), AscendingError> {
         mesh_renderer,
         lights,
         light_renderer,
+        ui_atlas: atlases.remove(0),
+        ui_renderer,
+        rect,
     };
 
     // Create the mouse/keyboard bindings for our stuff.
@@ -526,14 +537,14 @@ async fn main() -> Result<(), AscendingError> {
             state.sprite_renderer.image_update(
                 sprite,
                 &mut renderer,
-                &mut state.image_atlas.atlas,
+                &mut state.image_atlas,
             );
         });
 
         state.sprite_renderer.image_update(
             &mut state.animation,
             &mut renderer,
-            &mut state.image_atlas.atlas,
+            &mut state.image_atlas,
         );
 
         // this cycles all the Image's in the Image buffer by first putting them in rendering order
@@ -560,6 +571,12 @@ async fn main() -> Result<(), AscendingError> {
 
         state.mesh_renderer.finalize(&mut renderer);*/
 
+        state.ui_renderer.rect_update(
+            &mut state.rect,
+            &mut renderer,
+            &mut state.ui_atlas,
+        );
+        state.ui_renderer.finalize(&mut renderer);
         // Start encoding commands. this stores all the rendering calls for execution when
         // finish is called.
         let mut encoder = renderer.device().create_command_encoder(

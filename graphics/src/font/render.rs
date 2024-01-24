@@ -1,24 +1,20 @@
 use crate::{
-    AsBufferPass, AscendingError, AtlasGroup, GpuRenderer, InstanceBuffer,
+    AsBufferPass, AscendingError, AtlasSet, GpuRenderer, InstanceBuffer,
     OrderedIndex, SetBuffers, StaticBufferObject, Text, TextRenderPipeline,
     TextVertex, Vec2,
 };
 use cosmic_text::{CacheKey, SwashCache};
 
 pub struct TextAtlas {
-    pub(crate) text: AtlasGroup<CacheKey, Vec2>,
-    pub(crate) emoji: AtlasGroup<CacheKey, Vec2>,
+    pub(crate) text: AtlasSet<CacheKey, Vec2>,
+    pub(crate) emoji: AtlasSet<CacheKey, Vec2>,
 }
 
 impl TextAtlas {
     pub fn new(renderer: &mut GpuRenderer) -> Result<Self, AscendingError> {
         Ok(Self {
-            text: AtlasGroup::new(
-                renderer,
-                wgpu::TextureFormat::R8Unorm,
-                false,
-            ),
-            emoji: AtlasGroup::new(
+            text: AtlasSet::new(renderer, wgpu::TextureFormat::R8Unorm, false),
+            emoji: AtlasSet::new(
                 renderer,
                 wgpu::TextureFormat::Rgba8UnormSrgb,
                 false,
@@ -94,8 +90,8 @@ where
     ) {
         if buffer.buffer.count() > 0 {
             self.set_buffers(renderer.buffer_object.as_buffer_pass());
-            self.set_bind_group(1, &atlas.text.texture.bind_group, &[]);
-            self.set_bind_group(2, &atlas.emoji.texture.bind_group, &[]);
+            self.set_bind_group(1, atlas.text.bind_group(), &[]);
+            self.set_bind_group(2, atlas.emoji.bind_group(), &[]);
             self.set_vertex_buffer(1, buffer.buffer.instances(None));
             self.set_pipeline(
                 renderer.get_pipelines(TextRenderPipeline).unwrap(),

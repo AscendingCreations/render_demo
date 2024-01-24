@@ -52,11 +52,11 @@ impl Text {
                 );
 
                 let (allocation, is_color) = if let Some(allocation) =
-                    atlas.text.atlas.get_by_key(&physical_glyph.cache_key)
+                    atlas.text.get_by_key(&physical_glyph.cache_key)
                 {
                     (allocation, false)
                 } else if let Some(allocation) =
-                    atlas.emoji.atlas.get_by_key(&physical_glyph.cache_key)
+                    atlas.emoji.get_by_key(&physical_glyph.cache_key)
                 {
                     (allocation, true)
                 } else {
@@ -80,7 +80,6 @@ impl Text {
                         if is_color {
                             let (_, allocation) = atlas
                                 .emoji
-                                .atlas
                                 .upload_with_alloc(
                                     physical_glyph.cache_key,
                                     &bitmap,
@@ -97,7 +96,6 @@ impl Text {
                         } else {
                             let (_, allocation) = atlas
                                 .text
-                                .atlas
                                 .upload_with_alloc(
                                     physical_glyph.cache_key,
                                     &bitmap,

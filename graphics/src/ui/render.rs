@@ -1,13 +1,13 @@
 use crate::{
-    AscendingError, AtlasSet, GpuRenderer, Image, ImageRenderPipeline,
-    ImageVertex, InstanceBuffer, OrderedIndex, StaticBufferObject,
+    AscendingError, AtlasSet, GpuRenderer, InstanceBuffer, OrderedIndex, Rect,
+    RectRenderPipeline, RectVertex, StaticBufferObject,
 };
 
-pub struct ImageRenderer {
-    pub buffer: InstanceBuffer<ImageVertex>,
+pub struct RectRenderer {
+    pub buffer: InstanceBuffer<RectVertex>,
 }
 
-impl ImageRenderer {
+impl RectRenderer {
     pub fn new(renderer: &GpuRenderer) -> Result<Self, AscendingError> {
         Ok(Self {
             buffer: InstanceBuffer::new(renderer.gpu_device()),
@@ -26,45 +26,45 @@ impl ImageRenderer {
         self.buffer.finalize(renderer)
     }
 
-    pub fn image_update(
+    pub fn rect_update(
         &mut self,
-        image: &mut Image,
+        rect: &mut Rect,
         renderer: &mut GpuRenderer,
         atlas: &mut AtlasSet,
     ) {
-        let index = image.update(renderer, atlas);
+        let index = rect.update(renderer, atlas);
 
         self.add_buffer_store(renderer, index);
     }
 }
 
-pub trait RenderImage<'a, 'b>
+pub trait RenderRects<'a, 'b>
 where
     'b: 'a,
 {
-    fn render_image(
+    fn render_rects(
         &mut self,
         renderer: &'b GpuRenderer,
-        buffer: &'b ImageRenderer,
+        buffer: &'b RectRenderer,
         atlas: &'b AtlasSet,
     );
 }
 
-impl<'a, 'b> RenderImage<'a, 'b> for wgpu::RenderPass<'a>
+impl<'a, 'b> RenderRects<'a, 'b> for wgpu::RenderPass<'a>
 where
     'b: 'a,
 {
-    fn render_image(
+    fn render_rects(
         &mut self,
         renderer: &'b GpuRenderer,
-        buffer: &'b ImageRenderer,
+        buffer: &'b RectRenderer,
         atlas: &'b AtlasSet,
     ) {
         if buffer.buffer.count() > 0 {
-            self.set_bind_group(1, atlas.bind_group(), &[]);
+            self.set_bind_group(1, &atlas.texture_group.bind_group, &[]);
             self.set_vertex_buffer(1, buffer.buffer.instances(None));
             self.set_pipeline(
-                renderer.get_pipelines(ImageRenderPipeline).unwrap(),
+                renderer.get_pipelines(RectRenderPipeline).unwrap(),
             );
 
             self.draw_indexed(

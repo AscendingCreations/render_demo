@@ -1,13 +1,16 @@
-use crate::{Allocation, GpuRenderer, Layer};
+use crate::{
+    Allocation, Atlas, GpuRenderer, TextureGroup, TextureLayout, UVec3,
+};
 use lru::LruCache;
 use slab::Slab;
 use std::{
     collections::{HashMap, HashSet},
     hash::Hash,
 };
+use wgpu::BindGroup;
 
 /**
- * AtlasSet is used to hold and contain the data of many layers of a Atlas.
+ * AtlasSet is used to hold and contain the data of many Atlas layers.
  * Each Atlas keeps track of the allocations allowed. Each allocation is a
  * given Width/Height as well as Position that a Texture image can fit within
  * the atlas.
@@ -37,13 +40,13 @@ use std::{
  * TODO reloaded upon migration changes.
  *
 */
-pub struct Atlas<U: Hash + Eq + Clone = String, Data: Copy + Default = i32> {
+pub struct AtlasSet<U: Hash + Eq + Clone = String, Data: Copy + Default = i32> {
     /// Texture in GRAM
     pub texture: wgpu::Texture,
     /// Texture View for WGPU
     pub texture_view: wgpu::TextureView,
     /// Layers of texture.
-    pub layers: Vec<Layer>,
+    pub layers: Vec<Atlas>,
     /// Holds the Original Texture Size and layer information.
     pub extent: wgpu::Extent3d,
     /// Store the Allocations se we can easily remove and update them.
@@ -77,9 +80,11 @@ pub struct Atlas<U: Hash + Eq + Clone = String, Data: Copy + Default = i32> {
     /// uses the refcount to unload rather than the unused.
     /// must exist for fonts to unload correctly and must be set to false for them.
     pub use_ref_count: bool,
+    /// Texture Bind group for Atlas
+    pub texture_group: TextureGroup,
 }
 
-impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
+impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasSet<U, Data> {
     fn allocate(
         &mut self,
         width: u32,
@@ -134,7 +139,7 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
             return None;
         }
 
-        let mut layer = Layer::new(self.extent.width);
+        let mut layer = Atlas::new(self.extent.width);
 
         if let Some(allocation) = layer.allocator.allocate(width, height) {
             self.layers.push(layer);
@@ -147,75 +152,6 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
         }
 
         /* We are out of luck. */
-        None
-    }
-
-    pub fn clear(&mut self) {
-        for layer in self.layers.iter_mut() {
-            layer.allocator.clear();
-        }
-
-        self.store.clear();
-        self.lookup.clear();
-        self.cache.clear();
-        self.last_used.clear();
-    }
-
-    //TODO Make function that checks for unloading and migrating.
-    pub fn trim(&mut self) {
-        self.last_used.clear();
-    }
-
-    pub fn promote_by_key(&mut self, key: U) {
-        if let Some(id) = self.lookup.get(&key) {
-            self.cache.promote(&id);
-            self.last_used.insert(*id);
-        }
-    }
-
-    pub fn promote(&mut self, id: usize) {
-        self.cache.promote(&id);
-        self.last_used.insert(id);
-    }
-
-    pub fn peek_by_key(&mut self, key: &U) -> Option<&(Allocation<Data>, U)> {
-        if let Some(id) = self.lookup.get(&key) {
-            self.store.get(*id)
-        } else {
-            None
-        }
-    }
-
-    pub fn peek(&mut self, id: usize) -> Option<&(Allocation<Data>, U)> {
-        self.store.get(id)
-    }
-
-    pub fn contains_key(&mut self, key: &U) -> bool {
-        self.lookup.contains_key(key)
-    }
-
-    pub fn contains(&mut self, id: usize) -> bool {
-        self.store.contains(id)
-    }
-
-    pub fn get_by_key(&mut self, key: &U) -> Option<Allocation<Data>> {
-        let id = *self.lookup.get(key)?;
-        if let Some((allocation, _)) = self.store.get(id) {
-            self.cache.promote(&id);
-            self.last_used.insert(id);
-            return Some(*allocation);
-        }
-
-        None
-    }
-
-    pub fn get(&mut self, id: usize) -> Option<Allocation<Data>> {
-        if let Some((allocation, _)) = self.store.get(id) {
-            self.cache.promote(&id);
-            self.last_used.insert(id);
-            return Some(*allocation);
-        }
-
         None
     }
 
@@ -300,7 +236,7 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
     }
 
     pub fn new(
-        renderer: &GpuRenderer,
+        renderer: &mut GpuRenderer,
         format: wgpu::TextureFormat,
         use_ref_count: bool,
     ) -> Self {
@@ -336,12 +272,15 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
             array_layer_count: Some(1),
         });
 
+        let texture_group =
+            TextureGroup::from_view(renderer, &texture_view, TextureLayout);
+
         Self {
             texture,
             texture_view,
             layers: vec![
-                Layer::new(limits.max_texture_dimension_3d),
-                Layer::new(limits.max_texture_dimension_3d),
+                Atlas::new(limits.max_texture_dimension_3d),
+                Atlas::new(limits.max_texture_dimension_3d),
             ],
             store: Slab::new(),
             lookup: HashMap::new(),
@@ -355,7 +294,123 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
                 as usize,
             layer_free_limit: 3,
             use_ref_count,
+            texture_group,
         }
+    }
+
+    pub fn upload_allocation(
+        &mut self,
+        buffer: &[u8],
+        allocation: &Allocation<Data>,
+        renderer: &GpuRenderer,
+    ) {
+        let (x, y) = allocation.position();
+        let (width, height) = allocation.size();
+        let layer = allocation.layer;
+
+        renderer.queue().write_texture(
+            wgpu::ImageCopyTexture {
+                texture: &self.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d {
+                    x,
+                    y,
+                    z: layer as u32,
+                },
+                aspect: wgpu::TextureAspect::All,
+            },
+            buffer,
+            wgpu::ImageDataLayout {
+                offset: 0,
+                bytes_per_row: Some(
+                    if self.format == wgpu::TextureFormat::Rgba8UnormSrgb {
+                        4 * width
+                    } else {
+                        width
+                    },
+                ),
+                rows_per_image: Some(height),
+            },
+            wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+        );
+    }
+
+    pub fn clear(&mut self) {
+        for layer in self.layers.iter_mut() {
+            layer.allocator.clear();
+        }
+
+        self.store.clear();
+        self.lookup.clear();
+        self.cache.clear();
+        self.last_used.clear();
+    }
+
+    //TODO Make function that checks for unloading and migrating.
+    pub fn trim(&mut self) {
+        self.last_used.clear();
+    }
+
+    pub fn promote_by_key(&mut self, key: U) {
+        if let Some(id) = self.lookup.get(&key) {
+            self.cache.promote(&id);
+            self.last_used.insert(*id);
+        }
+    }
+
+    pub fn promote(&mut self, id: usize) {
+        self.cache.promote(&id);
+        self.last_used.insert(id);
+    }
+
+    /// Get the ID of a image if it is loaded.
+    pub fn lookup(&self, key: &U) -> Option<usize> {
+        self.lookup.get(&key).map(|u| *u)
+    }
+
+    pub fn peek_by_key(&mut self, key: &U) -> Option<&(Allocation<Data>, U)> {
+        if let Some(id) = self.lookup.get(&key) {
+            self.store.get(*id)
+        } else {
+            None
+        }
+    }
+
+    pub fn peek(&mut self, id: usize) -> Option<&(Allocation<Data>, U)> {
+        self.store.get(id)
+    }
+
+    pub fn contains_key(&mut self, key: &U) -> bool {
+        self.lookup.contains_key(key)
+    }
+
+    pub fn contains(&mut self, id: usize) -> bool {
+        self.store.contains(id)
+    }
+
+    pub fn get_by_key(&mut self, key: &U) -> Option<Allocation<Data>> {
+        let id = *self.lookup.get(key)?;
+        if let Some((allocation, _)) = self.store.get(id) {
+            self.cache.promote(&id);
+            self.last_used.insert(id);
+            return Some(*allocation);
+        }
+
+        None
+    }
+
+    pub fn get(&mut self, id: usize) -> Option<Allocation<Data>> {
+        if let Some((allocation, _)) = self.store.get(id) {
+            self.cache.promote(&id);
+            self.last_used.insert(id);
+            return Some(*allocation);
+        }
+
+        None
     }
 
     /**
@@ -461,44 +516,15 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> Atlas<U, Data> {
         }
     }
 
-    fn upload_allocation(
-        &mut self,
-        buffer: &[u8],
-        allocation: &Allocation<Data>,
-        renderer: &GpuRenderer,
-    ) {
-        let (x, y) = allocation.position();
-        let (width, height) = allocation.size();
-        let layer = allocation.layer;
+    pub fn size(&self) -> UVec3 {
+        UVec3::new(
+            self.extent.width,
+            self.extent.height,
+            self.extent.depth_or_array_layers,
+        )
+    }
 
-        renderer.queue().write_texture(
-            wgpu::ImageCopyTexture {
-                texture: &self.texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d {
-                    x,
-                    y,
-                    z: layer as u32,
-                },
-                aspect: wgpu::TextureAspect::All,
-            },
-            buffer,
-            wgpu::ImageDataLayout {
-                offset: 0,
-                bytes_per_row: Some(
-                    if self.format == wgpu::TextureFormat::Rgba8UnormSrgb {
-                        4 * width
-                    } else {
-                        width
-                    },
-                ),
-                rows_per_image: Some(height),
-            },
-            wgpu::Extent3d {
-                width,
-                height,
-                depth_or_array_layers: 1,
-            },
-        );
+    pub fn bind_group(&self) -> &BindGroup {
+        &self.texture_group.bind_group
     }
 }

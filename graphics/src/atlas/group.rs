@@ -1,4 +1,6 @@
-use crate::{Allocation, Atlas, GpuRenderer, TextureGroup, TextureLayout};
+use crate::{
+    Allocation, Atlas, GpuRenderer, TextureGroup, TextureLayout, UVec3,
+};
 use std::hash::Hash;
 
 /// Group of a Atlas Details
@@ -44,6 +46,7 @@ pub trait AtlasType<U: Hash + Eq + Clone, Data: Copy + Default> {
     fn get_by_key(&mut self, key: &U) -> Option<Allocation<Data>>;
     fn remove_by_key(&mut self, key: &U) -> Option<usize>;
     fn remove(&mut self, id: usize) -> Option<usize>;
+    fn size(&self) -> UVec3;
 }
 
 impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasGroup<U, Data> {
@@ -146,5 +149,9 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasType<U, Data>
     // returns the layer id if removed otherwise None for everything else.
     fn remove(&mut self, id: usize) -> Option<usize> {
         self.atlas.remove(id)
+    }
+
+    fn size(&self) -> UVec3 {
+        self.atlas.size()
     }
 }

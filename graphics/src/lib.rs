@@ -22,7 +22,7 @@ pub use systems::*;
 pub use textures::*;
 pub use tilesheet::*;
 
-pub use glam::{Vec2, Vec3, Vec4};
+pub use glam::{UVec2, UVec3, UVec4, Vec2, Vec3, Vec4};
 
 /*#[cfg(feature = "iced")]
 pub use iced_renderer;

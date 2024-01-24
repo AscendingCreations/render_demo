@@ -1,6 +1,4 @@
-use crate::{
-    Allocation, AscendingError, AtlasGroup, AtlasType, GpuRenderer, TileSheet,
-};
+use crate::{Allocation, AscendingError, AtlasType, GpuRenderer, TileSheet};
 use image::{DynamicImage, GenericImageView, ImageFormat};
 use std::{
     io::{Error, ErrorKind},
@@ -122,7 +120,7 @@ impl Texture {
 
     pub fn new_tilesheet(
         self,
-        atlas: &mut AtlasGroup,
+        atlas: &mut impl AtlasType<String, i32>,
         renderer: &GpuRenderer,
         tilesize: u32,
     ) -> Option<TileSheet> {
@@ -132,7 +130,7 @@ impl Texture {
     pub fn tilesheet_upload(
         self,
         tilesheet: &mut TileSheet,
-        atlas: &mut AtlasGroup,
+        atlas: &mut impl AtlasType<String, i32>,
         renderer: &GpuRenderer,
         tilesize: u32,
     ) -> Option<()> {

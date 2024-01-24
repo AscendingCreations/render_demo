@@ -1,4 +1,4 @@
-use crate::{Allocation, AtlasType, GpuRenderer, Layer};
+use crate::{Allocation, AtlasType, GpuRenderer, Layer, UVec3};
 use lru::LruCache;
 use slab::Slab;
 use std::{
@@ -509,5 +509,13 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasType<U, Data>
             self.cache.push(id, 1);
             Some((id, allocation))
         }
+    }
+
+    fn size(&self) -> UVec3 {
+        UVec3::new(
+            self.extent.width,
+            self.extent.height,
+            self.extent.depth_or_array_layers,
+        )
     }
 }

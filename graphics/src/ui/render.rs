@@ -1,11 +1,10 @@
 use crate::{
-    AsBufferPass, AscendingError, AtlasGroup, GpuRenderer, InstanceBuffer,
-    OrderedIndex, Rect, RectRenderPipeline, RectVertex, SetBuffers,
-    StaticBufferObject, System,
+    AscendingError, Atlas, AtlasGroup, GpuRenderer, InstanceBuffer,
+    OrderedIndex, Rect, RectRenderPipeline, RectVertex, StaticBufferObject,
 };
 
 pub struct RectRenderer {
-    pub buffer: InstanceBuffer<UiVertex>,
+    pub buffer: InstanceBuffer<RectVertex>,
 }
 
 impl RectRenderer {
@@ -33,13 +32,13 @@ impl RectRenderer {
         renderer: &mut GpuRenderer,
         atlas: &mut Atlas,
     ) {
-        let index = rect.update(renderer);
+        let index = rect.update(renderer, atlas);
 
         self.add_buffer_store(renderer, index);
     }
 }
 
-pub trait RenderRects<'a, 'b, Controls>
+pub trait RenderRects<'a, 'b>
 where
     'b: 'a,
 {

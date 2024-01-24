@@ -1,9 +1,8 @@
 use crate::{
-    Allocation, AscendingError, AtlasGroup, DrawOrder, GpuRenderer, Index,
-    OrderedIndex, OtherError, Texture, UiVertex, Vec2, Vec3, Vec4, WorldBounds,
+    AscendingError, Atlas, AtlasGroup, AtlasType, DrawOrder, GpuRenderer,
+    Index, OrderedIndex, OtherError, RectVertex, Texture, Vec2, Vec3, Vec4,
 };
 use cosmic_text::Color;
-use image::{self, ImageBuffer};
 
 pub struct Rect {
     pub position: Vec3,
@@ -14,6 +13,7 @@ pub struct Rect {
     pub border_width: f32,
     pub border_color: Color,
     pub radius: f32,
+    pub use_camera: bool,
     pub store_id: Index,
     pub order: DrawOrder,
     pub render_layer: u32,
@@ -26,17 +26,24 @@ impl Rect {
         Self {
             position: Vec3::default(),
             size: Vec2::default(),
-            border_width: 0.0,
+            color: Color::rgba(255, 255, 255, 255),
             image: None,
             uv: Vec4::default(),
-            border_color: Color::default(),
-            color: Color::default(),
+            border_width: 0.0,
+            border_color: Color::rgba(0, 0, 0, 0),
             radius: 0.0,
+            use_camera: false,
             store_id: renderer.new_buffer(),
             order: DrawOrder::default(),
             render_layer,
             changed: true,
         }
+    }
+
+    pub fn set_use_camera(&mut self, use_camera: bool) -> &mut Self {
+        self.use_camera = use_camera;
+        self.changed = true;
+        self
     }
 
     pub fn set_color(&mut self, color: Color) -> &mut Self {
@@ -57,35 +64,21 @@ impl Rect {
         atlas: &mut AtlasGroup,
         path: String,
     ) -> Result<&mut Self, AscendingError> {
-        let allocation = Texture::from_file(path)?
-            .group_upload(atlas, renderer)
-            .ok_or_else(|| OtherError::new("failed to upload image"))?;
+        let (id, allocation) =
+            Texture::upload_from_with_alloc(path, atlas, renderer)
+                .ok_or_else(|| OtherError::new("failed to upload image"))?;
 
         let rect = allocation.rect();
 
-        self.container_uv = Vec4::new(0.0, 0.0, rect.2 as f32, rect.3 as f32);
-        self.container = Some(allocation);
+        self.uv = Vec4::new(0.0, 0.0, rect.2 as f32, rect.3 as f32);
+        self.image = Some(id);
         self.changed = true;
         Ok(self)
     }
 
     //Set the Rendering Offset of the container.
     pub fn set_container_uv(&mut self, uv: Vec4) -> &mut Self {
-        self.container_uv = uv;
-        self.changed = true;
-        self
-    }
-
-    //Set the Rendering Offset of the border.
-    pub fn set_border_uv(&mut self, uv: Vec4) -> &mut Self {
-        self.border_uv = uv;
-        self.changed = true;
-        self
-    }
-
-    ///This sets how a object should be Clip manipulated. Width and/or Height as 0 means unlimited.
-    pub fn set_bounds(&mut self, bounds: Option<WorldBounds>) -> &mut Self {
-        self.bounds = bounds;
+        self.uv = uv;
         self.changed = true;
         self
     }
@@ -108,53 +101,50 @@ impl Rect {
         self
     }
 
-    pub fn set_radius(&mut self, radius: Option<f32>) -> &mut Self {
+    pub fn set_radius(&mut self, radius: f32) -> &mut Self {
         self.radius = radius;
         self.changed = true;
         self
     }
 
-    pub fn create_quad(&mut self, renderer: &mut GpuRenderer) {
-        let containter_tex = match self.container {
-            Some(allocation) => allocation,
-            None => return,
+    pub fn create_quad(
+        &mut self,
+        renderer: &mut GpuRenderer,
+        atlas: &mut Atlas,
+    ) {
+        let (uv, layer) = if let Some(id) = self.image {
+            let tex = match atlas.get(id) {
+                Some(tex) => tex,
+                None => return,
+            };
+            let (u, v, width, height) = tex.rect();
+            (
+                [
+                    self.uv.x + u as f32,
+                    self.uv.y + v as f32,
+                    self.uv.z.min(width as f32),
+                    self.uv.w.min(height as f32),
+                ],
+                tex.layer as u32,
+            )
+        } else {
+            ([0.0, 0.0, 0.0, 0.0], 0)
         };
 
-        let border_tex = match self.border {
-            Some(allocation) => allocation,
-            None => return,
-        };
-
-        let (u, v, width, height) = containter_tex.rect();
-        let container_data = [
-            self.container_uv.x + u as f32,
-            self.container_uv.y + v as f32,
-            self.container_uv.z.min(width as f32),
-            self.container_uv.w.min(height as f32),
-        ];
-
-        let (u, v, width, height) = border_tex.rect();
-        let border_data = [
-            self.border_uv.x + u as f32,
-            self.border_uv.y + v as f32,
-            self.border_uv.z.min(width as f32),
-            self.border_uv.w.min(height as f32),
-        ];
-
-        let buffer = UiVertex {
+        let buffer = RectVertex {
             position: self.position.to_array(),
             size: self.size.to_array(),
             border_width: self.border_width,
-            radius: self.radius.unwrap_or_default(),
-            container_data,
-            border_data,
-            layer: containter_tex.layer as u32,
-            border_layer: border_tex.layer as u32,
+            radius: self.radius,
+            uv,
+            layer,
+            color: self.color.0,
+            border_color: self.border_color.0,
+            use_camera: u32::from(self.use_camera),
         };
 
         if let Some(store) = renderer.get_buffer_mut(&self.store_id) {
             store.store = bytemuck::bytes_of(&buffer).to_vec();
-            store.bounds = self.bounds;
             store.changed = true;
         }
 
@@ -162,10 +152,14 @@ impl Rect {
     }
 
     /// used to check and update the ShapeVertex array.
-    pub fn update(&mut self, renderer: &mut GpuRenderer) -> OrderedIndex {
+    pub fn update(
+        &mut self,
+        renderer: &mut GpuRenderer,
+        atlas: &mut Atlas,
+    ) -> OrderedIndex {
         // if points added or any data changed recalculate paths.
         if self.changed {
-            self.create_quad(renderer);
+            self.create_quad(renderer, atlas);
             self.changed = false;
         }
 
@@ -173,12 +167,14 @@ impl Rect {
     }
 
     pub fn check_mouse_bounds(&self, mouse_pos: Vec2) -> bool {
-        if let Some(radius) = self.radius {
+        if self.radius > 0.0 {
             let pos = [self.position.x, self.position.y];
 
-            let inner_size =
-                [self.size.x - radius * 2.0, self.size.y - radius * 2.0];
-            let top_left = [pos[0] + radius, pos[1] + radius];
+            let inner_size = [
+                self.size.x - self.radius * 2.0,
+                self.size.y - self.radius * 2.0,
+            ];
+            let top_left = [pos[0] + self.radius, pos[1] + self.radius];
             let bottom_right =
                 [top_left[0] + inner_size[0], top_left[1] + inner_size[1]];
 
@@ -194,7 +190,7 @@ impl Rect {
 
             let dist = (dist[0] * dist[0] + dist[1] * dist[1]).sqrt();
 
-            dist < radius
+            dist < self.radius
         } else {
             mouse_pos[0] > self.position.x
                 && mouse_pos[0] < self.position.x + self.size.x

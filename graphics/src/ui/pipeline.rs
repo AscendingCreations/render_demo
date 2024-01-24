@@ -1,6 +1,6 @@
 use crate::{
     BufferLayout, GpuDevice, LayoutStorage, PipeLineLayout, RectVertex,
-    SystemLayout,
+    StaticBufferObject, SystemLayout, TextureLayout,
 };
 use bytemuck::{Pod, Zeroable};
 
@@ -50,9 +50,9 @@ impl PipeLineLayout for RectRenderPipeline {
                             ],
                         },
                         wgpu::VertexBufferLayout {
-                            array_stride: UiVertex::stride() as u64,
+                            array_stride: RectVertex::stride() as u64,
                             step_mode: wgpu::VertexStepMode::Instance,
-                            attributes: &UiVertex::attributes(),
+                            attributes: &RectVertex::attributes(),
                         },
                     ],
                 },

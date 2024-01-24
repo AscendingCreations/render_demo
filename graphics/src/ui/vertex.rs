@@ -6,12 +6,13 @@ use std::iter;
 pub struct RectVertex {
     pub position: [f32; 3],
     pub size: [f32; 2],
+    pub uv: [f32; 4],
+    pub color: u32,
     pub border_width: f32,
-    pub container_data: [f32; 4],
-    pub border_data: [f32; 4],
+    pub border_color: u32,
     pub layer: u32,
-    pub border_layer: u32,
     pub radius: f32,
+    pub use_camera: u32,
 }
 
 impl Default for RectVertex {
@@ -19,23 +20,20 @@ impl Default for RectVertex {
         Self {
             position: [0.0; 3],
             size: [0.0; 2],
+            uv: [0.0; 4],
+            color: 0,
             border_width: 0.0,
-            container_data: [0.0; 4],
-            border_data: [0.0; 4],
+            border_color: 0,
             layer: 0,
-            border_layer: 0,
             radius: 1.0,
+            use_camera: 0,
         }
     }
 }
 
 impl BufferLayout for RectVertex {
-    fn is_bounded() -> bool {
-        true
-    }
-
     fn attributes() -> Vec<wgpu::VertexAttribute> {
-        wgpu::vertex_attr_array![1 => Float32x3, 2 => Float32x2, 3 => Float32, 4 => Float32x4, 5 => Float32x4, 6 => Uint32, 7 => Uint32, 8 => Float32]
+        wgpu::vertex_attr_array![1 => Float32x3, 2 => Float32x2, 3 => Float32x4, 4 => Uint32, 5 => Float32, 6 => Uint32, 7 => Uint32, 8 => Float32, 9 => Uint32]
             .to_vec()
     }
 
@@ -59,6 +57,6 @@ impl BufferLayout for RectVertex {
     }
 
     fn stride() -> usize {
-        std::mem::size_of::<[f32; 17]>()
+        std::mem::size_of::<[f32; 15]>()
     }
 }

@@ -17,11 +17,11 @@ where
     pub mesh: [Mesh2D; 2],
     pub rect: Rect,
     /// Atlas Groups for Textures in GPU
-    pub image_atlas: AtlasGroup,
-    pub ui_atlas: AtlasGroup,
-    pub map_atlas: AtlasGroup,
+    pub image_atlas: AtlasSet,
+    pub ui_atlas: AtlasSet,
+    pub map_atlas: AtlasSet,
     pub text_atlas: TextAtlas,
-    pub mesh_atlas: AtlasGroup,
+    pub mesh_atlas: AtlasSet,
     /// Rendering Buffers and other shared data.
     pub ui_renderer: RectRenderer,
     pub text_renderer: TextRenderer,

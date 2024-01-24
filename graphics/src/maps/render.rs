@@ -1,5 +1,5 @@
 use crate::{
-    AsBufferPass, AscendingError, AtlasGroup, GpuRenderer, InstanceBuffer, Map,
+    AsBufferPass, AscendingError, AtlasSet, GpuRenderer, InstanceBuffer, Map,
     MapRenderPipeline, MapVertex, OrderedIndex, SetBuffers, StaticBufferObject,
 };
 
@@ -54,14 +54,14 @@ where
         &mut self,
         renderer: &'b GpuRenderer,
         buffer: &'b MapRenderer,
-        atlas_group: &'b AtlasGroup,
+        atlas: &'b AtlasSet,
     );
 
     fn render_upper_maps(
         &mut self,
         renderer: &'b GpuRenderer,
         buffer: &'b MapRenderer,
-        atlas_group: &'b AtlasGroup,
+        atlas: &'b AtlasSet,
     );
 }
 
@@ -73,11 +73,11 @@ where
         &mut self,
         renderer: &'b GpuRenderer,
         buffer: &'b MapRenderer,
-        atlas_group: &'b AtlasGroup,
+        atlas: &'b AtlasSet,
     ) {
         if buffer.maplower_buffer.count() > 0 {
             self.set_buffers(renderer.buffer_object.as_buffer_pass());
-            self.set_bind_group(1, &atlas_group.texture.bind_group, &[]);
+            self.set_bind_group(1, atlas.bind_group(), &[]);
             self.set_vertex_buffer(1, buffer.maplower_buffer.instances(None));
             self.set_pipeline(
                 renderer.get_pipelines(MapRenderPipeline).unwrap(),
@@ -94,11 +94,11 @@ where
         &mut self,
         renderer: &'b GpuRenderer,
         buffer: &'b MapRenderer,
-        atlas_group: &'b AtlasGroup,
+        atlas: &'b AtlasSet,
     ) {
         if buffer.mapupper_buffer.count() > 0 {
             self.set_buffers(renderer.buffer_object.as_buffer_pass());
-            self.set_bind_group(1, &atlas_group.texture.bind_group, &[]);
+            self.set_bind_group(1, atlas.bind_group(), &[]);
             self.set_vertex_buffer(1, buffer.mapupper_buffer.instances(None));
             self.set_pipeline(
                 renderer.get_pipelines(MapRenderPipeline).unwrap(),

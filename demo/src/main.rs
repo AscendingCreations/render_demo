@@ -160,8 +160,8 @@ async fn main() -> Result<(), AscendingError> {
     println!("{:?}", renderer.adapter().get_info());
 
     // We generate Texture atlases to use with out types.
-    let mut atlases: Vec<AtlasGroup> = iter::from_fn(|| {
-        Some(AtlasGroup::new(
+    let mut atlases: Vec<AtlasSet> = iter::from_fn(|| {
+        Some(AtlasSet::new(
             &mut renderer,
             wgpu::TextureFormat::Rgba8UnormSrgb,
             true,
@@ -537,14 +537,14 @@ async fn main() -> Result<(), AscendingError> {
             state.sprite_renderer.image_update(
                 sprite,
                 &mut renderer,
-                &mut state.image_atlas.atlas,
+                &mut state.image_atlas,
             );
         });
 
         state.sprite_renderer.image_update(
             &mut state.animation,
             &mut renderer,
-            &mut state.image_atlas.atlas,
+            &mut state.image_atlas,
         );
 
         // this cycles all the Image's in the Image buffer by first putting them in rendering order
@@ -574,7 +574,7 @@ async fn main() -> Result<(), AscendingError> {
         state.ui_renderer.rect_update(
             &mut state.rect,
             &mut renderer,
-            &mut state.ui_atlas.atlas,
+            &mut state.ui_atlas,
         );
         state.ui_renderer.finalize(&mut renderer);
         // Start encoding commands. this stores all the rendering calls for execution when

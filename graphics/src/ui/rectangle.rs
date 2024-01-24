@@ -1,6 +1,6 @@
 use crate::{
-    AscendingError, Atlas, AtlasGroup, AtlasType, DrawOrder, GpuRenderer,
-    Index, OrderedIndex, OtherError, RectVertex, Texture, Vec2, Vec3, Vec4,
+    AscendingError, AtlasSet, DrawOrder, GpuRenderer, Index, OrderedIndex,
+    OtherError, RectVertex, Texture, Vec2, Vec3, Vec4,
 };
 use cosmic_text::Color;
 
@@ -61,7 +61,7 @@ impl Rect {
     pub fn set_texture(
         &mut self,
         renderer: &GpuRenderer,
-        atlas: &mut AtlasGroup,
+        atlas: &mut AtlasSet,
         path: String,
     ) -> Result<&mut Self, AscendingError> {
         let (id, allocation) =
@@ -110,7 +110,7 @@ impl Rect {
     pub fn create_quad(
         &mut self,
         renderer: &mut GpuRenderer,
-        atlas: &mut Atlas,
+        atlas: &mut AtlasSet,
     ) {
         let (uv, layer) = if let Some(id) = self.image {
             let tex = match atlas.get(id) {
@@ -155,7 +155,7 @@ impl Rect {
     pub fn update(
         &mut self,
         renderer: &mut GpuRenderer,
-        atlas: &mut Atlas,
+        atlas: &mut AtlasSet,
     ) -> OrderedIndex {
         // if points added or any data changed recalculate paths.
         if self.changed {

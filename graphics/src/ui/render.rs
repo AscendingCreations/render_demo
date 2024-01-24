@@ -1,6 +1,6 @@
 use crate::{
-    AscendingError, Atlas, AtlasGroup, GpuRenderer, InstanceBuffer,
-    OrderedIndex, Rect, RectRenderPipeline, RectVertex, StaticBufferObject,
+    AscendingError, AtlasSet, GpuRenderer, InstanceBuffer, OrderedIndex, Rect,
+    RectRenderPipeline, RectVertex, StaticBufferObject,
 };
 
 pub struct RectRenderer {
@@ -30,7 +30,7 @@ impl RectRenderer {
         &mut self,
         rect: &mut Rect,
         renderer: &mut GpuRenderer,
-        atlas: &mut Atlas,
+        atlas: &mut AtlasSet,
     ) {
         let index = rect.update(renderer, atlas);
 
@@ -46,7 +46,7 @@ where
         &mut self,
         renderer: &'b GpuRenderer,
         buffer: &'b RectRenderer,
-        atlas_group: &'b AtlasGroup,
+        atlas: &'b AtlasSet,
     );
 }
 
@@ -58,10 +58,10 @@ where
         &mut self,
         renderer: &'b GpuRenderer,
         buffer: &'b RectRenderer,
-        atlas_group: &'b AtlasGroup,
+        atlas: &'b AtlasSet,
     ) {
         if buffer.buffer.count() > 0 {
-            self.set_bind_group(1, &atlas_group.texture.bind_group, &[]);
+            self.set_bind_group(1, &atlas.texture_group.bind_group, &[]);
             self.set_vertex_buffer(1, buffer.buffer.instances(None));
             self.set_pipeline(
                 renderer.get_pipelines(RectRenderPipeline).unwrap(),

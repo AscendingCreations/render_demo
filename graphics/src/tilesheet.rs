@@ -1,4 +1,4 @@
-use crate::{AtlasType, GpuRenderer, Texture};
+use crate::{AtlasSet, GpuRenderer, Texture};
 use image::{self, EncodableLayout, ImageBuffer, RgbaImage};
 
 //used to map the tile in the tilesheet back visually
@@ -21,7 +21,7 @@ impl TileSheet {
     pub fn new(
         texture: Texture,
         renderer: &GpuRenderer,
-        atlas: &mut impl AtlasType<String, i32>,
+        atlas: &mut AtlasSet<String, i32>,
         tilesize: u32,
     ) -> Option<TileSheet> {
         let tilecount =
@@ -110,7 +110,7 @@ impl TileSheet {
         &mut self,
         texture: Texture,
         renderer: &GpuRenderer,
-        atlas: &mut impl AtlasType<String, i32>,
+        atlas: &mut AtlasSet<String, i32>,
         tilesize: u32,
     ) -> Option<()> {
         let tilecount =

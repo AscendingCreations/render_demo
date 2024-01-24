@@ -1,7 +1,7 @@
 use crate::Allocator;
 use indexmap::IndexSet;
 
-pub struct Layer {
+pub struct Atlas {
     // handles the space allocation of the layer.
     pub allocator: Allocator,
     //Stores each slab index the allocations exist at for this layer.
@@ -11,7 +11,7 @@ pub struct Layer {
     pub migrating: bool,
 }
 
-impl Layer {
+impl Atlas {
     pub fn new(size: u32) -> Self {
         Self {
             allocator: Allocator::new(size),

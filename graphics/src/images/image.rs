@@ -1,6 +1,6 @@
 use crate::{
-    Atlas, AtlasType, Color, DrawOrder, GpuRenderer, ImageVertex, Index,
-    OrderedIndex, Vec2, Vec3, Vec4,
+    AtlasSet, Color, DrawOrder, GpuRenderer, ImageVertex, Index, OrderedIndex,
+    Vec2, Vec3, Vec4,
 };
 
 /// rendering data for all images.
@@ -53,7 +53,7 @@ impl Image {
     pub fn create_quad(
         &mut self,
         renderer: &mut GpuRenderer,
-        atlas: &mut Atlas,
+        atlas: &mut AtlasSet,
     ) {
         let allocation = match &self.texture {
             Some(id) => {
@@ -101,7 +101,7 @@ impl Image {
     pub fn update(
         &mut self,
         renderer: &mut GpuRenderer,
-        atlas: &mut Atlas,
+        atlas: &mut AtlasSet,
     ) -> OrderedIndex {
         // if pos or tex_pos or color changed.
         if self.changed {

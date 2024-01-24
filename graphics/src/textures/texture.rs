@@ -1,4 +1,4 @@
-use crate::{Allocation, AscendingError, AtlasType, GpuRenderer, TileSheet};
+use crate::{Allocation, AscendingError, AtlasSet, GpuRenderer, TileSheet};
 use image::{DynamicImage, GenericImageView, ImageFormat};
 use std::{
     io::{Error, ErrorKind},
@@ -31,7 +31,7 @@ impl Texture {
 
     pub fn upload_from(
         path: impl AsRef<Path>,
-        atlas: &mut impl AtlasType<String, i32>,
+        atlas: &mut AtlasSet<String, i32>,
         renderer: &GpuRenderer,
     ) -> Option<usize> {
         let name = path.as_ref().to_str()?.to_owned();
@@ -47,7 +47,7 @@ impl Texture {
 
     pub fn upload_from_with_alloc(
         path: impl AsRef<Path>,
-        atlas: &mut impl AtlasType<String, i32>,
+        atlas: &mut AtlasSet<String, i32>,
         renderer: &GpuRenderer,
     ) -> Option<(usize, Allocation)> {
         let name = path.as_ref().to_str()?.to_owned();
@@ -95,7 +95,7 @@ impl Texture {
 
     pub fn upload(
         &self,
-        atlas: &mut impl AtlasType<String, i32>,
+        atlas: &mut AtlasSet<String, i32>,
         renderer: &GpuRenderer,
     ) -> Option<usize> {
         let (width, height) = self.size;
@@ -104,7 +104,7 @@ impl Texture {
 
     pub fn upload_with_alloc(
         &self,
-        atlas: &mut impl AtlasType<String, i32>,
+        atlas: &mut AtlasSet<String, i32>,
         renderer: &GpuRenderer,
     ) -> Option<(usize, Allocation)> {
         let (width, height) = self.size;
@@ -120,7 +120,7 @@ impl Texture {
 
     pub fn new_tilesheet(
         self,
-        atlas: &mut impl AtlasType<String, i32>,
+        atlas: &mut AtlasSet<String, i32>,
         renderer: &GpuRenderer,
         tilesize: u32,
     ) -> Option<TileSheet> {
@@ -130,7 +130,7 @@ impl Texture {
     pub fn tilesheet_upload(
         self,
         tilesheet: &mut TileSheet,
-        atlas: &mut impl AtlasType<String, i32>,
+        atlas: &mut AtlasSet<String, i32>,
         renderer: &GpuRenderer,
         tilesize: u32,
     ) -> Option<()> {

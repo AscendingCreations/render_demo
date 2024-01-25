@@ -421,4 +421,21 @@ impl Text {
             && mouse_pos[1] > self.pos.y
             && mouse_pos[1] < self.pos.y + self.size.y
     }
+
+    pub fn measure(&self) -> Vec2 {
+        let (width, total_lines) = self.buffer.layout_runs().fold(
+            (0.0, 0usize),
+            |(width, total_lines), run| {
+                (run.line_w.max(width), total_lines + 1)
+            },
+        );
+
+        let (max_width, max_height) = self.buffer.size();
+
+        Vec2::new(
+            width.min(max_width),
+            (total_lines as f32 * self.buffer.metrics().line_height)
+                .min(max_height),
+        )
+    }
 }

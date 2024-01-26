@@ -1,6 +1,6 @@
 use crate::{
-    AscendingError, Bounds, Color, DrawOrder, GpuRenderer, Index, OrderedIndex,
-    TextAtlas, TextVertex, Vec2, Vec3,
+    AscendingError, Bounds, Color, DrawOrder, DrawType, GpuRenderer, Index,
+    OrderedIndex, TextAtlas, TextVertex, Vec2, Vec3,
 };
 use cosmic_text::{
     Attrs, Buffer, Cursor, Metrics, SwashCache, SwashContent, Wrap,
@@ -41,7 +41,13 @@ impl Text {
             self.buffer.lines.iter().map(|line| line.text().len()).sum();
         let mut text_buf = Vec::with_capacity(count);
 
+        let mut width = 0.0;
+        let mut total_lines: usize = 0;
+
         for run in self.buffer.layout_runs() {
+            width = run.line_w.max(width);
+            total_lines += 1;
+
             for glyph in run.glyphs.iter() {
                 let physical_glyph = glyph.physical(
                     (
@@ -203,7 +209,19 @@ impl Text {
             store.changed = true;
         }
 
-        self.order = DrawOrder::new(false, &self.pos, 1);
+        let (max_width, max_height) = self.buffer.size();
+
+        self.order = DrawOrder::new(
+            false,
+            &self.pos,
+            1,
+            &Vec2::new(
+                width.min(max_width),
+                (total_lines as f32 * self.buffer.metrics().line_height)
+                    .min(max_height),
+            ),
+        );
+
         self.changed = false;
         self.buffer.set_redraw(false);
         Ok(())
@@ -219,14 +237,14 @@ impl Text {
         Self {
             buffer: Buffer::new(
                 &mut renderer.font_sys,
-                metrics.unwrap_or(Metrics::new(16.0, 16.0).scale(1.0)),
+                metrics.unwrap_or(Metrics::new(16.0, 16.0).scale(scale)),
             ),
             pos,
             size,
             offsets: Vec2 { x: 0.0, y: 0.0 },
             bounds: None,
             store_id: renderer.new_buffer(),
-            order: DrawOrder::new(false, &pos, 1),
+            order: DrawOrder::default(),
             changed: true,
             default_color: Color::rgba(0, 0, 0, 255),
             use_camera: false,
@@ -412,7 +430,12 @@ impl Text {
             self.create_quad(cache, atlas, renderer)?;
         }
 
-        Ok(OrderedIndex::new(self.order, self.store_id, 0))
+        Ok(OrderedIndex::new(
+            self.order,
+            self.store_id,
+            0,
+            DrawType::Text,
+        ))
     }
 
     pub fn check_mouse_bounds(&self, mouse_pos: Vec2) -> bool {

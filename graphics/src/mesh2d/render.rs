@@ -20,7 +20,7 @@ impl Mesh2DRenderer {
         renderer: &GpuRenderer,
         index: OrderedIndex,
     ) {
-        self.vbos.add_buffer_store(renderer, index);
+        self.vbos.add_buffer_store(renderer, index, 1);
     }
 
     pub fn finalize(&mut self, renderer: &mut GpuRenderer) {
@@ -46,6 +46,7 @@ where
         &mut self,
         renderer: &'b GpuRenderer,
         buffer: &'b Mesh2DRenderer,
+        layer: usize,
     );
 }
 
@@ -57,26 +58,24 @@ where
         &mut self,
         renderer: &'b GpuRenderer,
         buffer: &'b Mesh2DRenderer,
+        layer: usize,
     ) {
-        if !buffer.vbos.buffers.is_empty() {
-            self.set_buffers(buffer.vbos.as_buffer_pass());
-            self.set_pipeline(
-                renderer.get_pipelines(Mesh2DRenderPipeline).unwrap(),
-            );
-            let mut index_pos = 0;
-            let mut base_vertex = 0;
-
-            for details in &buffer.vbos.buffers {
-                // Indexs can always start at 0 per mesh data.
-                // Base vertex is the Addition to the Index
-                self.draw_indexed(
-                    index_pos..index_pos + details.count,
-                    base_vertex, //i as i32 * details.max,
-                    0..1,
+        if let Some(vbos) = buffer.vbos.buffers.get(layer) {
+            if !vbos.is_empty() {
+                self.set_buffers(buffer.vbos.as_buffer_pass());
+                self.set_pipeline(
+                    renderer.get_pipelines(Mesh2DRenderPipeline).unwrap(),
                 );
 
-                base_vertex += details.max as i32 + 1;
-                index_pos += details.count;
+                for details in vbos {
+                    // Indexs can always start at 0 per mesh data.
+                    // Base vertex is the Addition to the Index
+                    self.draw_indexed(
+                        details.indices_start..details.indices_end,
+                        details.vertex_base, //i as i32 * details.max,
+                        0..1,
+                    );
+                }
             }
         }
     }

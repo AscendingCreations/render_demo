@@ -1,4 +1,4 @@
-use crate::Vec3;
+use crate::{Vec2, Vec3};
 use generational_array::GenerationalIndex;
 use std::cmp::Ordering;
 
@@ -11,6 +11,9 @@ pub struct DrawOrder {
     pub x: u32,     // Lower is lower
     pub y: u32,     // higher is lower
     pub z: u32,     // lower is higher
+    // used for layer lookups.
+    pub width: u32,
+    pub height: u32,
 }
 
 impl PartialOrd for DrawOrder {
@@ -31,13 +34,15 @@ impl Ord for DrawOrder {
 }
 
 impl DrawOrder {
-    pub fn new(alpha: bool, pos: &Vec3, layer: u32) -> Self {
+    pub fn new(alpha: bool, pos: &Vec3, layer: u32, size: &Vec2) -> Self {
         Self {
             layer,
             alpha,
             x: (pos.x * 100.0) as u32,
             y: (pos.y * 100.0) as u32,
             z: (pos.z * 100.0) as u32,
+            width: size.x as u32,
+            height: size.y as u32,
         }
     }
 }
@@ -48,6 +53,7 @@ pub struct OrderedIndex {
     pub(crate) index: Index,
     pub(crate) index_count: u32,
     pub(crate) index_max: u32,
+    pub(crate) draw_type: DrawType,
 }
 
 impl PartialOrd for OrderedIndex {
@@ -71,12 +77,28 @@ impl Ord for OrderedIndex {
 }
 
 impl OrderedIndex {
-    pub fn new(order: DrawOrder, index: Index, index_max: u32) -> Self {
+    pub fn new(
+        order: DrawOrder,
+        index: Index,
+        index_max: u32,
+        draw_type: DrawType,
+    ) -> Self {
         Self {
             order,
             index,
             index_count: 0,
             index_max,
+            draw_type,
         }
     }
+}
+
+#[derive(Copy, Clone)]
+pub enum DrawType {
+    Map,
+    Image,
+    Rectangle,
+    Lights,
+    Text,
+    Mesh2D,
 }

@@ -1,6 +1,6 @@
 use crate::{
-    AtlasSet, Color, DrawOrder, GpuRenderer, ImageVertex, Index, OrderedIndex,
-    Vec2, Vec3, Vec4,
+    AtlasSet, Color, DrawOrder, DrawType, GpuRenderer, ImageVertex, Index,
+    OrderedIndex, Vec2, Vec3, Vec4,
 };
 
 /// rendering data for all images.
@@ -92,8 +92,12 @@ impl Image {
             store.changed = true;
         }
 
-        self.order =
-            DrawOrder::new(self.color.a() < 255, &self.pos, self.render_layer);
+        self.order = DrawOrder::new(
+            self.color.a() < 255,
+            &self.pos,
+            self.render_layer,
+            &self.hw,
+        );
         self.changed = false;
     }
 
@@ -108,6 +112,6 @@ impl Image {
             self.create_quad(renderer, atlas);
         }
 
-        OrderedIndex::new(self.order, self.store_id, 0)
+        OrderedIndex::new(self.order, self.store_id, 0, DrawType::Image)
     }
 }

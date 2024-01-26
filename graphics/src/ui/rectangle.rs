@@ -1,6 +1,6 @@
 use crate::{
-    AscendingError, AtlasSet, DrawOrder, GpuRenderer, Index, OrderedIndex,
-    OtherError, RectVertex, Texture, Vec2, Vec3, Vec4,
+    AscendingError, AtlasSet, DrawOrder, DrawType, GpuRenderer, Index,
+    OrderedIndex, OtherError, RectVertex, Texture, Vec2, Vec3, Vec4,
 };
 use cosmic_text::Color;
 
@@ -148,7 +148,7 @@ impl Rect {
             store.changed = true;
         }
 
-        self.order = DrawOrder::new(false, &self.position, 1);
+        self.order = DrawOrder::new(false, &self.position, 1, &self.size);
     }
 
     /// used to check and update the ShapeVertex array.
@@ -163,7 +163,7 @@ impl Rect {
             self.changed = false;
         }
 
-        OrderedIndex::new(self.order, self.store_id, 0)
+        OrderedIndex::new(self.order, self.store_id, 0, DrawType::Rectangle)
     }
 
     pub fn check_mouse_bounds(&self, mouse_pos: Vec2) -> bool {

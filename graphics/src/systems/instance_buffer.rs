@@ -53,7 +53,7 @@ impl<K: BufferLayout> InstanceBuffer<K> {
                     //give it a starting size. this cna be adjusted later for better performance
                     //versus ram usage.
                     self.unprocessed.push(if i == layer {
-                        Vec::with_capacity(512)
+                        Vec::with_capacity(self.layer_size)
                     } else {
                         Vec::new()
                     });

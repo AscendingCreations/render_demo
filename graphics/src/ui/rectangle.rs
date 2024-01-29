@@ -148,7 +148,13 @@ impl Rect {
             store.changed = true;
         }
 
-        self.order = DrawOrder::new(false, &self.position, 1, &self.size);
+        self.order = DrawOrder::new(
+            false,
+            &self.position,
+            1,
+            &self.size,
+            DrawType::Rectangle,
+        );
     }
 
     /// used to check and update the ShapeVertex array.
@@ -163,7 +169,7 @@ impl Rect {
             self.changed = false;
         }
 
-        OrderedIndex::new(self.order, self.store_id, 0, DrawType::Rectangle)
+        OrderedIndex::new(self.order, self.store_id, 0)
     }
 
     pub fn check_mouse_bounds(&self, mouse_pos: Vec2) -> bool {

@@ -16,6 +16,7 @@ impl MapRenderer {
             buffer: InstanceBuffer::with_capacity(
                 renderer.gpu_device(),
                 8_192 * map_count as usize,
+                128,
             ),
         })
     }
@@ -24,17 +25,25 @@ impl MapRenderer {
         &mut self,
         renderer: &GpuRenderer,
         index: OrderedIndex,
+        layer: usize,
     ) {
-        self.buffer.add_buffer_store(renderer, index, 1);
+        self.buffer.add_buffer_store(renderer, index, layer);
     }
 
     pub fn finalize(&mut self, renderer: &mut GpuRenderer) {
         self.buffer.finalize(renderer);
     }
 
-    pub fn map_update(&mut self, map: &mut Map, renderer: &mut GpuRenderer) {
+    pub fn map_update(
+        &mut self,
+        map: &mut Map,
+        renderer: &mut GpuRenderer,
+        layers: [usize; 2],
+    ) {
         if let Some(indexs) = map.update(renderer) {
-            self.add_buffer_store(renderer, indexs[0]);
+            for (id, order_index) in indexs.into_iter().enumerate() {
+                self.add_buffer_store(renderer, order_index, layers[id]);
+            }
         }
     }
 }

@@ -14,6 +14,7 @@ pub struct DrawOrder {
     // used for layer lookups.
     pub width: u32,
     pub height: u32,
+    pub draw_type: DrawType,
 }
 
 impl PartialOrd for DrawOrder {
@@ -34,7 +35,13 @@ impl Ord for DrawOrder {
 }
 
 impl DrawOrder {
-    pub fn new(alpha: bool, pos: &Vec3, layer: u32, size: &Vec2) -> Self {
+    pub fn new(
+        alpha: bool,
+        pos: &Vec3,
+        layer: u32,
+        size: &Vec2,
+        draw_type: DrawType,
+    ) -> Self {
         Self {
             layer,
             alpha,
@@ -43,6 +50,7 @@ impl DrawOrder {
             z: (pos.z * 100.0) as u32,
             width: size.x as u32,
             height: size.y as u32,
+            draw_type,
         }
     }
 }
@@ -53,7 +61,6 @@ pub struct OrderedIndex {
     pub(crate) index: Index,
     pub(crate) index_count: u32,
     pub(crate) index_max: u32,
-    pub(crate) draw_type: DrawType,
 }
 
 impl PartialOrd for OrderedIndex {
@@ -77,28 +84,23 @@ impl Ord for OrderedIndex {
 }
 
 impl OrderedIndex {
-    pub fn new(
-        order: DrawOrder,
-        index: Index,
-        index_max: u32,
-        draw_type: DrawType,
-    ) -> Self {
+    pub fn new(order: DrawOrder, index: Index, index_max: u32) -> Self {
         Self {
             order,
             index,
             index_count: 0,
             index_max,
-            draw_type,
         }
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default, PartialEq, Eq)]
 pub enum DrawType {
+    #[default]
     Map,
     Image,
     Rectangle,
-    Lights,
     Text,
     Mesh2D,
+    Lights,
 }

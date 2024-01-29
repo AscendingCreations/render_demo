@@ -3,6 +3,10 @@ use crate::{
     OrderedIndex, Vec2, Vec3, Vec4,
 };
 
+pub enum TextDrawOrder {
+    BelowLights,
+    AboveLights,
+}
 /// rendering data for all images.
 pub struct Image {
     pub pos: Vec3,
@@ -97,6 +101,7 @@ impl Image {
             &self.pos,
             self.render_layer,
             &self.hw,
+            DrawType::Image,
         );
         self.changed = false;
     }
@@ -112,6 +117,6 @@ impl Image {
             self.create_quad(renderer, atlas);
         }
 
-        OrderedIndex::new(self.order, self.store_id, 0, DrawType::Image)
+        OrderedIndex::new(self.order, self.store_id, 0)
     }
 }

@@ -23,30 +23,16 @@ pub enum MapLayers {
 }
 
 impl MapLayers {
-    pub fn indexed_layerz(layer: usize) -> f32 {
+    pub fn indexed_layers(layer: usize) -> f32 {
         match layer {
-            0 => 10.0,
-            1 => 9.0,
-            2 => 8.0,
-            3 => 7.0,
-            4 => 6.0,
-            5 => 5.0,
-            6 => 3.0,
-            _ => 2.0,
-        }
-    }
-
-    pub fn layerz(layer: MapLayers) -> f32 {
-        // for use with Player Z map done shader side.
-        match layer {
-            MapLayers::Ground => 10.0,
-            MapLayers::Mask => 9.0,
-            MapLayers::Mask2 => 8.0,
-            MapLayers::Anim1 => 7.0,
-            MapLayers::Anim2 => 6.0,
-            MapLayers::Anim3 => 5.0,
-            MapLayers::Fringe => 3.0,
-            MapLayers::Fringe2 | MapLayers::Count => 2.0,
+            0 => 9.5,
+            1 => 9.4,
+            2 => 9.3,
+            3 => 9.2,
+            4 => 9.1,
+            5 => 9.0,
+            6 => 5.1,
+            _ => 5.0,
         }
     }
 }
@@ -76,11 +62,8 @@ pub struct Map {
     pub pos: Vec2,
     // tiles per layer.
     pub tiles: [TileData; 8192],
+    /// Store index per each layer.
     pub stores: Vec<Index>,
-    /// vertex array in bytes. Does not need to get changed exept on map switch and location change.
-    pub lowerstore_id: Index,
-    /// vertex array in bytes for fringe layers.
-    pub upperstore_id: Index,
     /// the draw order of the maps. created when update is called.
     pub orders: Vec<DrawOrder>,
     /// count if any Filled Tiles Exist. this is to optimize out empty maps in rendering.
@@ -96,9 +79,11 @@ pub struct Map {
 
 impl Map {
     pub fn create_quad(&mut self, renderer: &mut GpuRenderer) {
+        let mut lower_buffer = Vec::with_capacity(6144);
+        let mut upper_buffer = Vec::with_capacity(2048);
+
         for i in 0..8 {
-            let mut buffer = Vec::with_capacity(1024);
-            let z = MapLayers::indexed_layerz(i);
+            let z = MapLayers::indexed_layers(i);
 
             if self.filled_tiles[i as usize] == 0 {
                 continue;
@@ -121,24 +106,42 @@ impl Map {
                         color: tile.color.0,
                     };
 
-                    buffer.push(map_vertex);
+                    if i < 6 {
+                        lower_buffer.push(map_vertex)
+                    } else {
+                        upper_buffer.push(map_vertex)
+                    }
                 }
             }
-
-            if let Some(store) = renderer.get_buffer_mut(&self.stores[i]) {
-                store.store = bytemuck::cast_slice(&buffer).to_vec();
-                store.changed = true;
-            }
-
-            let size = (self.tilesize * 32) as f32;
-            self.orders[i] = DrawOrder::new(
-                false,
-                &Vec3::new(self.pos.x, self.pos.y, z),
-                0,
-                &Vec2::new(size, size),
-            )
         }
 
+        let size = (self.tilesize * 32) as f32;
+
+        if let Some(store) = renderer.get_buffer_mut(&self.stores[0]) {
+            store.store = bytemuck::cast_slice(&lower_buffer).to_vec();
+            store.changed = true;
+        }
+
+        if let Some(store) = renderer.get_buffer_mut(&self.stores[1]) {
+            store.store = bytemuck::cast_slice(&upper_buffer).to_vec();
+            store.changed = true;
+        }
+
+        self.orders[0] = DrawOrder::new(
+            false,
+            &Vec3::new(self.pos.x, self.pos.y, 9.0),
+            0,
+            &Vec2::new(size, size),
+            DrawType::Map,
+        );
+
+        self.orders[1] = DrawOrder::new(
+            false,
+            &Vec3::new(self.pos.x, self.pos.y, 5.0),
+            0,
+            &Vec2::new(size, size),
+            DrawType::Map,
+        );
         self.changed = false;
     }
 
@@ -146,15 +149,9 @@ impl Map {
         Self {
             tiles: [TileData::default(); 8192],
             pos: Vec2::default(),
-            stores: iter::repeat(renderer.new_buffer())
-                .take(MapLayers::Count as usize)
-                .collect(),
-            lowerstore_id: renderer.new_buffer(),
-            upperstore_id: renderer.new_buffer(),
+            stores: (0..2).map(|_| renderer.new_buffer()).collect(),
             filled_tiles: [0; MapLayers::Count as usize],
-            orders: iter::repeat(DrawOrder::default())
-                .take(MapLayers::Count as usize)
-                .collect(),
+            orders: iter::repeat(DrawOrder::default()).take(2).collect(),
             tilesize,
             can_render: false,
             changed: true,
@@ -204,15 +201,8 @@ impl Map {
                 self.create_quad(renderer);
             }
 
-            let orders = (0..MapLayers::Count as usize)
-                .map(|i| {
-                    OrderedIndex::new(
-                        self.orders[i],
-                        self.stores[i],
-                        0,
-                        DrawType::Map,
-                    )
-                })
+            let orders = (0..2)
+                .map(|i| OrderedIndex::new(self.orders[i], self.stores[i], 0))
                 .collect();
             Some(orders)
         } else {

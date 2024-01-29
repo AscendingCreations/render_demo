@@ -115,6 +115,7 @@ impl Lights {
             &Vec3::default(),
             self.render_layer,
             &Vec2::new(size.width, size.height),
+            DrawType::Lights,
         );
         self.changed = false;
     }
@@ -207,6 +208,6 @@ impl Lights {
             self.directionals_changed = false;
         }
 
-        OrderedIndex::new(self.order, self.store_id, 0, DrawType::Lights)
+        OrderedIndex::new(self.order, self.store_id, 0)
     }
 }

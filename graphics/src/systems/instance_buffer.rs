@@ -11,6 +11,7 @@ pub struct InstanceBuffer<K: BufferLayout> {
     pub unprocessed: Vec<Vec<OrderedIndex>>,
     pub buffers: Vec<Option<InstanceDetails>>,
     pub buffer: Buffer<K>,
+    pub layer_size: usize,
     // this is a calculation of the buffers size when being marked as ready to add into the buffer.
     needed_size: usize,
 }
@@ -18,7 +19,11 @@ pub struct InstanceBuffer<K: BufferLayout> {
 impl<K: BufferLayout> InstanceBuffer<K> {
     /// Used to create GpuBuffer from a BufferPass.
     /// Only use this for creating a reusable buffer.
-    pub fn create_buffer(gpu_device: &GpuDevice, data: &[u8]) -> Self {
+    pub fn create_buffer(
+        gpu_device: &GpuDevice,
+        data: &[u8],
+        layer_size: usize,
+    ) -> Self {
         InstanceBuffer {
             unprocessed: Vec::new(),
             buffers: Vec::new(),
@@ -28,6 +33,7 @@ impl<K: BufferLayout> InstanceBuffer<K> {
                 wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
                 Some("Instance Buffer"),
             ),
+            layer_size: layer_size.max(32),
             needed_size: 0,
         }
     }
@@ -39,13 +45,15 @@ impl<K: BufferLayout> InstanceBuffer<K> {
         layer: usize,
     ) {
         if let Some(store) = renderer.get_buffer(&index.index) {
-            if self.unprocessed.len() < layer {
-                for i in self.unprocessed.len()..layer {
+            let offset = layer.saturating_add(1);
+
+            if self.unprocessed.len() < offset {
+                for i in self.unprocessed.len()..offset {
                     //Push the layer buffer. if this is a layer we are adding data too lets
                     //give it a starting size. this cna be adjusted later for better performance
                     //versus ram usage.
-                    self.unprocessed.push(if i + 1 == layer {
-                        Vec::with_capacity(32)
+                    self.unprocessed.push(if i == layer {
+                        Vec::with_capacity(512)
                     } else {
                         Vec::new()
                     });
@@ -54,9 +62,7 @@ impl<K: BufferLayout> InstanceBuffer<K> {
 
             self.needed_size += store.store.len();
 
-            if let Some(unprocessed) =
-                self.unprocessed.get_mut(layer.saturating_sub(1))
-            {
+            if let Some(unprocessed) = self.unprocessed.get_mut(layer) {
                 unprocessed.push(index);
             }
         }
@@ -73,7 +79,9 @@ impl<K: BufferLayout> InstanceBuffer<K> {
         self.buffer.count = self.needed_size / K::stride();
         self.buffer.len = self.needed_size;
 
-        //self.unprocessed.sort();
+        for processing in &mut self.unprocessed {
+            processing.sort();
+        }
 
         self.buffers.clear();
 
@@ -140,8 +148,12 @@ impl<K: BufferLayout> InstanceBuffer<K> {
 
     /// creates a new pre initlized InstanceBuffer with a default size.
     /// default size is based on the initial InstanceLayout::default_buffer length.
-    pub fn new(gpu_device: &GpuDevice) -> Self {
-        Self::create_buffer(gpu_device, &K::default_buffer().vertexs)
+    pub fn new(gpu_device: &GpuDevice, layer_size: usize) -> Self {
+        Self::create_buffer(
+            gpu_device,
+            &K::default_buffer().vertexs,
+            layer_size,
+        )
     }
 
     /// Returns the elements count.
@@ -183,7 +195,15 @@ impl<K: BufferLayout> InstanceBuffer<K> {
 
     /// Creates a Buffer based on capacity.
     /// Capacity is the amount of objects to initialize for.
-    pub fn with_capacity(gpu_device: &GpuDevice, capacity: usize) -> Self {
-        Self::create_buffer(gpu_device, &K::with_capacity(capacity, 0).vertexs)
+    pub fn with_capacity(
+        gpu_device: &GpuDevice,
+        capacity: usize,
+        layer_size: usize,
+    ) -> Self {
+        Self::create_buffer(
+            gpu_device,
+            &K::with_capacity(capacity, 0).vertexs,
+            layer_size,
+        )
     }
 }

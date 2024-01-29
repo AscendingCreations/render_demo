@@ -61,14 +61,15 @@ impl<K: BufferLayout> GpuBuffer<K> {
         layer: usize,
     ) {
         if let Some(store) = renderer.get_buffer(&index.index) {
+            let offset = layer.saturating_add(1);
             // add in the missing layers this is better than keeping a hash since
             // if at anytime a process adds new data to a older layer it will already Exist.
-            if self.unprocessed.len() < layer {
-                for i in self.unprocessed.len()..layer {
+            if self.unprocessed.len() < offset {
+                for i in self.unprocessed.len()..offset {
                     //Push the layer buffer. if this is a layer we are adding data too lets
                     //give it a starting size. this cna be adjusted later for better performance
                     //versus ram usage.
-                    self.unprocessed.push(if i + 1 == layer {
+                    self.unprocessed.push(if i == layer {
                         Vec::with_capacity(32)
                     } else {
                         Vec::new()
@@ -81,9 +82,7 @@ impl<K: BufferLayout> GpuBuffer<K> {
 
             index.index_count = store.indexs.len() as u32 / 4;
 
-            if let Some(unprocessed) =
-                self.unprocessed.get_mut(layer.saturating_sub(1))
-            {
+            if let Some(unprocessed) = self.unprocessed.get_mut(layer) {
                 unprocessed.push(index);
             }
         }
@@ -114,7 +113,9 @@ impl<K: BufferLayout> GpuBuffer<K> {
         self.vertex_buffer.len = self.vertex_needed;
 
         //shouldnt need if renderer does all the sorting and layering first.
-        //self.unprocessed.sort();
+        for processing in &mut self.unprocessed {
+            processing.sort();
+        }
 
         if self.buffers.len() < self.unprocessed.len() {
             for _ in self.buffers.len()..self.unprocessed.len() {

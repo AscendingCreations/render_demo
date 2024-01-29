@@ -104,7 +104,13 @@ impl Mesh2D {
             store.changed = true;
         }
 
-        self.order = DrawOrder::new(false, &self.position, 1, &self.size);
+        self.order = DrawOrder::new(
+            false,
+            &self.position,
+            1,
+            &self.size,
+            DrawType::Mesh2D,
+        );
     }
 
     // used to check and update the ShapeVertex array.
@@ -115,12 +121,7 @@ impl Mesh2D {
             self.changed = false;
         }
 
-        OrderedIndex::new(
-            self.order,
-            self.vbo_store_id,
-            self.high_index,
-            DrawType::Mesh2D,
-        )
+        OrderedIndex::new(self.order, self.vbo_store_id, self.high_index)
     }
 
     pub fn check_mouse_bounds(&self, mouse_pos: Vec2) -> bool {

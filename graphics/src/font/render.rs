@@ -36,7 +36,7 @@ pub struct TextRenderer {
 impl TextRenderer {
     pub fn new(renderer: &GpuRenderer) -> Result<Self, AscendingError> {
         Ok(Self {
-            buffer: InstanceBuffer::new(renderer.gpu_device()),
+            buffer: InstanceBuffer::new(renderer.gpu_device(), 1024),
             swash_cache: SwashCache::new(),
         })
     }
@@ -45,8 +45,9 @@ impl TextRenderer {
         &mut self,
         renderer: &GpuRenderer,
         index: OrderedIndex,
+        layer: usize,
     ) {
-        self.buffer.add_buffer_store(renderer, index, 1);
+        self.buffer.add_buffer_store(renderer, index, layer);
     }
 
     pub fn finalize(&mut self, renderer: &mut GpuRenderer) {
@@ -58,10 +59,11 @@ impl TextRenderer {
         text: &mut Text,
         atlas: &mut TextAtlas,
         renderer: &mut GpuRenderer,
+        layer: usize,
     ) -> Result<(), AscendingError> {
         let index = text.update(&mut self.swash_cache, atlas, renderer)?;
 
-        self.add_buffer_store(renderer, index);
+        self.add_buffer_store(renderer, index, layer);
         Ok(())
     }
 }
@@ -90,7 +92,7 @@ where
         atlas: &'b TextAtlas,
         layer: usize,
     ) {
-        if let Some(Some(details)) = buffer.buffer.buffers.get(layer ) {
+        if let Some(Some(details)) = buffer.buffer.buffers.get(layer) {
             if buffer.buffer.count() > 0 {
                 self.set_buffers(renderer.buffer_object.as_buffer_pass());
                 self.set_bind_group(1, atlas.text.bind_group(), &[]);

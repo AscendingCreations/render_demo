@@ -10,7 +10,7 @@ pub struct ImageRenderer {
 impl ImageRenderer {
     pub fn new(renderer: &GpuRenderer) -> Result<Self, AscendingError> {
         Ok(Self {
-            buffer: InstanceBuffer::new(renderer.gpu_device()),
+            buffer: InstanceBuffer::new(renderer.gpu_device(), 512),
         })
     }
 
@@ -18,8 +18,9 @@ impl ImageRenderer {
         &mut self,
         renderer: &GpuRenderer,
         index: OrderedIndex,
+        layer: usize,
     ) {
-        self.buffer.add_buffer_store(renderer, index, 1);
+        self.buffer.add_buffer_store(renderer, index, layer);
     }
 
     pub fn finalize(&mut self, renderer: &mut GpuRenderer) {
@@ -31,10 +32,11 @@ impl ImageRenderer {
         image: &mut Image,
         renderer: &mut GpuRenderer,
         atlas: &mut AtlasSet,
+        layer: usize,
     ) {
         let index = image.update(renderer, atlas);
 
-        self.add_buffer_store(renderer, index);
+        self.add_buffer_store(renderer, index, layer);
     }
 }
 

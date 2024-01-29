@@ -193,7 +193,7 @@ async fn main() -> Result<(), AscendingError> {
         // To name this atm to keep it seperated from Sprite that would contain most of the actual not rendering
         // data needed.
         let mut sprite = Image::new(Some(allocation), &mut renderer, 1);
-        sprite.pos = Vec3::new(x, y, 4.1);
+        sprite.pos = Vec3::new(x, y, 7.0);
         sprite.hw = Vec2::new(48.0, 48.0);
         sprite.uv = Vec4::new(48.0, 96.0, 48.0, 48.0);
         sprite.color = Color::rgba(255, 255, 255, 255);
@@ -201,7 +201,7 @@ async fn main() -> Result<(), AscendingError> {
         x += 12.0;
     }
 
-    sprites[0].pos.z = 4.0;
+    sprites[0].pos.z = 7.0;
     sprites[0].color = Color::rgba(255, 255, 255, 120);
 
     // We establish the different renderers here to load their data up to use them.
@@ -260,7 +260,7 @@ async fn main() -> Result<(), AscendingError> {
         TileData {
             texture_id: 2,
             texture_layer: 0,
-            color: Color::rgba(255, 255, 255, 255),
+            color: Color::rgba(255, 255, 255, 230),
         },
     );
     map.set_tile(
@@ -538,6 +538,7 @@ async fn main() -> Result<(), AscendingError> {
                 sprite,
                 &mut renderer,
                 &mut state.image_atlas,
+                0,
             );
         });
 
@@ -545,6 +546,7 @@ async fn main() -> Result<(), AscendingError> {
             &mut state.animation,
             &mut renderer,
             &mut state.image_atlas,
+            0,
         );
 
         // this cycles all the Image's in the Image buffer by first putting them in rendering order
@@ -555,15 +557,17 @@ async fn main() -> Result<(), AscendingError> {
 
         state
             .text_renderer
-            .text_update(&mut text, &mut state.text_atlas, &mut renderer)
+            .text_update(&mut text, &mut state.text_atlas, &mut renderer, 0)
             .unwrap();
         state.text_renderer.finalize(&mut renderer);
-        state.map_renderer.map_update(&mut state.map, &mut renderer);
+        state
+            .map_renderer
+            .map_update(&mut state.map, &mut renderer, [0, 1]);
         state.map_renderer.finalize(&mut renderer);
 
         state
             .light_renderer
-            .lights_update(&mut state.lights, &mut renderer);
+            .lights_update(&mut state.lights, &mut renderer, 0);
         state.light_renderer.finalize(&mut renderer);
         /*  state.mesh.iter_mut().for_each(|mesh| {
             state.mesh_renderer.mesh_update(mesh, &mut renderer);
@@ -575,6 +579,7 @@ async fn main() -> Result<(), AscendingError> {
             &mut state.rect,
             &mut renderer,
             &mut state.ui_atlas,
+            0,
         );
         state.ui_renderer.finalize(&mut renderer);
         // Start encoding commands. this stores all the rendering calls for execution when

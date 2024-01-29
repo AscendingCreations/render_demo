@@ -220,6 +220,7 @@ impl Text {
                 (total_lines as f32 * self.buffer.metrics().line_height)
                     .min(max_height),
             ),
+            DrawType::Text,
         );
 
         self.changed = false;
@@ -430,12 +431,7 @@ impl Text {
             self.create_quad(cache, atlas, renderer)?;
         }
 
-        Ok(OrderedIndex::new(
-            self.order,
-            self.store_id,
-            0,
-            DrawType::Text,
-        ))
+        Ok(OrderedIndex::new(self.order, self.store_id, 0))
     }
 
     pub fn check_mouse_bounds(&self, mouse_pos: Vec2) -> bool {

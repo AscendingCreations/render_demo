@@ -85,7 +85,7 @@ impl LightRenderer {
                 });
 
         Ok(Self {
-            buffer: InstanceBuffer::new(renderer.gpu_device()),
+            buffer: InstanceBuffer::new(renderer.gpu_device(), 32),
             dir_buffer,
             area_buffer,
             area_bind_group,
@@ -97,8 +97,9 @@ impl LightRenderer {
         &mut self,
         renderer: &GpuRenderer,
         index: OrderedIndex,
+        layer: usize,
     ) {
-        self.buffer.add_buffer_store(renderer, index, 1);
+        self.buffer.add_buffer_store(renderer, index, layer);
     }
 
     pub fn finalize(&mut self, renderer: &mut GpuRenderer) {
@@ -109,6 +110,7 @@ impl LightRenderer {
         &mut self,
         lights: &mut Lights,
         renderer: &mut GpuRenderer,
+        layer: usize,
     ) {
         let index = lights.update(
             renderer,
@@ -116,7 +118,7 @@ impl LightRenderer {
             &mut self.dir_buffer,
         );
 
-        self.add_buffer_store(renderer, index);
+        self.add_buffer_store(renderer, index, layer);
     }
 }
 

@@ -569,11 +569,11 @@ async fn main() -> Result<(), AscendingError> {
             .light_renderer
             .lights_update(&mut state.lights, &mut renderer, 0);
         state.light_renderer.finalize(&mut renderer);
-        /*  state.mesh.iter_mut().for_each(|mesh| {
-            state.mesh_renderer.mesh_update(mesh, &mut renderer);
+        state.mesh.iter_mut().for_each(|mesh| {
+            state.mesh_renderer.mesh_update(mesh, &mut renderer, 0);
         });
 
-        state.mesh_renderer.finalize(&mut renderer);*/
+        state.mesh_renderer.finalize(&mut renderer);
 
         state.ui_renderer.rect_update(
             &mut state.rect,

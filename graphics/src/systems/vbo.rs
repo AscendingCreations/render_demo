@@ -20,6 +20,7 @@ pub struct GpuBuffer<K: BufferLayout> {
     vertex_needed: usize,
     pub index_buffer: Buffer<K>,
     index_needed: usize,
+    pub layer_size: usize,
 }
 
 impl<'a, K: BufferLayout> AsBufferPass<'a> for GpuBuffer<K> {
@@ -33,7 +34,11 @@ impl<'a, K: BufferLayout> AsBufferPass<'a> for GpuBuffer<K> {
 
 impl<K: BufferLayout> GpuBuffer<K> {
     /// Used to create GpuBuffer from a (Vertex:Vec<u8>, Indices:Vec<u8>).
-    pub fn create_buffer(gpu_device: &GpuDevice, buffers: &BufferData) -> Self {
+    pub fn create_buffer(
+        gpu_device: &GpuDevice,
+        buffers: &BufferData,
+        layer_size: usize,
+    ) -> Self {
         GpuBuffer {
             unprocessed: Vec::new(),
             buffers: Vec::new(),
@@ -51,6 +56,7 @@ impl<K: BufferLayout> GpuBuffer<K> {
                 Some("Index Buffer"),
             ),
             index_needed: 0,
+            layer_size: layer_size.max(32),
         }
     }
 
@@ -259,8 +265,8 @@ impl<K: BufferLayout> GpuBuffer<K> {
 
     /// creates a new pre initlized VertexBuffer with a default size.
     /// default size is based on the initial BufferPass::vertices length.
-    pub fn new(device: &GpuDevice) -> Self {
-        Self::create_buffer(device, &K::default_buffer())
+    pub fn new(device: &GpuDevice, layer_size: usize) -> Self {
+        Self::create_buffer(device, &K::default_buffer(), layer_size)
     }
 
     /// Set the Index based on how many Vertex's Exist
@@ -303,10 +309,15 @@ impl<K: BufferLayout> GpuBuffer<K> {
     /// Creates a GpuBuffer based on capacity.
     /// Capacity is the amount of objects to initialize for.
     /// Capacity * 2 == the reserved space for the indices.
-    pub fn with_capacity(gpu_device: &GpuDevice, capacity: usize) -> Self {
+    pub fn with_capacity(
+        gpu_device: &GpuDevice,
+        capacity: usize,
+        layer_size: usize,
+    ) -> Self {
         Self::create_buffer(
             gpu_device,
             &K::with_capacity(capacity, capacity * 2),
+            layer_size,
         )
     }
 }

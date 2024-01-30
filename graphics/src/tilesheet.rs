@@ -8,10 +8,6 @@ pub struct Tile {
     /// Location of the tile within the loaded Texture.
     pub x: u32,
     pub y: u32,
-    ///Calculated locational ID of the tile in Texture.
-    pub id: u32,
-    ///Layer of the texture id is present in.
-    pub layer: usize,
     /// Texture ID to reload the above if needed.
     pub tex_id: usize,
 }
@@ -34,7 +30,6 @@ impl TileSheet {
         let tilecount =
             (texture.size().0 / tilesize) * (texture.size().1 / tilesize);
         let sheet_width = texture.size().0 / tilesize;
-        let atlas_width = atlas.size().x / tilesize;
         let sheet_image: RgbaImage = ImageBuffer::from_raw(
             texture.size().0,
             texture.size().1,
@@ -78,7 +73,7 @@ impl TileSheet {
             }
             // we upload the tile regardless this avoid tilesheet issues later.
             let name: String = format!("{}-{}", texture.name(), id);
-            let (tex_id, allocation) = atlas.upload_with_alloc(
+            let tex_id = atlas.upload(
                 name,
                 image.as_bytes(),
                 tilesize,
@@ -94,17 +89,12 @@ impl TileSheet {
                 tiles.push(Tile {
                     x: tilex,
                     y: tiley,
-                    id: 0,
-                    layer: 0,
                     tex_id: empty,
                 })
             } else {
-                let (posx, posy) = allocation.position();
                 tiles.push(Tile {
                     x: tilex,
                     y: tiley,
-                    id: (posx / tilesize) + ((posy / tilesize) * atlas_width),
-                    layer: allocation.layer,
                     tex_id,
                 })
             }
@@ -124,7 +114,6 @@ impl TileSheet {
     ) -> Option<()> {
         let tilecount =
             (texture.size().0 / tilesize) * (texture.size().1 / tilesize);
-        let atlas_width = atlas.size().x / tilesize;
         let sheet_width = texture.size().0 / tilesize;
         let sheet_image: RgbaImage = ImageBuffer::from_raw(
             texture.size().0,
@@ -167,7 +156,7 @@ impl TileSheet {
             }
 
             let name: String = format!("{}-{}", texture.name(), id);
-            let (tex_id, allocation) = atlas.upload_with_alloc(
+            let tex_id = atlas.upload(
                 name,
                 image.as_bytes(),
                 tilesize,
@@ -183,17 +172,12 @@ impl TileSheet {
                 self.tiles.push(Tile {
                     x: tilex,
                     y: tiley,
-                    id: 0,
-                    layer: 0,
                     tex_id: empty,
                 })
             } else {
-                let (posx, posy) = allocation.position();
                 self.tiles.push(Tile {
                     x: tilex,
                     y: tiley,
-                    id: (posx / tilesize) + ((posy / tilesize) * atlas_width),
-                    layer: allocation.layer,
                     tex_id,
                 })
             }

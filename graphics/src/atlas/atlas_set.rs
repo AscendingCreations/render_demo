@@ -108,26 +108,28 @@ impl<U: Hash + Eq + Clone, Data: Copy + Default> AtlasSet<U, Data> {
         }
 
         /* Try to see if we can clear out unused allocations first. */
-        loop {
-            let (&id, _) = self.cache.peek_lru()?;
+        if !self.use_ref_count {
+            loop {
+                let (&id, _) = self.cache.peek_lru()?;
 
-            //Check if ID has been used yet?
-            if self.last_used.contains(&id) {
-                //Failed to find any unused allocations so lets try to add a layer.
-                break;
-            }
+                //Check if ID has been used yet?
+                if self.last_used.contains(&id) {
+                    //Failed to find any unused allocations so lets try to add a layer.
+                    break;
+                }
 
-            if let Some(layer_id) = self.remove(id) {
-                let layer = self.layers.get_mut(layer_id)?;
+                if let Some(layer_id) = self.remove(id) {
+                    let layer = self.layers.get_mut(layer_id)?;
 
-                if let Some(allocation) =
-                    layer.allocator.allocate(width, height)
-                {
-                    return Some(Allocation {
-                        allocation,
-                        layer: layer_id,
-                        data,
-                    });
+                    if let Some(allocation) =
+                        layer.allocator.allocate(width, height)
+                    {
+                        return Some(Allocation {
+                            allocation,
+                            layer: layer_id,
+                            data,
+                        });
+                    }
                 }
             }
         }

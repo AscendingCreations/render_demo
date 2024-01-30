@@ -65,22 +65,10 @@ impl TileSheet {
             // lets create the tile from the texture.
             for y in 0..tilesize {
                 for x in 0..tilesize {
-                    let posx = (id % sheet_width) * tilesize + x;
-                    let posy = (id / sheet_width) * tilesize + y;
-                    let pixel = sheet_image.get_pixel(posx, posy);
+                    let pixel = sheet_image.get_pixel(tilex + x, tiley + y);
                     image.put_pixel(x, y, *pixel);
                 }
             }
-            // we upload the tile regardless this avoid tilesheet issues later.
-            let name: String = format!("{}-{}", texture.name(), id);
-            let tex_id = atlas.upload(
-                name,
-                image.as_bytes(),
-                tilesize,
-                tilesize,
-                0,
-                renderer,
-            )?;
 
             if image.enumerate_pixels().all(|p| p.2 .0[3] == 0) {
                 // lets use our only Blank tile. this will always be the first loaded.
@@ -92,6 +80,16 @@ impl TileSheet {
                     tex_id: empty,
                 })
             } else {
+                let name: String = format!("{}-{}", texture.name(), id);
+                let tex_id = atlas.upload(
+                    name,
+                    image.as_bytes(),
+                    tilesize,
+                    tilesize,
+                    0,
+                    renderer,
+                )?;
+
                 tiles.push(Tile {
                     x: tilex,
                     y: tiley,
@@ -148,33 +146,28 @@ impl TileSheet {
             // lets create the tile from the texture.
             for y in 0..tilesize {
                 for x in 0..tilesize {
-                    let posx = (id % sheet_width) * tilesize + x;
-                    let posy = (id / sheet_width) * tilesize + y;
-                    let pixel = sheet_image.get_pixel(posx, posy);
+                    let pixel = sheet_image.get_pixel(tilex + x, tiley + y);
                     image.put_pixel(x, y, *pixel);
                 }
             }
 
-            let name: String = format!("{}-{}", texture.name(), id);
-            let tex_id = atlas.upload(
-                name,
-                image.as_bytes(),
-                tilesize,
-                tilesize,
-                0,
-                renderer,
-            )?;
-
             if image.enumerate_pixels().all(|p| p.2 .0[3] == 0) {
-                // lets use our only Blank tile. this will always be the first loaded.
-                // We use this when tiles are empty to avoid issues later when we do use
-                // these spots for other tiles.
                 self.tiles.push(Tile {
                     x: tilex,
                     y: tiley,
                     tex_id: empty,
                 })
             } else {
+                let name: String = format!("{}-{}", texture.name(), id);
+                let tex_id = atlas.upload(
+                    name,
+                    image.as_bytes(),
+                    tilesize,
+                    tilesize,
+                    0,
+                    renderer,
+                )?;
+
                 self.tiles.push(Tile {
                     x: tilex,
                     y: tiley,
@@ -183,8 +176,6 @@ impl TileSheet {
             }
         }
 
-        // We return as Some(()) this allows us to check above upon
-        // upload if a tile failed to get added or not due to no more room.
         Some(())
     }
 }

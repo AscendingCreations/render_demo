@@ -38,9 +38,10 @@ impl MapRenderer {
         &mut self,
         map: &mut Map,
         renderer: &mut GpuRenderer,
+        atlas: &mut AtlasSet,
         layers: [usize; 2],
     ) {
-        if let Some(indexs) = map.update(renderer) {
+        if let Some(indexs) = map.update(renderer, atlas) {
             for (id, order_index) in indexs.into_iter().enumerate() {
                 self.add_buffer_store(renderer, order_index, layers[id]);
             }

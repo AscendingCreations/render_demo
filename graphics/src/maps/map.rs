@@ -1,8 +1,8 @@
 use std::iter;
 
 use crate::{
-    DrawOrder, DrawType, GpuRenderer, Index, MapVertex, OrderedIndex, Vec2,
-    Vec3,
+    AtlasSet, DrawOrder, DrawType, GpuRenderer, Index, MapVertex, OrderedIndex,
+    Vec2, Vec3,
 };
 use cosmic_text::Color;
 
@@ -39,16 +39,14 @@ impl MapLayers {
 
 #[derive(Copy, Clone)]
 pub struct TileData {
-    pub texture_id: u32,
-    pub texture_layer: u8,
+    pub allocation_id: usize,
     pub color: Color,
 }
 
 impl Default for TileData {
     fn default() -> Self {
         Self {
-            texture_id: 0,
-            texture_layer: 0,
+            allocation_id: 0,
             color: Color::rgba(255, 255, 255, 255),
         }
     }
@@ -78,9 +76,14 @@ pub struct Map {
 }
 
 impl Map {
-    pub fn create_quad(&mut self, renderer: &mut GpuRenderer) {
+    pub fn create_quad(
+        &mut self,
+        renderer: &mut GpuRenderer,
+        atlas: &mut AtlasSet,
+    ) {
         let mut lower_buffer = Vec::with_capacity(6144);
         let mut upper_buffer = Vec::with_capacity(2048);
+        let atlas_width = atlas.size().x / self.tilesize;
 
         for i in 0..8 {
             let z = MapLayers::indexed_layers(i);
@@ -94,22 +97,31 @@ impl Map {
                     let tile = &self.tiles
                         [(x + (y * 32) + (i as u32 * 1024)) as usize];
 
-                    let map_vertex = MapVertex {
-                        position: [
-                            self.pos.x + (x * self.tilesize) as f32,
-                            self.pos.y + (y * self.tilesize) as f32,
-                            z,
-                        ],
-                        tilesize: self.tilesize as f32,
-                        texture_id: tile.texture_id as f32,
-                        texture_layer: tile.texture_layer as f32,
-                        color: tile.color.0,
-                    };
+                    if tile.allocation_id > 0 {
+                        if let Some((allocation, _)) =
+                            atlas.peek(tile.allocation_id)
+                        {
+                            let (posx, posy) = allocation.position();
 
-                    if i < 6 {
-                        lower_buffer.push(map_vertex)
-                    } else {
-                        upper_buffer.push(map_vertex)
+                            let map_vertex = MapVertex {
+                                position: [
+                                    self.pos.x + (x * self.tilesize) as f32,
+                                    self.pos.y + (y * self.tilesize) as f32,
+                                    z,
+                                ],
+                                tilesize: self.tilesize as f32,
+                                tile_id: ((posx / self.tilesize)
+                                    + ((posy / self.tilesize) * atlas_width)),
+                                texture_layer: allocation.layer as u32,
+                                color: tile.color.0,
+                            };
+
+                            if i < 6 {
+                                lower_buffer.push(map_vertex)
+                            } else {
+                                upper_buffer.push(map_vertex)
+                            }
+                        }
                     }
                 }
             }
@@ -177,12 +189,12 @@ impl Map {
         let tilepos = (pos.0 + (pos.1 * 32) + (pos.2 * 1024)) as usize;
         let current_tile = self.tiles[tilepos];
 
-        if (current_tile.texture_id > 0 || current_tile.color.a() > 0)
-            && (tile.color.a() == 0 || tile.texture_id == 0)
+        if (current_tile.allocation_id > 0 || current_tile.color.a() > 0)
+            && (tile.color.a() == 0 || tile.allocation_id == 0)
         {
             self.filled_tiles[pos.2 as usize] =
                 self.filled_tiles[pos.2 as usize].saturating_sub(1);
-        } else if tile.color.a() > 0 || tile.texture_id > 0 {
+        } else if tile.color.a() > 0 || tile.allocation_id > 0 {
             self.filled_tiles[pos.2 as usize] =
                 self.filled_tiles[pos.2 as usize].saturating_add(1);
         }
@@ -195,10 +207,11 @@ impl Map {
     pub fn update(
         &mut self,
         renderer: &mut GpuRenderer,
+        atlas: &mut AtlasSet,
     ) -> Option<Vec<OrderedIndex>> {
         if self.can_render {
             if self.changed {
-                self.create_quad(renderer);
+                self.create_quad(renderer, atlas);
             }
 
             let orders = (0..2)

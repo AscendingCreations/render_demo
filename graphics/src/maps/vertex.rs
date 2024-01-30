@@ -7,8 +7,8 @@ use std::iter;
 pub struct MapVertex {
     pub position: [f32; 3],
     pub tilesize: f32,
-    pub texture_id: f32,
-    pub texture_layer: f32,
+    pub tile_id: u32,
+    pub texture_layer: u32,
     pub color: u32,
 }
 
@@ -17,8 +17,8 @@ impl Default for MapVertex {
         Self {
             position: [0.0; 3],
             tilesize: 0.0,
-            texture_id: 0.0,
-            texture_layer: 0.0,
+            tile_id: 0,
+            texture_layer: 0,
             color: 0,
         }
     }
@@ -26,7 +26,7 @@ impl Default for MapVertex {
 
 impl BufferLayout for MapVertex {
     fn attributes() -> Vec<wgpu::VertexAttribute> {
-        wgpu::vertex_attr_array![1 => Float32x3, 2 => Float32, 3 => Float32, 4 => Float32, 5 => Uint32]
+        wgpu::vertex_attr_array![1 => Float32x3, 2 => Float32, 3 => Uint32, 4 => Uint32, 5 => Uint32]
             .to_vec()
     }
 

@@ -21,7 +21,7 @@ use std::{
     path::PathBuf,
     rc::Rc,
     sync::Arc,
-    time::Duration,
+    time::{Duration, Instant},
 };
 use wgpu::{Backends, Dx12Compiler, InstanceDescriptor, InstanceFlags};
 use winit::{
@@ -239,8 +239,7 @@ async fn main() -> Result<(), AscendingError> {
             map.set_tile(
                 (x, y, 0),
                 TileData {
-                    texture_id: 1,
-                    texture_layer: 0,
+                    allocation_id: 1,
                     color: Color::rgba(255, 255, 255, 255),
                 },
             )
@@ -250,24 +249,21 @@ async fn main() -> Result<(), AscendingError> {
     map.set_tile(
         (2, 1, 1),
         TileData {
-            texture_id: 2,
-            texture_layer: 0,
+            allocation_id: 2,
             color: Color::rgba(255, 255, 255, 255),
         },
     );
     map.set_tile(
         (1, 1, 6),
         TileData {
-            texture_id: 2,
-            texture_layer: 0,
+            allocation_id: 2,
             color: Color::rgba(255, 255, 255, 230),
         },
     );
     map.set_tile(
         (0, 0, 1),
         TileData {
-            texture_id: 2,
-            texture_layer: 0,
+            allocation_id: 2,
             color: Color::rgba(255, 255, 255, 255),
         },
     );
@@ -560,9 +556,17 @@ async fn main() -> Result<(), AscendingError> {
             .text_update(&mut text, &mut state.text_atlas, &mut renderer, 0)
             .unwrap();
         state.text_renderer.finalize(&mut renderer);
-        state
-            .map_renderer
-            .map_update(&mut state.map, &mut renderer, [0, 1]);
+
+        let time_check = Instant::now();
+        state.map_renderer.map_update(
+            &mut state.map,
+            &mut renderer,
+            &mut state.map_atlas,
+            [0, 1],
+        );
+        let time_taken = Instant::now().duration_since(time_check);
+        println!("map build time taken: {}", time_taken.as_secs_f64());
+
         state.map_renderer.finalize(&mut renderer);
 
         state

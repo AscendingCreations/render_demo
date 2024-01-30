@@ -1,6 +1,6 @@
 use crate::{
-    AscendingError, AtlasSet, DrawOrder, GpuRenderer, Index, OrderedIndex,
-    OtherError, RectVertex, Texture, Vec2, Vec3, Vec4,
+    AscendingError, AtlasSet, DrawOrder, DrawType, GpuRenderer, Index,
+    OrderedIndex, OtherError, RectVertex, Texture, Vec2, Vec3, Vec4,
 };
 use cosmic_text::Color;
 
@@ -148,7 +148,13 @@ impl Rect {
             store.changed = true;
         }
 
-        self.order = DrawOrder::new(false, &self.position, 1);
+        self.order = DrawOrder::new(
+            false,
+            &self.position,
+            1,
+            &self.size,
+            DrawType::Rectangle,
+        );
     }
 
     /// used to check and update the ShapeVertex array.

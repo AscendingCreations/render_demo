@@ -34,6 +34,7 @@ lyon = "1.0.1"
 slab = "0.4.9"
 smol_str = "0.2"
 indexmap = "2.1.0"
+kdtree = "0.7.0"
 
 [workspace.dependencies.naga]
 #git = "https://github.com/gfx-rs/naga"

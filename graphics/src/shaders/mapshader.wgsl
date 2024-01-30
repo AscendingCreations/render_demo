@@ -17,8 +17,8 @@ struct VertexInput {
     @location(0) v_pos: vec2<f32>,
     @location(1) position: vec3<f32>,
     @location(2) tilesize: f32,
-    @location(3) texture_id: f32,
-    @location(4) texture_layer: f32,
+    @location(3) tile_id: u32,
+    @location(4) texture_layer: u32,
     @location(5) color: u32,
 };
 
@@ -55,8 +55,8 @@ fn vertex(
     let size = textureDimensions(tex);
     let fsize = vec2<f32> (f32(size.x), f32(size.y));
     let total_tiles = u32(size.x / u32(vertex.tilesize));
-    let tileposx = f32(u32(vertex.texture_id) % total_tiles) * vertex.tilesize;
-    let tileposy = f32(u32(vertex.texture_id) / total_tiles) * vertex.tilesize;
+    let tileposx = f32(vertex.tile_id % total_tiles) * vertex.tilesize;
+    let tileposy = f32(vertex.tile_id / total_tiles) * vertex.tilesize;
 
     switch v {
         case 1u: {

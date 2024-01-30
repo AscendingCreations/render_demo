@@ -1,8 +1,8 @@
 use std::mem;
 
 use crate::{
-    AreaLightRaw, Color, DirectionalLightRaw, DrawOrder, GpuRenderer, Index,
-    LightsVertex, OrderedIndex, Vec2, Vec3, Vec4,
+    AreaLightRaw, Color, DirectionalLightRaw, DrawOrder, DrawType, GpuRenderer,
+    Index, LightsVertex, OrderedIndex, Vec2, Vec3, Vec4,
 };
 use slab::Slab;
 use wgpu::util::align_to;
@@ -109,8 +109,14 @@ impl Lights {
             store.store = bytemuck::bytes_of(&instance).to_vec();
             store.changed = true;
         }
-
-        self.order = DrawOrder::new(false, &Vec3::default(), self.render_layer);
+        let size = renderer.size();
+        self.order = DrawOrder::new(
+            false,
+            &Vec3::default(),
+            self.render_layer,
+            &Vec2::new(size.width, size.height),
+            DrawType::Lights,
+        );
         self.changed = false;
     }
 

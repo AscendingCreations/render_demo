@@ -1,10 +1,17 @@
 use crate::{Buffer, BufferLayout, GpuDevice, GpuRenderer, OrderedIndex};
 use std::ops::Range;
 
+pub struct InstanceDetails {
+    pub start: u32,
+    pub end: u32,
+}
+
 //This Holds onto all the instances Compressed into a byte array.
 pub struct InstanceBuffer<K: BufferLayout> {
-    pub buffers: Vec<OrderedIndex>,
+    pub unprocessed: Vec<Vec<OrderedIndex>>,
+    pub buffers: Vec<Option<InstanceDetails>>,
     pub buffer: Buffer<K>,
+    pub layer_size: usize,
     // this is a calculation of the buffers size when being marked as ready to add into the buffer.
     needed_size: usize,
 }
@@ -12,15 +19,21 @@ pub struct InstanceBuffer<K: BufferLayout> {
 impl<K: BufferLayout> InstanceBuffer<K> {
     /// Used to create GpuBuffer from a BufferPass.
     /// Only use this for creating a reusable buffer.
-    pub fn create_buffer(gpu_device: &GpuDevice, data: &[u8]) -> Self {
+    pub fn create_buffer(
+        gpu_device: &GpuDevice,
+        data: &[u8],
+        layer_size: usize,
+    ) -> Self {
         InstanceBuffer {
-            buffers: Vec::with_capacity(256),
+            unprocessed: Vec::new(),
+            buffers: Vec::new(),
             buffer: Buffer::new(
                 gpu_device,
                 data,
                 wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
                 Some("Instance Buffer"),
             ),
+            layer_size: layer_size.max(32),
             needed_size: 0,
         }
     }
@@ -29,17 +42,34 @@ impl<K: BufferLayout> InstanceBuffer<K> {
         &mut self,
         renderer: &GpuRenderer,
         index: OrderedIndex,
+        layer: usize,
     ) {
         if let Some(store) = renderer.get_buffer(&index.index) {
+            let offset = layer.saturating_add(1);
+
+            if self.unprocessed.len() < offset {
+                for i in self.unprocessed.len()..offset {
+                    //Push the layer buffer. if this is a layer we are adding data too lets
+                    //give it a starting size. this cna be adjusted later for better performance
+                    //versus ram usage.
+                    self.unprocessed.push(if i == layer {
+                        Vec::with_capacity(self.layer_size)
+                    } else {
+                        Vec::new()
+                    });
+                }
+            }
+
             self.needed_size += store.store.len();
 
-            self.buffers.push(index);
+            if let Some(unprocessed) = self.unprocessed.get_mut(layer) {
+                unprocessed.push(index);
+            }
         }
     }
 
     pub fn finalize(&mut self, renderer: &mut GpuRenderer) {
-        let mut changed = false;
-        let mut pos = 0;
+        let (mut changed, mut pos, mut count) = (false, 0, 0);
 
         if self.needed_size > self.buffer.max {
             self.resize(renderer.gpu_device(), self.needed_size / K::stride());
@@ -49,33 +79,59 @@ impl<K: BufferLayout> InstanceBuffer<K> {
         self.buffer.count = self.needed_size / K::stride();
         self.buffer.len = self.needed_size;
 
-        self.buffers.sort();
+        for processing in &mut self.unprocessed {
+            processing.sort();
+        }
 
-        for buf in &self.buffers {
-            let mut write_buffer = false;
-            let old_pos = pos as u64;
+        self.buffers.clear();
 
-            if let Some(store) = renderer.get_buffer_mut(&buf.index) {
-                let range = pos..pos + store.store.len();
-
-                if store.store_pos != range || changed || store.changed {
-                    store.store_pos = range;
-                    store.changed = false;
-                    write_buffer = true
-                }
-
-                pos += store.store.len();
+        for processing in &self.unprocessed {
+            if processing.len() == 0 {
+                self.buffers.push(None);
+                continue;
             }
 
-            if write_buffer {
-                if let Some(store) = renderer.get_buffer(&buf.index) {
-                    self.buffer.write(&renderer.device, &store.store, old_pos);
+            let start_pos = count;
+
+            for buf in processing {
+                let mut write_buffer = false;
+                let old_pos = pos as u64;
+
+                if let Some(store) = renderer.get_buffer_mut(&buf.index) {
+                    let range = pos..pos + store.store.len();
+
+                    if store.store_pos != range || changed || store.changed {
+                        store.store_pos = range;
+                        store.changed = false;
+                        write_buffer = true
+                    }
+
+                    pos += store.store.len();
+                    count += (store.store.len() / K::stride()) as u32;
+                }
+
+                if write_buffer {
+                    if let Some(store) = renderer.get_buffer(&buf.index) {
+                        self.buffer.write(
+                            &renderer.device,
+                            &store.store,
+                            old_pos,
+                        );
+                    }
                 }
             }
+
+            self.buffers.push(Some(InstanceDetails {
+                start: start_pos,
+                end: count,
+            }));
         }
 
         self.needed_size = 0;
-        self.buffers.clear();
+
+        for buffer in &mut self.unprocessed {
+            buffer.clear()
+        }
     }
 
     //private but resizes the buffer on the GPU when needed.
@@ -92,8 +148,12 @@ impl<K: BufferLayout> InstanceBuffer<K> {
 
     /// creates a new pre initlized InstanceBuffer with a default size.
     /// default size is based on the initial InstanceLayout::default_buffer length.
-    pub fn new(gpu_device: &GpuDevice) -> Self {
-        Self::create_buffer(gpu_device, &K::default_buffer().vertexs)
+    pub fn new(gpu_device: &GpuDevice, layer_size: usize) -> Self {
+        Self::create_buffer(
+            gpu_device,
+            &K::default_buffer().vertexs,
+            layer_size,
+        )
     }
 
     /// Returns the elements count.
@@ -135,7 +195,15 @@ impl<K: BufferLayout> InstanceBuffer<K> {
 
     /// Creates a Buffer based on capacity.
     /// Capacity is the amount of objects to initialize for.
-    pub fn with_capacity(gpu_device: &GpuDevice, capacity: usize) -> Self {
-        Self::create_buffer(gpu_device, &K::with_capacity(capacity, 0).vertexs)
+    pub fn with_capacity(
+        gpu_device: &GpuDevice,
+        capacity: usize,
+        layer_size: usize,
+    ) -> Self {
+        Self::create_buffer(
+            gpu_device,
+            &K::with_capacity(capacity, 0).vertexs,
+            layer_size,
+        )
     }
 }

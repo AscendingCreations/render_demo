@@ -82,18 +82,22 @@ where
             wgpu::IndexFormat::Uint32,
         );
 
-        pass.render_lower_maps(renderer, &self.map_renderer, &self.map_atlas);
+        pass.render_map(renderer, &self.map_renderer, &self.map_atlas, 0);
 
-        pass.render_image(renderer, &self.sprite_renderer, &self.image_atlas);
+        pass.render_image(
+            renderer,
+            &self.sprite_renderer,
+            &self.image_atlas,
+            0,
+        );
 
-        pass.render_upper_maps(renderer, &self.map_renderer, &self.map_atlas);
+        pass.render_map(renderer, &self.map_renderer, &self.map_atlas, 1);
+        pass.render_lights(renderer, &self.light_renderer, 0);
 
-        pass.render_lights(renderer, &self.light_renderer);
+        pass.render_text(renderer, &self.text_renderer, &self.text_atlas, 0);
 
-        pass.render_text(renderer, &self.text_renderer, &self.text_atlas);
+        //pass.render_2dmeshs(renderer, &self.mesh_renderer, 0);
 
-        pass.render_2dmeshs(renderer, &self.mesh_renderer);
-
-        pass.render_rects(renderer, &self.ui_renderer, &self.ui_atlas);
+        pass.render_rects(renderer, &self.ui_renderer, &self.ui_atlas, 0);
     }
 }

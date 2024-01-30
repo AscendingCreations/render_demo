@@ -1,8 +1,12 @@
 use crate::{
-    AtlasSet, Color, DrawOrder, GpuRenderer, ImageVertex, Index, OrderedIndex,
-    Vec2, Vec3, Vec4,
+    AtlasSet, Color, DrawOrder, DrawType, GpuRenderer, ImageVertex, Index,
+    OrderedIndex, Vec2, Vec3, Vec4,
 };
 
+pub enum TextDrawOrder {
+    BelowLights,
+    AboveLights,
+}
 /// rendering data for all images.
 pub struct Image {
     pub pos: Vec3,
@@ -92,8 +96,13 @@ impl Image {
             store.changed = true;
         }
 
-        self.order =
-            DrawOrder::new(self.color.a() < 255, &self.pos, self.render_layer);
+        self.order = DrawOrder::new(
+            self.color.a() < 255,
+            &self.pos,
+            self.render_layer,
+            &self.hw,
+            DrawType::Image,
+        );
         self.changed = false;
     }
 

@@ -5,14 +5,21 @@ use image::{self, EncodableLayout, ImageBuffer, RgbaImage};
 //this is only needed for the Editor.
 #[derive(Debug)]
 pub struct Tile {
+    /// Location of the tile within the loaded Texture.
     pub x: u32,
     pub y: u32,
+    ///Calculated locational ID of the tile in Texture.
     pub id: u32,
+    ///Layer of the texture id is present in.
+    pub layer: usize,
+    /// Texture ID to reload the above if needed.
     pub tex_id: usize,
 }
 
 #[derive(Debug, Default)]
-//We can use this for editor loading and just as a precursor.
+//Loads the tiles from a tilesheet into a texture.
+//If this is used then you can not unload tiles or add new tiles
+//to any tilesheet loaded in th emiddle other than the very last tilesheet.
 pub struct TileSheet {
     pub tiles: Vec<Tile>,
 }
@@ -88,6 +95,7 @@ impl TileSheet {
                     x: tilex,
                     y: tiley,
                     id: 0,
+                    layer: 0,
                     tex_id: empty,
                 })
             } else {
@@ -96,6 +104,7 @@ impl TileSheet {
                     x: tilex,
                     y: tiley,
                     id: (posx / tilesize) + ((posy / tilesize) * atlas_width),
+                    layer: allocation.layer,
                     tex_id,
                 })
             }
@@ -175,6 +184,7 @@ impl TileSheet {
                     x: tilex,
                     y: tiley,
                     id: 0,
+                    layer: 0,
                     tex_id: empty,
                 })
             } else {
@@ -183,6 +193,7 @@ impl TileSheet {
                     x: tilex,
                     y: tiley,
                     id: (posx / tilesize) + ((posy / tilesize) * atlas_width),
+                    layer: allocation.layer,
                     tex_id,
                 })
             }

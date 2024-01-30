@@ -1,6 +1,6 @@
 use crate::{
-    AscendingError, BufferLayout, DrawOrder, GpuRenderer, Index, Mesh2DVertex,
-    OrderedIndex, OtherError, Vec2, Vec3, Vec4, VertexBuilder,
+    AscendingError, BufferLayout, DrawOrder, DrawType, GpuRenderer, Index,
+    Mesh2DVertex, OrderedIndex, OtherError, Vec2, Vec3, Vec4, VertexBuilder,
 };
 use cosmic_text::Color;
 use lyon::{
@@ -104,7 +104,13 @@ impl Mesh2D {
             store.changed = true;
         }
 
-        self.order = DrawOrder::new(false, &self.position, 1);
+        self.order = DrawOrder::new(
+            false,
+            &self.position,
+            1,
+            &self.size,
+            DrawType::Mesh2D,
+        );
     }
 
     // used to check and update the ShapeVertex array.

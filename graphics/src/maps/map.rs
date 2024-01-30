@@ -39,14 +39,15 @@ impl MapLayers {
 
 #[derive(Copy, Clone)]
 pub struct TileData {
-    pub allocation_id: usize,
+    ///tiles allocation ID within the texture.
+    pub id: usize,
     pub color: Color,
 }
 
 impl Default for TileData {
     fn default() -> Self {
         Self {
-            allocation_id: 0,
+            id: 0,
             color: Color::rgba(255, 255, 255, 255),
         }
     }
@@ -97,30 +98,30 @@ impl Map {
                     let tile = &self.tiles
                         [(x + (y * 32) + (i as u32 * 1024)) as usize];
 
-                    if tile.allocation_id > 0 {
-                        if let Some((allocation, _)) =
-                            atlas.peek(tile.allocation_id)
-                        {
-                            let (posx, posy) = allocation.position();
+                    if tile.id == 0 {
+                        continue;
+                    }
 
-                            let map_vertex = MapVertex {
-                                position: [
-                                    self.pos.x + (x * self.tilesize) as f32,
-                                    self.pos.y + (y * self.tilesize) as f32,
-                                    z,
-                                ],
-                                tilesize: self.tilesize as f32,
-                                tile_id: ((posx / self.tilesize)
-                                    + ((posy / self.tilesize) * atlas_width)),
-                                texture_layer: allocation.layer as u32,
-                                color: tile.color.0,
-                            };
+                    if let Some((allocation, _)) = atlas.peek(tile.id) {
+                        let (posx, posy) = allocation.position();
 
-                            if i < 6 {
-                                lower_buffer.push(map_vertex)
-                            } else {
-                                upper_buffer.push(map_vertex)
-                            }
+                        let map_vertex = MapVertex {
+                            position: [
+                                self.pos.x + (x * self.tilesize) as f32,
+                                self.pos.y + (y * self.tilesize) as f32,
+                                z,
+                            ],
+                            tilesize: self.tilesize as f32,
+                            tile_id: (posx / self.tilesize)
+                                + ((posy / self.tilesize) * atlas_width),
+                            texture_layer: allocation.layer as u32,
+                            color: tile.color.0,
+                        };
+
+                        if i < 6 {
+                            lower_buffer.push(map_vertex)
+                        } else {
+                            upper_buffer.push(map_vertex)
                         }
                     }
                 }
@@ -189,12 +190,12 @@ impl Map {
         let tilepos = (pos.0 + (pos.1 * 32) + (pos.2 * 1024)) as usize;
         let current_tile = self.tiles[tilepos];
 
-        if (current_tile.allocation_id > 0 || current_tile.color.a() > 0)
-            && (tile.color.a() == 0 || tile.allocation_id == 0)
+        if (current_tile.id > 0 || current_tile.color.a() > 0)
+            && (tile.color.a() == 0 || tile.id == 0)
         {
             self.filled_tiles[pos.2 as usize] =
                 self.filled_tiles[pos.2 as usize].saturating_sub(1);
-        } else if tile.color.a() > 0 || tile.allocation_id > 0 {
+        } else if tile.color.a() > 0 || tile.id > 0 {
             self.filled_tiles[pos.2 as usize] =
                 self.filled_tiles[pos.2 as usize].saturating_add(1);
         }

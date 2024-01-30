@@ -39,7 +39,7 @@ impl Atlas {
         index: usize,
         allocation: guillotiere::Allocation,
     ) {
-        self.allocated.remove(&index);
+        self.allocated.swap_remove(&index);
         self.allocator.deallocate(allocation);
     }
 

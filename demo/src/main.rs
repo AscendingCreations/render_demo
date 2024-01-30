@@ -239,7 +239,7 @@ async fn main() -> Result<(), AscendingError> {
             map.set_tile(
                 (x, y, 0),
                 TileData {
-                    allocation_id: 1,
+                    id: 1,
                     color: Color::rgba(255, 255, 255, 255),
                 },
             )
@@ -249,21 +249,21 @@ async fn main() -> Result<(), AscendingError> {
     map.set_tile(
         (2, 1, 1),
         TileData {
-            allocation_id: 2,
+            id: 2,
             color: Color::rgba(255, 255, 255, 255),
         },
     );
     map.set_tile(
         (1, 1, 6),
         TileData {
-            allocation_id: 2,
+            id: 2,
             color: Color::rgba(255, 255, 255, 230),
         },
     );
     map.set_tile(
         (0, 0, 1),
         TileData {
-            allocation_id: 2,
+            id: 2,
             color: Color::rgba(255, 255, 255, 255),
         },
     );
@@ -557,15 +557,12 @@ async fn main() -> Result<(), AscendingError> {
             .unwrap();
         state.text_renderer.finalize(&mut renderer);
 
-        let time_check = Instant::now();
         state.map_renderer.map_update(
             &mut state.map,
             &mut renderer,
             &mut state.map_atlas,
             [0, 1],
         );
-        let time_taken = Instant::now().duration_since(time_check);
-        println!("map build time taken: {}", time_taken.as_secs_f64());
 
         state.map_renderer.finalize(&mut renderer);
 

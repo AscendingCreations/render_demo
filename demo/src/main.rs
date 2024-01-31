@@ -421,7 +421,8 @@ async fn main() -> Result<(), AscendingError> {
         .set_position(Vec3::new(40.0, 40.0, 1.0))
         .set_radius(8.0)
         .set_border_color(Color::rgba(0, 0, 0, 255))
-        .set_border_width(2.0);
+        .set_border_width(2.0)
+        .set_use_camera(true);
 
     // add everything into our convience type for quicker access and passing.
     let mut state = State {

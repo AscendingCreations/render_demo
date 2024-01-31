@@ -104,8 +104,8 @@ fn vertex(
 
     result.container_data = tex_data;
     result.border_width = vertex.border_width;
-    result.size = vertex.size;
-    result.position = vertex.position.xy;
+    result.size = vertex.size * global.scale;
+    result.position = vertex.position.xy * global.scale;
     result.radius = vertex.radius;
     result.tex_size = fsize;
     result.layer = i32(vertex.layer);
@@ -146,15 +146,15 @@ fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
         );
 
         var step = vec2<f32>(0.5, 0.5);
-        var tex_pixel = vertex.size * coords - step.xy / 2.0;
+        var tex_pixel = vertex.tex_size * coords - step.xy / 2.0;
 
         let corner = floor(tex_pixel) + 1.0;
         let frac = min((corner - tex_pixel) * vec2<f32>(2.0, 2.0), vec2<f32>(1.0, 1.0));
 
-        var c1 = textureSampleLevel(tex, tex_sample, (floor(tex_pixel + vec2<f32>(0.0, 0.0)) + 0.5) / vertex.size, vertex.layer, 1.0);
-        var c2 = textureSampleLevel(tex, tex_sample, (floor(tex_pixel + vec2<f32>(step.x, 0.0)) + 0.5) / vertex.size, vertex.layer, 1.0);
-        var c3 = textureSampleLevel(tex, tex_sample, (floor(tex_pixel + vec2<f32>(0.0, step.y)) + 0.5) / vertex.size, vertex.layer, 1.0);
-        var c4 = textureSampleLevel(tex, tex_sample, (floor(tex_pixel + step.xy) + 0.5) / vertex.size, vertex.layer, 1.0);
+        var c1 = textureSampleLevel(tex, tex_sample, (floor(tex_pixel + vec2<f32>(0.0, 0.0)) + 0.5) / vertex.tex_size, vertex.layer, 1.0);
+        var c2 = textureSampleLevel(tex, tex_sample, (floor(tex_pixel + vec2<f32>(step.x, 0.0)) + 0.5) / vertex.tex_size, vertex.layer, 1.0);
+        var c3 = textureSampleLevel(tex, tex_sample, (floor(tex_pixel + vec2<f32>(0.0, step.y)) + 0.5) / vertex.tex_size, vertex.layer, 1.0);
+        var c4 = textureSampleLevel(tex, tex_sample, (floor(tex_pixel + step.xy) + 0.5) / vertex.tex_size, vertex.layer, 1.0);
 
         c1 = c1 * (frac.x * frac.y);
         c2 = c2 *((1.0 - frac.x) * frac.y);

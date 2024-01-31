@@ -63,7 +63,7 @@ impl Controls for FlatControls {
                 * Mat4::from_scale(Vec3::new(
                     self.settings.zoom,
                     self.settings.zoom,
-                    self.settings.zoom,
+                    1.0,
                 ));
         }
 

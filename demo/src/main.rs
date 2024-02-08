@@ -605,6 +605,7 @@ async fn main() -> Result<(), AscendingError> {
                 &mut renderer,
                 &format!("生活,삶,जिंदगी 😀 FPS: {fps} \nyhelloy"),
                 Attrs::new(),
+                Shaping::Advanced,
             );
             fps = 0u32;
             time = seconds + 1.0;

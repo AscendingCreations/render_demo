@@ -263,12 +263,30 @@ impl Text {
         renderer: &mut GpuRenderer,
         text: &str,
         attrs: Attrs,
+        shaping: cosmic_text::Shaping,
     ) -> &mut Self {
-        self.buffer.set_text(
+        self.buffer
+            .set_text(&mut renderer.font_sys, text, attrs, shaping);
+        self.changed = true;
+        self
+    }
+
+    /// resets the TextRender bytes to empty for new bytes
+    pub fn set_rich_text<'r, 's, I>(
+        &mut self,
+        renderer: &mut GpuRenderer,
+        spans: I,
+        default_attr: Attrs,
+        shaping: cosmic_text::Shaping,
+    ) -> &mut Self
+    where
+        I: IntoIterator<Item = (&'s str, Attrs<'r>)>,
+    {
+        self.buffer.set_rich_text(
             &mut renderer.font_sys,
-            text,
-            attrs,
-            cosmic_text::Shaping::Advanced,
+            spans,
+            default_attr,
+            shaping,
         );
         self.changed = true;
         self
@@ -417,6 +435,11 @@ impl Text {
         );
         self.changed = true;
         self
+    }
+
+    ///returns how many lines exist in the buffer.
+    pub fn visible_lines(&self) -> i32 {
+        self.buffer.visible_lines()
     }
 
     /// used to check and update the vertex array.

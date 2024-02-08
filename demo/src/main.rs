@@ -520,6 +520,7 @@ async fn main() -> Result<(), AscendingError> {
             elwt.exit();
         }
 
+        frame_time.update();
         let seconds = frame_time.seconds();
         // update our systems data to the gpu. this is the Camera in the shaders.
         state.system.update(&renderer, &frame_time);
@@ -612,20 +613,16 @@ async fn main() -> Result<(), AscendingError> {
         fps += 1;
 
         input_handler.end_frame();
-        frame_time.update();
         renderer.present().unwrap();
-
-        /*renderer.window_mut().set_cursor_icon(
-            iced_winit::conversion::mouse_interaction(
-                iced_state.mouse_interaction(),
-            ),
-        );*/
 
         // These clear the Last used image tags.
         //Can be used later to auto unload things not used anymore if ram/gpu ram becomes a issue.
-        state.image_atlas.trim();
-        state.map_atlas.trim();
-        state.text_atlas.trim();
+        if fps == 1 {
+            state.image_atlas.trim();
+            state.map_atlas.trim();
+            state.text_atlas.trim();
+            renderer.font_sys.shape_run_cache.trim(1024);
+        }
     })?;
 
     Ok(())

@@ -21,7 +21,7 @@ graphics = { path = "./graphics", package = "ascending_graphics" }
 log = "0.4.20"
 backtrace = "0.3.69"
 futures = "0.3.28"
-cosmic-text = { git = "https://github.com/pop-os/cosmic-text" }
+cosmic-text = { git = "https://github.com/pop-os/cosmic-text", features = ["shape-run-cache"]}
 ordered-float = { version = "3.9.1", features = ["serde"] }
 chrono = { version = "0.4.30", disable-defaults = true, features = ["clock", "serde", "std"] }
 ubits = "0.3.1"

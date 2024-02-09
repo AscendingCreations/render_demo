@@ -614,6 +614,7 @@ async fn main() -> Result<(), AscendingError> {
         fps += 1;
 
         input_handler.end_frame();
+        renderer.window().pre_present_notify();
         renderer.present().unwrap();
 
         // These clear the Last used image tags.

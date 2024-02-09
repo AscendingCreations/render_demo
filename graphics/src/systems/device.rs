@@ -101,6 +101,15 @@ impl GpuWindow {
 
                     self.window.request_redraw();
                 }
+                WindowEvent::Moved(_)
+                | WindowEvent::ScaleFactorChanged {
+                    scale_factor: _,
+                    inner_size_writer: _,
+                }
+                | WindowEvent::Focused(true)
+                | WindowEvent::Occluded(false) => {
+                    self.window.request_redraw();
+                }
                 _ => (),
             },
             _ => (),

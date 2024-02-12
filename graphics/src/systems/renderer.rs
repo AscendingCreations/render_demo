@@ -87,6 +87,10 @@ impl GpuRenderer {
         self.window.size
     }
 
+    pub fn inner_size(&self) -> PhysicalSize<u32> {
+        self.window.inner_size
+    }
+
     pub fn surface(&self) -> &wgpu::Surface {
         &self.window.surface
     }

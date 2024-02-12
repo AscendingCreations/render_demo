@@ -477,26 +477,16 @@ async fn main() -> Result<(), AscendingError> {
             _ => {}
         }
 
-        // get the current window size so we can see if we need to resize the renderer.
-        let new_size = renderer.size();
-        let inner_size = renderer.window().inner_size();
-
-        // if our rendering size is zero stop rendering to avoid errors.
-        if new_size.width == 0.0
-            || new_size.height == 0.0
-            || inner_size.width == 0
-            || inner_size.height == 0
-        {
-            return;
-        }
-
-        // update our inputs.
-        input_handler.update(renderer.window(), &event, 1.0);
-
         // update our renderer based on events here
         if !renderer.update(&event).unwrap() {
             return;
         }
+
+        // get the current window size so we can see if we need to resize the renderer.
+        let new_size = renderer.size();
+
+        // update our inputs.
+        input_handler.update(renderer.window(), &event, 1.0);
 
         if size != new_size {
             size = new_size;

@@ -55,6 +55,23 @@ fn unpack_color(color: u32) -> vec4<f32> {
     ) / 255.0;
 }
 
+fn unpack_linear_color(color: u32) -> vec4<f32> {
+    return vec4<f32>(
+        srgb_to_linear(f32((color & 0xff0000u) >> 16u) / 255.0),
+        srgb_to_linear(f32((color & 0xff00u) >> 8u) / 255.0),
+        srgb_to_linear(f32((color & 0xffu)) / 255.0),
+        f32((color & 0xff000000u) >> 24u) / 255.0,
+    );
+}
+
+fn srgb_to_linear(c: f32) -> f32 {
+    if c <= 0.04045 {
+        return c / 12.92;
+    } else {
+        return pow((c + 0.055) / 1.055, 2.4);
+    }
+}
+
 @vertex
 fn vertex(
     vertex: VertexInput,
@@ -65,8 +82,10 @@ fn vertex(
 
     if vertex.is_color == 1u {
         size = textureDimensions(emoji_tex);
+        result.color = unpack_color(vertex.color);
     } else {
         size = textureDimensions(tex);
+        result.color = unpack_linear_color(vertex.color);
     }
 
     let fsize = vec2<f32> (f32(size.x), f32(size.y));
@@ -97,7 +116,6 @@ fn vertex(
         result.position = global.proj * vec4<f32>(pos.xyz, 1.0);
     }
 
-    result.color = unpack_color(vertex.color);
     result.layer = i32(vertex.layer);
     result.is_color = vertex.is_color;
     return result;
@@ -106,24 +124,21 @@ fn vertex(
 // Fragment shader
 @fragment
 fn fragment(vertex: VertexOutput,) -> @location(0) vec4<f32> {
-     switch vertex.is_color {
-        case 1u: {
-            let object_color = textureSampleLevel(emoji_tex, emoji_tex_sample, vertex.uv.xy, vertex.layer, 1.0);
+     if (vertex.is_color == 1u) {
+        let object_color = textureSampleLevel(emoji_tex, emoji_tex_sample, vertex.uv.xy, vertex.layer, 1.0);
 
-            if object_color.a <= 0.0 {
-                discard;
-            }
-        
-            return vertex.color.rgba * object_color;
+        if object_color.a <= 0.0 {
+            discard;
         }
-        default: {
-            let object_color = textureSampleLevel(tex, tex_sample, vertex.uv.xy, vertex.layer, 1.0);
+    
+        return object_color;
+    } else {
+        let object_color = textureSampleLevel(tex, tex_sample, vertex.uv.xy, vertex.layer, 1.0).r;
 
-            if object_color.r <= 0.0 {
-                discard;
-            }
-
-            return vertex.color.rgba * object_color.r;
+        if object_color <= 0.0 {
+            discard;
         }
+
+        return vertex.color.rgba * object_color;
     }
 }

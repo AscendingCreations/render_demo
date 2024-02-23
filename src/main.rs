@@ -4,13 +4,13 @@ use camera::{
     controls::{Controls, FlatControls, FlatSettings},
     Projection,
 };
-use cosmic_text::{Attrs, Metrics};
 use glam::vec4;
+use graphics::cosmic_text::{Attrs, Metrics};
+use graphics::naga::{front::wgsl, valid::Validator};
 use graphics::*;
 use hecs::World;
 use input::{Bindings, FrameTime, InputHandler, Key};
 use log::{error, info, warn, Level, LevelFilter, Metadata, Record};
-use naga::{front::wgsl, valid::Validator};
 use serde::{Deserialize, Serialize};
 use std::{
     cell::RefCell,
@@ -210,7 +210,7 @@ async fn main() -> Result<(), AscendingError> {
     let map_renderer = MapRenderer::new(&mut renderer, 81).unwrap();
     let mesh_renderer = Mesh2DRenderer::new(&renderer).unwrap();
     let light_renderer = LightRenderer::new(&mut renderer).unwrap();
-    let ui_renderer = RectRenderer::new(&mut renderer).unwrap();
+    let ui_renderer = RectRenderer::new(&renderer).unwrap();
 
     // get the screen size.
     let mut size = renderer.size();
@@ -270,7 +270,7 @@ async fn main() -> Result<(), AscendingError> {
     map.pos = Vec2::new(0.0, 0.0);
     map.can_render = true;
 
-    let _tilesheet = Texture::from_file(format!("images/tiles/1.png"))?
+    let _tilesheet = Texture::from_file("images/tiles/1.png")?
         .new_tilesheet(&mut atlases[1], &renderer, 20)
         .ok_or_else(|| OtherError::new("failed to upload tiles"))?;
 

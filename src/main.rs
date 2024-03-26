@@ -81,7 +81,7 @@ impl log::Log for MyLogger {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), AscendingError> {
+async fn main() -> Result<(), GraphicsError> {
     // Create logger to output to a File
     log::set_logger(&MY_LOGGER).unwrap();
     // Set the Max level we accept logging to the file for.

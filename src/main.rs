@@ -206,12 +206,14 @@ async fn main() -> Result<(), GraphicsError> {
 
     // We establish the different renderers here to load their data up to use them.
     let text_renderer = TextRenderer::new(&renderer).unwrap();
-    let sprite_renderer = ImageRenderer::new(&renderer).unwrap();
+    let mut sprite_renderer = ImageRenderer::new(&renderer).unwrap();
     let map_renderer = MapRenderer::new(&mut renderer, 81).unwrap();
     let mesh_renderer = Mesh2DRenderer::new(&renderer).unwrap();
     let light_renderer = LightRenderer::new(&mut renderer).unwrap();
     let ui_renderer = RectRenderer::new(&renderer).unwrap();
 
+    sprite_renderer.use_clipping();
+    
     // get the screen size.
     let mut size = renderer.size();
 

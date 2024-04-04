@@ -88,6 +88,7 @@ where
             renderer,
             &self.sprite_renderer,
             &self.image_atlas,
+            &self.system,
             0,
         );
 
@@ -96,8 +97,14 @@ where
 
         pass.render_text(renderer, &self.text_renderer, &self.text_atlas, 0);
 
-        //pass.render_2dmeshs(renderer, &self.mesh_renderer, 0);
+        pass.render_2dmeshs(renderer, &self.mesh_renderer, &self.system, 0);
 
-        pass.render_rects(renderer, &self.ui_renderer, &self.ui_atlas, 0);
+        pass.render_rects(
+            renderer,
+            &self.ui_renderer,
+            &self.ui_atlas,
+            &self.system,
+            0,
+        );
     }
 }

@@ -4,14 +4,17 @@ use camera::{
     controls::{Controls, FlatControls, FlatSettings},
     Projection,
 };
-use glam::vec4;
-use graphics::cosmic_text::{Attrs, Metrics};
 use graphics::naga::{front::wgsl, valid::Validator};
 use graphics::*;
+use graphics::{
+    cosmic_text::{Attrs, Metrics},
+    wgpu::PowerPreference,
+};
 use hecs::World;
 use input::{Bindings, FrameTime, InputHandler, Key};
 use log::{error, info, warn, Level, LevelFilter, Metadata, Record};
 use serde::{Deserialize, Serialize};
+use std::env;
 use std::{
     cell::RefCell,
     collections::HashMap,
@@ -96,8 +99,12 @@ async fn main() -> Result<(), GraphicsError> {
         error!("PANIC: {}, BACKTRACE: {:?}", panic_info, bt);
     }));
 
+    env::set_var("WGPU_VALIDATION", "0");
+    env::set_var("WGPU_DEBUG", "0");
     // Starts an event gathering type for the window.
     let event_loop = EventLoop::new()?;
+
+    info!("after event loop initiation");
 
     // Builds the Windows that will be rendered too.
     let window = Arc::new(
@@ -114,19 +121,23 @@ async fn main() -> Result<(), GraphicsError> {
             .unwrap(),
     );
 
+    info!("after window initiation");
     // Generates an Instance for WGPU. Sets WGPU to be allowed on all possible supported backends
     // These are DX12, DX11, Vulkan, Metal and Gles. if none of these work on a system they cant
     // play the game basically.
     let instance = wgpu::Instance::new(InstanceDescriptor {
         backends: Backends::all(),
-        flags: InstanceFlags::default(),
+        flags: InstanceFlags::empty(),
         dx12_shader_compiler: Dx12Compiler::default(),
         gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
     });
 
+    info!("after wgpu instance initiation");
+
     // This is used to ensure the GPU can load the correct.
     let compatible_surface = instance.create_surface(window.clone()).unwrap();
 
+    info!("after compatible initiation");
     print!("{:?}", &compatible_surface);
     // This creates the Window Struct and Device struct that holds all the rendering information
     // we need to render to the screen. Window holds most of the window information including
@@ -135,15 +146,13 @@ async fn main() -> Result<(), GraphicsError> {
     let mut renderer = instance
         .create_device(
             window,
-            &wgpu::RequestAdapterOptions {
-                // High performance mode says to use Dedicated Graphics devices first.
-                // Low power is APU graphic devices First.
-                power_preference: wgpu::PowerPreference::HighPerformance,
-                compatible_surface: Some(&compatible_surface),
-                // we will never use this as this forces us to use an alternative renderer.
-                force_fallback_adapter: false,
+            //used to find adapters
+            AdapterOptions {
+                allowed_backends: Backends::all(),
+                power: AdapterPowerSettings::HighPower,
+                compatible_surface: Some(compatible_surface),
             },
-            // used to deturmine if we need special limits or features for our backends.
+            // used to deturmine which adapters support our special limits or features for our backends.
             &wgpu::DeviceDescriptor {
                 required_features: wgpu::Features::default(),
                 required_limits: wgpu::Limits::default(),
@@ -156,6 +165,7 @@ async fn main() -> Result<(), GraphicsError> {
         .await
         .unwrap();
 
+    info!("after renderer initiation");
     // we print the GPU it decided to use here for testing purposes.
     println!("{:?}", renderer.adapter().get_info());
 
@@ -206,14 +216,12 @@ async fn main() -> Result<(), GraphicsError> {
 
     // We establish the different renderers here to load their data up to use them.
     let text_renderer = TextRenderer::new(&renderer).unwrap();
-    let mut sprite_renderer = ImageRenderer::new(&renderer).unwrap();
+    let sprite_renderer = ImageRenderer::new(&renderer).unwrap();
     let map_renderer = MapRenderer::new(&mut renderer, 81).unwrap();
     let mesh_renderer = Mesh2DRenderer::new(&renderer).unwrap();
     let light_renderer = LightRenderer::new(&mut renderer).unwrap();
     let ui_renderer = RectRenderer::new(&renderer).unwrap();
 
-    sprite_renderer.use_clipping();
-    
     // get the screen size.
     let mut size = renderer.size();
 
@@ -453,7 +461,10 @@ async fn main() -> Result<(), GraphicsError> {
     bindings.insert_action(Action::Quit, vec![Key::Character('q').into()]);
 
     // set bindings and create our own input handler.
-    let mut input_handler = InputHandler::new(bindings);
+    // Increase the milli second to higher numbers if you need to support accessability for
+    // slower clicking users. can have presets.
+    let mut input_handler =
+        InputHandler::new(bindings, Duration::from_millis(150));
 
     let mut frame_time = FrameTime::new();
     let mut time = 0.0f32;
@@ -481,6 +492,23 @@ async fn main() -> Result<(), GraphicsError> {
 
         // update our inputs.
         input_handler.update(renderer.window(), &event, 1.0);
+
+        for input in input_handler.events() {
+            if let input::InputEvent::MouseButtonAction(action) = input {
+                match action {
+                    input::MouseButtonAction::Single(_) => {
+                        info!("Single Click")
+                    }
+                    input::MouseButtonAction::Double(_) => {
+                        info!("Double Click")
+                    }
+                    input::MouseButtonAction::Triple(_) => {
+                        info!("Triple Click")
+                    }
+                    _ => panic!("No clicks?"),
+                }
+            }
+        }
 
         // update our renderer based on events here
         if !renderer.update(&event).unwrap() {
@@ -605,7 +633,6 @@ async fn main() -> Result<(), GraphicsError> {
 
         fps += 1;
 
-        input_handler.end_frame();
         renderer.window().pre_present_notify();
         renderer.present().unwrap();
 

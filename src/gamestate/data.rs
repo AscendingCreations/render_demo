@@ -97,7 +97,7 @@ where
 
         pass.render_text(renderer, &self.text_renderer, &self.text_atlas, 0);
 
-        pass.render_2dmeshs(renderer, &self.mesh_renderer, &self.system, 0);
+        //pass.render_2dmeshs(renderer, &self.mesh_renderer, &self.system, 0);
 
         pass.render_rects(
             renderer,

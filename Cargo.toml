@@ -21,7 +21,7 @@ hecs = "0.10.4"
 #rev = "f2324c1"
 #path = "../AscendingLibraries/camera"
 package = "ascending_camera"
-version = "0.1.0"
+version = "0.2.0"
 
 [dependencies.input]
 #git = "https://github.com/AscendingCreations/AscendingLibraries"
@@ -35,7 +35,7 @@ version = "0.2.1"
 #rev = "f2324c1"
 #path = "../AscendingLibraries/graphics"
 package = "ascending_graphics"
-version = "0.4.1"
+version = "0.7.0"
 
 [profile.dev]
 opt-level = 0

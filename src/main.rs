@@ -224,6 +224,11 @@ async fn main() -> Result<(), GraphicsError> {
 
     // get the screen size.
     let mut size = renderer.size();
+    let mat = Mat4::from_translation(Vec3 {
+        x: 40.0,
+        y: 0.0,
+        z: 0.0,
+    });
 
     // setup our system which includes Camera and projection as well as our controls.
     // for the camera.
@@ -239,6 +244,8 @@ async fn main() -> Result<(), GraphicsError> {
         },
         FlatControls::new(FlatSettings { zoom: 1.5 }),
         [size.width, size.height],
+        mat,
+        1.5,
     );
 
     // We make a new Map to render here.
@@ -301,7 +308,7 @@ async fn main() -> Result<(), GraphicsError> {
     animation.animate = true;
 
     // get the Scale factor the pc currently is using for upscaling or downscaling the rendering.
-    let scale = renderer.window().current_monitor().unwrap().scale_factor();
+    let scale = 1.0; //renderer.window().current_monitor().unwrap().scale_factor();
 
     // create a Text rendering object.
     let mut text = Text::new(
@@ -374,7 +381,7 @@ async fn main() -> Result<(), GraphicsError> {
     mesh[0].from_builder(builder.finalize());
     mesh[1].from_builder(builder2.finalize());
 
-    let mut lights = Lights::new(&mut renderer, 0);
+    let mut lights = Lights::new(&mut renderer, 0, 1.0);
 
     lights.world_color = Vec4::new(0.0, 0.0, 0.0, 0.995);
     lights.enable_lights = true;
@@ -386,6 +393,7 @@ async fn main() -> Result<(), GraphicsError> {
         animate: false,
         anim_speed: 5.0,
         dither: 0.5,
+        camera_type: CameraType::ManualViewWithScale,
     });
 
     lights.insert_area_light(AreaLight {
@@ -395,6 +403,7 @@ async fn main() -> Result<(), GraphicsError> {
         animate: true,
         anim_speed: 5.0,
         dither: 0.8,
+        camera_type: CameraType::None,
     });
 
     lights.insert_directional_light(DirectionalLight {
@@ -408,6 +417,7 @@ async fn main() -> Result<(), GraphicsError> {
         fade_distance: 5.0,
         edge_fade_distance: 0.5,
         animate: false,
+        camera_type: CameraType::ManualViewWithScale,
     });
 
     lights.insert_directional_light(DirectionalLight {
@@ -421,6 +431,7 @@ async fn main() -> Result<(), GraphicsError> {
         fade_distance: 4.0,
         edge_fade_distance: 0.6,
         animate: true,
+        camera_type: CameraType::None,
     });
     // Allow the window to be seen. hiding it then making visible speeds up
     // load times.
@@ -432,7 +443,7 @@ async fn main() -> Result<(), GraphicsError> {
         .set_radius(8.0)
         .set_border_color(Color::rgba(0, 0, 0, 255))
         .set_border_width(2.0)
-        .set_use_camera(true);
+        .set_use_camera(CameraType::ManualViewWithScale);
 
     // add everything into our convience type for quicker access and passing.
     let mut state = State {

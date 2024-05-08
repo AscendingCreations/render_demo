@@ -400,7 +400,7 @@ impl winit::application::ApplicationHandler for Runner {
                 animate: false,
                 anim_speed: 5.0,
                 dither: 0.5,
-                camera_type: CameraType::ManualViewWithScale,
+                camera_type: CameraType::None,
             });
 
             lights.insert_area_light(AreaLight {
@@ -424,7 +424,7 @@ impl winit::application::ApplicationHandler for Runner {
                 fade_distance: 5.0,
                 edge_fade_distance: 0.5,
                 animate: false,
-                camera_type: CameraType::ManualViewWithScale,
+                camera_type: CameraType::None,
             });
 
             lights.insert_directional_light(DirectionalLight {

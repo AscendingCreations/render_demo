@@ -31,6 +31,7 @@ use winit::{
     dpi::PhysicalSize,
     event::*,
     event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
+    platform::windows::WindowAttributesExtWindows,
     window::{WindowAttributes, WindowButtons},
 };
 
@@ -211,6 +212,9 @@ impl winit::application::ApplicationHandler for Runner {
 
             sprites[0].pos.z = 7.0;
             sprites[0].color = Color::rgba(255, 255, 255, 120);
+            sprites[0].camera_type = CameraType::ControlViewWithScale;
+            sprites[0].flip_style = FlipStyle::Vertical;
+            sprites[0].rotation_angle = 45.0;
 
             // We establish the different renderers here to load their data up to use them.
             let text_renderer = TextRenderer::new(&renderer).unwrap();
@@ -310,7 +314,7 @@ impl winit::application::ApplicationHandler for Runner {
             animation.animate = true;
 
             // get the Scale factor the pc currently is using for upscaling or downscaling the rendering.
-            let scale = 1.0; //renderer.window().current_monitor().unwrap().scale_factor();
+            let scale = 2.0; //renderer.window().current_monitor().unwrap().scale_factor();
 
             // create a Text rendering object.
             let mut text = Text::new(
@@ -442,7 +446,6 @@ impl winit::application::ApplicationHandler for Runner {
             });
             // Allow the window to be seen. hiding it then making visible speeds up
             // load times.
-            renderer.window().set_visible(true);
 
             let mut rect = Rect::new(&mut renderer, 0);
             rect.set_size(Vec2::new(32.0, 32.0))
@@ -481,6 +484,8 @@ impl winit::application::ApplicationHandler for Runner {
 
             // You should change this if you want to render continuously
             //event_loop.set_control_flow(ControlFlow::Wait);
+
+            renderer.window().set_visible(true);
 
             *self = Self::Ready {
                 text,

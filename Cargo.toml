@@ -20,23 +20,23 @@ futures = "0.3"
 [dependencies.camera]
 #git = "https://github.com/AscendingCreations/AscendingLibraries"
 #rev = "f2324c1"
-path = "../AscendingLibraries/camera"
+#path = "../AscendingLibraries/camera"
 package = "ascending_camera"
 version = "0.3.0"
 
 [dependencies.input]
 #git = "https://github.com/AscendingCreations/AscendingLibraries"
 #rev = "f2324c1"
-path = "../AscendingLibraries/input"
+#path = "../AscendingLibraries/input"
 package = "ascending_input"
 version = "0.3.0"
 
 [dependencies.graphics]
 #git = "https://github.com/AscendingCreations/AscendingLibraries"
 #rev = "f2324c1"
-path = "../AscendingLibraries/graphics"
+#path = "../AscendingLibraries/graphics"
 package = "ascending_graphics"
-version = "0.7.0"
+version = "0.8.0"
 
 [profile.dev]
 opt-level = 0

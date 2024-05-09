@@ -139,13 +139,17 @@ checksum = "175571dd1d178ced59193a6fc02dde1b972eb0bc56c892cde9beeceac5bf0f6b"
 [[package]]
 name = "ascending_camera"
 version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c311662a7810c64fe315f69b934b43fdcd127c30cddd4d29f549b205454a548"
 dependencies = [
  "glam",
 ]
 
 [[package]]
 name = "ascending_graphics"
-version = "0.7.0"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ad3d3727d323aee944963e7e0f0fc63862049d9d54889f8a5761ed069a6f68a7"
 dependencies = [
  "ahash",
  "ascending_camera",
@@ -172,6 +176,8 @@ dependencies = [
 [[package]]
 name = "ascending_input"
 version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c377fa8962a17b8c8498f169d7245054a1c7953cec81ec21a172eb8f84a63887"
 dependencies = [
  "ahash",
  "ordered-float",

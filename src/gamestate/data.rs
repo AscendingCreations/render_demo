@@ -92,10 +92,10 @@ where
             0,
         );
 
-        pass.render_map(renderer, &self.map_renderer, &self.map_atlas, 1);
-        pass.render_lights(renderer, &self.light_renderer, 0);
+        //pass.render_map(renderer, &self.map_renderer, &self.map_atlas, 1);
+        // pass.render_lights(renderer, &self.light_renderer, 0);
 
-        pass.render_text(renderer, &self.text_renderer, &self.text_atlas, 0);
+        //pass.render_text(renderer, &self.text_renderer, &self.text_atlas, 0);
 
         //pass.render_2dmeshs(renderer, &self.mesh_renderer, &self.system, 0);
 

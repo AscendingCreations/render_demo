@@ -147,9 +147,9 @@ dependencies = [
 
 [[package]]
 name = "ascending_graphics"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad3d3727d323aee944963e7e0f0fc63862049d9d54889f8a5761ed069a6f68a7"
+checksum = "551908294a27e6a9681100799da7d9cd5db0c05c92aafa45dfea0583fce2abdb"
 dependencies = [
  "ahash",
  "ascending_camera",

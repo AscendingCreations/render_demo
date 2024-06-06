@@ -323,6 +323,7 @@ impl winit::application::ApplicationHandler for Runner {
                 Vec3::new(0.0, 0.0, 1.0),
                 Vec2::new(190.0, 32.0),
                 1.0,
+                1,
             );
 
             text.set_buffer_size(
@@ -388,7 +389,7 @@ impl winit::application::ApplicationHandler for Runner {
                 )
                 .unwrap();
             let mut mesh =
-                [Mesh2D::new(&mut renderer), Mesh2D::new(&mut renderer)];
+                [Mesh2D::new(&mut renderer, 1), Mesh2D::new(&mut renderer, 1)];
             mesh[0].from_builder(builder.finalize());
             mesh[1].from_builder(builder2.finalize());
 

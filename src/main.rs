@@ -172,6 +172,7 @@ impl winit::application::ApplicationHandler for Runner {
                     &mut renderer,
                     wgpu::TextureFormat::Rgba8UnormSrgb,
                     true,
+                    2048,
                 ))
             })
             .take(4)
@@ -179,7 +180,7 @@ impl winit::application::ApplicationHandler for Runner {
 
             // we generate the Text atlas seperatly since it contains a special texture that only has the red color to it.
             // and another for emojicons.
-            let text_atlas = TextAtlas::new(&mut renderer).unwrap();
+            let text_atlas = TextAtlas::new(&mut renderer, 512).unwrap();
 
             // This is how we load a image into a atlas/Texture. It returns the location of the image
             // within the texture. its x, y, w, h.  Texture loads the file. group_uploads sends it to the Texture
@@ -400,7 +401,7 @@ impl winit::application::ApplicationHandler for Runner {
 
             let mut lights = Lights::new(&mut renderer, 0, 1.0);
 
-            lights.world_color = Vec4::new(0.0, 0.0, 0.0, 0.995);
+            lights.world_color = Vec4::new(0.0, 0.0, 0.0, 0.7);
             lights.enable_lights = true;
 
             lights.insert_area_light(AreaLight {

@@ -155,6 +155,7 @@ impl winit::application::ApplicationHandler for Runner {
                         required_features: wgpu::Features::default(),
                         required_limits: wgpu::Limits::default(),
                         label: None,
+                        memory_hints: wgpu::MemoryHints::Performance,
                     },
                     None,
                     // How we are presenting the screen which causes it to either clip to a FPS limit or be unlimited.

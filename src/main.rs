@@ -333,12 +333,7 @@ impl winit::application::ApplicationHandler for Runner {
                 Some(size.width),
                 Some(size.height),
             )
-            .set_bounds(Some(Bounds::new(
-                0.0,
-                0.0,
-                250.0 * scale,
-                600.0 * scale,
-            )))
+            .set_bounds(Bounds::new(0.0, 0.0, 250.0 * scale, 600.0 * scale))
             .set_default_color(Color::rgba(255, 255, 255, 255));
 
             // Start the process of building a shape.

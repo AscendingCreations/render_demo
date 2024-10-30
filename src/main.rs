@@ -10,7 +10,6 @@ use graphics::{
     cosmic_text::{Attrs, Metrics},
     wgpu::PowerPreference,
 };
-use hecs::World;
 use input::{Bindings, FrameTime, InputHandler, Key};
 use log::{error, info, warn, Level, LevelFilter, Metadata, Record};
 use serde::{Deserialize, Serialize};

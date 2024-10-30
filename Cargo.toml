@@ -14,7 +14,6 @@ tokio = { version = "1.40.0", features = ["full"] }
 serde = { version = "1.0.209", features = ["derive"] }
 log = "0.4.22"
 backtrace = "0.3.73"
-hecs = "0.10.5"
 futures = "0.3.30"
 
 [dependencies.camera]
@@ -36,7 +35,7 @@ version = "0.3.0"
 #rev = "f2324c1"
 #path = "../AscendingLibraries/graphics"
 package = "ascending_graphics"
-version = "0.14.0"
+version = "0.15.0"
 
 [profile.dev]
 opt-level = 0

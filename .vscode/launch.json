@@ -7,7 +7,7 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'demo'",
+            "name": "LLDB executable 'demo'",
             "cargo": {
                 "args": [
                     "build",
@@ -21,6 +21,18 @@
             },
             "args": [],
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "cppvsdbg",
+            "request": "launch",
+            "name": "Debug executable 'demo'",
+            "preLaunchTask": "rust: cargo build",
+            "program": "${workspaceFolder}/target/debug/demo.exe",
+            "console": "integratedTerminal",
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "args": [],
         },
         {
             "type": "lldb",

@@ -94,6 +94,7 @@ enum Runner {
         fps: u32,
         text: Text,
         size: PhysicalSize<f32>,
+        redo_time: f32,
     },
 }
 
@@ -341,7 +342,7 @@ impl winit::application::ApplicationHandler for Runner {
             builder
                 .circle(
                     DrawMode::Fill(FillOptions::DEFAULT),
-                    Vec2::new(100.0, 100.0),
+                    Vec2::new(0.0, 0.0),
                     60.0,
                     0.5,
                     1.0,
@@ -351,7 +352,7 @@ impl winit::application::ApplicationHandler for Runner {
             builder
                 .circle(
                     DrawMode::Stroke(StrokeOptions::DEFAULT),
-                    Vec2::new(100.0, 100.0),
+                    Vec2::new(0.0, 0.0),
                     60.0,
                     0.5,
                     1.0,
@@ -389,9 +390,21 @@ impl winit::application::ApplicationHandler for Runner {
                     Color::rgba(255, 255, 255, 255),
                 )
                 .unwrap();
-            let mut mesh =
-                [Mesh2D::new(&mut renderer, 1), Mesh2D::new(&mut renderer, 1)];
+            let mut mesh = [
+                Mesh2D::new(&mut renderer, 1),
+                Mesh2D::new(&mut renderer, 1),
+                Mesh2D::new(&mut renderer, 1),
+            ];
+
+            let builder3 = builder.clone();
+            let builder4 = builder.clone();
+            let builder5 = builder.clone();
+
             mesh[0].from_builder(builder.finalize());
+            mesh[0].from_builder(builder3.finalize());
+            mesh[0].from_builder(builder4.finalize());
+            mesh[0].from_builder(builder5.finalize());
+            mesh[0].set_position(Vec3::new(150.0, 150.0, 1.0));
             mesh[1].from_builder(builder2.finalize());
 
             let mut lights = Lights::new(&mut renderer, 0, 1.0);
@@ -501,6 +514,7 @@ impl winit::application::ApplicationHandler for Runner {
                 time: 0.0f32,
                 fps: 0u32,
                 size,
+                redo_time: 0.0f32,
             };
         }
     }
@@ -520,6 +534,7 @@ impl winit::application::ApplicationHandler for Runner {
             time,
             fps,
             size,
+            redo_time,
         } = self
         {
             if window_id == renderer.window().id() {
@@ -632,6 +647,7 @@ impl winit::application::ApplicationHandler for Runner {
                 .light_renderer
                 .lights_update(&mut state.lights, renderer, 0);
             state.light_renderer.finalize(renderer);
+
             state.mesh.iter_mut().for_each(|mesh| {
                 state.mesh_renderer.mesh_update(mesh, renderer, 0);
             });
@@ -669,6 +685,39 @@ impl winit::application::ApplicationHandler for Runner {
                 );
                 *fps = 0u32;
                 *time = seconds + 1.0;
+
+                let mut builder = Mesh2DBuilder::default();
+
+                builder
+                    .circle(
+                        DrawMode::Fill(FillOptions::DEFAULT),
+                        Vec2::new(0.0, 0.0),
+                        60.0,
+                        0.5,
+                        1.0,
+                        Color::rgba(0, 0, 255, 255),
+                    )
+                    .unwrap();
+                builder
+                    .circle(
+                        DrawMode::Stroke(StrokeOptions::DEFAULT),
+                        Vec2::new(0.0, 0.0),
+                        60.0,
+                        0.5,
+                        1.0,
+                        Color::rgba(255, 255, 255, 255),
+                    )
+                    .unwrap();
+
+                state.mesh[2].append_from_builder(builder);
+
+                if *redo_time >= 0.0 && *redo_time <= 400.0 {
+                    *redo_time += 10.0;
+                } else {
+                    *redo_time = 0.0;
+                }
+
+                state.mesh[2].set_position(Vec3::new(*redo_time, 100.0, 1.0));
             }
 
             *fps += 1;
@@ -702,6 +751,7 @@ impl winit::application::ApplicationHandler for Runner {
             time: _,
             fps: _,
             size: _,
+            redo_time: _,
         } = self
         {
             input_handler.device_updates(renderer.window(), &event);
@@ -717,6 +767,7 @@ impl winit::application::ApplicationHandler for Runner {
             time: _,
             fps: _,
             size: _,
+            redo_time: _,
         } = self
         {
             renderer.window().request_redraw();

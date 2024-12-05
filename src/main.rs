@@ -213,7 +213,7 @@ impl winit::application::ApplicationHandler for Runner {
 
             sprites[0].pos.z = 7.0;
             sprites[0].color = Color::rgba(255, 255, 255, 120);
-            sprites[0].camera_type = CameraType::ControlViewWithScale;
+            sprites[0].camera_type = CameraType::None;
             sprites[0].flip_style = FlipStyle::Vertical;
             sprites[0].rotation_angle = 45.0;
 
@@ -245,7 +245,7 @@ impl winit::application::ApplicationHandler for Runner {
                     near: 1.0,
                     far: -100.0,
                 },
-                FlatControls::new(FlatSettings { zoom: 1.5 }),
+                FlatControls::new(FlatSettings { zoom: 4.0 }),
                 [size.width, size.height],
                 mat,
                 1.5,
@@ -455,7 +455,7 @@ impl winit::application::ApplicationHandler for Runner {
                 .set_radius(8.0)
                 .set_border_color(Color::rgba(0, 0, 0, 255))
                 .set_border_width(2.0)
-                .set_use_camera(CameraType::ManualViewWithScale);
+                .set_use_camera(CameraType::None);
 
             // add everything into our convience type for quicker access and passing.
             let state = State {

@@ -35,7 +35,7 @@ version = "0.3.0"
 #rev = "f2324c1"
 #path = "../AscendingLibraries/graphics"
 package = "ascending_graphics"
-version = "0.15.0"
+version = "0.16.1"
 
 [profile.dev]
 opt-level = 0

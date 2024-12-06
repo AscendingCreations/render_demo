@@ -213,7 +213,7 @@ impl winit::application::ApplicationHandler for Runner {
 
             sprites[0].pos.z = 7.0;
             sprites[0].color = Color::rgba(255, 255, 255, 120);
-            sprites[0].camera_type = CameraType::None;
+            sprites[1].camera_type = CameraType::ControlViewWithScale;
             sprites[0].flip_style = FlipStyle::Vertical;
             sprites[0].rotation_angle = 45.0;
 
@@ -245,7 +245,7 @@ impl winit::application::ApplicationHandler for Runner {
                     near: 1.0,
                     far: -100.0,
                 },
-                FlatControls::new(FlatSettings { zoom: 4.0 }),
+                FlatControls::new(FlatSettings { zoom: 2.0 }),
                 [size.width, size.height],
                 mat,
                 1.5,

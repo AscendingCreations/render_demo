@@ -139,17 +139,13 @@ checksum = "175571dd1d178ced59193a6fc02dde1b972eb0bc56c892cde9beeceac5bf0f6b"
 [[package]]
 name = "ascending_camera"
 version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "561ccfa4eb3a6bdc2c3d0f84516368a0f883ba39ab1e421ab76827feabb76dcf"
 dependencies = [
  "glam",
 ]
 
 [[package]]
 name = "ascending_graphics"
-version = "0.16.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2d2705a7a8a5de97d3538d6ff530eddd59393b3611db78e78bd05e97e99fac0"
+version = "0.17.0"
 dependencies = [
  "ahash",
  "ascending_camera",
@@ -176,13 +172,11 @@ dependencies = [
 [[package]]
 name = "ascending_input"
 version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14bf752f39017b2047ebf27940dc6581c8a0cfb58a985a75d91f4756adfb6749"
 dependencies = [
  "ahash",
  "ordered-float",
  "serde",
- "smol_str",
+ "smol_str 0.3.2",
  "winit",
 ]
 
@@ -308,6 +302,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2c132eebf10f5cad5289222520a4a058514204aed6d791f1cf4fe8088b82d15f"
 dependencies = [
  "objc2",
+]
+
+[[package]]
+name = "borsh"
+version = "1.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2506947f73ad44e344215ccd6403ac2ae18cd8e046e581a441bf8d199f257f03"
+dependencies = [
+ "cfg_aliases 0.2.1",
 ]
 
 [[package]]
@@ -2381,6 +2384,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "smol_str"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9676b89cd56310a87b93dec47b11af744f34d5fc9f367b829474eec0a891350d"
+dependencies = [
+ "borsh",
+ "serde",
+]
+
+[[package]]
 name = "socket2"
 version = "0.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3386,7 +3399,7 @@ dependencies = [
  "sctk-adwaita",
  "serde",
  "smithay-client-toolkit",
- "smol_str",
+ "smol_str 0.2.2",
  "tracing",
  "unicode-segmentation",
  "wasm-bindgen",

@@ -531,9 +531,9 @@ impl winit::application::ApplicationHandler for Runner {
             }
 
             // update our inputs.
-            input_handler.window_updates(renderer.window(), &event, 1.0);
+            input_handler.window_updates(renderer.window(), &event);
 
-            for input in input_handler.events() {
+            while let Some(input) = input_handler.pop_event() {
                 if let input::InputEvent::MouseButtonAction(action) = input {
                     match action {
                         input::MouseButtonAction::Single(_) => {

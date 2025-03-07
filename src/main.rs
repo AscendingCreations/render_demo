@@ -13,7 +13,7 @@ use graphics::{
 use input::{Bindings, FrameTime, InputHandler, Key};
 use log::{error, info, warn, Level, LevelFilter, Metadata, Record};
 use serde::{Deserialize, Serialize};
-use std::env;
+use std::{collections::HashSet, env};
 use std::{
     cell::RefCell,
     collections::HashMap,
@@ -25,7 +25,7 @@ use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
-use wgpu::{Backends, Dx12Compiler, InstanceDescriptor, InstanceFlags};
+use wgpu::{BackendOptions, Backends, Dx12Compiler, InstanceDescriptor, InstanceFlags};
 use winit::{
     dpi::PhysicalSize,
     event::*,
@@ -94,6 +94,7 @@ enum Runner {
         fps: u32,
         text: Text,
         size: PhysicalSize<f32>,
+        keys_pressed: HashSet<Key>,
     },
 }
 
@@ -121,11 +122,13 @@ impl winit::application::ApplicationHandler for Runner {
             // Generates an Instance for WGPU. Sets WGPU to be allowed on all possible supported backends
             // These are DX12, DX11, Vulkan, Metal and Gles. if none of these work on a system they cant
             // play the game basically.
-            let instance = wgpu::Instance::new(InstanceDescriptor {
+            let instance = wgpu::Instance::new(&InstanceDescriptor {
                 backends: Backends::all(),
                 flags: InstanceFlags::empty(),
-                dx12_shader_compiler: Dx12Compiler::default(),
-                gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
+                backend_options: BackendOptions {
+                    gl: wgpu::GlBackendOptions { gles_minor_version: wgpu::Gles3MinorVersion::Automatic },
+                    dx12: wgpu::Dx12BackendOptions { shader_compiler: Dx12Compiler::default() },
+                }
             });
 
             info!("after wgpu instance initiation");
@@ -213,7 +216,8 @@ impl winit::application::ApplicationHandler for Runner {
 
             sprites[0].pos.z = 7.0;
             sprites[0].color = Color::rgba(255, 255, 255, 120);
-            sprites[1].camera_type = CameraType::ControlViewWithScale;
+            sprites[1].camera_type = CameraType::ManualViewWithScale;
+            sprites[0].camera_type = CameraType::ManualViewWithScale;
             sprites[0].flip_style = FlipStyle::Vertical;
             sprites[0].rotation_angle = 45.0;
 
@@ -228,7 +232,7 @@ impl winit::application::ApplicationHandler for Runner {
             // get the screen size.
             let size = renderer.size();
             let mat = Mat4::from_translation(Vec3 {
-                x: 40.0,
+                x: 0.0,
                 y: 0.0,
                 z: 0.0,
             });
@@ -306,7 +310,7 @@ impl winit::application::ApplicationHandler for Runner {
 
             let mut animation = Image::new(Some(allocation), &mut renderer, 2);
 
-            animation.pos = Vec3::new(96.0, 96.0, 5.0);
+            animation.pos = Vec3::new(96.0, 300.0, 5.0);
             animation.hw = Vec2::new(64.0, 64.0);
             animation.uv = Vec4::new(0.0, 0.0, 64.0, 64.0);
             animation.color = Color::rgba(255, 255, 255, 255);
@@ -501,6 +505,7 @@ impl winit::application::ApplicationHandler for Runner {
                 time: 0.0f32,
                 fps: 0u32,
                 size,
+                keys_pressed: HashSet::new(),
             };
         }
     }
@@ -520,6 +525,7 @@ impl winit::application::ApplicationHandler for Runner {
             time,
             fps,
             size,
+            keys_pressed
         } = self
         {
             if window_id == renderer.window().id() {
@@ -534,19 +540,41 @@ impl winit::application::ApplicationHandler for Runner {
             input_handler.window_updates(renderer.window(), &event);
 
             while let Some(input) = input_handler.pop_event() {
-                if let input::InputEvent::MouseButtonAction(action) = input {
-                    match action {
-                        input::MouseButtonAction::Single(_) => {
-                            info!("Single Click")
+                match input  {
+                    input::InputEvent::MouseButtonAction(action) => {
+                        match action {
+                            input::MouseButtonAction::Single(_) => {
+                                info!("Single Click")
+                            }
+                            input::MouseButtonAction::Double(_) => {
+                                info!("Double Click")
+                            }
+                            input::MouseButtonAction::Triple(_) => {
+                                info!("Triple Click")
+                            }
+                            _ => panic!("No clicks?"),
                         }
-                        input::MouseButtonAction::Double(_) => {
-                            info!("Double Click")
-                        }
-                        input::MouseButtonAction::Triple(_) => {
-                            info!("Triple Click")
-                        }
-                        _ => panic!("No clicks?"),
                     }
+                    input::InputEvent::MouseWheel { amount, axis } => {
+                        //info!("MouseWheel: {}, {:?}", amount, axis);
+                    }
+                    input::InputEvent::None => {info!("WTF")},
+                    input::InputEvent::MouseButton { button, pressed } => {
+                        //info!("MouseButton press: {:?}, pressed {}", button, pressed)
+                    },
+                    input::InputEvent::KeyInput { key, location, pressed } => {
+                        info!("KeyInput press: {:?}, location {:?}, pressed {}", key, location, pressed)
+                    },
+                    input::InputEvent::MousePosition { x, y } => {
+                        //info!("MousePosition: x: {}, y: {}", x, y)
+                    },
+                    input::InputEvent::WindowFocused(b) => {
+                        info!("WindowFocused: focused: {}", b)
+                    },
+                    input::InputEvent::Modifier { modifier, pressed } => 
+                    {
+                        info!("Modifier: mod: {:?}, pressed {}", modifier, pressed)
+                    },
                 }
             }
 
@@ -702,6 +730,7 @@ impl winit::application::ApplicationHandler for Runner {
             time: _,
             fps: _,
             size: _,
+            keys_pressed: _
         } = self
         {
             input_handler.device_updates(renderer.window(), &event);
@@ -717,6 +746,7 @@ impl winit::application::ApplicationHandler for Runner {
             time: _,
             fps: _,
             size: _,
+            keys_pressed: _
         } = self
         {
             renderer.window().request_redraw();
@@ -740,8 +770,6 @@ async fn main() -> Result<(), GraphicsError> {
         error!("PANIC: {}, BACKTRACE: {:?}", panic_info, bt);
     }));
 
-    env::set_var("WGPU_VALIDATION", "0");
-    env::set_var("WGPU_DEBUG", "0");
     // Starts an event gathering type for the window.
     let event_loop = EventLoop::new()?;
 

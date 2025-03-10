@@ -86,13 +86,13 @@ impl log::Log for MyLogger {
 enum Runner {
     Loading,
     Ready {
-        input_handler: InputHandler<Action, Axis>,
-        renderer: GpuRenderer,
-        state: State<FlatControls>,
+        input_handler: Box<InputHandler<Action, Axis>>,
+        renderer: Box<GpuRenderer>,
+        state: Box<State<FlatControls>>,
         frame_time: FrameTime,
         time: f32,
         fps: u32,
-        text: Text,
+        text: Box<Text>,
         size: PhysicalSize<f32>,
         keys_pressed: HashSet<Key>,
     },
@@ -494,13 +494,13 @@ impl winit::application::ApplicationHandler for Runner {
             renderer.window().set_visible(true);
 
             *self = Self::Ready {
-                text,
-                renderer,
-                state,
-                input_handler: InputHandler::new(
+                text: Box::new(text),
+                renderer: Box::new(renderer),
+                state: Box::new(state),
+                input_handler: Box::new(InputHandler::new(
                     bindings,
                     Duration::from_millis(150),
-                ),
+                )),
                 frame_time: FrameTime::new(),
                 time: 0.0f32,
                 fps: 0u32,

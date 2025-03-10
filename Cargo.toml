@@ -4,7 +4,7 @@ version = "0.3.0"
 authors = ["S.J.R. van Schaik", "Andrew Wheeler <genusistimelord@gmail.com>"]
 license = "MIT OR Apache-2.0"
 edition = "2024"
-resolver = "2"
+resolver = "3"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -35,7 +35,7 @@ version = "0.4.0"
 #rev = "f2324c1"
 #path = "../AscendingLibraries/graphics"
 package = "ascending_graphics"
-version = "0.20.0"
+version = "0.21.0"
 
 [profile.dev]
 opt-level = 0

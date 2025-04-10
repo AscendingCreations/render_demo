@@ -1,31 +1,36 @@
 #![allow(dead_code, clippy::collapsible_match, unused_imports)]
 use backtrace::Backtrace;
 use camera::{
-    controls::{Controls, FlatControls, FlatSettings},
     Projection,
+    controls::{Controls, FlatControls, FlatSettings},
 };
-use graphics::naga::{front::wgsl, valid::Validator};
 use graphics::*;
 use graphics::{
     cosmic_text::{Attrs, Metrics},
     wgpu::PowerPreference,
 };
+use graphics::{
+    naga::{front::wgsl, valid::Validator},
+    wgpu::NoopBackendOptions,
+};
 use input::{Bindings, FrameTime, InputHandler, Key};
-use log::{error, info, warn, Level, LevelFilter, Metadata, Record};
+use log::{Level, LevelFilter, Metadata, Record, error, info, warn};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashSet, env};
 use std::{
     cell::RefCell,
     collections::HashMap,
     fs::{self, File},
-    io::{prelude::*, Read, Write},
+    io::{Read, Write, prelude::*},
     iter, panic,
     path::PathBuf,
     rc::Rc,
     sync::Arc,
     time::{Duration, Instant},
 };
-use wgpu::{BackendOptions, Backends, Dx12Compiler, InstanceDescriptor, InstanceFlags};
+use std::{collections::HashSet, env};
+use wgpu::{
+    BackendOptions, Backends, Dx12Compiler, InstanceDescriptor, InstanceFlags,
+};
 use winit::{
     dpi::PhysicalSize,
     event::*,
@@ -126,9 +131,15 @@ impl winit::application::ApplicationHandler for Runner {
                 backends: Backends::all(),
                 flags: InstanceFlags::empty(),
                 backend_options: BackendOptions {
-                    gl: wgpu::GlBackendOptions { gles_minor_version: wgpu::Gles3MinorVersion::Automatic },
-                    dx12: wgpu::Dx12BackendOptions { shader_compiler: Dx12Compiler::default() },
-                }
+                    gl: wgpu::GlBackendOptions {
+                        gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
+                        fence_behavior: wgpu::GlFenceBehavior::Normal,
+                    },
+                    dx12: wgpu::Dx12BackendOptions {
+                        shader_compiler: Dx12Compiler::default(),
+                    },
+                    noop: NoopBackendOptions::default(),
+                },
             });
 
             info!("after wgpu instance initiation");
@@ -158,8 +169,8 @@ impl winit::application::ApplicationHandler for Runner {
                         required_limits: wgpu::Limits::default(),
                         label: None,
                         memory_hints: wgpu::MemoryHints::Performance,
+                        trace: wgpu::Trace::Off,
                     },
-                    None,
                     // How we are presenting the screen which causes it to either clip to a FPS limit or be unlimited.
                     wgpu::PresentMode::AutoVsync,
                 ))
@@ -525,7 +536,7 @@ impl winit::application::ApplicationHandler for Runner {
             time,
             fps,
             size,
-            keys_pressed
+            keys_pressed,
         } = self
         {
             if window_id == renderer.window().id() {
@@ -540,7 +551,7 @@ impl winit::application::ApplicationHandler for Runner {
             input_handler.window_updates(renderer.window(), &event);
 
             while let Some(input) = input_handler.pop_event() {
-                match input  {
+                match input {
                     input::InputEvent::MouseButtonAction(action) => {
                         match action {
                             input::MouseButtonAction::Single(_) => {
@@ -558,23 +569,34 @@ impl winit::application::ApplicationHandler for Runner {
                     input::InputEvent::MouseWheel { amount, axis } => {
                         //info!("MouseWheel: {}, {:?}", amount, axis);
                     }
-                    input::InputEvent::None => {info!("WTF")},
+                    input::InputEvent::None => {
+                        info!("WTF")
+                    }
                     input::InputEvent::MouseButton { button, pressed } => {
                         //info!("MouseButton press: {:?}, pressed {}", button, pressed)
-                    },
-                    input::InputEvent::KeyInput { key, location, pressed } => {
-                        info!("KeyInput press: {:?}, location {:?}, pressed {}", key, location, pressed)
-                    },
+                    }
+                    input::InputEvent::KeyInput {
+                        key,
+                        location,
+                        pressed,
+                    } => {
+                        info!(
+                            "KeyInput press: {:?}, location {:?}, pressed {}",
+                            key, location, pressed
+                        )
+                    }
                     input::InputEvent::MousePosition { x, y } => {
                         //info!("MousePosition: x: {}, y: {}", x, y)
-                    },
+                    }
                     input::InputEvent::WindowFocused(b) => {
                         info!("WindowFocused: focused: {}", b)
-                    },
-                    input::InputEvent::Modifier { modifier, pressed } => 
-                    {
-                        info!("Modifier: mod: {:?}, pressed {}", modifier, pressed)
-                    },
+                    }
+                    input::InputEvent::Modifier { modifier, pressed } => {
+                        info!(
+                            "Modifier: mod: {:?}, pressed {}",
+                            modifier, pressed
+                        )
+                    }
                 }
             }
 
@@ -692,7 +714,7 @@ impl winit::application::ApplicationHandler for Runner {
                 text.set_text(
                     renderer,
                     &format!("生活,삶,जिंदगी 😀 FPS: {fps} \nyhelloy"),
-                    Attrs::new(),
+                    &Attrs::new(),
                     Shaping::Advanced,
                 );
                 *fps = 0u32;
@@ -730,7 +752,7 @@ impl winit::application::ApplicationHandler for Runner {
             time: _,
             fps: _,
             size: _,
-            keys_pressed: _
+            keys_pressed: _,
         } = self
         {
             input_handler.device_updates(renderer.window(), &event);
@@ -746,7 +768,7 @@ impl winit::application::ApplicationHandler for Runner {
             time: _,
             fps: _,
             size: _,
-            keys_pressed: _
+            keys_pressed: _,
         } = self
         {
             renderer.window().request_redraw();

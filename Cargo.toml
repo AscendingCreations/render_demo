@@ -35,7 +35,8 @@ version = "0.4.0"
 #rev = "f2324c1"
 #path = "../AscendingLibraries/graphics"
 package = "ascending_graphics"
-version = "0.21.0"
+#features = ["rayon"]
+version = "0.23.0"
 
 [profile.dev]
 opt-level = 0

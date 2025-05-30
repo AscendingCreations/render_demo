@@ -4,7 +4,7 @@ use camera::{
     Projection,
     controls::{Controls, FlatControls, FlatSettings},
 };
-use graphics::*;
+use graphics::{cosmic_text::Wrap, *};
 use graphics::{
     cosmic_text::{Attrs, Metrics},
     wgpu::PowerPreference,
@@ -133,10 +133,10 @@ impl winit::application::ApplicationHandler for Runner {
                 backend_options: BackendOptions {
                     gl: wgpu::GlBackendOptions {
                         gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
-                        fence_behavior: wgpu::GlFenceBehavior::Normal,
+                        fence_behavior: wgpu::GlFenceBehavior::AutoFinish,
                     },
                     dx12: wgpu::Dx12BackendOptions {
-                        shader_compiler: Dx12Compiler::default(),
+                        shader_compiler: Dx12Compiler::Fxc,
                     },
                     noop: NoopBackendOptions::default(),
                 },
@@ -159,7 +159,7 @@ impl winit::application::ApplicationHandler for Runner {
                     window,
                     //used to find adapters
                     AdapterOptions {
-                        allowed_backends: Backends::all(),
+                        allowed_backends: Backends::VULKAN,
                         power: AdapterPowerSettings::HighPower,
                         compatible_surface: Some(compatible_surface),
                     },
@@ -172,7 +172,7 @@ impl winit::application::ApplicationHandler for Runner {
                         trace: wgpu::Trace::Off,
                     },
                     // How we are presenting the screen which causes it to either clip to a FPS limit or be unlimited.
-                    wgpu::PresentMode::AutoVsync,
+                    wgpu::PresentMode::AutoNoVsync,
                 ))
                 .unwrap();
 
@@ -216,10 +216,14 @@ impl winit::application::ApplicationHandler for Runner {
                 // Image is mostly the backend render type used to render it to the screen. Im unsure though how
                 // To name this atm to keep it seperated from Sprite that would contain most of the actual not rendering
                 // data needed.
-                let mut sprite = Image::new(Some(allocation), &mut renderer, 1);
-                sprite.pos = Vec3::new(x, y, 7.0);
-                sprite.hw = Vec2::new(48.0, 48.0);
-                sprite.uv = Vec4::new(48.0, 96.0, 48.0, 48.0);
+                let mut sprite = Image::new(
+                    Some(allocation),
+                    &mut renderer,
+                    Vec3::new(x, y, 7.0),
+                    Vec2::new(48.0, 48.0),
+                    Vec4::new(48.0, 96.0, 48.0, 48.0),
+                    1,
+                );
                 sprite.color = Color::rgba(255, 255, 255, 255);
                 sprites.push(sprite);
                 x += 12.0;
@@ -267,12 +271,12 @@ impl winit::application::ApplicationHandler for Runner {
             );
 
             // We make a new Map to render here.
-            let mut map = Map::new(&mut renderer, 20);
+            let mut map = Map::new(&mut renderer, 20, Vec2::new(0.0, 0.0));
 
             (0..32).for_each(|x| {
                 (0..32).for_each(|y| {
                     map.set_tile(
-                        (x, y, 0),
+                        UVec3::new(x, y, 0),
                         TileData {
                             id: 1,
                             color: Color::rgba(255, 255, 255, 255),
@@ -282,21 +286,21 @@ impl winit::application::ApplicationHandler for Runner {
             });
 
             map.set_tile(
-                (2, 1, 1),
+                UVec3::new(2, 1, 1),
                 TileData {
                     id: 2,
                     color: Color::rgba(255, 255, 255, 255),
                 },
             );
             map.set_tile(
-                (1, 1, 6),
+                UVec3::new(1, 1, 6),
                 TileData {
                     id: 2,
                     color: Color::rgba(255, 255, 255, 230),
                 },
             );
             map.set_tile(
-                (0, 0, 1),
+                UVec3::new(0, 0, 1),
                 TileData {
                     id: 2,
                     color: Color::rgba(255, 255, 255, 255),
@@ -319,11 +323,15 @@ impl winit::application::ApplicationHandler for Runner {
                 .ok_or_else(|| OtherError::new("failed to upload image"))
                 .unwrap();
 
-            let mut animation = Image::new(Some(allocation), &mut renderer, 2);
+            let mut animation = Image::new(
+                Some(allocation),
+                &mut renderer,
+                Vec3::new(96.0, 300.0, 5.0),
+                Vec2::new(64.0, 64.0),
+                Vec4::new(0.0, 0.0, 64.0, 64.0),
+                2,
+            );
 
-            animation.pos = Vec3::new(96.0, 300.0, 5.0);
-            animation.hw = Vec2::new(64.0, 64.0);
-            animation.uv = Vec4::new(0.0, 0.0, 64.0, 64.0);
             animation.color = Color::rgba(255, 255, 255, 255);
             animation.frames = Vec2::new(8.0, 4.0);
             animation.switch_time = 300;
@@ -404,8 +412,10 @@ impl winit::application::ApplicationHandler for Runner {
                     Color::rgba(255, 255, 255, 255),
                 )
                 .unwrap();
-            let mut mesh =
-                [Mesh2D::new(&mut renderer, 1), Mesh2D::new(&mut renderer, 1)];
+            let mut mesh = [
+                Mesh2D::new(&mut renderer, Vec3::new(0.0, 0.0, 1.0), 1),
+                Mesh2D::new(&mut renderer, Vec3::new(0.0, 0.0, 1.0), 1),
+            ];
             mesh[0].from_builder(builder.finalize());
             mesh[1].from_builder(builder2.finalize());
 
@@ -464,10 +474,13 @@ impl winit::application::ApplicationHandler for Runner {
             // Allow the window to be seen. hiding it then making visible speeds up
             // load times.
 
-            let mut rect = Rect::new(&mut renderer, 0);
-            rect.set_size(Vec2::new(32.0, 32.0))
-                .set_position(Vec3::new(40.0, 40.0, 1.0))
-                .set_radius(8.0)
+            let mut rect = Rect::new(
+                &mut renderer,
+                Vec3::new(40.0, 40.0, 1.0),
+                Vec2::new(32.0, 32.0),
+                0,
+            );
+            rect.set_radius(8.0)
                 .set_border_color(Color::rgba(0, 0, 0, 255))
                 .set_border_width(2.0)
                 .set_use_camera(CameraType::None);
@@ -536,15 +549,15 @@ impl winit::application::ApplicationHandler for Runner {
             time,
             fps,
             size,
-            keys_pressed,
+            keys_pressed: _,
         } = self
         {
-            if window_id == renderer.window().id() {
-                if let WindowEvent::CloseRequested = event {
-                    println!("The close button was pressed; stopping");
-                    event_loop.exit();
-                    return;
-                }
+            if window_id == renderer.window().id()
+                && let WindowEvent::CloseRequested = event
+            {
+                println!("The close button was pressed; stopping");
+                event_loop.exit();
+                return;
             }
 
             // update our inputs.
@@ -566,13 +579,16 @@ impl winit::application::ApplicationHandler for Runner {
                             _ => panic!("No clicks?"),
                         }
                     }
-                    input::InputEvent::MouseWheel { amount, axis } => {
+                    input::InputEvent::MouseWheel { amount: _, axis: _ } => {
                         //info!("MouseWheel: {}, {:?}", amount, axis);
                     }
                     input::InputEvent::None => {
                         info!("WTF")
                     }
-                    input::InputEvent::MouseButton { button, pressed } => {
+                    input::InputEvent::MouseButton {
+                        button: _,
+                        pressed: _,
+                    } => {
                         //info!("MouseButton press: {:?}, pressed {}", button, pressed)
                     }
                     input::InputEvent::KeyInput {
@@ -581,21 +597,17 @@ impl winit::application::ApplicationHandler for Runner {
                         pressed,
                     } => {
                         info!(
-                            "KeyInput press: {:?}, location {:?}, pressed {}",
-                            key, location, pressed
+                            "KeyInput press: {key:?}, location {location:?}, pressed {pressed}",
                         )
                     }
-                    input::InputEvent::MousePosition { x, y } => {
+                    input::InputEvent::MousePosition { x: _, y: _ } => {
                         //info!("MousePosition: x: {}, y: {}", x, y)
                     }
                     input::InputEvent::WindowFocused(b) => {
-                        info!("WindowFocused: focused: {}", b)
+                        info!("WindowFocused: focused: {b}")
                     }
                     input::InputEvent::Modifier { modifier, pressed } => {
-                        info!(
-                            "Modifier: mod: {:?}, pressed {}",
-                            modifier, pressed
-                        )
+                        info!("Modifier: mod: {modifier:?}, pressed {pressed}",)
                     }
                 }
             }
@@ -713,7 +725,7 @@ impl winit::application::ApplicationHandler for Runner {
             if *time < seconds {
                 text.set_text(
                     renderer,
-                    &format!("生活,삶,जिंदगी 😀 FPS: {fps} \nyhelloy"),
+                    &format!("生活,삶,जिंदगी 😀 FPS: {fps} \n          `                   yhelloy"),
                     &Attrs::new(),
                     Shaping::Advanced,
                 );
@@ -789,12 +801,12 @@ async fn main() -> Result<(), GraphicsError> {
     panic::set_hook(Box::new(|panic_info| {
         let bt = Backtrace::new();
 
-        error!("PANIC: {}, BACKTRACE: {:?}", panic_info, bt);
+        error!("PANIC: {panic_info}, BACKTRACE: {bt:?}");
     }));
 
     // Starts an event gathering type for the window.
     let event_loop = EventLoop::new()?;
-
+    event_loop.set_control_flow(ControlFlow::Wait);
     let mut runner = Runner::Loading;
     Ok(event_loop.run_app(&mut runner)?)
 }

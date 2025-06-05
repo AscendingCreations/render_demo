@@ -239,7 +239,7 @@ impl winit::application::ApplicationHandler for Runner {
             // We establish the different renderers here to load their data up to use them.
             let text_renderer = TextRenderer::new(&renderer).unwrap();
             let sprite_renderer = ImageRenderer::new(&renderer).unwrap();
-            let map_renderer = MapRenderer::new(&mut renderer, 81).unwrap();
+            let mut map_renderer = MapRenderer::new(&mut renderer, 81).unwrap();
             let mesh_renderer = Mesh2DRenderer::new(&renderer).unwrap();
             let light_renderer = LightRenderer::new(&mut renderer).unwrap();
             let ui_renderer = RectRenderer::new(&renderer).unwrap();
@@ -273,10 +273,12 @@ impl winit::application::ApplicationHandler for Runner {
             // We make a new Map to render here.
             let mut map = Map::new(
                 &mut renderer,
+                &mut map_renderer,
                 20,
                 Vec2::new(0.0, 0.0),
                 MapZLayers::default(),
-            );
+            )
+            .unwrap();
 
             (0..32).for_each(|x| {
                 (0..32).for_each(|y| {

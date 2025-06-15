@@ -96,6 +96,7 @@ enum Runner {
         state: Box<State<FlatControls>>,
         frame_time: FrameTime,
         time: f32,
+        time2: f32,
         fps: u32,
         text: Box<Text>,
         size: PhysicalSize<f32>,
@@ -456,8 +457,22 @@ impl winit::application::ApplicationHandler for Runner {
                 camera_type: CameraType::None,
             });
 
+            /*lights.insert_directional_light(DirectionalLight {
+                pos: Vec2::new(200.0, 400.0),
+                color: Color::rgba(255, 255, 0, 20),
+                max_distance: 90.0,
+                max_width: 15.0,
+                anim_speed: 2.0,
+                angle: 0.0,
+                dither: 6.0,
+                fade_distance: 5.0,
+                edge_fade_distance: 0.5,
+                animate: false,
+                camera_type: CameraType::None,
+            });
+
             lights.insert_directional_light(DirectionalLight {
-                pos: Vec2::new(24.0, 24.0),
+                pos: Vec2::new(200.0, 400.0),
                 color: Color::rgba(255, 255, 0, 20),
                 max_distance: 90.0,
                 max_width: 15.0,
@@ -471,12 +486,26 @@ impl winit::application::ApplicationHandler for Runner {
             });
 
             lights.insert_directional_light(DirectionalLight {
-                pos: Vec2::new(150.0, 150.0),
+                pos: Vec2::new(200.0, 400.0),
                 color: Color::rgba(255, 255, 0, 20),
                 max_distance: 90.0,
-                max_width: 10.0,
+                max_width: 15.0,
                 anim_speed: 2.0,
-                angle: 90.0,
+                angle: 180.0,
+                dither: 6.0,
+                fade_distance: 5.0,
+                edge_fade_distance: 0.5,
+                animate: false,
+                camera_type: CameraType::None,
+            });*/
+
+            lights.insert_directional_light(DirectionalLight {
+                pos: Vec2::new(200.0, 400.0),
+                color: Color::rgba(255, 255, 0, 20),
+                max_distance: 90.0,
+                max_width: 15.0,
+                anim_speed: 2.0,
+                angle: -10.0,
                 dither: 6.0,
                 fade_distance: 4.0,
                 edge_fade_distance: 0.6,
@@ -541,6 +570,7 @@ impl winit::application::ApplicationHandler for Runner {
                 )),
                 frame_time: FrameTime::new(),
                 time: 0.0f32,
+                time2: 0.0f32,
                 fps: 0u32,
                 size,
                 keys_pressed: HashSet::new(),
@@ -561,6 +591,7 @@ impl winit::application::ApplicationHandler for Runner {
             input_handler,
             frame_time,
             time,
+            time2,
             fps,
             size,
             keys_pressed: _,
@@ -747,6 +778,21 @@ impl winit::application::ApplicationHandler for Runner {
                 *time = seconds + 1.0;
             }
 
+            if *time2 < seconds {
+                for (_, dir_light) in state.lights.directional_lights.iter_mut()
+                {
+                    dir_light.angle += 10.0;
+
+                    if dir_light.angle >= 360.0 {
+                        dir_light.angle = 0.0;
+                    }
+                }
+
+                state.lights.directionals_changed = true;
+
+                *time2 = seconds + 1.0;
+            }
+
             *fps += 1;
 
             renderer.window().pre_present_notify();
@@ -776,6 +822,7 @@ impl winit::application::ApplicationHandler for Runner {
             input_handler,
             frame_time: _,
             time: _,
+            time2: _,
             fps: _,
             size: _,
             keys_pressed: _,
@@ -792,6 +839,7 @@ impl winit::application::ApplicationHandler for Runner {
             input_handler: _,
             frame_time: _,
             time: _,
+            time2: _,
             fps: _,
             size: _,
             keys_pressed: _,

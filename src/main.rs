@@ -4,7 +4,7 @@ use camera::{
     Projection,
     controls::{Controls, FlatControls, FlatSettings},
 };
-use graphics::{cosmic_text::Wrap, *};
+use graphics::{cosmic_text::Wrap, wgpu::MemoryBudgetThresholds, *};
 use graphics::{
     cosmic_text::{Attrs, Metrics},
     wgpu::PowerPreference,
@@ -57,7 +57,7 @@ enum Axis {
 
 // creates a static global logger type for setting the logger
 static MY_LOGGER: MyLogger = MyLogger(Level::Debug);
-
+const WAIT_TIME: std::time::Duration = std::time::Duration::from_millis(20);
 struct MyLogger(pub Level);
 
 impl log::Log for MyLogger {
@@ -141,6 +141,7 @@ impl winit::application::ApplicationHandler for Runner {
                     },
                     noop: NoopBackendOptions::default(),
                 },
+                memory_budget_thresholds: MemoryBudgetThresholds::default(),
             });
 
             info!("after wgpu instance initiation");
@@ -457,63 +458,19 @@ impl winit::application::ApplicationHandler for Runner {
                 camera_type: CameraType::None,
             });
 
-            /*lights.insert_directional_light(DirectionalLight {
+            lights.insert_directional_light(DirectionalLight {
                 pos: Vec2::new(200.0, 400.0),
                 color: Color::rgba(255, 255, 0, 20),
                 max_distance: 90.0,
-                max_width: 15.0,
+                max_width: 5.0,
                 anim_speed: 2.0,
                 angle: 0.0,
-                dither: 6.0,
-                fade_distance: 5.0,
-                edge_fade_distance: 0.5,
-                animate: false,
-                camera_type: CameraType::None,
-            });
-
-            lights.insert_directional_light(DirectionalLight {
-                pos: Vec2::new(200.0, 400.0),
-                color: Color::rgba(255, 255, 0, 20),
-                max_distance: 90.0,
-                max_width: 15.0,
-                anim_speed: 2.0,
-                angle: 90.0,
-                dither: 6.0,
-                fade_distance: 5.0,
-                edge_fade_distance: 0.5,
-                animate: false,
-                camera_type: CameraType::None,
-            });
-
-            lights.insert_directional_light(DirectionalLight {
-                pos: Vec2::new(200.0, 400.0),
-                color: Color::rgba(255, 255, 0, 20),
-                max_distance: 90.0,
-                max_width: 15.0,
-                anim_speed: 2.0,
-                angle: 180.0,
-                dither: 6.0,
-                fade_distance: 5.0,
-                edge_fade_distance: 0.5,
-                animate: false,
-                camera_type: CameraType::None,
-            });*/
-
-            lights.insert_directional_light(DirectionalLight {
-                pos: Vec2::new(200.0, 400.0),
-                color: Color::rgba(255, 255, 0, 20),
-                max_distance: 90.0,
-                max_width: 15.0,
-                anim_speed: 2.0,
-                angle: -10.0,
-                dither: 6.0,
+                dither: 5.0,
                 fade_distance: 4.0,
                 edge_fade_distance: 0.6,
                 animate: true,
                 camera_type: CameraType::None,
             });
-            // Allow the window to be seen. hiding it then making visible speeds up
-            // load times.
 
             let mut rect = Rect::new(
                 &mut renderer,
@@ -555,9 +512,7 @@ impl winit::application::ApplicationHandler for Runner {
             bindings
                 .insert_action(Action::Quit, vec![Key::Character('q').into()]);
 
-            // You should change this if you want to render continuously
-            //event_loop.set_control_flow(ControlFlow::Wait);
-
+            // Allow the window to be seen. hiding it then making visible speeds up load times.
             renderer.window().set_visible(true);
 
             *self = Self::Ready {
@@ -606,7 +561,7 @@ impl winit::application::ApplicationHandler for Runner {
             }
 
             // update our inputs.
-            input_handler.window_updates(renderer.window(), &event);
+            input_handler.window_updates(&event);
 
             while let Some(input) = input_handler.pop_event() {
                 match input {
@@ -795,7 +750,6 @@ impl winit::application::ApplicationHandler for Runner {
 
             *fps += 1;
 
-            renderer.window().pre_present_notify();
             renderer.present().unwrap();
 
             // These clear the Last used image tags.
@@ -817,7 +771,7 @@ impl winit::application::ApplicationHandler for Runner {
     ) {
         if let Self::Ready {
             text: _,
-            renderer,
+            renderer: _,
             state: _,
             input_handler,
             frame_time: _,
@@ -828,10 +782,10 @@ impl winit::application::ApplicationHandler for Runner {
             keys_pressed: _,
         } = self
         {
-            input_handler.device_updates(renderer.window(), &event);
+            input_handler.device_updates(&event);
         }
     }
-    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
+    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
         if let Self::Ready {
             text: _,
             renderer,
@@ -845,8 +799,14 @@ impl winit::application::ApplicationHandler for Runner {
             keys_pressed: _,
         } = self
         {
+            // If we are Ready then if there are no events then lets tell the system to prepare a redraw().
             renderer.window().request_redraw();
         }
+
+        //Enforce the Event to always trigger after a set time. Best for rendering.
+        event_loop.set_control_flow(ControlFlow::WaitUntil(
+            std::time::Instant::now() + WAIT_TIME,
+        ));
     }
 }
 
@@ -868,7 +828,9 @@ async fn main() -> Result<(), GraphicsError> {
 
     // Starts an event gathering type for the window.
     let event_loop = EventLoop::new()?;
-    event_loop.set_control_flow(ControlFlow::Wait);
+    event_loop.set_control_flow(ControlFlow::WaitUntil(
+        std::time::Instant::now() + WAIT_TIME,
+    ));
     let mut runner = Runner::Loading;
     Ok(event_loop.run_app(&mut runner)?)
 }

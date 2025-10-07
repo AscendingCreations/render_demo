@@ -4,7 +4,11 @@ use camera::{
     Projection,
     controls::{Controls, FlatControls, FlatSettings},
 };
-use graphics::{cosmic_text::Wrap, wgpu::MemoryBudgetThresholds, *};
+use graphics::{
+    cosmic_text::Wrap,
+    wgpu::{ExperimentalFeatures, MemoryBudgetThresholds},
+    *,
+};
 use graphics::{
     cosmic_text::{Attrs, Metrics},
     wgpu::PowerPreference,
@@ -138,6 +142,10 @@ impl winit::application::ApplicationHandler for Runner {
                     },
                     dx12: wgpu::Dx12BackendOptions {
                         shader_compiler: Dx12Compiler::Fxc,
+                        presentation_system:
+                            wgpu::wgt::Dx12SwapchainKind::DxgiFromHwnd,
+                        latency_waitable_object:
+                            wgpu::wgt::Dx12UseFrameLatencyWaitableObject::Wait,
                     },
                     noop: NoopBackendOptions::default(),
                 },
@@ -172,9 +180,11 @@ impl winit::application::ApplicationHandler for Runner {
                         label: None,
                         memory_hints: wgpu::MemoryHints::Performance,
                         trace: wgpu::Trace::Off,
+                        experimental_features: ExperimentalFeatures::disabled(),
                     },
                     // How we are presenting the screen which causes it to either clip to a FPS limit or be unlimited.
                     wgpu::PresentMode::AutoNoVsync,
+                    EnabledPipelines::all(),
                 ))
                 .unwrap();
 
@@ -241,6 +251,7 @@ impl winit::application::ApplicationHandler for Runner {
             // We establish the different renderers here to load their data up to use them.
             let text_renderer = TextRenderer::new(&renderer).unwrap();
             let sprite_renderer = ImageRenderer::new(&renderer).unwrap();
+            let animation_renderer = AnimImageRenderer::new(&renderer).unwrap();
             let mut map_renderer = MapRenderer::new(&mut renderer, 81).unwrap();
             let mesh_renderer = Mesh2DRenderer::new(&renderer).unwrap();
             let light_renderer = LightRenderer::new(&mut renderer).unwrap();
@@ -332,7 +343,7 @@ impl winit::application::ApplicationHandler for Runner {
                 .ok_or_else(|| OtherError::new("failed to upload image"))
                 .unwrap();
 
-            let mut animation = Image::new(
+            let mut animation = AnimImage::new(
                 Some(allocation),
                 &mut renderer,
                 Vec3::new(96.0, 300.0, 5.0),
@@ -505,6 +516,7 @@ impl winit::application::ApplicationHandler for Runner {
                 ui_atlas: atlases.remove(0),
                 ui_renderer,
                 rect,
+                animation_renderer,
             };
 
             // Create the mouse/keyboard bindings for our stuff.
@@ -654,7 +666,7 @@ impl winit::application::ApplicationHandler for Runner {
 
             // This adds the Image data to the Buffer for rendering.
             state.sprites.iter_mut().for_each(|sprite| {
-                state.sprite_renderer.image_update(
+                state.sprite_renderer.update(
                     sprite,
                     renderer,
                     &mut state.image_atlas,
@@ -662,7 +674,7 @@ impl winit::application::ApplicationHandler for Runner {
                 );
             });
 
-            state.sprite_renderer.image_update(
+            state.animation_renderer.update(
                 &mut state.animation,
                 renderer,
                 &mut state.image_atlas,
@@ -674,14 +686,15 @@ impl winit::application::ApplicationHandler for Runner {
             // Image buffer for the next render pass. Image buffer only holds the ID's and Sortign info
             // of the finalized Indicies of each Image.
             state.sprite_renderer.finalize(renderer);
+            state.animation_renderer.finalize(renderer);
 
             state
                 .text_renderer
-                .text_update(text, &mut state.text_atlas, renderer, 0)
+                .update(text, &mut state.text_atlas, renderer, 0)
                 .unwrap();
             state.text_renderer.finalize(renderer);
 
-            state.map_renderer.map_update(
+            state.map_renderer.update(
                 &mut state.map,
                 renderer,
                 &mut state.map_atlas,
@@ -690,17 +703,15 @@ impl winit::application::ApplicationHandler for Runner {
 
             state.map_renderer.finalize(renderer);
 
-            state
-                .light_renderer
-                .lights_update(&mut state.lights, renderer, 0);
+            state.light_renderer.update(&mut state.lights, renderer, 0);
             state.light_renderer.finalize(renderer);
             state.mesh.iter_mut().for_each(|mesh| {
-                state.mesh_renderer.mesh_update(mesh, renderer, 0);
+                state.mesh_renderer.update(mesh, renderer, 0);
             });
 
             state.mesh_renderer.finalize(renderer);
 
-            state.ui_renderer.rect_update(
+            state.ui_renderer.update(
                 &mut state.rect,
                 renderer,
                 &mut state.ui_atlas,

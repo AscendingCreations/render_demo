@@ -12,7 +12,7 @@ where
     /// Data stores for render types
     pub sprites: Vec<Image>,
     pub lights: Lights,
-    pub animation: Image,
+    pub animation: AnimImage,
     pub map: Map,
     pub mesh: [Mesh2D; 2],
     pub rect: Rect,
@@ -26,6 +26,7 @@ where
     pub ui_renderer: RectRenderer,
     pub text_renderer: TextRenderer,
     pub sprite_renderer: ImageRenderer,
+    pub animation_renderer: AnimImageRenderer,
     pub map_renderer: MapRenderer,
     pub light_renderer: LightRenderer,
     pub mesh_renderer: Mesh2DRenderer,
@@ -88,6 +89,14 @@ where
         pass.render_image(
             renderer,
             &self.sprite_renderer,
+            &self.image_atlas,
+            &self.system,
+            0,
+        );
+
+        pass.render_animated_image(
+            renderer,
+            &self.animation_renderer,
             &self.image_atlas,
             &self.system,
             0,

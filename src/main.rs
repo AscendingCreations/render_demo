@@ -5,7 +5,7 @@ use camera::{
     controls::{Controls, FlatControls, FlatSettings},
 };
 use graphics::{
-    cosmic_text::Wrap,
+    cosmic_text::{Align, Wrap},
     wgpu::{ExperimentalFeatures, MemoryBudgetThresholds},
     *,
 };
@@ -372,8 +372,8 @@ impl winit::application::ApplicationHandler for Runner {
 
             text.set_buffer_size(
                 &mut renderer,
-                Some(size.width),
-                Some(size.height),
+                Some(250.0 * scale),
+                Some(600.0 * scale),
             )
             .set_bounds(Bounds::new(0.0, 0.0, 250.0 * scale, 600.0 * scale))
             .set_default_color(Color::rgba(255, 255, 255, 255));
@@ -736,9 +736,10 @@ impl winit::application::ApplicationHandler for Runner {
             if *time < seconds {
                 text.set_text(
                     renderer,
-                    &format!("生活,삶,जिंदगी 😀 FPS: {fps} \n          `                   yhelloy"),
+                    &format!("生活,삶,जिंदगी 😀 FPS: {fps} \n yhelloy"),
                     &Attrs::new(),
                     Shaping::Advanced,
+                    Some(Align::Center),
                 );
                 *fps = 0u32;
                 *time = seconds + 1.0;

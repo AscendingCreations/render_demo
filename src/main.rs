@@ -243,8 +243,8 @@ impl winit::application::ApplicationHandler for Runner {
 
             sprites[0].pos.z = 7.0;
             sprites[0].color = Color::rgba(255, 255, 255, 120);
-            sprites[1].camera_type = CameraType::ManualViewWithScale;
-            sprites[0].camera_type = CameraType::ManualViewWithScale;
+            sprites[1].camera_view = CameraView::SubView1;
+            sprites[0].camera_view = CameraView::SubView1;
             sprites[0].flip_style = FlipStyle::Vertical;
             sprites[0].rotation_angle = 45.0;
 
@@ -267,7 +267,7 @@ impl winit::application::ApplicationHandler for Runner {
 
             // setup our system which includes Camera and projection as well as our controls.
             // for the camera.
-            let system = System::new(
+            let mut system = System::new(
                 &mut renderer,
                 Projection::Orthographic {
                     left: 0.0,
@@ -277,11 +277,12 @@ impl winit::application::ApplicationHandler for Runner {
                     near: 1.0,
                     far: -100.0,
                 },
-                FlatControls::new(FlatSettings { zoom: 2.0 }),
+                FlatControls::new(FlatSettings { zoom: 1.0 }),
                 [size.width, size.height],
-                mat,
-                1.5,
             );
+
+            system.set_view(CameraView::SubView1, mat, 1.5);
+            system.set_view(CameraView::SubView2, mat, 1.0);
 
             // We make a new Map to render here.
             let mut map = Map::new(
@@ -300,6 +301,7 @@ impl winit::application::ApplicationHandler for Runner {
                         TileData {
                             id: 1,
                             color: Color::rgba(255, 255, 255, 255),
+                            anim_time: 250,
                         },
                     )
                 });
@@ -310,6 +312,7 @@ impl winit::application::ApplicationHandler for Runner {
                 TileData {
                     id: 2,
                     color: Color::rgba(255, 255, 255, 255),
+                    anim_time: 250,
                 },
             );
             map.set_tile(
@@ -317,6 +320,7 @@ impl winit::application::ApplicationHandler for Runner {
                 TileData {
                     id: 2,
                     color: Color::rgba(255, 255, 255, 230),
+                    anim_time: 250,
                 },
             );
             map.set_tile(
@@ -324,6 +328,7 @@ impl winit::application::ApplicationHandler for Runner {
                 TileData {
                     id: 2,
                     color: Color::rgba(255, 255, 255, 255),
+                    anim_time: 250,
                 },
             );
             map.pos = Vec2::new(0.0, 0.0);
@@ -456,7 +461,7 @@ impl winit::application::ApplicationHandler for Runner {
                 animate: false,
                 anim_speed: 5.0,
                 dither: 0.5,
-                camera_type: CameraType::None,
+                camera_view: CameraView::MainView,
             });
 
             lights.insert_area_light(AreaLight {
@@ -466,7 +471,7 @@ impl winit::application::ApplicationHandler for Runner {
                 animate: true,
                 anim_speed: 5.0,
                 dither: 0.8,
-                camera_type: CameraType::None,
+                camera_view: CameraView::MainView,
             });
 
             lights.insert_directional_light(DirectionalLight {
@@ -480,7 +485,7 @@ impl winit::application::ApplicationHandler for Runner {
                 fade_distance: 4.0,
                 edge_fade_distance: 0.6,
                 animate: true,
-                camera_type: CameraType::None,
+                camera_view: CameraView::MainView,
             });
 
             let mut rect = Rect::new(
@@ -494,7 +499,7 @@ impl winit::application::ApplicationHandler for Runner {
             rect.set_radius(8.0)
                 .set_border_color(Color::rgba(0, 0, 0, 255))
                 .set_border_width(2.0)
-                .set_use_camera(CameraType::None);
+                .set_camera_view(CameraView::SubView1);
 
             // add everything into our convience type for quicker access and passing.
             let state = State {
@@ -743,6 +748,9 @@ impl winit::application::ApplicationHandler for Runner {
                 );
                 *fps = 0u32;
                 *time = seconds + 1.0;
+                let text_size = text.measure();
+
+                println!("Text 1: {text_size:?}")
             }
 
             if *time2 < seconds {

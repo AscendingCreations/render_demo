@@ -748,9 +748,6 @@ impl winit::application::ApplicationHandler for Runner {
                 );
                 *fps = 0u32;
                 *time = seconds + 1.0;
-                let text_size = text.measure();
-
-                println!("Text 1: {text_size:?}")
             }
 
             if *time2 < seconds {

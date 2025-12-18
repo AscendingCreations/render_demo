@@ -238,14 +238,14 @@ impl winit::application::ApplicationHandler for Runner {
                 );
                 sprite.color = Color::rgba(255, 255, 255, 255);
                 sprites.push(sprite);
-                x += 12.0;
+                x += 48.0;
             }
 
             sprites[0].pos.z = 7.0;
             sprites[0].color = Color::rgba(255, 255, 255, 120);
             sprites[1].camera_view = CameraView::SubView1;
-            sprites[0].camera_view = CameraView::SubView1;
-            sprites[0].flip_style = FlipStyle::Vertical;
+            sprites[0].camera_view = CameraView::MainView;
+            sprites[0].flip_style = FlipStyle::None;
             sprites[0].rotation_angle = 45.0;
 
             // We establish the different renderers here to load their data up to use them.
@@ -277,11 +277,12 @@ impl winit::application::ApplicationHandler for Runner {
                     near: 1.0,
                     far: -100.0,
                 },
-                FlatControls::new(FlatSettings { zoom: 1.0 }),
+                FlatControls::new(FlatSettings { zoom: 2.0 }),
                 [size.width, size.height],
             );
 
-            system.set_view(CameraView::SubView1, mat, 1.5);
+            system.controls_mut().inputs_mut().translation.x = 100.0;
+            system.set_view(CameraView::SubView1, mat, 1.0);
             system.set_view(CameraView::SubView2, mat, 1.0);
 
             // We make a new Map to render here.

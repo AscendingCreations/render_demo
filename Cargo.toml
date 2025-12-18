@@ -37,7 +37,7 @@ package = "ascending_graphics"
 #disable-features = true
 #features = ["crate_passthru"]
 features = ["static_dx"]
-version = "0.31.0"
+version = "0.32.0"
 
 [profile.dev]
 opt-level = 0

@@ -72,6 +72,7 @@ where
             ),
             timestamp_writes: None,
             occlusion_query_set: None,
+            multiview_mask: None,
         });
 
         // Lets set the System's Shader information here, mostly Camera, Size and Time

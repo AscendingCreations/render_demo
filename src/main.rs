@@ -370,7 +370,7 @@ impl winit::application::ApplicationHandler for Runner {
             let mut text = Text::new(
                 &mut renderer,
                 Some(Metrics::new(16.0, 16.0).scale(scale)),
-                Vec3::new(0.0, 0.0, 1.0),
+                Vec3::new(-25.0, 0.0, 1.0),
                 Vec2::new(190.0 * scale, 32.0 * scale),
                 1.0,
                 1,
@@ -381,7 +381,12 @@ impl winit::application::ApplicationHandler for Runner {
                 Some(250.0 * scale),
                 Some(600.0 * scale),
             )
-            .set_bounds(Bounds::new(0.0, 0.0, 250.0 * scale, 600.0 * scale))
+            /*.set_bounds(Some(Bounds::new(
+                0.0,
+                0.0,
+                250.0 * scale,
+                600.0 * scale,
+            )))*/
             .set_default_color(Color::rgba(255, 255, 255, 255));
 
             // Start the process of building a shape.
@@ -745,7 +750,7 @@ impl winit::application::ApplicationHandler for Runner {
                     &format!("生活,삶,जिंदगी 😀 FPS: {fps} \n yhelloy"),
                     &Attrs::new(),
                     Shaping::Advanced,
-                    Some(Align::Center),
+                    Some(Align::Left),
                 );
                 *fps = 0u32;
                 *time = seconds + 1.0;

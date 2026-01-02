@@ -17,7 +17,7 @@ use graphics::{
     naga::{front::wgsl, valid::Validator},
     wgpu::NoopBackendOptions,
 };
-use input::{Bindings, FrameTime, InputHandler, Key};
+use input::{Bindings, InputHandler, Key};
 use log::{Level, LevelFilter, Metadata, Record, error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -32,6 +32,7 @@ use std::{
     time::{Duration, Instant},
 };
 use std::{collections::HashSet, env};
+use time::{FrameTime, Updater};
 use wgpu::{
     BackendOptions, Backends, Dx12Compiler, InstanceDescriptor, InstanceFlags,
 };
@@ -42,7 +43,6 @@ use winit::{
     platform::windows::WindowAttributesExtWindows,
     window::{WindowAttributes, WindowButtons},
 };
-
 mod gamestate;
 use gamestate::*;
 
@@ -468,6 +468,7 @@ impl winit::application::ApplicationHandler for Runner {
                 anim_speed: 5.0,
                 dither: 0.5,
                 camera_view: CameraView::MainView,
+                visible: true,
             });
 
             lights.insert_area_light(AreaLight {
@@ -478,6 +479,7 @@ impl winit::application::ApplicationHandler for Runner {
                 anim_speed: 5.0,
                 dither: 0.8,
                 camera_view: CameraView::MainView,
+                visible: true,
             });
 
             lights.insert_directional_light(DirectionalLight {
@@ -492,6 +494,7 @@ impl winit::application::ApplicationHandler for Runner {
                 edge_fade_distance: 0.6,
                 animate: true,
                 camera_view: CameraView::MainView,
+                visible: true,
             });
 
             let mut rect = Rect::new(
@@ -665,7 +668,7 @@ impl winit::application::ApplicationHandler for Runner {
                 event_loop.exit();
             }
 
-            frame_time.update();
+            frame_time.update_recent();
             let seconds = frame_time.seconds();
             // update our systems data to the gpu. this is the Camera in the shaders.
             state.system.update(renderer, frame_time);
@@ -841,7 +844,7 @@ async fn main() -> Result<(), GraphicsError> {
     log::set_max_level(LevelFilter::Info);
 
     info!("starting up");
-
+    let updater = Updater::new().unwrap();
     // This allows us to take control of panic!() so we can send it to a file via the logger.
     panic::set_hook(Box::new(|panic_info| {
         let bt = Backtrace::new();
@@ -855,5 +858,8 @@ async fn main() -> Result<(), GraphicsError> {
         std::time::Instant::now() + WAIT_TIME,
     ));
     let mut runner = Runner::Loading;
-    Ok(event_loop.run_app(&mut runner)?)
+    event_loop.run_app(&mut runner).unwrap();
+    updater.stop().unwrap();
+
+    Ok(())
 }

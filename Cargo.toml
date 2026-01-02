@@ -8,12 +8,12 @@ resolver = "3"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-winit = { version = "0.30.5", features = ["serde"] }
-tokio = { version = "1.40.0", features = ["full"] }
-serde = { version = "1.0.209", features = ["derive"] }
-log = "0.4.22"
-backtrace = "0.3.73"
-futures = "0.3.30"
+winit = { version = "0.30.12", features = ["serde"] }
+tokio = { version = "1.48.0", features = ["full"] }
+serde = { version = "1.0.228", features = ["derive"] }
+log = "0.4.29"
+backtrace = "0.3.76"
+futures = "0.3.31"
 
 [dependencies.camera]
 #git = "https://github.com/AscendingCreations/AscendingLibraries"
@@ -27,7 +27,7 @@ version = "0.6.0"
 #rev = "f2324c1"
 #path = "../AscendingLibraries/input"
 package = "ascending_input"
-version = "0.5.0"
+version = "0.6.0"
 
 [dependencies.graphics]
 #git = "https://github.com/AscendingCreations/AscendingLibraries"
@@ -37,7 +37,15 @@ package = "ascending_graphics"
 #disable-features = true
 #features = ["crate_passthru"]
 features = ["static_dx"]
-version = "0.33.0"
+version = "0.35.0"
+
+[dependencies.time]
+#path = "../ascendinglibraries/time"
+#branch = "main"
+#features = ["static_dx"]
+#git = "https://github.com/AscendingCreations/AscendingLibraries"
+package = "ascending_time"
+version = "0.1.0"
 
 [profile.dev]
 opt-level = 0

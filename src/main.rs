@@ -6,7 +6,10 @@ use camera::{
 };
 use graphics::{
     cosmic_text::{Align, Wrap},
-    wgpu::{ExperimentalFeatures, MemoryBudgetThresholds},
+    wgpu::{
+        ExperimentalFeatures, ForceShaderModelToken, GlDebugFns,
+        MemoryBudgetThresholds,
+    },
     *,
 };
 use graphics::{
@@ -97,6 +100,7 @@ enum Runner {
     Ready {
         input_handler: Box<InputHandler<Action, Axis>>,
         renderer: Box<GpuRenderer>,
+        instance: Box<wgpu::Instance>,
         state: Box<State<FlatControls>>,
         frame_time: FrameTime,
         time: f32,
@@ -132,13 +136,14 @@ impl winit::application::ApplicationHandler for Runner {
             // Generates an Instance for WGPU. Sets WGPU to be allowed on all possible supported backends
             // These are DX12, DX11, Vulkan, Metal and Gles. if none of these work on a system they cant
             // play the game basically.
-            let instance = wgpu::Instance::new(&InstanceDescriptor {
+            let instance = wgpu::Instance::new(InstanceDescriptor {
                 backends: Backends::all(),
                 flags: InstanceFlags::empty(),
                 backend_options: BackendOptions {
                     gl: wgpu::GlBackendOptions {
                         gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
                         fence_behavior: wgpu::GlFenceBehavior::AutoFinish,
+                        debug_fns: GlDebugFns::Auto,
                     },
                     dx12: wgpu::Dx12BackendOptions {
                         shader_compiler: Dx12Compiler::Fxc,
@@ -146,10 +151,13 @@ impl winit::application::ApplicationHandler for Runner {
                             wgpu::wgt::Dx12SwapchainKind::DxgiFromHwnd,
                         latency_waitable_object:
                             wgpu::wgt::Dx12UseFrameLatencyWaitableObject::Wait,
+                        force_shader_model: ForceShaderModelToken::default(),
+                        agility_sdk: None,
                     },
                     noop: NoopBackendOptions::default(),
                 },
                 memory_budget_thresholds: MemoryBudgetThresholds::default(),
+                display: Some(Box::new(event_loop.owned_display_handle())),
             });
 
             info!("after wgpu instance initiation");
@@ -277,7 +285,7 @@ impl winit::application::ApplicationHandler for Runner {
                     near: 1.0,
                     far: -100.0,
                 },
-                FlatControls::new(FlatSettings { zoom: 2.0 }),
+                FlatControls::new(FlatSettings { zoom: 1.0 }),
                 [size.width, size.height],
             );
 
@@ -555,6 +563,7 @@ impl winit::application::ApplicationHandler for Runner {
                 fps: 0u32,
                 size,
                 keys_pressed: HashSet::new(),
+                instance: Box::new(instance),
             };
         }
     }
@@ -576,6 +585,7 @@ impl winit::application::ApplicationHandler for Runner {
             fps,
             size,
             keys_pressed: _,
+            instance,
         } = self
         {
             if window_id == renderer.window().id()
@@ -639,7 +649,7 @@ impl winit::application::ApplicationHandler for Runner {
             }
 
             // update our renderer based on events here
-            if !renderer.update(&event).unwrap() {
+            if !renderer.update(instance, &event).unwrap() {
                 return;
             }
 
@@ -806,6 +816,7 @@ impl winit::application::ApplicationHandler for Runner {
             fps: _,
             size: _,
             keys_pressed: _,
+            instance: _,
         } = self
         {
             input_handler.device_updates(&event);
@@ -823,6 +834,7 @@ impl winit::application::ApplicationHandler for Runner {
             fps: _,
             size: _,
             keys_pressed: _,
+            instance: _,
         } = self
         {
             // If we are Ready then if there are no events then lets tell the system to prepare a redraw().

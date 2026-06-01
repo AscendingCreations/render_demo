@@ -9,9 +9,9 @@ resolver = "3"
 
 [dependencies]
 winit = { version = "0.30.12", features = ["serde"] }
-tokio = { version = "1.50.0", features = ["full"] }
+tokio = { version = "1.52.3", features = ["full"] }
 serde = { version = "1.0.228", features = ["derive"] }
-log = "0.4.29"
+log = "0.4.30"
 backtrace = "0.3.76"
 futures = "0.3.32"
 
@@ -20,7 +20,7 @@ futures = "0.3.32"
 #rev = "f2324c1"
 #path = "../AscendingLibraries/camera"
 package = "ascending_camera"
-version = "0.8.1"
+version = "0.9.0"
 
 [dependencies.input]
 #git = "https://github.com/AscendingCreations/AscendingLibraries"
@@ -37,7 +37,7 @@ package = "ascending_graphics"
 #disable-features = true
 #features = ["crate_passthru"]
 features = ["static_dx"]
-version = "0.38.0"
+version = "0.39.0"
 
 [dependencies.time]
 #path = "../ascendinglibraries/time"
@@ -45,7 +45,7 @@ version = "0.38.0"
 #features = ["static_dx"]
 #git = "https://github.com/AscendingCreations/AscendingLibraries"
 package = "ascending_time"
-version = "0.2.2"
+version = "0.2.3"
 
 [profile.dev]
 opt-level = 0

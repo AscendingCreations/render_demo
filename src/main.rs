@@ -167,7 +167,7 @@ impl winit::application::ApplicationHandler for Runner {
                 instance.create_surface(window.clone()).unwrap();
 
             info!("after compatible initiation");
-            print!("{:?}", &compatible_surface);
+            println!("{compatible_surface:?}");
             // This creates the Window Struct and Device struct that holds all the rendering information
             // we need to render to the screen. Window holds most of the window information including
             // the surface type. device includes the queue and GPU device for rendering.
@@ -341,7 +341,6 @@ impl winit::application::ApplicationHandler for Runner {
                 },
             );
             map.pos = Vec2::new(0.0, 0.0);
-            map.can_render = true;
 
             let _tilesheet = Texture::from_file("images/tiles/1.png")
                 .unwrap()
@@ -384,18 +383,14 @@ impl winit::application::ApplicationHandler for Runner {
                 1,
             );
 
-            text.set_buffer_size(
-                &mut renderer,
-                Some(250.0 * scale),
-                Some(600.0 * scale),
-            )
-            /*.set_bounds(Some(Bounds::new(
-                0.0,
-                0.0,
-                250.0 * scale,
-                600.0 * scale,
-            )))*/
-            .set_default_color(Color::rgba(255, 255, 255, 255));
+            text.set_buffer_size(Some(250.0 * scale), Some(600.0 * scale))
+                /*.set_bounds(Some(Bounds::new(
+                    0.0,
+                    0.0,
+                    250.0 * scale,
+                    600.0 * scale,
+                )))*/
+                .set_default_color(Color::rgba(255, 255, 255, 255));
 
             // Start the process of building a shape.
             let mut builder = Mesh2DBuilder::default();
@@ -759,7 +754,6 @@ impl winit::application::ApplicationHandler for Runner {
 
             if *time < seconds {
                 text.set_text(
-                    renderer,
                     &format!("生活,삶,जिंदगी 😀 FPS: {fps} \n yhelloy"),
                     &Attrs::new(),
                     Shaping::Advanced,
@@ -842,9 +836,7 @@ impl winit::application::ApplicationHandler for Runner {
         }
 
         //Enforce the Event to always trigger after a set time. Best for rendering.
-        event_loop.set_control_flow(ControlFlow::WaitUntil(
-            std::time::Instant::now() + WAIT_TIME,
-        ));
+        //event_loop.set_control_flow(ControlFlow::Poll);
     }
 }
 
@@ -866,9 +858,7 @@ async fn main() -> Result<(), GraphicsError> {
 
     // Starts an event gathering type for the window.
     let event_loop = EventLoop::new()?;
-    event_loop.set_control_flow(ControlFlow::WaitUntil(
-        std::time::Instant::now() + WAIT_TIME,
-    ));
+    event_loop.set_control_flow(ControlFlow::Poll);
     let mut runner = Runner::Loading;
     event_loop.run_app(&mut runner).unwrap();
     updater.stop().unwrap();

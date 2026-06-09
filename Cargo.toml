@@ -25,19 +25,19 @@ version = "0.9.0"
 [dependencies.input]
 #git = "https://github.com/AscendingCreations/AscendingLibraries"
 #rev = "f2324c1"
-#path = "../AscendingLibraries/input"
+#path = "../AscendingInput"
 package = "ascending_input"
-version = "0.6.0"
+version = "0.6.2"
 
 [dependencies.graphics]
 #git = "https://github.com/AscendingCreations/AscendingLibraries"
 #rev = "f2324c1"
-path = "../AscendingGraphics"
+#path = "../AscendingGraphics"
 package = "ascending_graphics"
 #disable-features = true
 #features = ["crate_passthru"]
 features = ["static_dx"]
-version = "0.39.0"
+version = "0.42.0"
 
 [dependencies.time]
 #path = "../ascendinglibraries/time"
@@ -45,7 +45,7 @@ version = "0.39.0"
 #features = ["static_dx"]
 #git = "https://github.com/AscendingCreations/AscendingLibraries"
 package = "ascending_time"
-version = "0.2.3"
+version = "0.3.0"
 
 [profile.dev]
 opt-level = 0

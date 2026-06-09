@@ -6,6 +6,7 @@ use camera::{
 };
 use graphics::{
     cosmic_text::{Align, Wrap},
+    input::{Bindings, InputHandler, Key},
     wgpu::{
         ExperimentalFeatures, ForceShaderModelToken, GlDebugFns,
         MemoryBudgetThresholds,
@@ -20,7 +21,6 @@ use graphics::{
     naga::{front::wgsl, valid::Validator},
     wgpu::NoopBackendOptions,
 };
-use input::{Bindings, InputHandler, Key};
 use log::{Level, LevelFilter, Metadata, Record, error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -78,7 +78,7 @@ impl log::Log for MyLogger {
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
             let msg = format!("{} - {}\n", record.level(), record.args());
-            println!("{}", &msg);
+            println!("{}", msg);
 
             let mut file = match File::options()
                 .append(true)
@@ -216,12 +216,34 @@ impl winit::application::ApplicationHandler for Runner {
             // and another for emojicons.
             let text_atlas = TextAtlas::new(&mut renderer, 512).unwrap();
 
+            #[derive(Debug, Hash, PartialEq, Eq)]
+            struct TestId<'a> {
+                table: &'a str,
+                id: usize,
+            }
+
+            #[derive(Debug, Hash, PartialEq, Eq)]
+            struct Testname<'a, 'b>
+            where
+                'a: 'b,
+            {
+                table: &'a str,
+                name: &'b str,
+            }
+
             // This is how we load a image into a atlas/Texture. It returns the location of the image
             // within the texture. its x, y, w, h.  Texture loads the file. group_uploads sends it to the Texture
             // renderer is used to upload it to the GPU when done.
-            let allocation = Texture::from_file("images/Female_1.png")
+            let _allocation = Texture::from_file("images/Female_1.png")
                 .unwrap()
-                .upload(&mut atlases[0], &renderer)
+                .upload(
+                    Testname {
+                        table: "player",
+                        name: "test1",
+                    },
+                    &mut atlases[0],
+                    &renderer,
+                )
                 .ok_or_else(|| OtherError::new("failed to upload image"))
                 .unwrap();
 
@@ -237,7 +259,14 @@ impl winit::application::ApplicationHandler for Runner {
                 // To name this atm to keep it seperated from Sprite that would contain most of the actual not rendering
                 // data needed.
                 let mut sprite = Image::new(
-                    Some(allocation),
+                    Some(
+                        atlases[0]
+                            .lookup(&Testname {
+                                table: "player",
+                                name: "test1",
+                            })
+                            .unwrap(),
+                    ),
                     &mut renderer,
                     Vec3::new(x, y, 7.0),
                     Vec2::new(48.0, 48.0),
@@ -344,7 +373,7 @@ impl winit::application::ApplicationHandler for Runner {
 
             let _tilesheet = Texture::from_file("images/tiles/1.png")
                 .unwrap()
-                .new_tilesheet(&mut atlases[1], &renderer, 20)
+                .new_tilesheet("1.png", &mut atlases[1], &renderer, 20)
                 .ok_or_else(|| OtherError::new("failed to upload tiles"))
                 .unwrap();
 
@@ -352,7 +381,7 @@ impl winit::application::ApplicationHandler for Runner {
 
             let allocation = Texture::from_file("images/anim/0.png")
                 .unwrap()
-                .upload(&mut atlases[0], &renderer)
+                .upload("0.png", &mut atlases[0], &renderer)
                 .ok_or_else(|| OtherError::new("failed to upload image"))
                 .unwrap();
 
@@ -816,7 +845,7 @@ impl winit::application::ApplicationHandler for Runner {
             input_handler.device_updates(&event);
         }
     }
-    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
         if let Self::Ready {
             text: _,
             renderer,

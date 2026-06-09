@@ -105,6 +105,7 @@ enum Runner {
         frame_time: FrameTime,
         time: f32,
         time2: f32,
+        time3: f32,
         fps: u32,
         text: Box<Text>,
         size: PhysicalSize<f32>,
@@ -286,7 +287,7 @@ impl winit::application::ApplicationHandler for Runner {
             sprites[0].rotation_angle = 45.0;
 
             // We establish the different renderers here to load their data up to use them.
-            let text_renderer = TextRenderer::new(&renderer).unwrap();
+            let mut text_renderer = TextRenderer::new(&mut renderer).unwrap();
             let sprite_renderer = ImageRenderer::new(&renderer).unwrap();
             let animation_renderer = AnimImageRenderer::new(&renderer).unwrap();
             let mut map_renderer = MapRenderer::new(&mut renderer, 81).unwrap();
@@ -403,8 +404,9 @@ impl winit::application::ApplicationHandler for Runner {
             let scale = 1.0; //renderer.window().current_monitor().unwrap().scale_factor();
 
             // create a Text rendering object.
-            let mut text = Text::new(
+            let mut text = Text::new_with_buffer(
                 &mut renderer,
+                &mut text_renderer,
                 Some(Metrics::new(16.0, 16.0).scale(scale)),
                 Vec3::new(-25.0, 0.0, 1.0),
                 Vec2::new(190.0 * scale, 32.0 * scale),
@@ -584,6 +586,7 @@ impl winit::application::ApplicationHandler for Runner {
                 frame_time: FrameTime::new(),
                 time: 0.0f32,
                 time2: 0.0f32,
+                time3: 0.0f32,
                 fps: 0u32,
                 size,
                 keys_pressed: HashSet::new(),
@@ -606,6 +609,7 @@ impl winit::application::ApplicationHandler for Runner {
             frame_time,
             time,
             time2,
+            time3,
             fps,
             size,
             keys_pressed: _,
@@ -781,6 +785,14 @@ impl winit::application::ApplicationHandler for Runner {
             // Also tells the system to begin running the commands on the GPU.
             renderer.queue().submit(std::iter::once(encoder.finish()));
 
+            if *time3 < seconds {
+                let mut pos = text.pos;
+                pos.x += 1.0;
+
+                text.set_pos(pos);
+                *time3 = seconds + 0.0001;
+            }
+
             if *time < seconds {
                 text.set_text(
                     &format!("生活,삶,जिंदगी 😀 FPS: {fps} \n yhelloy"),
@@ -788,6 +800,8 @@ impl winit::application::ApplicationHandler for Runner {
                     Shaping::Advanced,
                     Some(Align::Left),
                 );
+                text.set_pos(Vec3::new(-25.0, 0.0, 1.0));
+
                 *fps = 0u32;
                 *time = seconds + 1.0;
             }
@@ -836,6 +850,7 @@ impl winit::application::ApplicationHandler for Runner {
             frame_time: _,
             time: _,
             time2: _,
+            time3: _,
             fps: _,
             size: _,
             keys_pressed: _,
@@ -854,6 +869,7 @@ impl winit::application::ApplicationHandler for Runner {
             frame_time: _,
             time: _,
             time2: _,
+            time3: _,
             fps: _,
             size: _,
             keys_pressed: _,

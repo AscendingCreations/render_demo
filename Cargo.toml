@@ -37,7 +37,7 @@ package = "ascending_graphics"
 #disable-features = true
 #features = ["crate_passthru"]
 features = ["static_dx"]
-version = "0.42.0"
+version = "0.43.0"
 
 [dependencies.time]
 #path = "../ascendinglibraries/time"

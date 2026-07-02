@@ -11,7 +11,7 @@ resolver = "3"
 winit = { version = "0.30.12", features = ["serde"] }
 tokio = { version = "1.52.3", features = ["full"] }
 serde = { version = "1.0.228", features = ["derive"] }
-log = "0.4.30"
+log = "0.4.33"
 backtrace = "0.3.76"
 futures = "0.3.32"
 
@@ -37,7 +37,7 @@ package = "ascending_graphics"
 #disable-features = true
 #features = ["crate_passthru"]
 features = ["static_dx"]
-version = "0.43.0"
+version = "0.44.0"
 
 [dependencies.time]
 #path = "../ascendinglibraries/time"

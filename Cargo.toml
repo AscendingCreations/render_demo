@@ -30,7 +30,8 @@ package = "ascending_input"
 version = "0.6.2"
 
 [dependencies.graphics]
-#git = "https://github.com/AscendingCreations/AscendingLibraries"
+git = "https://github.com/AscendingCreations/AscendingGraphics"
+branch = "text_bounds"
 #rev = "f2324c1"
 #path = "../AscendingGraphics"
 package = "ascending_graphics"

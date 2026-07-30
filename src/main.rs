@@ -133,6 +133,23 @@ impl winit::application::ApplicationHandler for Runner {
                 event_loop.create_window(win_attrs).expect("Create window"),
             );
 
+            let monitor = window.available_monitors();
+            let mut use_monitor = window.current_monitor();
+
+            for mon in monitor {
+                println!("name: {:?}", mon.name());
+                if mon.name().filter(|m| m.contains("DISPLAY2")).is_some() {
+                    use_monitor = Some(mon);
+                    break;
+                }
+            }
+
+            if let Some(win) = &use_monitor {
+                let pos = win.position();
+
+                window.set_outer_position(pos);
+            }
+
             info!("after window initiation");
             // Generates an Instance for WGPU. Sets WGPU to be allowed on all possible supported backends
             // These are DX12, DX11, Vulkan, Metal and Gles. if none of these work on a system they cant
@@ -408,19 +425,19 @@ impl winit::application::ApplicationHandler for Runner {
                 &mut renderer,
                 &mut text_renderer,
                 Some(Metrics::new(16.0, 16.0).scale(scale)),
-                Vec3::new(-25.0, 0.0, 1.0),
-                Vec2::new(190.0 * scale, 32.0 * scale),
+                Vec3::new(10.0, 0.0, 1.0),
+                Vec2::new(203.0 * scale, 32.0 * scale),
                 1.0,
                 1,
             );
 
             text.set_buffer_size(Some(250.0 * scale), Some(600.0 * scale))
-                /*.set_bounds(Some(Bounds::new(
+                .set_bounds(Some(Bounds::new(
                     0.0,
                     0.0,
-                    250.0 * scale,
-                    600.0 * scale,
-                )))*/
+                    (202.1875 * 0.5) + 10.0,
+                    24.0,
+                )))
                 .set_default_color(Color::rgba(255, 255, 255, 255));
 
             // Start the process of building a shape.
@@ -786,10 +803,10 @@ impl winit::application::ApplicationHandler for Runner {
             renderer.queue().submit(std::iter::once(encoder.finish()));
 
             if *time3 < seconds {
-                let mut pos = text.pos;
-                pos.x += 1.0;
+                // let mut pos = text.pos;
+                // pos.x += 1.0;
 
-                text.set_pos(pos);
+                //text.set_pos(pos);
                 *time3 = seconds + 0.0001;
             }
 
@@ -800,8 +817,11 @@ impl winit::application::ApplicationHandler for Runner {
                     Shaping::Advanced,
                     Some(Align::Left),
                 );
-                text.set_pos(Vec3::new(-25.0, 0.0, 1.0));
+                //text.set_pos(Vec3::new(-25.0, 0.0, 1.0));
 
+                let text_size = text.measure(&mut renderer.font_sys);
+
+                println!("text size = {text_size}, fps = {fps} ");
                 *fps = 0u32;
                 *time = seconds + 1.0;
             }
